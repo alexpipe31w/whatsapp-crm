@@ -192,4 +192,13 @@ sock.ev.on('messages.upsert', async ({ messages, type }) => {
       this.sockets.delete(storeId);
     }
   }
+  async sendMessage(storeId: string, phone: string, content: string) {
+  const sock = this.sockets.get(storeId);
+  if (!sock) throw new Error(`No hay socket activo para store: ${storeId}`);
+
+  const jid = `${phone.replace('+', '')}@s.whatsapp.net`;
+  await sock.sendMessage(jid, { text: content });
+  this.logger.log(`📤 Mensaje enviado a ${phone}`);
+}
+
 }
