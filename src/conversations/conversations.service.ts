@@ -64,4 +64,42 @@ export class ConversationsService {
       data: dto,
     });
   }
+    // Tomar control humano de una conversación
+  async takeoverHuman(conversationId: string) {
+    await this.findOne(conversationId);
+    return this.prisma.conversation.update({
+      where: { conversationId },
+      data: { status: 'human' },
+    });
+  }
+
+  // Devolver control a la IA
+  async releaseToAI(conversationId: string) {
+    await this.findOne(conversationId);
+    return this.prisma.conversation.update({
+      where: { conversationId },
+      data: { status: 'active' },
+    });
+  }
+
+  // Cerrar conversación
+  async close(conversationId: string) {
+    await this.findOne(conversationId);
+    return this.prisma.conversation.update({
+      where: { conversationId },
+      data: { status: 'closed' },
+    });
+  }
+
+  // Listar conversaciones que esperan humano
+  async findPendingHuman(storeId: string) {
+    return this.prisma.conversation.findMany({
+      where: { storeId, status: { in: ['pending_human', 'human'] } },
+      include: {
+        customer: true,
+        messages: { orderBy: { createdAt: 'desc' }, take: 5 },
+      },
+      orderBy: { lastMessageAt: 'desc' },
+    });
+  }
 }

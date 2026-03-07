@@ -133,48 +133,90 @@ sock.ev.on('messages.upsert', async ({ messages, type }) => {
     return sock;
   }
 
-  private async handleIncomingMessage(
-    storeId: string,
-    phone: string,
-    content: string,
-    sock: any,
-  ) {
-    const customer = await this.customersService.findOrCreate({ storeId, phone });
+private async handleIncomingMessage(
+  storeId: string,
+  phone: string,
+  content: string,
+  sock: any,
+) {
+  const customer = await this.customersService.findOrCreate({ storeId, phone });
 
-    const conversation = await this.conversationsService.findOrCreate({
-      storeId,
-      customerId: customer.customerId,
-    });
+  const conversation = await this.conversationsService.findOrCreate({
+    storeId,
+    customerId: customer.customerId,
+  });
 
-    await this.messagesService.create({
-      conversationId: conversation.conversationId,
-      storeId,
-      content,
-      type: 'text',
-      isAiResponse: false,
-    });
+  // Guardar mensaje entrante siempre
+  await this.messagesService.create({
+    conversationId: conversation.conversationId,
+    storeId,
+    content,
+    type: 'text',
+    isAiResponse: false,
+  });
 
-    const aiReply = await this.aiService.generateReply(
-      storeId,
-      content,
-      conversation.conversationId,
-    );
+  // 🔴 Si está en modo humano o pendiente de humano → bot NO responde
+  if (conversation.status === 'human' || conversation.status === 'closed') {
+    this.logger.log(`👤 Conversación ${conversation.conversationId} en modo humano — bot silenciado`);
+    return;
+  }
 
-    if (!aiReply) return;
+  // 🟡 Detectar palabras clave que indican necesidad de humano o pago
+  const humanKeywords = [
+    'hablar con una persona',
+    'hablar con alguien',
+    'quiero pagar',
+    'voy a pagar',
+    'hacer el pago',
+    'persona real',
+    'asesor',
+    'operador',
+    'no quiero el bot',
+    'ayuda humana',
+  ];
 
-    await this.messagesService.create({
-      conversationId: conversation.conversationId,
-      storeId,
-      content: aiReply,
-      type: 'text',
-      isAiResponse: true,
+  const needsHuman = humanKeywords.some((kw) =>
+    content.toLowerCase().includes(kw),
+  );
+
+  if (needsHuman) {
+    // Marcar conversación como pendiente de humano
+    await this.prisma.conversation.update({
+      where: { conversationId: conversation.conversationId },
+      data: { status: 'pending_human' },
     });
 
     const jid = `${phone.replace('+', '')}@s.whatsapp.net`;
-    await sock.sendMessage(jid, { text: aiReply });
+    await sock.sendMessage(jid, {
+      text: '👤 Entendido! Te voy a conectar con un asesor. Por favor espera un momento...',
+    });
 
-    this.logger.log(`🤖 Respuesta IA enviada a ${phone}`);
+    this.logger.log(`🚨 Cliente ${phone} necesita atención humana`);
+    return;
   }
+
+  // 🟢 Respuesta normal de IA
+  const aiReply = await this.aiService.generateReply(
+    storeId,
+    content,
+    conversation.conversationId,
+  );
+
+  if (!aiReply) return;
+
+  await this.messagesService.create({
+    conversationId: conversation.conversationId,
+    storeId,
+    content: aiReply,
+    type: 'text',
+    isAiResponse: true,
+  });
+
+  const jid = `${phone.replace('+', '')}@s.whatsapp.net`;
+  await sock.sendMessage(jid, { text: aiReply });
+
+  this.logger.log(`🤖 Respuesta IA enviada a ${phone}`);
+}
 
   getQR(storeId: string): string | null {
     return this.sockets.get(`${storeId}_qr`) ?? null;

@@ -28,4 +28,24 @@ export class ConversationsController {
   updateStatus(@Param('id') id: string, @Body() dto: UpdateConversationDto) {
     return this.conversationsService.updateStatus(id, dto);
   }
+    @Post(':id/takeover')
+  takeoverHuman(@Param('id') id: string) {
+    return this.conversationsService.takeoverHuman(id);
+  }
+
+  @Post(':id/release')
+  releaseToAI(@Param('id') id: string) {
+    return this.conversationsService.releaseToAI(id);
+  }
+
+  @Post(':id/close')
+  close(@Param('id') id: string) {
+    return this.conversationsService.close(id);
+  }
+
+  @Get('store/:storeId/pending-human')
+  findPendingHuman(@Param('storeId') storeId: string) {
+    return this.conversationsService.findPendingHuman(storeId);
+  }
+
 }
