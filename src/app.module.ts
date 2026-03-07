@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { ConfigModule } from '@nestjs/config';
+import { validate } from './config/env.validation';
+import { PrismaModule } from './prisma/prisma.module';
 import { StoresModule } from './stores/stores.module';
 import { CustomersModule } from './customers/customers.module';
 import { ProductsModule } from './products/products.module';
@@ -13,8 +14,22 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { AuthModule } from './auth/auth.module';
 
 @Module({
-  imports: [StoresModule, CustomersModule, ProductsModule, OrdersModule, MessagesModule, CampaignsModule, WhatsappModule, AiModule, AnalyticsModule, AuthModule],
-  controllers: [AppController],
-  providers: [AppService],
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      validate,
+    }),
+    PrismaModule,
+    StoresModule,
+    CustomersModule,
+    ProductsModule,
+    OrdersModule,
+    MessagesModule,
+    CampaignsModule,
+    WhatsappModule,
+    AiModule,
+    AnalyticsModule,
+    AuthModule,
+  ],
 })
 export class AppModule {}
