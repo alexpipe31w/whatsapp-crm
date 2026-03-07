@@ -4,6 +4,7 @@ import { validate } from './config/env.validation';
 import { PrismaModule } from './prisma/prisma.module';
 import { StoresModule } from './stores/stores.module';
 import { CustomersModule } from './customers/customers.module';
+import { ConversationsModule } from './conversations/conversations.module'; // 👈
 import { ProductsModule } from './products/products.module';
 import { ServicesModule } from './services/services.module';
 import { OrdersModule } from './orders/orders.module';
@@ -23,6 +24,7 @@ import { AuthModule } from './auth/auth.module';
     PrismaModule,
     StoresModule,
     CustomersModule,
+    ConversationsModule, // 👈
     ProductsModule,
     ServicesModule,
     OrdersModule,
