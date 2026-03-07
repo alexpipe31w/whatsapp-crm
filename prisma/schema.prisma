@@ -171,3 +171,15 @@ model Campaign {
 
   @@map("campaigns")
 }
+
+model User {
+  userId    String   @id @default(uuid()) @map("user_id")
+  name      String   @db.VarChar(100)
+  email     String   @unique @db.VarChar(200)
+  password  String
+  role      String   @default("admin")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("users")
+}

@@ -60,7 +60,8 @@ export const ModelName = {
   Order: 'Order',
   OrderItem: 'OrderItem',
   AIConfiguration: 'AIConfiguration',
-  Campaign: 'Campaign'
+  Campaign: 'Campaign',
+  User: 'User'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -211,6 +212,19 @@ export const CampaignScalarFieldEnum = {
 } as const
 
 export type CampaignScalarFieldEnum = (typeof CampaignScalarFieldEnum)[keyof typeof CampaignScalarFieldEnum]
+
+
+export const UserScalarFieldEnum = {
+  userId: 'userId',
+  name: 'name',
+  email: 'email',
+  password: 'password',
+  role: 'role',
+  isActive: 'isActive',
+  createdAt: 'createdAt'
+} as const
+
+export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
 
 
 export const SortOrder = {

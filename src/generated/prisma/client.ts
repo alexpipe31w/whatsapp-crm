@@ -89,3 +89,8 @@ export type AIConfiguration = Prisma.AIConfigurationModel
  * 
  */
 export type Campaign = Prisma.CampaignModel
+/**
+ * Model User
+ * 
+ */
+export type User = Prisma.UserModel
