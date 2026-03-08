@@ -35,6 +35,7 @@ model Customer {
   storeId    String   @map("store_id")
   phone      String   @db.VarChar(20)
   name       String?  @db.VarChar(100)
+  city       String?  @db.VarChar(100) // ✅ nuevo campo
   createdAt  DateTime @default(now()) @map("created_at")
 
   store         Store          @relation(fields: [storeId], references: [storeId], onDelete: Cascade)
@@ -52,6 +53,7 @@ model Conversation {
   status         String   @default("active")
   startedAt      DateTime @default(now()) @map("started_at")
   lastMessageAt  DateTime @default(now()) @map("last_message_at")
+  createdAt      DateTime @default(now()) @map("created_at")
 
   store    Store    @relation(fields: [storeId], references: [storeId])
   customer Customer @relation(fields: [customerId], references: [customerId])
@@ -66,6 +68,7 @@ model Message {
   storeId        String   @map("store_id")
   content        String
   type           String
+  sender         String   @default("customer")
   isAiResponse   Boolean  @default(false) @map("is_ai_response")
   createdAt      DateTime @default(now()) @map("created_at")
 
@@ -80,19 +83,37 @@ model Product {
   storeId     String   @map("store_id")
   sku         String?  @db.VarChar(100)
   name        String   @db.VarChar(200)
-  variant     String?  @db.VarChar(200)
-  costPrice   Decimal  @map("cost_price") @db.Decimal(10, 2)
-  salePrice   Decimal  @map("sale_price") @db.Decimal(10, 2)
-  stock       Int      @default(0)
+  costPrice   Decimal  @map("cost_price") @db.Decimal(10, 2) // precio base
+  salePrice   Decimal  @map("sale_price") @db.Decimal(10, 2) // precio base
+  stock       Int      @default(0)                            // stock base (sin variantes)
   description String?
+  imageUrl    String?  @map("image_url")
+  hasShipping Boolean  @default(false) @map("has_shipping")
   isActive    Boolean  @default(true) @map("is_active")
   createdAt   DateTime @default(now()) @map("created_at")
 
-  store      Store       @relation(fields: [storeId], references: [storeId])
+  store      Store            @relation(fields: [storeId], references: [storeId])
   orderItems OrderItem[]
+  variants   ProductVariant[]
 
   @@unique([storeId, sku])
   @@map("products")
+}
+
+// Cada variante de un producto tiene su propio precio y stock
+model ProductVariant {
+  variantId  String  @id @default(uuid()) @map("variant_id")
+  productId  String  @map("product_id")
+  name       String  @db.VarChar(200)   // Ej: "Talla M / Rojo"
+  sku        String? @db.VarChar(100)
+  costPrice  Decimal @map("cost_price") @db.Decimal(10, 2)
+  salePrice  Decimal @map("sale_price") @db.Decimal(10, 2)
+  stock      Int     @default(0)
+  isActive   Boolean @default(true) @map("is_active")
+
+  product Product @relation(fields: [productId], references: [productId], onDelete: Cascade)
+
+  @@map("product_variants")
 }
 
 model Service {
@@ -112,13 +133,16 @@ model Service {
 }
 
 model Order {
-  orderId    String   @id @default(uuid()) @map("order_id")
-  storeId    String   @map("store_id")
-  customerId String   @map("customer_id")
-  total      Decimal  @default(0) @db.Decimal(10, 2)
-  status     String   @default("pending")
-  notes      String?
-  createdAt  DateTime @default(now()) @map("created_at")
+  orderId         String   @id @default(uuid()) @map("order_id")
+  storeId         String   @map("store_id")
+  customerId      String   @map("customer_id")
+  type            String   @default("product")           // 'product' | 'food' | 'service'
+  total           Decimal  @default(0) @db.Decimal(10, 2)
+  status          String   @default("pending")           // pending | confirmed | preparing | ready | delivered | cancelled
+  notes           String?
+  estimatedTime   Int?     @map("estimated_time")        // minutos
+  deliveryAddress String?  @map("delivery_address")
+  createdAt       DateTime @default(now()) @map("created_at")
 
   store      Store       @relation(fields: [storeId], references: [storeId])
   customer   Customer    @relation(fields: [customerId], references: [customerId])
@@ -128,12 +152,13 @@ model Order {
 }
 
 model OrderItem {
-  itemId    String  @id @default(uuid()) @map("item_id")
-  orderId   String  @map("order_id")
-  productId String? @map("product_id")
-  serviceId String? @map("service_id")
-  quantity  Int
-  unitPrice Decimal @map("unit_price") @db.Decimal(10, 2)
+  itemId      String  @id @default(uuid()) @map("item_id")
+  orderId     String  @map("order_id")
+  productId   String? @map("product_id")
+  serviceId   String? @map("service_id")
+  description String? // ítem libre sin producto/servicio en BD
+  quantity    Int
+  unitPrice   Decimal @map("unit_price") @db.Decimal(10, 2)
 
   order   Order    @relation(fields: [orderId], references: [orderId], onDelete: Cascade)
   product Product? @relation(fields: [productId], references: [productId])

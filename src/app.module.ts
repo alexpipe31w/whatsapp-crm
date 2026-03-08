@@ -5,6 +5,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { StoresModule } from './stores/stores.module';
 import { CustomersModule } from './customers/customers.module';
 import { ConversationsModule } from './conversations/conversations.module'; // 👈
+import { DashboardModule } from './dashboard/dashboard.module';
 import { ProductsModule } from './products/products.module';
 import { ServicesModule } from './services/services.module';
 import { OrdersModule } from './orders/orders.module';
@@ -25,6 +26,7 @@ import { AuthModule } from './auth/auth.module';
     StoresModule,
     CustomersModule,
     ConversationsModule, // 👈
+    DashboardModule,
     ProductsModule,
     ServicesModule,
     OrdersModule,

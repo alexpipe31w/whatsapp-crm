@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
-import { AiService } from './ai.service';
 import { AiController } from './ai.controller';
+import { AiService } from './ai.service';
+import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
-  controllers: [AiController],
+  imports: [PrismaModule],
+  controllers: [AiController], // ✅ faltaba esto
   providers: [AiService],
   exports: [AiService],
 })

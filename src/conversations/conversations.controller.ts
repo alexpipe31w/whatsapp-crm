@@ -1,21 +1,14 @@
-import { Controller, Get, Post, Patch, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards } from '@nestjs/common';
 import { ConversationsService } from './conversations.service';
-import { CreateConversationDto } from './dto/create-conversation.dto';
-import { UpdateConversationDto } from './dto/update-conversation.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @UseGuards(JwtAuthGuard)
 @Controller('conversations')
 export class ConversationsController {
-  constructor(private conversationsService: ConversationsService) {}
-
-  @Post()
-  findOrCreate(@Body() dto: CreateConversationDto) {
-    return this.conversationsService.findOrCreate(dto);
-  }
+  constructor(private readonly conversationsService: ConversationsService) {}
 
   @Get('store/:storeId')
-  findAllByStore(@Param('storeId') storeId: string) {
+  findAll(@Param('storeId') storeId: string) {
     return this.conversationsService.findAllByStore(storeId);
   }
 
@@ -24,28 +17,33 @@ export class ConversationsController {
     return this.conversationsService.findOne(id);
   }
 
-  @Patch(':id/status')
-  updateStatus(@Param('id') id: string, @Body() dto: UpdateConversationDto) {
-    return this.conversationsService.updateStatus(id, dto);
-  }
-    @Post(':id/takeover')
-  takeoverHuman(@Param('id') id: string) {
-    return this.conversationsService.takeoverHuman(id);
+  @Post()
+  create(@Body() body: { customerId: string; storeId: string }) {
+    return this.conversationsService.findOrCreate(body.customerId, body.storeId);
   }
 
-  @Post(':id/release')
-  releaseToAI(@Param('id') id: string) {
-    return this.conversationsService.releaseToAI(id);
+  @Patch(':id/takeover')
+  takeover(@Param('id') id: string) {
+    return this.conversationsService.takeover(id);
   }
 
-  @Post(':id/close')
+  @Patch(':id/release')
+  release(@Param('id') id: string) {
+    return this.conversationsService.release(id);
+  }
+
+  @Patch(':id/close')
   close(@Param('id') id: string) {
     return this.conversationsService.close(id);
   }
 
-  @Get('store/:storeId/pending-human')
-  findPendingHuman(@Param('storeId') storeId: string) {
-    return this.conversationsService.findPendingHuman(storeId);
+  /**
+   * Elimina la conversación y sus mensajes.
+   * Solo permitido cuando status = 'closed'.
+   * NO elimina el customer ni sus pedidos.
+   */
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.conversationsService.remove(id);
   }
-
 }

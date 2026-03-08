@@ -1,11 +1,21 @@
-import { IsString, IsOptional } from 'class-validator';
+import { IsString, IsOptional, IsInt, Min } from 'class-validator';
 
 export class UpdateOrderDto {
   @IsString()
   @IsOptional()
-  status?: 'pending' | 'confirmed' | 'delivered' | 'cancelled';
+  status?: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
 
   @IsString()
   @IsOptional()
   notes?: string;
+
+  // Actualizar tiempo estimado en curso (ej: cocina avisa demora extra)
+  @IsInt()
+  @IsOptional()
+  @Min(0)
+  estimatedTime?: number;
+
+  @IsString()
+  @IsOptional()
+  deliveryAddress?: string;
 }

@@ -1,4 +1,7 @@
-import { IsString, IsOptional, IsArray, ValidateNested, IsNumber, IsInt, Min } from 'class-validator';
+import {
+  IsString, IsOptional, IsArray, ValidateNested,
+  IsNumber, IsInt, IsIn, Min,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateOrderItemDto {
@@ -9,6 +12,10 @@ export class CreateOrderItemDto {
   @IsString()
   @IsOptional()
   serviceId?: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string; // ítem libre (comida sin producto en BD, etc.)
 
   @Type(() => Number)
   @IsInt()
@@ -28,6 +35,12 @@ export class CreateOrderDto {
   @IsString()
   customerId: string;
 
+  // 'product' = pedido físico | 'food' = pedido de comida | 'service' = servicio
+  @IsString()
+  @IsOptional()
+  @IsIn(['product', 'food', 'service'])
+  type?: string;
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateOrderItemDto)
@@ -36,4 +49,15 @@ export class CreateOrderDto {
   @IsString()
   @IsOptional()
   notes?: string;
+
+  // Tiempo estimado de entrega/preparación en minutos
+  @IsInt()
+  @IsOptional()
+  @Min(0)
+  estimatedTime?: number;
+
+  // Dirección de entrega (útil para comidas y productos físicos)
+  @IsString()
+  @IsOptional()
+  deliveryAddress?: string;
 }

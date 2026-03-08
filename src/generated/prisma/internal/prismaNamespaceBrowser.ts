@@ -56,6 +56,7 @@ export const ModelName = {
   Conversation: 'Conversation',
   Message: 'Message',
   Product: 'Product',
+  ProductVariant: 'ProductVariant',
   Service: 'Service',
   Order: 'Order',
   OrderItem: 'OrderItem',
@@ -99,6 +100,7 @@ export const CustomerScalarFieldEnum = {
   storeId: 'storeId',
   phone: 'phone',
   name: 'name',
+  city: 'city',
   createdAt: 'createdAt'
 } as const
 
@@ -111,7 +113,8 @@ export const ConversationScalarFieldEnum = {
   customerId: 'customerId',
   status: 'status',
   startedAt: 'startedAt',
-  lastMessageAt: 'lastMessageAt'
+  lastMessageAt: 'lastMessageAt',
+  createdAt: 'createdAt'
 } as const
 
 export type ConversationScalarFieldEnum = (typeof ConversationScalarFieldEnum)[keyof typeof ConversationScalarFieldEnum]
@@ -123,6 +126,7 @@ export const MessageScalarFieldEnum = {
   storeId: 'storeId',
   content: 'content',
   type: 'type',
+  sender: 'sender',
   isAiResponse: 'isAiResponse',
   createdAt: 'createdAt'
 } as const
@@ -135,16 +139,31 @@ export const ProductScalarFieldEnum = {
   storeId: 'storeId',
   sku: 'sku',
   name: 'name',
-  variant: 'variant',
   costPrice: 'costPrice',
   salePrice: 'salePrice',
   stock: 'stock',
   description: 'description',
+  imageUrl: 'imageUrl',
+  hasShipping: 'hasShipping',
   isActive: 'isActive',
   createdAt: 'createdAt'
 } as const
 
 export type ProductScalarFieldEnum = (typeof ProductScalarFieldEnum)[keyof typeof ProductScalarFieldEnum]
+
+
+export const ProductVariantScalarFieldEnum = {
+  variantId: 'variantId',
+  productId: 'productId',
+  name: 'name',
+  sku: 'sku',
+  costPrice: 'costPrice',
+  salePrice: 'salePrice',
+  stock: 'stock',
+  isActive: 'isActive'
+} as const
+
+export type ProductVariantScalarFieldEnum = (typeof ProductVariantScalarFieldEnum)[keyof typeof ProductVariantScalarFieldEnum]
 
 
 export const ServiceScalarFieldEnum = {
@@ -165,9 +184,12 @@ export const OrderScalarFieldEnum = {
   orderId: 'orderId',
   storeId: 'storeId',
   customerId: 'customerId',
+  type: 'type',
   total: 'total',
   status: 'status',
   notes: 'notes',
+  estimatedTime: 'estimatedTime',
+  deliveryAddress: 'deliveryAddress',
   createdAt: 'createdAt'
 } as const
 
@@ -179,6 +201,7 @@ export const OrderItemScalarFieldEnum = {
   orderId: 'orderId',
   productId: 'productId',
   serviceId: 'serviceId',
+  description: 'description',
   quantity: 'quantity',
   unitPrice: 'unitPrice'
 } as const

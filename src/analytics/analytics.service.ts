@@ -1,112 +1,65 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class AnalyticsService {
   constructor(private prisma: PrismaService) {}
 
-  async getDashboard(storeId: string) {
-    const [
-      totalCustomers,
-      newCustomersToday,
-      totalConversations,
-      activeConversations,
-      pendingHumanConversations,
-      closedConversations,
-      totalMessages,
-      aiMessages,
-      humanMessages,
-      totalOrders,
-      pendingOrders,
-      confirmedOrders,
-      deliveredOrders,
-      cancelledOrders,
-      totalProducts,
-      totalCampaigns,
-      sentCampaigns,
-      recentConversations,
-    ] = await Promise.all([
-      // Clientes
-      this.prisma.customer.count({ where: { storeId } }),
-      this.prisma.customer.count({
-        where: {
-          storeId,
-          createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
-        },
-      }),
-      // Conversaciones
-      this.prisma.conversation.count({ where: { storeId } }),
-      this.prisma.conversation.count({ where: { storeId, status: 'active' } }),
-      this.prisma.conversation.count({ where: { storeId, status: 'pending_human' } }),
-      this.prisma.conversation.count({ where: { storeId, status: 'closed' } }),
-      // Mensajes
-      this.prisma.message.count({ where: { storeId } }),
-      this.prisma.message.count({ where: { storeId, isAiResponse: true } }),
-      this.prisma.message.count({ where: { storeId, isAiResponse: false } }),
-      // Órdenes
-      this.prisma.order.count({ where: { storeId } }),
-      this.prisma.order.count({ where: { storeId, status: 'pending' } }),
-      this.prisma.order.count({ where: { storeId, status: 'confirmed' } }),
-      this.prisma.order.count({ where: { storeId, status: 'delivered' } }),
-      this.prisma.order.count({ where: { storeId, status: 'cancelled' } }),
-      // Productos y campañas
-      this.prisma.product.count({ where: { storeId, isActive: true } }),
-      this.prisma.campaign.count({ where: { storeId } }),
-      this.prisma.campaign.count({ where: { storeId, status: 'sent' } }),
-      // Conversaciones recientes con último mensaje
-      this.prisma.conversation.findMany({
-        where: { storeId },
-        include: {
-          customer: true,
-          messages: {
-            orderBy: { createdAt: 'desc' },
-            take: 1,
-          },
-        },
-        orderBy: { lastMessageAt: 'desc' },
-        take: 10,
-      }),
-    ]);
-
-    // Revenue
-    const revenueResult = await this.prisma.order.aggregate({
-      where: { storeId, status: { not: 'cancelled' } },
-      _sum: { total: true },
+  async askAdvisor(
+    storeId: string,
+    context: string,
+    messages: { role: 'user' | 'assistant'; content: string }[],
+  ) {
+    // 1. Obtener la API key configurada por la tienda
+    const aiConfig = await this.prisma.aIConfiguration.findUnique({
+      where: { storeId },
     });
 
-    const revenueDelivered = await this.prisma.order.aggregate({
-      where: { storeId, status: 'delivered' },
-      _sum: { total: true },
+    if (!aiConfig) {
+      throw new NotFoundException(
+        'No hay configuración de IA para esta tienda. Ve a "Configurar IA" y agrega tu API key de Groq.',
+      );
+    }
+    if (!aiConfig.groqApiKey) {
+      throw new BadRequestException(
+        'La tienda no tiene una API key de Groq configurada. Ve a "Configurar IA".',
+      );
+    }
+
+    // 2. Llamar a Groq desde el backend (key nunca llega al navegador)
+    const systemPrompt = `Eres un asesor de negocios experto en e-commerce y ventas por WhatsApp.
+Analiza los datos del negocio y da recomendaciones específicas, accionables y en español.
+Sé directo, usa números concretos y da consejos prácticos.
+Cuando hagas listas usa bullet points con •.
+
+${context}`;
+
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${aiConfig.groqApiKey}`,
+      },
+      body: JSON.stringify({
+        model: aiConfig.model ?? 'llama-3.3-70b-versatile',
+        temperature: 0.7,
+        max_tokens: 1024,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          ...messages,
+        ],
+      }),
     });
 
-    return {
-      clientes: {
-        total: totalCustomers,
-        nuevosHoy: newCustomersToday,
-      },
-      conversaciones: {
-        total: totalConversations,
-        activas: activeConversations,
-        esperandoHumano: pendingHumanConversations,
-        cerradas: closedConversations,
-      },
-      mensajes: {
-        total: totalMessages,
-        porIA: aiMessages,
-        porHumano: humanMessages,
-      },
-      ordenes: {
-        total: totalOrders,
-        pendientes: pendingOrders,
-        confirmadas: confirmedOrders,
-        entregadas: deliveredOrders,
-        canceladas: cancelledOrders,
-        revenueTotal: revenueResult._sum.total ?? 0,
-        revenueEntregado: revenueDelivered._sum.total ?? 0,
-      },
-      productos: { activos: totalProducts },
-      campanas: { total: totalCampaigns, enviadas: sentCampaigns },
-      conversacionesRecientes: recentConversations,
-    };
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new BadRequestException(
+        err?.error?.message ?? `Error de Groq: ${response.status}`,
+      );
+    }
+
+    const data = await response.json();
+    const reply = data.choices?.[0]?.message?.content ?? 'Sin respuesta';
+    return { reply };
   }
 }

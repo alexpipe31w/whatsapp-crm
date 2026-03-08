@@ -65,6 +65,11 @@ export type Message = Prisma.MessageModel
  */
 export type Product = Prisma.ProductModel
 /**
+ * Model ProductVariant
+ * 
+ */
+export type ProductVariant = Prisma.ProductVariantModel
+/**
  * Model Service
  * 
  */

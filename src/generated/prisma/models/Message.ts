@@ -30,6 +30,7 @@ export type MessageMinAggregateOutputType = {
   storeId: string | null
   content: string | null
   type: string | null
+  sender: string | null
   isAiResponse: boolean | null
   createdAt: Date | null
 }
@@ -40,6 +41,7 @@ export type MessageMaxAggregateOutputType = {
   storeId: string | null
   content: string | null
   type: string | null
+  sender: string | null
   isAiResponse: boolean | null
   createdAt: Date | null
 }
@@ -50,6 +52,7 @@ export type MessageCountAggregateOutputType = {
   storeId: number
   content: number
   type: number
+  sender: number
   isAiResponse: number
   createdAt: number
   _all: number
@@ -62,6 +65,7 @@ export type MessageMinAggregateInputType = {
   storeId?: true
   content?: true
   type?: true
+  sender?: true
   isAiResponse?: true
   createdAt?: true
 }
@@ -72,6 +76,7 @@ export type MessageMaxAggregateInputType = {
   storeId?: true
   content?: true
   type?: true
+  sender?: true
   isAiResponse?: true
   createdAt?: true
 }
@@ -82,6 +87,7 @@ export type MessageCountAggregateInputType = {
   storeId?: true
   content?: true
   type?: true
+  sender?: true
   isAiResponse?: true
   createdAt?: true
   _all?: true
@@ -165,6 +171,7 @@ export type MessageGroupByOutputType = {
   storeId: string
   content: string
   type: string
+  sender: string
   isAiResponse: boolean
   createdAt: Date
   _count: MessageCountAggregateOutputType | null
@@ -196,6 +203,7 @@ export type MessageWhereInput = {
   storeId?: Prisma.StringFilter<"Message"> | string
   content?: Prisma.StringFilter<"Message"> | string
   type?: Prisma.StringFilter<"Message"> | string
+  sender?: Prisma.StringFilter<"Message"> | string
   isAiResponse?: Prisma.BoolFilter<"Message"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Message"> | Date | string
   conversation?: Prisma.XOR<Prisma.ConversationScalarRelationFilter, Prisma.ConversationWhereInput>
@@ -208,6 +216,7 @@ export type MessageOrderByWithRelationInput = {
   storeId?: Prisma.SortOrder
   content?: Prisma.SortOrder
   type?: Prisma.SortOrder
+  sender?: Prisma.SortOrder
   isAiResponse?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   conversation?: Prisma.ConversationOrderByWithRelationInput
@@ -223,6 +232,7 @@ export type MessageWhereUniqueInput = Prisma.AtLeast<{
   storeId?: Prisma.StringFilter<"Message"> | string
   content?: Prisma.StringFilter<"Message"> | string
   type?: Prisma.StringFilter<"Message"> | string
+  sender?: Prisma.StringFilter<"Message"> | string
   isAiResponse?: Prisma.BoolFilter<"Message"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Message"> | Date | string
   conversation?: Prisma.XOR<Prisma.ConversationScalarRelationFilter, Prisma.ConversationWhereInput>
@@ -235,6 +245,7 @@ export type MessageOrderByWithAggregationInput = {
   storeId?: Prisma.SortOrder
   content?: Prisma.SortOrder
   type?: Prisma.SortOrder
+  sender?: Prisma.SortOrder
   isAiResponse?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   _count?: Prisma.MessageCountOrderByAggregateInput
@@ -251,6 +262,7 @@ export type MessageScalarWhereWithAggregatesInput = {
   storeId?: Prisma.StringWithAggregatesFilter<"Message"> | string
   content?: Prisma.StringWithAggregatesFilter<"Message"> | string
   type?: Prisma.StringWithAggregatesFilter<"Message"> | string
+  sender?: Prisma.StringWithAggregatesFilter<"Message"> | string
   isAiResponse?: Prisma.BoolWithAggregatesFilter<"Message"> | boolean
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Message"> | Date | string
 }
@@ -259,6 +271,7 @@ export type MessageCreateInput = {
   messageId?: string
   content: string
   type: string
+  sender?: string
   isAiResponse?: boolean
   createdAt?: Date | string
   conversation: Prisma.ConversationCreateNestedOneWithoutMessagesInput
@@ -271,6 +284,7 @@ export type MessageUncheckedCreateInput = {
   storeId: string
   content: string
   type: string
+  sender?: string
   isAiResponse?: boolean
   createdAt?: Date | string
 }
@@ -279,6 +293,7 @@ export type MessageUpdateInput = {
   messageId?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
+  sender?: Prisma.StringFieldUpdateOperationsInput | string
   isAiResponse?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   conversation?: Prisma.ConversationUpdateOneRequiredWithoutMessagesNestedInput
@@ -291,6 +306,7 @@ export type MessageUncheckedUpdateInput = {
   storeId?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
+  sender?: Prisma.StringFieldUpdateOperationsInput | string
   isAiResponse?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -301,6 +317,7 @@ export type MessageCreateManyInput = {
   storeId: string
   content: string
   type: string
+  sender?: string
   isAiResponse?: boolean
   createdAt?: Date | string
 }
@@ -309,6 +326,7 @@ export type MessageUpdateManyMutationInput = {
   messageId?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
+  sender?: Prisma.StringFieldUpdateOperationsInput | string
   isAiResponse?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -319,6 +337,7 @@ export type MessageUncheckedUpdateManyInput = {
   storeId?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
+  sender?: Prisma.StringFieldUpdateOperationsInput | string
   isAiResponse?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -339,6 +358,7 @@ export type MessageCountOrderByAggregateInput = {
   storeId?: Prisma.SortOrder
   content?: Prisma.SortOrder
   type?: Prisma.SortOrder
+  sender?: Prisma.SortOrder
   isAiResponse?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
@@ -349,6 +369,7 @@ export type MessageMaxOrderByAggregateInput = {
   storeId?: Prisma.SortOrder
   content?: Prisma.SortOrder
   type?: Prisma.SortOrder
+  sender?: Prisma.SortOrder
   isAiResponse?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
@@ -359,6 +380,7 @@ export type MessageMinOrderByAggregateInput = {
   storeId?: Prisma.SortOrder
   content?: Prisma.SortOrder
   type?: Prisma.SortOrder
+  sender?: Prisma.SortOrder
   isAiResponse?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
@@ -451,6 +473,7 @@ export type MessageCreateWithoutStoreInput = {
   messageId?: string
   content: string
   type: string
+  sender?: string
   isAiResponse?: boolean
   createdAt?: Date | string
   conversation: Prisma.ConversationCreateNestedOneWithoutMessagesInput
@@ -461,6 +484,7 @@ export type MessageUncheckedCreateWithoutStoreInput = {
   conversationId: string
   content: string
   type: string
+  sender?: string
   isAiResponse?: boolean
   createdAt?: Date | string
 }
@@ -500,6 +524,7 @@ export type MessageScalarWhereInput = {
   storeId?: Prisma.StringFilter<"Message"> | string
   content?: Prisma.StringFilter<"Message"> | string
   type?: Prisma.StringFilter<"Message"> | string
+  sender?: Prisma.StringFilter<"Message"> | string
   isAiResponse?: Prisma.BoolFilter<"Message"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Message"> | Date | string
 }
@@ -508,6 +533,7 @@ export type MessageCreateWithoutConversationInput = {
   messageId?: string
   content: string
   type: string
+  sender?: string
   isAiResponse?: boolean
   createdAt?: Date | string
   store: Prisma.StoreCreateNestedOneWithoutMessagesInput
@@ -518,6 +544,7 @@ export type MessageUncheckedCreateWithoutConversationInput = {
   storeId: string
   content: string
   type: string
+  sender?: string
   isAiResponse?: boolean
   createdAt?: Date | string
 }
@@ -553,6 +580,7 @@ export type MessageCreateManyStoreInput = {
   conversationId: string
   content: string
   type: string
+  sender?: string
   isAiResponse?: boolean
   createdAt?: Date | string
 }
@@ -561,6 +589,7 @@ export type MessageUpdateWithoutStoreInput = {
   messageId?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
+  sender?: Prisma.StringFieldUpdateOperationsInput | string
   isAiResponse?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   conversation?: Prisma.ConversationUpdateOneRequiredWithoutMessagesNestedInput
@@ -571,6 +600,7 @@ export type MessageUncheckedUpdateWithoutStoreInput = {
   conversationId?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
+  sender?: Prisma.StringFieldUpdateOperationsInput | string
   isAiResponse?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -580,6 +610,7 @@ export type MessageUncheckedUpdateManyWithoutStoreInput = {
   conversationId?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
+  sender?: Prisma.StringFieldUpdateOperationsInput | string
   isAiResponse?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -589,6 +620,7 @@ export type MessageCreateManyConversationInput = {
   storeId: string
   content: string
   type: string
+  sender?: string
   isAiResponse?: boolean
   createdAt?: Date | string
 }
@@ -597,6 +629,7 @@ export type MessageUpdateWithoutConversationInput = {
   messageId?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
+  sender?: Prisma.StringFieldUpdateOperationsInput | string
   isAiResponse?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   store?: Prisma.StoreUpdateOneRequiredWithoutMessagesNestedInput
@@ -607,6 +640,7 @@ export type MessageUncheckedUpdateWithoutConversationInput = {
   storeId?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
+  sender?: Prisma.StringFieldUpdateOperationsInput | string
   isAiResponse?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -616,6 +650,7 @@ export type MessageUncheckedUpdateManyWithoutConversationInput = {
   storeId?: Prisma.StringFieldUpdateOperationsInput | string
   content?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
+  sender?: Prisma.StringFieldUpdateOperationsInput | string
   isAiResponse?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -628,6 +663,7 @@ export type MessageSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   storeId?: boolean
   content?: boolean
   type?: boolean
+  sender?: boolean
   isAiResponse?: boolean
   createdAt?: boolean
   conversation?: boolean | Prisma.ConversationDefaultArgs<ExtArgs>
@@ -640,6 +676,7 @@ export type MessageSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   storeId?: boolean
   content?: boolean
   type?: boolean
+  sender?: boolean
   isAiResponse?: boolean
   createdAt?: boolean
   conversation?: boolean | Prisma.ConversationDefaultArgs<ExtArgs>
@@ -652,6 +689,7 @@ export type MessageSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   storeId?: boolean
   content?: boolean
   type?: boolean
+  sender?: boolean
   isAiResponse?: boolean
   createdAt?: boolean
   conversation?: boolean | Prisma.ConversationDefaultArgs<ExtArgs>
@@ -664,11 +702,12 @@ export type MessageSelectScalar = {
   storeId?: boolean
   content?: boolean
   type?: boolean
+  sender?: boolean
   isAiResponse?: boolean
   createdAt?: boolean
 }
 
-export type MessageOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"messageId" | "conversationId" | "storeId" | "content" | "type" | "isAiResponse" | "createdAt", ExtArgs["result"]["message"]>
+export type MessageOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"messageId" | "conversationId" | "storeId" | "content" | "type" | "sender" | "isAiResponse" | "createdAt", ExtArgs["result"]["message"]>
 export type MessageInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   conversation?: boolean | Prisma.ConversationDefaultArgs<ExtArgs>
   store?: boolean | Prisma.StoreDefaultArgs<ExtArgs>
@@ -694,6 +733,7 @@ export type $MessagePayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     storeId: string
     content: string
     type: string
+    sender: string
     isAiResponse: boolean
     createdAt: Date
   }, ExtArgs["result"]["message"]>
@@ -1126,6 +1166,7 @@ export interface MessageFieldRefs {
   readonly storeId: Prisma.FieldRef<"Message", 'String'>
   readonly content: Prisma.FieldRef<"Message", 'String'>
   readonly type: Prisma.FieldRef<"Message", 'String'>
+  readonly sender: Prisma.FieldRef<"Message", 'String'>
   readonly isAiResponse: Prisma.FieldRef<"Message", 'Boolean'>
   readonly createdAt: Prisma.FieldRef<"Message", 'DateTime'>
 }

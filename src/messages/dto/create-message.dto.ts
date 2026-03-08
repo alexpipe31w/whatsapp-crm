@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsBoolean } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsIn } from 'class-validator';
 
 export class CreateMessageDto {
   @IsString()
@@ -17,4 +17,9 @@ export class CreateMessageDto {
   @IsBoolean()
   @IsOptional()
   isAiResponse?: boolean;
+
+  @IsString()
+  @IsOptional()
+  @IsIn(['customer', 'store', 'ai']) // ✅ solo valores válidos del schema
+  sender?: string;
 }

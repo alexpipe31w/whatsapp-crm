@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsNumber } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsInt, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateAiConfigDto {
@@ -13,15 +13,19 @@ export class CreateAiConfigDto {
 
   @IsString()
   @IsOptional()
-  model?: string;
+  model?: string; // default: 'llama-3.3-70b-versatile'
 
   @Type(() => Number)
   @IsNumber()
+  @Min(0)
+  @Max(2)
   @IsOptional()
-  temperature?: number;
+  temperature?: number; // default: 0.70
 
   @Type(() => Number)
-  @IsNumber()
+  @IsInt()
+  @Min(256)
+  @Max(4096)
   @IsOptional()
-  maxTokens?: number;
+  maxTokens?: number; // default: 1024
 }

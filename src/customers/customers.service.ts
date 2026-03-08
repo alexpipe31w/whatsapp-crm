@@ -28,4 +28,13 @@ export class CustomersService {
     if (!customer) throw new NotFoundException('Cliente no encontrado');
     return customer;
   }
+
+  // ✅ Actualizar nombre y ciudad — usado tanto por la IA como por el asesor manualmente
+  async update(customerId: string, data: { name?: string; city?: string }) {
+    await this.findOne(customerId);
+    return this.prisma.customer.update({
+      where: { customerId },
+      data,
+    });
+  }
 }
