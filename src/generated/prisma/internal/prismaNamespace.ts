@@ -401,7 +401,8 @@ export const ModelName = {
   OrderItem: 'OrderItem',
   AIConfiguration: 'AIConfiguration',
   Campaign: 'Campaign',
-  User: 'User'
+  User: 'User',
+  BlockedContact: 'BlockedContact'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -417,7 +418,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "store" | "customer" | "conversation" | "message" | "product" | "productVariant" | "service" | "order" | "orderItem" | "aIConfiguration" | "campaign" | "user"
+    modelProps: "store" | "customer" | "conversation" | "message" | "product" | "productVariant" | "service" | "order" | "orderItem" | "aIConfiguration" | "campaign" | "user" | "blockedContact"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1309,6 +1310,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    BlockedContact: {
+      payload: Prisma.$BlockedContactPayload<ExtArgs>
+      fields: Prisma.BlockedContactFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.BlockedContactFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BlockedContactPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.BlockedContactFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BlockedContactPayload>
+        }
+        findFirst: {
+          args: Prisma.BlockedContactFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BlockedContactPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.BlockedContactFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BlockedContactPayload>
+        }
+        findMany: {
+          args: Prisma.BlockedContactFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BlockedContactPayload>[]
+        }
+        create: {
+          args: Prisma.BlockedContactCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BlockedContactPayload>
+        }
+        createMany: {
+          args: Prisma.BlockedContactCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.BlockedContactCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BlockedContactPayload>[]
+        }
+        delete: {
+          args: Prisma.BlockedContactDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BlockedContactPayload>
+        }
+        update: {
+          args: Prisma.BlockedContactUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BlockedContactPayload>
+        }
+        deleteMany: {
+          args: Prisma.BlockedContactDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.BlockedContactUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.BlockedContactUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BlockedContactPayload>[]
+        }
+        upsert: {
+          args: Prisma.BlockedContactUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BlockedContactPayload>
+        }
+        aggregate: {
+          args: Prisma.BlockedContactAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateBlockedContact>
+        }
+        groupBy: {
+          args: Prisma.BlockedContactGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.BlockedContactGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.BlockedContactCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.BlockedContactCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -1516,6 +1591,17 @@ export const UserScalarFieldEnum = {
 } as const
 
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
+
+
+export const BlockedContactScalarFieldEnum = {
+  blockedId: 'blockedId',
+  storeId: 'storeId',
+  phone: 'phone',
+  label: 'label',
+  createdAt: 'createdAt'
+} as const
+
+export type BlockedContactScalarFieldEnum = (typeof BlockedContactScalarFieldEnum)[keyof typeof BlockedContactScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -1753,6 +1839,7 @@ export type GlobalOmitConfig = {
   aIConfiguration?: Prisma.AIConfigurationOmit
   campaign?: Prisma.CampaignOmit
   user?: Prisma.UserOmit
+  blockedContact?: Prisma.BlockedContactOmit
 }
 
 /* Types for Logging */

@@ -4,7 +4,7 @@ import { validate } from './config/env.validation';
 import { PrismaModule } from './prisma/prisma.module';
 import { StoresModule } from './stores/stores.module';
 import { CustomersModule } from './customers/customers.module';
-import { ConversationsModule } from './conversations/conversations.module'; // 👈
+import { ConversationsModule } from './conversations/conversations.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { ProductsModule } from './products/products.module';
 import { ServicesModule } from './services/services.module';
@@ -15,6 +15,7 @@ import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { AiModule } from './ai/ai.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { AuthModule } from './auth/auth.module';
+import { BlockedModule } from './blocked/blocked.module';
 
 @Module({
   imports: [
@@ -25,7 +26,7 @@ import { AuthModule } from './auth/auth.module';
     PrismaModule,
     StoresModule,
     CustomersModule,
-    ConversationsModule, // 👈
+    ConversationsModule,
     DashboardModule,
     ProductsModule,
     ServicesModule,
@@ -36,6 +37,7 @@ import { AuthModule } from './auth/auth.module';
     AiModule,
     AnalyticsModule,
     AuthModule,
+    BlockedModule,
   ],
 })
 export class AppModule {}

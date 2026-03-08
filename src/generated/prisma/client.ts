@@ -102,3 +102,8 @@ export type Campaign = Prisma.CampaignModel
  * 
  */
 export type User = Prisma.UserModel
+/**
+ * Model BlockedContact
+ * 
+ */
+export type BlockedContact = Prisma.BlockedContactModel

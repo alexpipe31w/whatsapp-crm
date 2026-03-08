@@ -60,7 +60,8 @@ export const ModelName = {
   OrderItem: 'OrderItem',
   AIConfiguration: 'AIConfiguration',
   Campaign: 'Campaign',
-  User: 'User'
+  User: 'User',
+  BlockedContact: 'BlockedContact'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -247,6 +248,17 @@ export const UserScalarFieldEnum = {
 } as const
 
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
+
+
+export const BlockedContactScalarFieldEnum = {
+  blockedId: 'blockedId',
+  storeId: 'storeId',
+  phone: 'phone',
+  label: 'label',
+  createdAt: 'createdAt'
+} as const
+
+export type BlockedContactScalarFieldEnum = (typeof BlockedContactScalarFieldEnum)[keyof typeof BlockedContactScalarFieldEnum]
 
 
 export const SortOrder = {

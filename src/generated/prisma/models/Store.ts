@@ -215,6 +215,7 @@ export type StoreWhereInput = {
   orders?: Prisma.OrderListRelationFilter
   campaigns?: Prisma.CampaignListRelationFilter
   aiConfig?: Prisma.XOR<Prisma.AIConfigurationNullableScalarRelationFilter, Prisma.AIConfigurationWhereInput> | null
+  blockedContacts?: Prisma.BlockedContactListRelationFilter
 }
 
 export type StoreOrderByWithRelationInput = {
@@ -235,6 +236,7 @@ export type StoreOrderByWithRelationInput = {
   orders?: Prisma.OrderOrderByRelationAggregateInput
   campaigns?: Prisma.CampaignOrderByRelationAggregateInput
   aiConfig?: Prisma.AIConfigurationOrderByWithRelationInput
+  blockedContacts?: Prisma.BlockedContactOrderByRelationAggregateInput
 }
 
 export type StoreWhereUniqueInput = Prisma.AtLeast<{
@@ -258,6 +260,7 @@ export type StoreWhereUniqueInput = Prisma.AtLeast<{
   orders?: Prisma.OrderListRelationFilter
   campaigns?: Prisma.CampaignListRelationFilter
   aiConfig?: Prisma.XOR<Prisma.AIConfigurationNullableScalarRelationFilter, Prisma.AIConfigurationWhereInput> | null
+  blockedContacts?: Prisma.BlockedContactListRelationFilter
 }, "storeId" | "phone" | "waSessionId">
 
 export type StoreOrderByWithAggregationInput = {
@@ -306,6 +309,7 @@ export type StoreCreateInput = {
   orders?: Prisma.OrderCreateNestedManyWithoutStoreInput
   campaigns?: Prisma.CampaignCreateNestedManyWithoutStoreInput
   aiConfig?: Prisma.AIConfigurationCreateNestedOneWithoutStoreInput
+  blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateInput = {
@@ -326,6 +330,7 @@ export type StoreUncheckedCreateInput = {
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutStoreInput
   campaigns?: Prisma.CampaignUncheckedCreateNestedManyWithoutStoreInput
   aiConfig?: Prisma.AIConfigurationUncheckedCreateNestedOneWithoutStoreInput
+  blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUpdateInput = {
@@ -346,6 +351,7 @@ export type StoreUpdateInput = {
   orders?: Prisma.OrderUpdateManyWithoutStoreNestedInput
   campaigns?: Prisma.CampaignUpdateManyWithoutStoreNestedInput
   aiConfig?: Prisma.AIConfigurationUpdateOneWithoutStoreNestedInput
+  blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateInput = {
@@ -366,6 +372,7 @@ export type StoreUncheckedUpdateInput = {
   orders?: Prisma.OrderUncheckedUpdateManyWithoutStoreNestedInput
   campaigns?: Prisma.CampaignUncheckedUpdateManyWithoutStoreNestedInput
   aiConfig?: Prisma.AIConfigurationUncheckedUpdateOneWithoutStoreNestedInput
+  blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateManyInput = {
@@ -588,6 +595,20 @@ export type StoreUpdateOneWithoutUsersNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.StoreUpdateToOneWithWhereWithoutUsersInput, Prisma.StoreUpdateWithoutUsersInput>, Prisma.StoreUncheckedUpdateWithoutUsersInput>
 }
 
+export type StoreCreateNestedOneWithoutBlockedContactsInput = {
+  create?: Prisma.XOR<Prisma.StoreCreateWithoutBlockedContactsInput, Prisma.StoreUncheckedCreateWithoutBlockedContactsInput>
+  connectOrCreate?: Prisma.StoreCreateOrConnectWithoutBlockedContactsInput
+  connect?: Prisma.StoreWhereUniqueInput
+}
+
+export type StoreUpdateOneRequiredWithoutBlockedContactsNestedInput = {
+  create?: Prisma.XOR<Prisma.StoreCreateWithoutBlockedContactsInput, Prisma.StoreUncheckedCreateWithoutBlockedContactsInput>
+  connectOrCreate?: Prisma.StoreCreateOrConnectWithoutBlockedContactsInput
+  upsert?: Prisma.StoreUpsertWithoutBlockedContactsInput
+  connect?: Prisma.StoreWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.StoreUpdateToOneWithWhereWithoutBlockedContactsInput, Prisma.StoreUpdateWithoutBlockedContactsInput>, Prisma.StoreUncheckedUpdateWithoutBlockedContactsInput>
+}
+
 export type StoreCreateWithoutCustomersInput = {
   storeId?: string
   name: string
@@ -605,6 +626,7 @@ export type StoreCreateWithoutCustomersInput = {
   orders?: Prisma.OrderCreateNestedManyWithoutStoreInput
   campaigns?: Prisma.CampaignCreateNestedManyWithoutStoreInput
   aiConfig?: Prisma.AIConfigurationCreateNestedOneWithoutStoreInput
+  blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutCustomersInput = {
@@ -624,6 +646,7 @@ export type StoreUncheckedCreateWithoutCustomersInput = {
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutStoreInput
   campaigns?: Prisma.CampaignUncheckedCreateNestedManyWithoutStoreInput
   aiConfig?: Prisma.AIConfigurationUncheckedCreateNestedOneWithoutStoreInput
+  blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutCustomersInput = {
@@ -659,6 +682,7 @@ export type StoreUpdateWithoutCustomersInput = {
   orders?: Prisma.OrderUpdateManyWithoutStoreNestedInput
   campaigns?: Prisma.CampaignUpdateManyWithoutStoreNestedInput
   aiConfig?: Prisma.AIConfigurationUpdateOneWithoutStoreNestedInput
+  blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutCustomersInput = {
@@ -678,6 +702,7 @@ export type StoreUncheckedUpdateWithoutCustomersInput = {
   orders?: Prisma.OrderUncheckedUpdateManyWithoutStoreNestedInput
   campaigns?: Prisma.CampaignUncheckedUpdateManyWithoutStoreNestedInput
   aiConfig?: Prisma.AIConfigurationUncheckedUpdateOneWithoutStoreNestedInput
+  blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutConversationsInput = {
@@ -697,6 +722,7 @@ export type StoreCreateWithoutConversationsInput = {
   orders?: Prisma.OrderCreateNestedManyWithoutStoreInput
   campaigns?: Prisma.CampaignCreateNestedManyWithoutStoreInput
   aiConfig?: Prisma.AIConfigurationCreateNestedOneWithoutStoreInput
+  blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutConversationsInput = {
@@ -716,6 +742,7 @@ export type StoreUncheckedCreateWithoutConversationsInput = {
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutStoreInput
   campaigns?: Prisma.CampaignUncheckedCreateNestedManyWithoutStoreInput
   aiConfig?: Prisma.AIConfigurationUncheckedCreateNestedOneWithoutStoreInput
+  blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutConversationsInput = {
@@ -751,6 +778,7 @@ export type StoreUpdateWithoutConversationsInput = {
   orders?: Prisma.OrderUpdateManyWithoutStoreNestedInput
   campaigns?: Prisma.CampaignUpdateManyWithoutStoreNestedInput
   aiConfig?: Prisma.AIConfigurationUpdateOneWithoutStoreNestedInput
+  blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutConversationsInput = {
@@ -770,6 +798,7 @@ export type StoreUncheckedUpdateWithoutConversationsInput = {
   orders?: Prisma.OrderUncheckedUpdateManyWithoutStoreNestedInput
   campaigns?: Prisma.CampaignUncheckedUpdateManyWithoutStoreNestedInput
   aiConfig?: Prisma.AIConfigurationUncheckedUpdateOneWithoutStoreNestedInput
+  blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutMessagesInput = {
@@ -789,6 +818,7 @@ export type StoreCreateWithoutMessagesInput = {
   orders?: Prisma.OrderCreateNestedManyWithoutStoreInput
   campaigns?: Prisma.CampaignCreateNestedManyWithoutStoreInput
   aiConfig?: Prisma.AIConfigurationCreateNestedOneWithoutStoreInput
+  blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutMessagesInput = {
@@ -808,6 +838,7 @@ export type StoreUncheckedCreateWithoutMessagesInput = {
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutStoreInput
   campaigns?: Prisma.CampaignUncheckedCreateNestedManyWithoutStoreInput
   aiConfig?: Prisma.AIConfigurationUncheckedCreateNestedOneWithoutStoreInput
+  blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutMessagesInput = {
@@ -843,6 +874,7 @@ export type StoreUpdateWithoutMessagesInput = {
   orders?: Prisma.OrderUpdateManyWithoutStoreNestedInput
   campaigns?: Prisma.CampaignUpdateManyWithoutStoreNestedInput
   aiConfig?: Prisma.AIConfigurationUpdateOneWithoutStoreNestedInput
+  blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutMessagesInput = {
@@ -862,6 +894,7 @@ export type StoreUncheckedUpdateWithoutMessagesInput = {
   orders?: Prisma.OrderUncheckedUpdateManyWithoutStoreNestedInput
   campaigns?: Prisma.CampaignUncheckedUpdateManyWithoutStoreNestedInput
   aiConfig?: Prisma.AIConfigurationUncheckedUpdateOneWithoutStoreNestedInput
+  blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutProductsInput = {
@@ -881,6 +914,7 @@ export type StoreCreateWithoutProductsInput = {
   orders?: Prisma.OrderCreateNestedManyWithoutStoreInput
   campaigns?: Prisma.CampaignCreateNestedManyWithoutStoreInput
   aiConfig?: Prisma.AIConfigurationCreateNestedOneWithoutStoreInput
+  blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutProductsInput = {
@@ -900,6 +934,7 @@ export type StoreUncheckedCreateWithoutProductsInput = {
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutStoreInput
   campaigns?: Prisma.CampaignUncheckedCreateNestedManyWithoutStoreInput
   aiConfig?: Prisma.AIConfigurationUncheckedCreateNestedOneWithoutStoreInput
+  blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutProductsInput = {
@@ -935,6 +970,7 @@ export type StoreUpdateWithoutProductsInput = {
   orders?: Prisma.OrderUpdateManyWithoutStoreNestedInput
   campaigns?: Prisma.CampaignUpdateManyWithoutStoreNestedInput
   aiConfig?: Prisma.AIConfigurationUpdateOneWithoutStoreNestedInput
+  blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutProductsInput = {
@@ -954,6 +990,7 @@ export type StoreUncheckedUpdateWithoutProductsInput = {
   orders?: Prisma.OrderUncheckedUpdateManyWithoutStoreNestedInput
   campaigns?: Prisma.CampaignUncheckedUpdateManyWithoutStoreNestedInput
   aiConfig?: Prisma.AIConfigurationUncheckedUpdateOneWithoutStoreNestedInput
+  blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutServicesInput = {
@@ -973,6 +1010,7 @@ export type StoreCreateWithoutServicesInput = {
   orders?: Prisma.OrderCreateNestedManyWithoutStoreInput
   campaigns?: Prisma.CampaignCreateNestedManyWithoutStoreInput
   aiConfig?: Prisma.AIConfigurationCreateNestedOneWithoutStoreInput
+  blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutServicesInput = {
@@ -992,6 +1030,7 @@ export type StoreUncheckedCreateWithoutServicesInput = {
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutStoreInput
   campaigns?: Prisma.CampaignUncheckedCreateNestedManyWithoutStoreInput
   aiConfig?: Prisma.AIConfigurationUncheckedCreateNestedOneWithoutStoreInput
+  blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutServicesInput = {
@@ -1027,6 +1066,7 @@ export type StoreUpdateWithoutServicesInput = {
   orders?: Prisma.OrderUpdateManyWithoutStoreNestedInput
   campaigns?: Prisma.CampaignUpdateManyWithoutStoreNestedInput
   aiConfig?: Prisma.AIConfigurationUpdateOneWithoutStoreNestedInput
+  blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutServicesInput = {
@@ -1046,6 +1086,7 @@ export type StoreUncheckedUpdateWithoutServicesInput = {
   orders?: Prisma.OrderUncheckedUpdateManyWithoutStoreNestedInput
   campaigns?: Prisma.CampaignUncheckedUpdateManyWithoutStoreNestedInput
   aiConfig?: Prisma.AIConfigurationUncheckedUpdateOneWithoutStoreNestedInput
+  blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutOrdersInput = {
@@ -1065,6 +1106,7 @@ export type StoreCreateWithoutOrdersInput = {
   services?: Prisma.ServiceCreateNestedManyWithoutStoreInput
   campaigns?: Prisma.CampaignCreateNestedManyWithoutStoreInput
   aiConfig?: Prisma.AIConfigurationCreateNestedOneWithoutStoreInput
+  blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutOrdersInput = {
@@ -1084,6 +1126,7 @@ export type StoreUncheckedCreateWithoutOrdersInput = {
   services?: Prisma.ServiceUncheckedCreateNestedManyWithoutStoreInput
   campaigns?: Prisma.CampaignUncheckedCreateNestedManyWithoutStoreInput
   aiConfig?: Prisma.AIConfigurationUncheckedCreateNestedOneWithoutStoreInput
+  blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutOrdersInput = {
@@ -1119,6 +1162,7 @@ export type StoreUpdateWithoutOrdersInput = {
   services?: Prisma.ServiceUpdateManyWithoutStoreNestedInput
   campaigns?: Prisma.CampaignUpdateManyWithoutStoreNestedInput
   aiConfig?: Prisma.AIConfigurationUpdateOneWithoutStoreNestedInput
+  blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutOrdersInput = {
@@ -1138,6 +1182,7 @@ export type StoreUncheckedUpdateWithoutOrdersInput = {
   services?: Prisma.ServiceUncheckedUpdateManyWithoutStoreNestedInput
   campaigns?: Prisma.CampaignUncheckedUpdateManyWithoutStoreNestedInput
   aiConfig?: Prisma.AIConfigurationUncheckedUpdateOneWithoutStoreNestedInput
+  blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutAiConfigInput = {
@@ -1157,6 +1202,7 @@ export type StoreCreateWithoutAiConfigInput = {
   services?: Prisma.ServiceCreateNestedManyWithoutStoreInput
   orders?: Prisma.OrderCreateNestedManyWithoutStoreInput
   campaigns?: Prisma.CampaignCreateNestedManyWithoutStoreInput
+  blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutAiConfigInput = {
@@ -1176,6 +1222,7 @@ export type StoreUncheckedCreateWithoutAiConfigInput = {
   services?: Prisma.ServiceUncheckedCreateNestedManyWithoutStoreInput
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutStoreInput
   campaigns?: Prisma.CampaignUncheckedCreateNestedManyWithoutStoreInput
+  blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutAiConfigInput = {
@@ -1211,6 +1258,7 @@ export type StoreUpdateWithoutAiConfigInput = {
   services?: Prisma.ServiceUpdateManyWithoutStoreNestedInput
   orders?: Prisma.OrderUpdateManyWithoutStoreNestedInput
   campaigns?: Prisma.CampaignUpdateManyWithoutStoreNestedInput
+  blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutAiConfigInput = {
@@ -1230,6 +1278,7 @@ export type StoreUncheckedUpdateWithoutAiConfigInput = {
   services?: Prisma.ServiceUncheckedUpdateManyWithoutStoreNestedInput
   orders?: Prisma.OrderUncheckedUpdateManyWithoutStoreNestedInput
   campaigns?: Prisma.CampaignUncheckedUpdateManyWithoutStoreNestedInput
+  blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutCampaignsInput = {
@@ -1249,6 +1298,7 @@ export type StoreCreateWithoutCampaignsInput = {
   services?: Prisma.ServiceCreateNestedManyWithoutStoreInput
   orders?: Prisma.OrderCreateNestedManyWithoutStoreInput
   aiConfig?: Prisma.AIConfigurationCreateNestedOneWithoutStoreInput
+  blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutCampaignsInput = {
@@ -1268,6 +1318,7 @@ export type StoreUncheckedCreateWithoutCampaignsInput = {
   services?: Prisma.ServiceUncheckedCreateNestedManyWithoutStoreInput
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutStoreInput
   aiConfig?: Prisma.AIConfigurationUncheckedCreateNestedOneWithoutStoreInput
+  blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutCampaignsInput = {
@@ -1303,6 +1354,7 @@ export type StoreUpdateWithoutCampaignsInput = {
   services?: Prisma.ServiceUpdateManyWithoutStoreNestedInput
   orders?: Prisma.OrderUpdateManyWithoutStoreNestedInput
   aiConfig?: Prisma.AIConfigurationUpdateOneWithoutStoreNestedInput
+  blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutCampaignsInput = {
@@ -1322,6 +1374,7 @@ export type StoreUncheckedUpdateWithoutCampaignsInput = {
   services?: Prisma.ServiceUncheckedUpdateManyWithoutStoreNestedInput
   orders?: Prisma.OrderUncheckedUpdateManyWithoutStoreNestedInput
   aiConfig?: Prisma.AIConfigurationUncheckedUpdateOneWithoutStoreNestedInput
+  blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutUsersInput = {
@@ -1341,6 +1394,7 @@ export type StoreCreateWithoutUsersInput = {
   orders?: Prisma.OrderCreateNestedManyWithoutStoreInput
   campaigns?: Prisma.CampaignCreateNestedManyWithoutStoreInput
   aiConfig?: Prisma.AIConfigurationCreateNestedOneWithoutStoreInput
+  blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutUsersInput = {
@@ -1360,6 +1414,7 @@ export type StoreUncheckedCreateWithoutUsersInput = {
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutStoreInput
   campaigns?: Prisma.CampaignUncheckedCreateNestedManyWithoutStoreInput
   aiConfig?: Prisma.AIConfigurationUncheckedCreateNestedOneWithoutStoreInput
+  blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutUsersInput = {
@@ -1395,6 +1450,7 @@ export type StoreUpdateWithoutUsersInput = {
   orders?: Prisma.OrderUpdateManyWithoutStoreNestedInput
   campaigns?: Prisma.CampaignUpdateManyWithoutStoreNestedInput
   aiConfig?: Prisma.AIConfigurationUpdateOneWithoutStoreNestedInput
+  blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutUsersInput = {
@@ -1410,6 +1466,103 @@ export type StoreUncheckedUpdateWithoutUsersInput = {
   conversations?: Prisma.ConversationUncheckedUpdateManyWithoutStoreNestedInput
   messages?: Prisma.MessageUncheckedUpdateManyWithoutStoreNestedInput
   products?: Prisma.ProductUncheckedUpdateManyWithoutStoreNestedInput
+  services?: Prisma.ServiceUncheckedUpdateManyWithoutStoreNestedInput
+  orders?: Prisma.OrderUncheckedUpdateManyWithoutStoreNestedInput
+  campaigns?: Prisma.CampaignUncheckedUpdateManyWithoutStoreNestedInput
+  aiConfig?: Prisma.AIConfigurationUncheckedUpdateOneWithoutStoreNestedInput
+  blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
+}
+
+export type StoreCreateWithoutBlockedContactsInput = {
+  storeId?: string
+  name: string
+  phone: string
+  ownerName?: string | null
+  waSessionId?: string | null
+  isActive?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  customers?: Prisma.CustomerCreateNestedManyWithoutStoreInput
+  conversations?: Prisma.ConversationCreateNestedManyWithoutStoreInput
+  messages?: Prisma.MessageCreateNestedManyWithoutStoreInput
+  products?: Prisma.ProductCreateNestedManyWithoutStoreInput
+  users?: Prisma.UserCreateNestedManyWithoutStoreInput
+  services?: Prisma.ServiceCreateNestedManyWithoutStoreInput
+  orders?: Prisma.OrderCreateNestedManyWithoutStoreInput
+  campaigns?: Prisma.CampaignCreateNestedManyWithoutStoreInput
+  aiConfig?: Prisma.AIConfigurationCreateNestedOneWithoutStoreInput
+}
+
+export type StoreUncheckedCreateWithoutBlockedContactsInput = {
+  storeId?: string
+  name: string
+  phone: string
+  ownerName?: string | null
+  waSessionId?: string | null
+  isActive?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  customers?: Prisma.CustomerUncheckedCreateNestedManyWithoutStoreInput
+  conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutStoreInput
+  messages?: Prisma.MessageUncheckedCreateNestedManyWithoutStoreInput
+  products?: Prisma.ProductUncheckedCreateNestedManyWithoutStoreInput
+  users?: Prisma.UserUncheckedCreateNestedManyWithoutStoreInput
+  services?: Prisma.ServiceUncheckedCreateNestedManyWithoutStoreInput
+  orders?: Prisma.OrderUncheckedCreateNestedManyWithoutStoreInput
+  campaigns?: Prisma.CampaignUncheckedCreateNestedManyWithoutStoreInput
+  aiConfig?: Prisma.AIConfigurationUncheckedCreateNestedOneWithoutStoreInput
+}
+
+export type StoreCreateOrConnectWithoutBlockedContactsInput = {
+  where: Prisma.StoreWhereUniqueInput
+  create: Prisma.XOR<Prisma.StoreCreateWithoutBlockedContactsInput, Prisma.StoreUncheckedCreateWithoutBlockedContactsInput>
+}
+
+export type StoreUpsertWithoutBlockedContactsInput = {
+  update: Prisma.XOR<Prisma.StoreUpdateWithoutBlockedContactsInput, Prisma.StoreUncheckedUpdateWithoutBlockedContactsInput>
+  create: Prisma.XOR<Prisma.StoreCreateWithoutBlockedContactsInput, Prisma.StoreUncheckedCreateWithoutBlockedContactsInput>
+  where?: Prisma.StoreWhereInput
+}
+
+export type StoreUpdateToOneWithWhereWithoutBlockedContactsInput = {
+  where?: Prisma.StoreWhereInput
+  data: Prisma.XOR<Prisma.StoreUpdateWithoutBlockedContactsInput, Prisma.StoreUncheckedUpdateWithoutBlockedContactsInput>
+}
+
+export type StoreUpdateWithoutBlockedContactsInput = {
+  storeId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  customers?: Prisma.CustomerUpdateManyWithoutStoreNestedInput
+  conversations?: Prisma.ConversationUpdateManyWithoutStoreNestedInput
+  messages?: Prisma.MessageUpdateManyWithoutStoreNestedInput
+  products?: Prisma.ProductUpdateManyWithoutStoreNestedInput
+  users?: Prisma.UserUpdateManyWithoutStoreNestedInput
+  services?: Prisma.ServiceUpdateManyWithoutStoreNestedInput
+  orders?: Prisma.OrderUpdateManyWithoutStoreNestedInput
+  campaigns?: Prisma.CampaignUpdateManyWithoutStoreNestedInput
+  aiConfig?: Prisma.AIConfigurationUpdateOneWithoutStoreNestedInput
+}
+
+export type StoreUncheckedUpdateWithoutBlockedContactsInput = {
+  storeId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  customers?: Prisma.CustomerUncheckedUpdateManyWithoutStoreNestedInput
+  conversations?: Prisma.ConversationUncheckedUpdateManyWithoutStoreNestedInput
+  messages?: Prisma.MessageUncheckedUpdateManyWithoutStoreNestedInput
+  products?: Prisma.ProductUncheckedUpdateManyWithoutStoreNestedInput
+  users?: Prisma.UserUncheckedUpdateManyWithoutStoreNestedInput
   services?: Prisma.ServiceUncheckedUpdateManyWithoutStoreNestedInput
   orders?: Prisma.OrderUncheckedUpdateManyWithoutStoreNestedInput
   campaigns?: Prisma.CampaignUncheckedUpdateManyWithoutStoreNestedInput
@@ -1430,6 +1583,7 @@ export type StoreCountOutputType = {
   services: number
   orders: number
   campaigns: number
+  blockedContacts: number
 }
 
 export type StoreCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1441,6 +1595,7 @@ export type StoreCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.
   services?: boolean | StoreCountOutputTypeCountServicesArgs
   orders?: boolean | StoreCountOutputTypeCountOrdersArgs
   campaigns?: boolean | StoreCountOutputTypeCountCampaignsArgs
+  blockedContacts?: boolean | StoreCountOutputTypeCountBlockedContactsArgs
 }
 
 /**
@@ -1509,6 +1664,13 @@ export type StoreCountOutputTypeCountCampaignsArgs<ExtArgs extends runtime.Types
   where?: Prisma.CampaignWhereInput
 }
 
+/**
+ * StoreCountOutputType without action
+ */
+export type StoreCountOutputTypeCountBlockedContactsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.BlockedContactWhereInput
+}
+
 
 export type StoreSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   storeId?: boolean
@@ -1528,6 +1690,7 @@ export type StoreSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   orders?: boolean | Prisma.Store$ordersArgs<ExtArgs>
   campaigns?: boolean | Prisma.Store$campaignsArgs<ExtArgs>
   aiConfig?: boolean | Prisma.Store$aiConfigArgs<ExtArgs>
+  blockedContacts?: boolean | Prisma.Store$blockedContactsArgs<ExtArgs>
   _count?: boolean | Prisma.StoreCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["store"]>
 
@@ -1575,6 +1738,7 @@ export type StoreInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   orders?: boolean | Prisma.Store$ordersArgs<ExtArgs>
   campaigns?: boolean | Prisma.Store$campaignsArgs<ExtArgs>
   aiConfig?: boolean | Prisma.Store$aiConfigArgs<ExtArgs>
+  blockedContacts?: boolean | Prisma.Store$blockedContactsArgs<ExtArgs>
   _count?: boolean | Prisma.StoreCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type StoreIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -1592,6 +1756,7 @@ export type $StorePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     orders: Prisma.$OrderPayload<ExtArgs>[]
     campaigns: Prisma.$CampaignPayload<ExtArgs>[]
     aiConfig: Prisma.$AIConfigurationPayload<ExtArgs> | null
+    blockedContacts: Prisma.$BlockedContactPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     storeId: string
@@ -2005,6 +2170,7 @@ export interface Prisma__StoreClient<T, Null = never, ExtArgs extends runtime.Ty
   orders<T extends Prisma.Store$ordersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Store$ordersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$OrderPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   campaigns<T extends Prisma.Store$campaignsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Store$campaignsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CampaignPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   aiConfig<T extends Prisma.Store$aiConfigArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Store$aiConfigArgs<ExtArgs>>): Prisma.Prisma__AIConfigurationClient<runtime.Types.Result.GetResult<Prisma.$AIConfigurationPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  blockedContacts<T extends Prisma.Store$blockedContactsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Store$blockedContactsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BlockedContactPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2638,6 +2804,30 @@ export type Store$aiConfigArgs<ExtArgs extends runtime.Types.Extensions.Internal
    */
   include?: Prisma.AIConfigurationInclude<ExtArgs> | null
   where?: Prisma.AIConfigurationWhereInput
+}
+
+/**
+ * Store.blockedContacts
+ */
+export type Store$blockedContactsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the BlockedContact
+   */
+  select?: Prisma.BlockedContactSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the BlockedContact
+   */
+  omit?: Prisma.BlockedContactOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.BlockedContactInclude<ExtArgs> | null
+  where?: Prisma.BlockedContactWhereInput
+  orderBy?: Prisma.BlockedContactOrderByWithRelationInput | Prisma.BlockedContactOrderByWithRelationInput[]
+  cursor?: Prisma.BlockedContactWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.BlockedContactScalarFieldEnum | Prisma.BlockedContactScalarFieldEnum[]
 }
 
 /**

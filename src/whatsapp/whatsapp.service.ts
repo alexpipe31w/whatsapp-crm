@@ -8,11 +8,10 @@ import { ConversationsService } from '../conversations/conversations.service';
 import { MessagesService } from '../messages/messages.service';
 import { CustomersService } from '../customers/customers.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { BlockedService } from '../blocked/blocked.service';
 
 const ASK_NAME_MARKER = '__ASK_NAME__';
 const ASK_CITY_MARKER = '__ASK_CITY__';
-
-// Tipos de mensaje que requieren atención humana
 const MEDIA_TYPES = ['imageMessage', 'audioMessage', 'videoMessage', 'documentMessage', 'stickerMessage'];
 
 @Injectable()
@@ -27,6 +26,7 @@ export class WhatsappService implements OnModuleInit {
     @Inject(forwardRef(() => MessagesService))
     private messagesService: MessagesService,
     private customersService: CustomersService,
+    private blockedService: BlockedService,
   ) {}
 
   async onModuleInit() {
@@ -87,8 +87,7 @@ export class WhatsappService implements OnModuleInit {
 
       if (connection === 'close') {
         const shouldReconnect =
-          (lastDisconnect?.error as Boom)?.output?.statusCode !==
-          DisconnectReason.loggedOut;
+          (lastDisconnect?.error as Boom)?.output?.statusCode !== DisconnectReason.loggedOut;
 
         if (shouldReconnect) {
           this.logger.log(`Reconectando store: ${storeId}`);
@@ -119,7 +118,13 @@ export class WhatsappService implements OnModuleInit {
 
         const phone = `+${phoneRaw}`;
 
-        // ── Detectar tipo de mensaje ──────────────────────────────────────
+        // ── OPCIÓN 1: Lista negra ─────────────────────────────────────────
+        const blocked = await this.blockedService.isBlocked(storeId, phone);
+        if (blocked) {
+          this.logger.log(`🚫 Número bloqueado ignorado: ${phone}`);
+          continue;
+        }
+
         const messageType = Object.keys(msg.message)[0];
         const isMedia = MEDIA_TYPES.includes(messageType);
 
@@ -128,7 +133,6 @@ export class WhatsappService implements OnModuleInit {
           msg.message?.extendedTextMessage?.text ||
           '';
 
-        // Si es media o no tiene texto, manejarlo aparte
         if (isMedia || !content) {
           try {
             await this.handleMediaMessage(storeId, phone, messageType, sock);
@@ -151,10 +155,6 @@ export class WhatsappService implements OnModuleInit {
     return sock;
   }
 
-  /**
-   * Maneja mensajes de audio, imagen, video, documento, sticker.
-   * Avisa al cliente y transfiere al asesor humano.
-   */
   private async handleMediaMessage(
     storeId: string,
     phone: string,
@@ -169,11 +169,9 @@ export class WhatsappService implements OnModuleInit {
       storeId,
     );
 
-    // Si ya está en modo humano o cerrada, no hacer nada
     if (conversation.status === 'human' || conversation.status === 'closed') return;
 
     let reply: string;
-
     if (messageType === 'audioMessage') {
       reply = `¡Hola! 😊 Por el momento no puedo escuchar audios, pero con gusto te atiendo. ¿Puedes contarme en texto qué necesitas? Si prefieres hablar con un asesor, dímelo y te conecto ahora mismo 🍯`;
     } else if (messageType === 'imageMessage') {
@@ -182,13 +180,11 @@ export class WhatsappService implements OnModuleInit {
       reply = `¡Hola! 😊 Recibí tu archivo pero no puedo procesarlo aquí. ¿Te conecto con un asesor para ayudarte mejor?`;
     }
 
-    // Transferir a pending_human
     await this.prisma.conversation.update({
       where: { conversationId: conversation.conversationId },
       data: { status: 'pending_human' },
     });
 
-    // Guardar mensaje entrante como "[media]"
     await this.messagesService.create({
       conversationId: conversation.conversationId,
       storeId,
@@ -198,7 +194,6 @@ export class WhatsappService implements OnModuleInit {
       isAiResponse: false,
     });
 
-    // Enviar respuesta y guardarla
     await sock.sendMessage(jid, { text: reply });
     await this.messagesService.create({
       conversationId: conversation.conversationId,
@@ -238,13 +233,20 @@ export class WhatsappService implements OnModuleInit {
       return;
     }
 
+    // ── OPCIÓN 2: Palabra clave !stop (enviada por el cliente) ────────────
+    // Nota: esto es para que el propio cliente pueda silenciar el bot
+    // El asesor lo hace desde el panel con takeoverConversation
+    if (content.trim().toLowerCase() === '!stop') {
+      await this.prisma.conversation.update({
+        where: { conversationId: conversation.conversationId },
+        data: { status: 'human' },
+      });
+      this.logger.log(`🛑 !stop recibido de ${phone} — bot silenciado permanentemente`);
+      return;
+    }
+
     const onboardingHandled = await this.handleOnboarding(
-      customer,
-      conversation,
-      content,
-      sock,
-      phone,
-      storeId,
+      customer, conversation, content, sock, phone, storeId,
     );
     if (onboardingHandled) return;
 
@@ -255,9 +257,7 @@ export class WhatsappService implements OnModuleInit {
       'no quiero el bot', 'ayuda humana',
     ];
 
-    const needsHuman = humanKeywords.some((kw) =>
-      content.toLowerCase().includes(kw),
-    );
+    const needsHuman = humanKeywords.some((kw) => content.toLowerCase().includes(kw));
 
     if (needsHuman) {
       await this.prisma.conversation.update({
@@ -318,19 +318,13 @@ export class WhatsappService implements OnModuleInit {
 
         const visibleMsg = `¡Gracias, ${name}! 😊 ¿De qué ciudad nos escribes? 🏙️`;
         await sock.sendMessage(jid, { text: visibleMsg });
-        await this.saveOnboardingMessage(
-          conversation.conversationId, storeId,
-          `${visibleMsg} ${ASK_CITY_MARKER}`,
-        );
+        await this.saveOnboardingMessage(conversation.conversationId, storeId, `${visibleMsg} ${ASK_CITY_MARKER}`);
         return true;
       }
 
       const visibleMsg = `¡Hola! Bienvenido/a 👋 Soy el asistente virtual. Para atenderte mejor, ¿cuál es tu nombre?`;
       await sock.sendMessage(jid, { text: visibleMsg });
-      await this.saveOnboardingMessage(
-        conversation.conversationId, storeId,
-        `${visibleMsg} ${ASK_NAME_MARKER}`,
-      );
+      await this.saveOnboardingMessage(conversation.conversationId, storeId, `${visibleMsg} ${ASK_NAME_MARKER}`);
       return true;
     }
 
@@ -345,10 +339,7 @@ export class WhatsappService implements OnModuleInit {
       if (!lastBotContent) {
         const visibleMsg = `¡Hola de nuevo, ${customer.name}! 👋 ¿De qué ciudad nos escribes? 🏙️`;
         await sock.sendMessage(jid, { text: visibleMsg });
-        await this.saveOnboardingMessage(
-          conversation.conversationId, storeId,
-          `${visibleMsg} ${ASK_CITY_MARKER}`,
-        );
+        await this.saveOnboardingMessage(conversation.conversationId, storeId, `${visibleMsg} ${ASK_CITY_MARKER}`);
         return true;
       }
     }
@@ -356,11 +347,7 @@ export class WhatsappService implements OnModuleInit {
     return false;
   }
 
-  private async saveOnboardingMessage(
-    conversationId: string,
-    storeId: string,
-    contentWithMarker: string,
-  ) {
+  private async saveOnboardingMessage(conversationId: string, storeId: string, contentWithMarker: string) {
     await this.messagesService.create({
       conversationId,
       storeId,
