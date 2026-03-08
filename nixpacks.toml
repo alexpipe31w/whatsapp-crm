@@ -3,3 +3,9 @@ nixPkgs = ["nodejs_20", "npm-10_x", "openssl"]
 
 [phases.install]
 cmds = ["npm install --legacy-peer-deps"]
+
+[phases.build]
+cmds = ["npm run build"]
+
+[start]
+cmd = "npx prisma generate && npm run start:prod"
