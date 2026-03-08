@@ -28,7 +28,7 @@ export class AuthService {
       },
     });
 
-    return this.signToken(user.userId, user.email);
+    return this.signToken(user.userId, user.email, user.role);
   }
 
   async login(dto: LoginDto) {
@@ -40,22 +40,22 @@ export class AuthService {
     const valid = await bcrypt.compare(dto.password, user.password);
     if (!valid) throw new UnauthorizedException('Credenciales inválidas');
 
-    return this.signToken(user.userId, user.email);
+    return this.signToken(user.userId, user.email, user.role);
   }
 
-async getUsers() {
-  return this.prisma.user.findMany({
-    select: {
-      userId: true,
-      name: true,
-      email: true,
-      role: true,      // ← agregar esta línea
-      isActive: true,
-      createdAt: true,
-    },
-    orderBy: { createdAt: 'desc' },
-  });
-}
+  async getUsers() {
+    return this.prisma.user.findMany({
+      select: {
+        userId: true,
+        name: true,
+        email: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
 
   async deleteUser(userId: string) {
     const user = await this.prisma.user.findUnique({ where: { userId } });
@@ -64,12 +64,13 @@ async getUsers() {
     return { message: 'Usuario eliminado correctamente' };
   }
 
-  private signToken(userId: string, email: string) {
+  private signToken(userId: string, email: string, role: string) {
     const payload = { sub: userId, email };
     return {
       access_token: this.jwt.sign(payload),
       userId,
       email,
+      role,
     };
   }
 }
