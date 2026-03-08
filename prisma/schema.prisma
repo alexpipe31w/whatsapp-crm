@@ -23,6 +23,7 @@ model Store {
   conversations Conversation[]
   messages      Message[]
   products      Product[]
+  users         User[]
   services      Service[]
   orders        Order[]
   campaigns     Campaign[]
@@ -206,6 +207,9 @@ model User {
   role      String   @default("admin")
   isActive  Boolean  @default(true) @map("is_active")
   createdAt DateTime @default(now()) @map("created_at")
+  storeId   String?  @map("store_id")
+
+  store Store? @relation(fields: [storeId], references: [storeId])
 
   @@map("users")
 }
