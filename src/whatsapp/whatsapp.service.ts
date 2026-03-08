@@ -95,10 +95,22 @@ export class WhatsappService implements OnModuleInit {
         } else {
           this.logger.warn(`Store ${storeId} desconectada (logged out)`);
           this.sockets.delete(storeId);
+          this.sockets.delete(`${storeId}_qr`);
           await this.prisma.store.update({
             where: { storeId },
             data: { waSessionId: null },
           });
+          // Borrar archivos de sesión para forzar QR nuevo en próxima conexión
+          try {
+            const fs = await import('fs');
+            const sessionPath = join(process.cwd(), 'sessions', storeId);
+            if (fs.existsSync(sessionPath)) {
+              fs.rmSync(sessionPath, { recursive: true, force: true });
+              this.logger.log(`🗑️ Sesión borrada para store: ${storeId}`);
+            }
+          } catch (e) {
+            this.logger.warn(`No se pudo borrar sesión: ${e.message}`);
+          }
         }
       }
     });
