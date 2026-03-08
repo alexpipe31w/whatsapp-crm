@@ -6,8 +6,8 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.enableCors({
-    origin: ['http://localhost:3001', 'http://localhost:3000'],
-    credentials: true,
+    origin: '*',
+    credentials: false,
   });
 
   app.useGlobalPipes(new ValidationPipe({
@@ -17,6 +17,12 @@ async function bootstrap() {
   }));
 
   app.setGlobalPrefix('api');
+
+  // Endpoint de health FUERA del prefijo /api
+  const httpAdapter = app.getHttpAdapter();
+  httpAdapter.get('/health', (_req: any, res: any) => {
+    res.status(200).json({ status: 'ok' });
+  });
 
   await app.listen(process.env.PORT ?? 3000);
 }
