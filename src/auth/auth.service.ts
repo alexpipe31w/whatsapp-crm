@@ -25,10 +25,11 @@ export class AuthService {
         email: dto.email,
         password: hashed,
         role: dto.role || 'admin',
+        storeId: dto.storeId,
       },
     });
 
-    return this.signToken(user.userId, user.email, user.role);
+    return this.signToken(user.userId, user.email, user.role, user.storeId);
   }
 
   async login(dto: LoginDto) {
@@ -40,11 +41,12 @@ export class AuthService {
     const valid = await bcrypt.compare(dto.password, user.password);
     if (!valid) throw new UnauthorizedException('Credenciales inválidas');
 
-    return this.signToken(user.userId, user.email, user.role);
+    return this.signToken(user.userId, user.email, user.role, user.storeId);
   }
 
-  async getUsers() {
+  async getUsers(storeId: string) {
     return this.prisma.user.findMany({
+      where: { storeId },
       select: {
         userId: true,
         name: true,
@@ -64,13 +66,14 @@ export class AuthService {
     return { message: 'Usuario eliminado correctamente' };
   }
 
-  private signToken(userId: string, email: string, role: string) {
+  private signToken(userId: string, email: string, role: string, storeId: string | null) {
     const payload = { sub: userId, email };
     return {
       access_token: this.jwt.sign(payload),
       userId,
       email,
       role,
+      storeId,
     };
   }
 }

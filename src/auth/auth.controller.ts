@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Delete, Body, Param, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Delete, Body, Param, HttpCode, HttpStatus, UseGuards, Request } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -23,8 +23,8 @@ export class AuthController {
   @Get('users')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin', 'superadmin')
-  getUsers() {
-    return this.authService.getUsers();
+  getUsers(@Request() req: any) {
+    return this.authService.getUsers(req.user.storeId);
   }
 
   @Delete('users/:id')
