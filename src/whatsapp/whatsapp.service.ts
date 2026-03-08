@@ -1,10 +1,4 @@
 import { Injectable, Logger, OnModuleInit, Inject, forwardRef } from '@nestjs/common';
-import makeWASocket, {
-  DisconnectReason,
-  useMultiFileAuthState,
-  fetchLatestBaileysVersion,
-  makeCacheableSignalKeyStore,
-} from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
 import * as qrcode from 'qrcode-terminal';
 import { join } from 'path';
@@ -45,6 +39,15 @@ export class WhatsappService implements OnModuleInit {
   }
 
   async connectStore(storeId: string) {
+    // Dynamic import para compatibilidad ESM con CommonJS
+    const {
+      default: makeWASocket,
+      DisconnectReason,
+      useMultiFileAuthState,
+      fetchLatestBaileysVersion,
+      makeCacheableSignalKeyStore,
+    } = await import('@whiskeysockets/baileys');
+
     const authPath = join(process.cwd(), 'sessions', storeId);
     const baileysLogger = P({ level: 'silent' });
 
