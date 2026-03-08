@@ -24,6 +24,7 @@ export class AuthService {
         name: dto.name,
         email: dto.email,
         password: hashed,
+        role: dto.role || 'admin',
       },
     });
 
