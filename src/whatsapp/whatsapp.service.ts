@@ -9,10 +9,11 @@ import { MessagesService } from '../messages/messages.service';
 import { CustomersService } from '../customers/customers.service';
 import { PrismaService } from '../prisma/prisma.service';
 
-// Marcadores internos — se guardan en BD para rastrear estado del onboarding
-// NO se envían al cliente (se separan antes de enviar por WhatsApp)
 const ASK_NAME_MARKER = '__ASK_NAME__';
 const ASK_CITY_MARKER = '__ASK_CITY__';
+
+// Tipos de mensaje que requieren atención humana
+const MEDIA_TYPES = ['imageMessage', 'audioMessage', 'videoMessage', 'documentMessage', 'stickerMessage'];
 
 @Injectable()
 export class WhatsappService implements OnModuleInit {
@@ -39,7 +40,6 @@ export class WhatsappService implements OnModuleInit {
   }
 
   async connectStore(storeId: string) {
-    // Dynamic import para compatibilidad ESM con CommonJS
     const {
       default: makeWASocket,
       DisconnectReason,
@@ -118,12 +118,25 @@ export class WhatsappService implements OnModuleInit {
         if (!phoneRaw) continue;
 
         const phone = `+${phoneRaw}`;
+
+        // ── Detectar tipo de mensaje ──────────────────────────────────────
+        const messageType = Object.keys(msg.message)[0];
+        const isMedia = MEDIA_TYPES.includes(messageType);
+
         const content =
           msg.message?.conversation ||
           msg.message?.extendedTextMessage?.text ||
           '';
 
-        if (!content) continue;
+        // Si es media o no tiene texto, manejarlo aparte
+        if (isMedia || !content) {
+          try {
+            await this.handleMediaMessage(storeId, phone, messageType, sock);
+          } catch (err) {
+            this.logger.error(`Error procesando media: ${err.message}`);
+          }
+          continue;
+        }
 
         this.logger.log(`📩 Mensaje de ${phone}: ${content}`);
 
@@ -138,20 +151,79 @@ export class WhatsappService implements OnModuleInit {
     return sock;
   }
 
-  private async handleIncomingMessage(
+  /**
+   * Maneja mensajes de audio, imagen, video, documento, sticker.
+   * Avisa al cliente y transfiere al asesor humano.
+   */
+  private async handleMediaMessage(
     storeId: string,
     phone: string,
-    content: string,
+    messageType: string,
     sock: any,
   ) {
-    // Cargar customer fresco cada vez para tener name/city actualizados
+    const jid = `${phone.replace('+', '')}@s.whatsapp.net`;
+
     const customer = await this.customersService.findOrCreate({ storeId, phone });
     const conversation = await this.conversationsService.findOrCreate(
       customer.customerId,
       storeId,
     );
 
-    // Guardar mensaje entrante del cliente
+    // Si ya está en modo humano o cerrada, no hacer nada
+    if (conversation.status === 'human' || conversation.status === 'closed') return;
+
+    let reply: string;
+
+    if (messageType === 'audioMessage') {
+      reply = `¡Hola! 😊 Por el momento no puedo escuchar audios, pero con gusto te atiendo. ¿Puedes contarme en texto qué necesitas? Si prefieres hablar con un asesor, dímelo y te conecto ahora mismo 🍯`;
+    } else if (messageType === 'imageMessage') {
+      reply = `¡Gracias por escribirnos! 😊 No puedo ver imágenes por este canal automático, pero un asesor puede ayudarte de inmediato. ¿Te conecto con él ahora?`;
+    } else {
+      reply = `¡Hola! 😊 Recibí tu archivo pero no puedo procesarlo aquí. ¿Te conecto con un asesor para ayudarte mejor?`;
+    }
+
+    // Transferir a pending_human
+    await this.prisma.conversation.update({
+      where: { conversationId: conversation.conversationId },
+      data: { status: 'pending_human' },
+    });
+
+    // Guardar mensaje entrante como "[media]"
+    await this.messagesService.create({
+      conversationId: conversation.conversationId,
+      storeId,
+      content: `[${messageType.replace('Message', '')}]`,
+      type: messageType.replace('Message', ''),
+      sender: 'customer',
+      isAiResponse: false,
+    });
+
+    // Enviar respuesta y guardarla
+    await sock.sendMessage(jid, { text: reply });
+    await this.messagesService.create({
+      conversationId: conversation.conversationId,
+      storeId,
+      content: reply,
+      type: 'text',
+      sender: 'store',
+      isAiResponse: true,
+    });
+
+    this.logger.log(`🎙️ Media de ${phone} (${messageType}) → transferido a asesor`);
+  }
+
+  private async handleIncomingMessage(
+    storeId: string,
+    phone: string,
+    content: string,
+    sock: any,
+  ) {
+    const customer = await this.customersService.findOrCreate({ storeId, phone });
+    const conversation = await this.conversationsService.findOrCreate(
+      customer.customerId,
+      storeId,
+    );
+
     await this.messagesService.create({
       conversationId: conversation.conversationId,
       storeId,
@@ -161,13 +233,11 @@ export class WhatsappService implements OnModuleInit {
       isAiResponse: false,
     });
 
-    // Modo humano o cerrada → bot silenciado
     if (conversation.status === 'human' || conversation.status === 'closed') {
       this.logger.log(`👤 Conversación ${conversation.conversationId} en modo humano — bot silenciado`);
       return;
     }
 
-    // ── ONBOARDING: recopilar nombre y ciudad antes de pasar a IA ──
     const onboardingHandled = await this.handleOnboarding(
       customer,
       conversation,
@@ -178,7 +248,6 @@ export class WhatsappService implements OnModuleInit {
     );
     if (onboardingHandled) return;
 
-    // ── DETECCIÓN DE NECESIDAD DE HUMANO ──
     const humanKeywords = [
       'hablar con una persona', 'hablar con alguien',
       'quiero pagar', 'voy a pagar', 'hacer el pago',
@@ -203,7 +272,6 @@ export class WhatsappService implements OnModuleInit {
       return;
     }
 
-    // ── RESPUESTA NORMAL DE IA ──
     const aiReply = await this.aiService.generateReply(
       storeId,
       content,
@@ -226,12 +294,6 @@ export class WhatsappService implements OnModuleInit {
     this.logger.log(`🤖 Respuesta IA enviada a ${phone}`);
   }
 
-  /**
-   * Máquina de estados del onboarding.
-   * Estado se determina leyendo: customer.name, customer.city + último mensaje del bot.
-   * Los marcadores (__ASK_NAME__, __ASK_CITY__) se guardan en BD pero NO se envían al cliente.
-   * Retorna true si el onboarding manejó el mensaje (no pasar a IA).
-   */
   private async handleOnboarding(
     customer: any,
     conversation: any,
@@ -242,22 +304,18 @@ export class WhatsappService implements OnModuleInit {
   ): Promise<boolean> {
     const jid = `${phone.replace('+', '')}@s.whatsapp.net`;
 
-    // Último mensaje del bot para saber qué estábamos esperando
     const lastBotMsg = await this.prisma.message.findFirst({
       where: { conversationId: conversation.conversationId, sender: 'store' },
       orderBy: { createdAt: 'desc' },
     });
     const lastBotContent = lastBotMsg?.content ?? '';
 
-    // ── PASO 1: sin nombre ──
     if (!customer.name) {
       if (lastBotContent.includes(ASK_NAME_MARKER)) {
-        // Este mensaje ES el nombre del cliente
         const name = content.trim();
         await this.customersService.update(customer.customerId, { name });
         this.logger.log(`✅ Nombre guardado: ${name} (${phone})`);
 
-        // Pedir ciudad
         const visibleMsg = `¡Gracias, ${name}! 😊 ¿De qué ciudad nos escribes? 🏙️`;
         await sock.sendMessage(jid, { text: visibleMsg });
         await this.saveOnboardingMessage(
@@ -267,7 +325,6 @@ export class WhatsappService implements OnModuleInit {
         return true;
       }
 
-      // Primera vez → saludar y pedir nombre
       const visibleMsg = `¡Hola! Bienvenido/a 👋 Soy el asistente virtual. Para atenderte mejor, ¿cuál es tu nombre?`;
       await sock.sendMessage(jid, { text: visibleMsg });
       await this.saveOnboardingMessage(
@@ -277,18 +334,14 @@ export class WhatsappService implements OnModuleInit {
       return true;
     }
 
-    // ── PASO 2: tiene nombre pero no ciudad ──
     if (!customer.city) {
       if (lastBotContent.includes(ASK_CITY_MARKER)) {
-        // Este mensaje ES la ciudad del cliente
         const city = content.trim();
         await this.customersService.update(customer.customerId, { city });
         this.logger.log(`✅ Ciudad guardada: ${city} (${phone})`);
-        // Dejar que la IA responda normalmente con el contexto completo
         return false;
       }
 
-      // Cliente registrado antes de esta feature → pedirle ciudad en nueva conversación
       if (!lastBotContent) {
         const visibleMsg = `¡Hola de nuevo, ${customer.name}! 👋 ¿De qué ciudad nos escribes? 🏙️`;
         await sock.sendMessage(jid, { text: visibleMsg });
@@ -300,11 +353,9 @@ export class WhatsappService implements OnModuleInit {
       }
     }
 
-    // Cliente con nombre y ciudad → flujo normal de IA
     return false;
   }
 
-  /** Guarda mensaje de onboarding con marcador interno en BD */
   private async saveOnboardingMessage(
     conversationId: string,
     storeId: string,
