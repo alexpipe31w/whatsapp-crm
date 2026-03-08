@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
@@ -40,6 +40,27 @@ export class AuthService {
     if (!valid) throw new UnauthorizedException('Credenciales inválidas');
 
     return this.signToken(user.userId, user.email);
+  }
+
+async getUsers() {
+  return this.prisma.user.findMany({
+    select: {
+      userId: true,
+      name: true,
+      email: true,
+      role: true,      // ← agregar esta línea
+      isActive: true,
+      createdAt: true,
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+}
+
+  async deleteUser(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { userId } });
+    if (!user) throw new NotFoundException('Usuario no encontrado');
+    await this.prisma.user.delete({ where: { userId } });
+    return { message: 'Usuario eliminado correctamente' };
   }
 
   private signToken(userId: string, email: string) {
