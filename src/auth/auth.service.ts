@@ -19,13 +19,28 @@ export class AuthService {
     if (exists) throw new ConflictException('Email ya registrado');
 
     const hashed = await bcrypt.hash(dto.password, 10);
+
+    // Si vienen datos de tienda, crear una tienda nueva para este usuario
+    let storeId: string | null = null;
+
+    if (dto.storeName && dto.storePhone) {
+      const store = await this.prisma.store.create({
+        data: {
+          name: dto.storeName,
+          phone: dto.storePhone,
+          ownerName: dto.name,
+        },
+      });
+      storeId = store.storeId;
+    }
+
     const user = await this.prisma.user.create({
       data: {
         name: dto.name,
         email: dto.email,
         password: hashed,
         role: dto.role || 'admin',
-        storeId: dto.storeId,
+        storeId,
       },
     });
 
@@ -44,9 +59,8 @@ export class AuthService {
     return this.signToken(user.userId, user.email, user.role, user.storeId);
   }
 
-  async getUsers(storeId: string) {
+  async getUsers() {
     return this.prisma.user.findMany({
-      where: { storeId },
       select: {
         userId: true,
         name: true,
@@ -54,6 +68,9 @@ export class AuthService {
         role: true,
         isActive: true,
         createdAt: true,
+        store: {
+          select: { name: true, phone: true },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });

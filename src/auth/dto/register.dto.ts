@@ -17,5 +17,9 @@ export class RegisterDto {
 
   @IsString()
   @IsOptional()
-  storeId?: string;
+  storeName?: string;
+
+  @IsString()
+  @IsOptional()
+  storePhone?: string;
 }
