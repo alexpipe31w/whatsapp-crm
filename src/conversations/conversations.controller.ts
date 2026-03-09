@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards, Request } from '@nestjs/common';
 import { ConversationsService } from './conversations.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
@@ -13,37 +13,33 @@ export class ConversationsController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.conversationsService.findOne(id);
+  findOne(@Param('id') id: string, @Request() req: any) {
+    return this.conversationsService.findOne(id, req.user.storeId);
   }
 
   @Post()
-  create(@Body() body: { customerId: string; storeId: string }) {
-    return this.conversationsService.findOrCreate(body.customerId, body.storeId);
+  create(@Body() body: { customerId: string }, @Request() req: any) {
+    // storeId viene del JWT, no del body — el cliente no puede falsificarlo
+    return this.conversationsService.findOrCreate(body.customerId, req.user.storeId);
   }
 
   @Patch(':id/takeover')
-  takeover(@Param('id') id: string) {
-    return this.conversationsService.takeover(id);
+  takeover(@Param('id') id: string, @Request() req: any) {
+    return this.conversationsService.takeover(id, req.user.storeId);
   }
 
   @Patch(':id/release')
-  release(@Param('id') id: string) {
-    return this.conversationsService.release(id);
+  release(@Param('id') id: string, @Request() req: any) {
+    return this.conversationsService.release(id, req.user.storeId);
   }
 
   @Patch(':id/close')
-  close(@Param('id') id: string) {
-    return this.conversationsService.close(id);
+  close(@Param('id') id: string, @Request() req: any) {
+    return this.conversationsService.close(id, req.user.storeId);
   }
 
-  /**
-   * Elimina la conversación y sus mensajes.
-   * Solo permitido cuando status = 'closed'.
-   * NO elimina el customer ni sus pedidos.
-   */
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.conversationsService.remove(id);
+  remove(@Param('id') id: string, @Request() req: any) {
+    return this.conversationsService.remove(id, req.user.storeId);
   }
 }

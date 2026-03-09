@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
 import { ServicesService } from './services.service';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
@@ -10,8 +10,8 @@ export class ServicesController {
   constructor(private servicesService: ServicesService) {}
 
   @Post()
-  create(@Body() dto: CreateServiceDto) {
-    return this.servicesService.create(dto);
+  create(@Body() dto: CreateServiceDto, @Request() req: any) {
+    return this.servicesService.create({ ...dto, storeId: req.user.storeId });
   }
 
   @Get('store/:storeId')
@@ -20,17 +20,17 @@ export class ServicesController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.servicesService.findOne(id);
+  findOne(@Param('id') id: string, @Request() req: any) {
+    return this.servicesService.findOne(id, req.user.storeId);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateServiceDto) {
-    return this.servicesService.update(id, dto);
+  update(@Param('id') id: string, @Body() dto: UpdateServiceDto, @Request() req: any) {
+    return this.servicesService.update(id, dto, req.user.storeId);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.servicesService.remove(id);
+  remove(@Param('id') id: string, @Request() req: any) {
+    return this.servicesService.remove(id, req.user.storeId);
   }
 }

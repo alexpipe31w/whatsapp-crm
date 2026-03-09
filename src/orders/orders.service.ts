@@ -1,7 +1,17 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
+
+// Transiciones de estado válidas
+const VALID_TRANSITIONS: Record<string, string[]> = {
+  pending:   ['confirmed', 'cancelled'],
+  confirmed: ['preparing', 'cancelled'],
+  preparing: ['ready', 'cancelled'],
+  ready:     ['delivered', 'cancelled'],
+  delivered: [],   // estado final
+  cancelled: [],   // estado final
+};
 
 @Injectable()
 export class OrdersService {
@@ -11,9 +21,16 @@ export class OrdersService {
     if (!dto.items || dto.items.length === 0)
       throw new BadRequestException('El pedido debe tener al menos un item');
 
+    // Verificar que el cliente pertenece a la misma tienda
+    const customer = await this.prisma.customer.findUnique({
+      where: { customerId: dto.customerId },
+    });
+    if (!customer) throw new NotFoundException('Cliente no encontrado');
+    if (customer.storeId !== dto.storeId)
+      throw new ForbiddenException('El cliente no pertenece a esta tienda');
+
     const total = dto.items.reduce(
-      (sum, item) => sum + item.unitPrice * item.quantity,
-      0,
+      (sum, item) => sum + item.unitPrice * item.quantity, 0,
     );
 
     return this.prisma.order.create({
@@ -53,7 +70,7 @@ export class OrdersService {
     });
   }
 
-  async findOne(orderId: string) {
+  async findOne(orderId: string, storeId?: string) {
     const order = await this.prisma.order.findUnique({
       where: { orderId },
       include: {
@@ -62,11 +79,25 @@ export class OrdersService {
       },
     });
     if (!order) throw new NotFoundException('Pedido no encontrado');
+    if (storeId && order.storeId !== storeId)
+      throw new ForbiddenException('No tienes acceso a este pedido');
     return order;
   }
 
-  async updateStatus(orderId: string, dto: UpdateOrderDto) {
-    await this.findOne(orderId);
+  async updateStatus(orderId: string, dto: UpdateOrderDto, storeId?: string) {
+    const order = await this.findOne(orderId, storeId);
+
+    // Validar transición de estado si se está cambiando
+    if (dto.status && dto.status !== order.status) {
+      const allowed = VALID_TRANSITIONS[order.status] ?? [];
+      if (!allowed.includes(dto.status)) {
+        throw new BadRequestException(
+          `No se puede cambiar de "${order.status}" a "${dto.status}". ` +
+          `Transiciones válidas: ${allowed.length ? allowed.join(', ') : 'ninguna (estado final)'}`,
+        );
+      }
+    }
+
     return this.prisma.order.update({
       where: { orderId },
       data: dto,
@@ -77,10 +108,6 @@ export class OrdersService {
     });
   }
 
-  /**
-   * Resumen legible para la IA — se llama cuando un cliente pregunta por su pedido.
-   * Retorna texto plano listo para incluir en el system prompt o en una respuesta.
-   */
   async getSummaryForAI(orderId: string): Promise<string> {
     const order = await this.findOne(orderId);
     const statusMap: Record<string, string> = {
@@ -103,7 +130,7 @@ export class OrdersService {
       `Tipo: ${order.type}`,
       `Items:\n${items}`,
       `Total: $${order.total}`,
-      order.estimatedTime ? `Tiempo estimado: ${order.estimatedTime} minutos` : null,
+      order.estimatedTime ? `Tiempo estimado: ${order.estimatedTime} min` : null,
       order.deliveryAddress ? `Dirección: ${order.deliveryAddress}` : null,
       order.notes ? `Notas: ${order.notes}` : null,
       `Fecha: ${order.createdAt.toLocaleString('es-CO')}`,

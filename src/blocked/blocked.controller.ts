@@ -18,7 +18,7 @@ export class BlockedController {
   }
 
   @Delete(':id')
-  unblock(@Param('id') id: string) {
-    return this.blockedService.unblock(id);
+  unblock(@Param('id') id: string, @Request() req: any) {
+    return this.blockedService.unblock(id, req.user.storeId);
   }
 }

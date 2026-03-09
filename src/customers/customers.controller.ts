@@ -1,27 +1,23 @@
-import { Controller, Get, Post, Patch, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Body, UseGuards, Request } from '@nestjs/common';
 import { CustomersService } from './customers.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { IsString, IsOptional } from 'class-validator';
 
 class UpdateCustomerDto {
-  @IsString()
-  @IsOptional()
-  name?: string;
-
-  @IsString()
-  @IsOptional()
-  city?: string;
+  @IsString() @IsOptional() name?: string;
+  @IsString() @IsOptional() city?: string;
 }
 
 @UseGuards(JwtAuthGuard)
-@Controller('customers') // ✅ FIX: baseURL ya tiene /api — no duplicar
+@Controller('customers')
 export class CustomersController {
   constructor(private readonly customersService: CustomersService) {}
 
   @Post()
-  create(@Body() dto: CreateCustomerDto) {
-    return this.customersService.findOrCreate(dto);
+  create(@Body() dto: CreateCustomerDto, @Request() req: any) {
+    // storeId siempre del JWT, nunca del body
+    return this.customersService.findOrCreate({ ...dto, storeId: req.user.storeId });
   }
 
   @Get('store/:storeId')
@@ -30,13 +26,12 @@ export class CustomersController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.customersService.findOne(id);
+  findOne(@Param('id') id: string, @Request() req: any) {
+    return this.customersService.findOne(id, req.user.storeId);
   }
 
-  // ✅ Edición manual de nombre y ciudad desde el frontend
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateCustomerDto) {
-    return this.customersService.update(id, dto);
+  update(@Param('id') id: string, @Body() dto: UpdateCustomerDto, @Request() req: any) {
+    return this.customersService.update(id, dto, req.user.storeId);
   }
 }

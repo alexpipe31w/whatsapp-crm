@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -10,7 +10,7 @@ export class ProductsService {
   async create(dto: CreateProductDto) {
     return this.prisma.product.create({
       data: {
-        storeId:     dto.storeId,
+        storeId:     dto.storeId!, // siempre inyectado por el controller desde JWT
         sku:         dto.sku,
         name:        dto.name,
         costPrice:   dto.costPrice,
@@ -32,26 +32,30 @@ export class ProductsService {
     });
   }
 
-  async findOne(productId: string) {
+  async findOne(productId: string, storeId?: string) {
     const product = await this.prisma.product.findUnique({
       where: { productId },
       include: { variants: { where: { isActive: true }, orderBy: { name: 'asc' } } },
     });
     if (!product) throw new NotFoundException('Producto no encontrado');
+    if (storeId && product.storeId !== storeId)
+      throw new ForbiddenException('No tienes acceso a este producto');
     return product;
   }
 
-  async update(productId: string, dto: UpdateProductDto) {
-    await this.findOne(productId);
+  async update(productId: string, dto: UpdateProductDto, storeId?: string) {
+    await this.findOne(productId, storeId);
+    // Excluir storeId del update — no se puede mover un producto a otra tienda
+    const { storeId: _ignored, ...safeData } = dto as any;
     return this.prisma.product.update({
       where: { productId },
-      data: dto,
+      data: safeData,
       include: { variants: { where: { isActive: true } } },
     });
   }
 
-  async remove(productId: string) {
-    await this.findOne(productId);
+  async remove(productId: string, storeId?: string) {
+    await this.findOne(productId, storeId);
     return this.prisma.product.update({
       where: { productId },
       data: { isActive: false },
@@ -59,11 +63,13 @@ export class ProductsService {
   }
 
   // ── Variantes ──────────────────────────────────────────────────────────────
+
   async addVariant(productId: string, data: {
     name: string; sku?: string;
     costPrice: number; salePrice: number; stock?: number;
-  }) {
-    await this.findOne(productId);
+  }, storeId?: string) {
+    // Verificar que el producto pertenece a la tienda antes de agregar variante
+    await this.findOne(productId, storeId);
     return this.prisma.productVariant.create({
       data: {
         productId,
@@ -79,24 +85,32 @@ export class ProductsService {
   async updateVariant(variantId: string, data: {
     name?: string; sku?: string;
     costPrice?: number; salePrice?: number; stock?: number; isActive?: boolean;
-  }) {
-    const variant = await this.prisma.productVariant.findUnique({ where: { variantId } });
+  }, storeId?: string) {
+    const variant = await this.prisma.productVariant.findUnique({
+      where: { variantId },
+      include: { product: true },
+    });
     if (!variant) throw new NotFoundException('Variante no encontrada');
+    // Validar a través del producto padre
+    if (storeId && variant.product.storeId !== storeId)
+      throw new ForbiddenException('No tienes acceso a esta variante');
     return this.prisma.productVariant.update({ where: { variantId }, data });
   }
 
-  async removeVariant(variantId: string) {
-    const variant = await this.prisma.productVariant.findUnique({ where: { variantId } });
+  async removeVariant(variantId: string, storeId?: string) {
+    const variant = await this.prisma.productVariant.findUnique({
+      where: { variantId },
+      include: { product: true },
+    });
     if (!variant) throw new NotFoundException('Variante no encontrada');
+    if (storeId && variant.product.storeId !== storeId)
+      throw new ForbiddenException('No tienes acceso a esta variante');
     return this.prisma.productVariant.update({
       where: { variantId },
       data: { isActive: false },
     });
   }
 
-  /**
-   * Resumen para la IA — excluye precio de costo (información interna).
-   */
   async getSummaryForAI(storeId: string): Promise<string> {
     const products = await this.findAllByStore(storeId);
     if (products.length === 0) return 'No hay productos disponibles actualmente.';
@@ -104,20 +118,14 @@ export class ProductsService {
     return products.map((p: any) => {
       const lines = [
         `Producto: ${p.name}`,
-        `SKU: ${p.sku ?? 'N/A'}`,
-        p.variants?.length
-          ? null // precios en variantes
-          : `Precio: $${p.salePrice}`,
-        p.variants?.length
-          ? null
-          : `Stock disponible: ${p.stock} unidades`,
+        p.variants?.length ? null : `Precio: $${p.salePrice}`,
+        p.variants?.length ? null : `Stock: ${p.stock} unidades`,
         p.description ? `Descripción: ${p.description}` : null,
-        `Envío disponible: ${p.hasShipping ? 'Sí' : 'No'}`,
-        p.imageUrl ? `Imagen: ${p.imageUrl}` : null,
+        `Envío: ${p.hasShipping ? 'Sí' : 'No'}`,
       ];
 
       const variantLines = p.variants?.length
-        ? [`Variantes disponibles:\n` + p.variants.map((v: any) =>
+        ? [`Variantes:\n` + p.variants.map((v: any) =>
             `  - ${v.name}: $${v.salePrice} | Stock: ${v.stock}`
           ).join('\n')]
         : [];

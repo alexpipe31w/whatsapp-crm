@@ -1,18 +1,23 @@
-import { IsString, IsOptional, IsBoolean, IsIn } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsIn, MaxLength } from 'class-validator';
 
 export class CreateMessageDto {
   @IsString()
+  @MaxLength(100)
   conversationId: string;
 
+  // storeId ignorado en controller — viene del JWT
   @IsString()
-  storeId: string;
+  @IsOptional()
+  storeId?: string;
 
   @IsString()
+  @MaxLength(4096, { message: 'El mensaje no puede superar 4096 caracteres' })
   content: string;
 
   @IsString()
   @IsOptional()
-  type?: string; // 'text' | 'image' | 'audio'
+  @IsIn(['text', 'image', 'audio'], { message: 'Tipo inválido' })
+  type?: string;
 
   @IsBoolean()
   @IsOptional()
@@ -20,6 +25,6 @@ export class CreateMessageDto {
 
   @IsString()
   @IsOptional()
-  @IsIn(['customer', 'store', 'ai']) // ✅ solo valores válidos del schema
+  @IsIn(['customer', 'store', 'ai'])
   sender?: string;
 }

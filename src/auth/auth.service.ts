@@ -13,52 +13,63 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
-    const exists = await this.prisma.user.findUnique({
-      where: { email: dto.email },
-    });
-    if (exists) throw new ConflictException('Email ya registrado');
-
     const hashed = await bcrypt.hash(dto.password, 10);
 
-    // Si vienen datos de tienda, crear una tienda nueva para este usuario
-    let storeId: string | null = null;
+    try {
+      // Transacción atómica — si falla cualquier paso, todo se revierte
+      const result = await this.prisma.$transaction(async (tx) => {
+        let storeId: string | null = null;
 
-    if (dto.storeName && dto.storePhone) {
-      const store = await this.prisma.store.create({
-        data: {
-          name: dto.storeName,
-          phone: dto.storePhone,
-          ownerName: dto.name,
-        },
+        if (dto.storeName && dto.storePhone) {
+          const store = await tx.store.create({
+            data: {
+              name: dto.storeName,
+              phone: dto.storePhone,
+              ownerName: dto.name,
+            },
+          });
+          storeId = store.storeId;
+        }
+
+        const user = await tx.user.create({
+          data: {
+            name: dto.name,
+            email: dto.email,
+            password: hashed,
+            // role siempre 'admin' al registrar — nunca del body
+            // Un superadmin puede cambiar roles manualmente en BD si es necesario
+            role: 'admin',
+            storeId,
+          },
+        });
+
+        return user;
       });
-      storeId = store.storeId;
+
+      return this.signToken(result.userId, result.email, result.role, result.storeId);
+    } catch (err: any) {
+      if (err?.code === 'P2002') {
+        throw new ConflictException('Email ya registrado');
+      }
+      throw err;
     }
-
-    const user = await this.prisma.user.create({
-      data: {
-        name: dto.name,
-        email: dto.email,
-        password: hashed,
-        role: dto.role || 'admin',
-        storeId,
-      },
-    });
-
-    return this.signToken(user.userId, user.email, user.role, user.storeId);
   }
 
   async login(dto: LoginDto) {
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });
-    if (!user) throw new UnauthorizedException('Credenciales inválidas');
+    // Siempre comparar el hash aunque no exista el usuario (evita timing attack)
+    const dummyHash = '$2b$10$dummy.hash.to.prevent.timing.attack.xxxxxxxxxxxxxxxxxx';
+    const valid = await bcrypt.compare(dto.password, user?.password ?? dummyHash);
 
-    const valid = await bcrypt.compare(dto.password, user.password);
-    if (!valid) throw new UnauthorizedException('Credenciales inválidas');
+    if (!user || !valid) throw new UnauthorizedException('Credenciales inválidas');
+    if (!user.isActive) throw new UnauthorizedException('Usuario desactivado');
 
     return this.signToken(user.userId, user.email, user.role, user.storeId);
   }
 
+  // Solo llamar desde endpoints protegidos con rol admin
   async getUsers() {
     return this.prisma.user.findMany({
       select: {
@@ -68,14 +79,13 @@ export class AuthService {
         role: true,
         isActive: true,
         createdAt: true,
-        store: {
-          select: { name: true, phone: true },
-        },
+        store: { select: { name: true, phone: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
   }
 
+  // Solo llamar desde endpoints protegidos con rol admin
   async deleteUser(userId: string) {
     const user = await this.prisma.user.findUnique({ where: { userId } });
     if (!user) throw new NotFoundException('Usuario no encontrado');
@@ -84,7 +94,9 @@ export class AuthService {
   }
 
   private signToken(userId: string, email: string, role: string, storeId: string | null) {
-    const payload = { sub: userId, email };
+    // ✅ CRÍTICO: storeId y role deben estar en el payload
+    // Todos los controllers usan req.user.storeId y req.user.role
+    const payload = { sub: userId, email, role, storeId };
     return {
       access_token: this.jwt.sign(payload),
       userId,

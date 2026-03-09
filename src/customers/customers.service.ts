@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 
@@ -7,11 +7,12 @@ export class CustomersService {
   constructor(private prisma: PrismaService) {}
 
   async findOrCreate(dto: CreateCustomerDto) {
-    const existing = await this.prisma.customer.findUnique({
-      where: { storeId_phone: { storeId: dto.storeId, phone: dto.phone } },
+    const storeId = dto.storeId!; // siempre inyectado por el controller desde JWT
+    return this.prisma.customer.upsert({
+      where: { storeId_phone: { storeId, phone: dto.phone } },
+      update: {},
+      create: { storeId, phone: dto.phone },
     });
-    if (existing) return existing;
-    return this.prisma.customer.create({ data: dto });
   }
 
   async findAllByStore(storeId: string) {
@@ -21,17 +22,19 @@ export class CustomersService {
     });
   }
 
-  async findOne(customerId: string) {
+  async findOne(customerId: string, storeId?: string) {
     const customer = await this.prisma.customer.findUnique({
       where: { customerId },
     });
     if (!customer) throw new NotFoundException('Cliente no encontrado');
+    if (storeId && customer.storeId !== storeId) {
+      throw new ForbiddenException('No tienes acceso a este cliente');
+    }
     return customer;
   }
 
-  // ✅ Actualizar nombre y ciudad — usado tanto por la IA como por el asesor manualmente
-  async update(customerId: string, data: { name?: string; city?: string }) {
-    await this.findOne(customerId);
+  async update(customerId: string, data: { name?: string; city?: string }, storeId?: string) {
+    await this.findOne(customerId, storeId);
     return this.prisma.customer.update({
       where: { customerId },
       data,

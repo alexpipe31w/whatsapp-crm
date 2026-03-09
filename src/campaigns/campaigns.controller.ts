@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, Request } from '@nestjs/common';
 import { CampaignsService } from './campaigns.service';
 import { CreateCampaignDto } from './dto/create-campaign.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -9,8 +9,8 @@ export class CampaignsController {
   constructor(private campaignsService: CampaignsService) {}
 
   @Post()
-  create(@Body() dto: CreateCampaignDto) {
-    return this.campaignsService.create(dto);
+  create(@Body() dto: CreateCampaignDto, @Request() req: any) {
+    return this.campaignsService.create(dto, req.user.storeId);
   }
 
   @Get('store/:storeId')
@@ -19,12 +19,12 @@ export class CampaignsController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.campaignsService.findOne(id);
+  findOne(@Param('id') id: string, @Request() req: any) {
+    return this.campaignsService.findOne(id, req.user.storeId);
   }
 
   @Post(':id/send')
-  send(@Param('id') id: string) {
-    return this.campaignsService.send(id);
+  send(@Param('id') id: string, @Request() req: any) {
+    return this.campaignsService.send(id, req.user.storeId);
   }
 }
