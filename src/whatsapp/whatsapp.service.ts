@@ -169,6 +169,14 @@ export class WhatsappService implements OnModuleInit {
       return;
     }
 
+    // Cerrar socket anterior si existe antes de crear uno nuevo
+    // Sin esto, el socket viejo sigue vivo y compite con el nuevo → loop 440
+    const existingSock = this.sockets.get(storeId);
+    if (existingSock) {
+      this.sockets.delete(storeId);
+      try { existingSock.end(undefined); } catch {}
+    }
+
     const {
       default: makeWASocket,
       DisconnectReason,
@@ -246,7 +254,10 @@ export class WhatsappService implements OnModuleInit {
 
         } else if (!this.reconnecting.has(storeId)) {
           this.reconnecting.add(storeId);
-          const delay = statusCode === 408 ? 5000 : 3000;
+          // 440 = sesión reemplazada, esperar más para evitar storm de reconexiones
+          const delay = statusCode === 408 ? 5000
+                      : statusCode === 440 ? 8000
+                      : 3000;
           this.logger.log(`Reconectando ${storeId} en ${delay}ms...`);
           setTimeout(() => {
             this.reconnecting.delete(storeId);
