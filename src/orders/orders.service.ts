@@ -3,14 +3,13 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 
-// Transiciones de estado válidas
 const VALID_TRANSITIONS: Record<string, string[]> = {
   pending:   ['confirmed', 'cancelled'],
   confirmed: ['preparing', 'cancelled'],
   preparing: ['ready', 'cancelled'],
   ready:     ['delivered', 'cancelled'],
-  delivered: [],   // estado final
-  cancelled: [],   // estado final
+  delivered: [],
+  cancelled: [],
 };
 
 @Injectable()
@@ -21,7 +20,6 @@ export class OrdersService {
     if (!dto.items || dto.items.length === 0)
       throw new BadRequestException('El pedido debe tener al menos un item');
 
-    // Verificar que el cliente pertenece a la misma tienda
     const customer = await this.prisma.customer.findUnique({
       where: { customerId: dto.customerId },
     });
@@ -44,8 +42,16 @@ export class OrdersService {
         deliveryAddress: dto.deliveryAddress ?? null,
         orderItems: {
           create: dto.items.map((item) => ({
-            productId: item.productId ?? null,
-            serviceId: item.serviceId ?? null,
+            // ✅ Usar connect — Prisma no acepta IDs escalares directos en create anidado
+            ...(item.productId
+              ? { product: { connect: { productId: item.productId } } }
+              : {}),
+            ...(item.serviceId
+              ? { service: { connect: { serviceId: item.serviceId } } }
+              : {}),
+            ...(item.variantId
+              ? { variant: { connect: { variantId: item.variantId } } }
+              : {}),
             description: item.description ?? null,
             quantity: item.quantity,
             unitPrice: item.unitPrice,
@@ -87,7 +93,6 @@ export class OrdersService {
   async updateStatus(orderId: string, dto: UpdateOrderDto, storeId?: string) {
     const order = await this.findOne(orderId, storeId);
 
-    // Validar transición de estado si se está cambiando
     if (dto.status && dto.status !== order.status) {
       const allowed = VALID_TRANSITIONS[order.status] ?? [];
       if (!allowed.includes(dto.status)) {

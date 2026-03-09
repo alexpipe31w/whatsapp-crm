@@ -5,10 +5,12 @@ import { PrismaService } from '../prisma/prisma.service';
 @Injectable()
 export class AiService {
   private readonly logger = new Logger(AiService.name);
-  // Cache de clientes Groq por storeId para no instanciar en cada mensaje
+  // Cache de clientes Groq por apiKey
   private groqClients: Map<string, Groq> = new Map();
-  // Guard de creación de orden en curso (evita duplicados por mensajes simultáneos)
+  // Guard anti-duplicado de orden en curso
   private orderInProgress: Set<string> = new Set();
+  // Cache de extracción pendiente — evita re-extraer en "Confirmo"
+  private pendingExtractions: Map<string, any> = new Map();
 
   constructor(private prisma: PrismaService) {}
 
@@ -28,7 +30,6 @@ export class AiService {
     conversationId: string,
   ): Promise<string | null> {
     try {
-      // 1. Config de IA
       const config = await this.prisma.aIConfiguration.findUnique({
         where: { storeId },
       });
@@ -37,7 +38,6 @@ export class AiService {
         return null;
       }
 
-      // 2. Conversación + cliente (storeId + conversationId juntos por seguridad)
       const conversation = await this.prisma.conversation.findFirst({
         where: { conversationId, storeId },
         include: { customer: true },
@@ -48,7 +48,6 @@ export class AiService {
       }
       const customer = conversation.customer;
 
-      // 3. Órdenes del cliente (últimas 5)
       const orders = await this.prisma.order.findMany({
         where: { customerId: customer.customerId, storeId },
         include: {
@@ -60,7 +59,6 @@ export class AiService {
         take: 5,
       });
 
-      // 4. Catálogo activo — productos Y servicios
       const [products, services] = await Promise.all([
         this.prisma.product.findMany({
           where: { storeId, isActive: true },
@@ -73,14 +71,12 @@ export class AiService {
         }),
       ]);
 
-      // 5. Historial (últimos 20 mensajes)
       const history = await this.prisma.message.findMany({
         where: { conversationId },
         orderBy: { createdAt: 'asc' },
         take: 20,
       });
 
-      // 6. Fecha y hora Colombia
       const now = new Date();
       const fechaActual = now.toLocaleDateString('es-CO', {
         weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
@@ -92,9 +88,6 @@ export class AiService {
 
       const groq = this.getGroqClient(config.groqApiKey);
 
-      // ── PASO A: Extracción de orden ────────────────────────────────────────
-      // Solo intentar si hay catálogo Y hay suficiente historial (mínimo 3 mensajes)
-      // Y no hay ya una orden en proceso para esta conversación
       const shouldTryOrder =
         (products.length > 0 || services.length > 0) &&
         history.length >= 3 &&
@@ -105,13 +98,11 @@ export class AiService {
           groq, config.model, history, userMessage,
           products, services, customer, storeId, conversationId,
         );
-
         if (orderResult.created) {
           return orderResult.message!;
         }
       }
 
-      // ── PASO B: Respuesta normal ───────────────────────────────────────────
       const enrichedSystemPrompt = this.buildSystemPrompt(
         config.systemPrompt, customer, orders, products, services,
         fechaActual, horaActual, history, userMessage,
@@ -171,29 +162,41 @@ export class AiService {
     conversationId: string,
   ): Promise<{ created: boolean; message?: string }> {
 
-    // Resumen de productos
-    const productLines = products.map((p: any) => {
-      if (p.variants?.length > 0) {
-        return p.variants.map((v: any) =>
-          `- "${p.name} - ${v.name}" | tipo:producto | productId:${p.productId} | variantId:${v.variantId} | precio:${v.salePrice} | stock:${v.stock}`
-        ).join('\n');
-      }
-      return `- "${p.name}" | tipo:producto | productId:${p.productId} | precio:${p.salePrice} | stock:${p.stock}`;
-    });
+    // ── Verificar si el cliente está confirmando una extracción previa ──────
+    // Esto evita que el extractor pierda variantId cuando el cliente dice "Confirmo"
+    const CONFIRMATION_RE = /\b(confirm|sí|si\b|ok\b|dale|listo|acepto|perfecto|procede|adelante|claro|exacto|sip|yep|yes)\b/i;
+    const cached = this.pendingExtractions.get(conversationId);
 
-    // Resumen de servicios
-    const serviceLines = services.map((s: any) =>
-      `- "${s.name}" | tipo:servicio | serviceId:${s.serviceId} | precio:${s.price ?? 'variable'}`
-    );
+    let extracted: any;
 
-    const catalogSummary = [...productLines, ...serviceLines].join('\n');
+    if (cached && CONFIRMATION_RE.test(latestMessage.trim())) {
+      // Reutilizar extracción cacheada — el cliente solo confirmó
+      this.logger.log(`Usando extracción cacheada para ${conversationId}`);
+      extracted = cached;
+      this.pendingExtractions.delete(conversationId);
+    } else {
+      // Correr el extractor normalmente
+      const productLines = products.map((p: any) => {
+        if (p.variants?.length > 0) {
+          return p.variants.map((v: any) =>
+            `- "${p.name} - ${v.name}" | tipo:producto | productId:${p.productId} | variantId:${v.variantId} | precio:${v.salePrice} | stock:${v.stock}`
+          ).join('\n');
+        }
+        return `- "${p.name}" | tipo:producto | productId:${p.productId} | precio:${p.salePrice} | stock:${p.stock}`;
+      });
 
-    const conversationText = [
-      ...history.map((m: any) => `${m.isAiResponse ? 'Asistente' : 'Cliente'}: ${m.content.replace(/__ASK_NAME__|__ASK_CITY__/g, '').trim()}`),
-      `Cliente: ${latestMessage}`,
-    ].join('\n');
+      const serviceLines = services.map((s: any) =>
+        `- "${s.name}" | tipo:servicio | serviceId:${s.serviceId} | precio:${s.price ?? 'variable'}`
+      );
 
-    const extractorPrompt = `Eres un extractor de datos de órdenes. Analiza la conversación y determina si el cliente YA CONFIRMÓ todos los datos para crear una orden.
+      const catalogSummary = [...productLines, ...serviceLines].join('\n');
+
+      const conversationText = [
+        ...history.map((m: any) => `${m.isAiResponse ? 'Asistente' : 'Cliente'}: ${m.content.replace(/__ASK_NAME__|__ASK_CITY__/g, '').trim()}`),
+        `Cliente: ${latestMessage}`,
+      ].join('\n');
+
+      const extractorPrompt = `Eres un extractor de datos de órdenes. Analiza la conversación y determina si el cliente YA CONFIRMÓ todos los datos para crear una orden.
 
 CATÁLOGO:
 ${catalogSummary}
@@ -214,6 +217,7 @@ REGLAS:
 - Dirección debe tener calle/carrera/barrio + ciudad o similar.
 - No extraigas datos de mensajes del asistente.
 - Si solo preguntó por precio o métodos de pago, complete:false.
+- Si el producto tiene variantes, DEBES incluir el variantId correcto según lo que pidió el cliente.
 
 Responde ÚNICAMENTE con este JSON (sin markdown):
 {
@@ -228,132 +232,148 @@ Responde ÚNICAMENTE con este JSON (sin markdown):
   "reason": "string"
 }`;
 
-    try {
-      const extractResponse = await Promise.race([
-        groq.chat.completions.create({
-          model: 'llama-3.1-8b-instant',
-          messages: [{ role: 'user', content: extractorPrompt }],
-          temperature: 0,
-          max_tokens: 350,
-        }),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Extractor timeout')), 15_000)
-        ),
-      ]) as any;
-
-      const raw = extractResponse.choices[0]?.message?.content ?? '';
-      const jsonMatch = raw.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) return { created: false };
-
-      const extracted = JSON.parse(jsonMatch[0]);
-      this.logger.log(`Extracción de orden: ${JSON.stringify(extracted)}`);
-
-      if (!extracted.complete || !extracted.quantity || !extracted.deliveryAddress) {
-        return { created: false };
-      }
-
-      // Guard anti-duplicado
-      if (this.orderInProgress.has(conversationId)) {
-        this.logger.warn(`Orden ya en progreso para ${conversationId}`);
-        return { created: false };
-      }
-      this.orderInProgress.add(conversationId);
-
       try {
-        let unitPrice: number;
-        let orderItemData: any;
-        let itemName: string;
+        const extractResponse = await Promise.race([
+          groq.chat.completions.create({
+            model: 'llama-3.1-8b-instant',
+            messages: [{ role: 'user', content: extractorPrompt }],
+            temperature: 0,
+            max_tokens: 350,
+          }),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Extractor timeout')), 15_000)
+          ),
+        ]) as any;
 
-        if (extracted.itemType === 'servicio' && extracted.serviceId) {
-          const service = services.find((s: any) => s.serviceId === extracted.serviceId);
-          if (!service) return { created: false };
-          unitPrice = service.price ? Number(service.price) : 0;
-          itemName = service.name;
+        const raw = extractResponse.choices[0]?.message?.content ?? '';
+        const jsonMatch = raw.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) return { created: false };
+
+        extracted = JSON.parse(jsonMatch[0]);
+        this.logger.log(`Extracción de orden: ${JSON.stringify(extracted)}`);
+
+        // Si está completa, cachear para el próximo "Confirmo"
+        if (extracted.complete && extracted.quantity && extracted.deliveryAddress) {
+          this.pendingExtractions.set(conversationId, extracted);
+          // TTL de 10 minutos — limpiar si no se confirma
+          setTimeout(() => this.pendingExtractions.delete(conversationId), 10 * 60 * 1000);
+        }
+
+      } catch (err: any) {
+        this.orderInProgress.delete(conversationId);
+        this.logger.error(`Error en extracción de orden: ${err.message}`);
+        return { created: false };
+      }
+    }
+
+    if (!extracted?.complete || !extracted.quantity || !extracted.deliveryAddress) {
+      return { created: false };
+    }
+
+    // Guard anti-duplicado
+    if (this.orderInProgress.has(conversationId)) {
+      this.logger.warn(`Orden ya en progreso para ${conversationId}`);
+      return { created: false };
+    }
+    this.orderInProgress.add(conversationId);
+
+    try {
+      let unitPrice: number;
+      let orderItemData: any;
+      let itemName: string;
+
+      if (extracted.itemType === 'servicio' && extracted.serviceId) {
+        const service = services.find((s: any) => s.serviceId === extracted.serviceId);
+        if (!service) return { created: false };
+        unitPrice = service.price ? Number(service.price) : 0;
+        itemName = service.name;
+        // ✅ Usar connect para Prisma
+        orderItemData = {
+          service: { connect: { serviceId: extracted.serviceId } },
+          quantity: extracted.quantity,
+          unitPrice,
+        };
+      } else {
+        if (!extracted.productId) return { created: false };
+        const product = products.find((p: any) => p.productId === extracted.productId);
+        if (!product) return { created: false };
+
+        if (extracted.variantId) {
+          const variant = product.variants?.find((v: any) => v.variantId === extracted.variantId);
+          if (!variant) return { created: false };
+          if (variant.stock < extracted.quantity) {
+            this.logger.warn(`Stock insuficiente: ${variant.stock} < ${extracted.quantity}`);
+            return { created: false };
+          }
+          unitPrice = Number(variant.salePrice);
+          itemName = `${product.name} - ${variant.name}`;
+          // ✅ Usar connect para Prisma — fix del bug "Unknown argument productId"
           orderItemData = {
-            serviceId: extracted.serviceId,
+            product: { connect: { productId: extracted.productId } },
+            variant: { connect: { variantId: extracted.variantId } },
             quantity: extracted.quantity,
             unitPrice,
           };
         } else {
-          if (!extracted.productId) return { created: false };
-          const product = products.find((p: any) => p.productId === extracted.productId);
-          if (!product) return { created: false };
-
-          if (extracted.variantId) {
-            const variant = product.variants?.find((v: any) => v.variantId === extracted.variantId);
-            if (!variant) return { created: false };
-            if (variant.stock < extracted.quantity) {
-              this.logger.warn(`Stock insuficiente: ${variant.stock} < ${extracted.quantity}`);
-              return { created: false };
-            }
-            unitPrice = Number(variant.salePrice);
-            itemName = `${product.name} - ${variant.name}`;
-          } else {
-            if (product.stock < extracted.quantity) {
-              this.logger.warn(`Stock insuficiente: ${product.stock} < ${extracted.quantity}`);
-              return { created: false };
-            }
-            unitPrice = Number(product.salePrice);
-            itemName = product.name;
+          if (product.stock < extracted.quantity) {
+            this.logger.warn(`Stock insuficiente: ${product.stock} < ${extracted.quantity}`);
+            return { created: false };
           }
-
+          unitPrice = Number(product.salePrice);
+          itemName = product.name;
+          // ✅ Usar connect para Prisma
           orderItemData = {
-            productId: extracted.productId,
-            ...(extracted.variantId ? { variantId: extracted.variantId } : {}),
+            product: { connect: { productId: extracted.productId } },
             quantity: extracted.quantity,
             unitPrice,
           };
         }
-
-        const total = unitPrice * extracted.quantity;
-
-        const order = await this.prisma.order.create({
-          data: {
-            storeId,
-            customerId: customer.customerId,
-            status: 'pending',
-            total,
-            deliveryAddress: extracted.deliveryAddress,
-            notes: [
-              extracted.notes ? `Notas: ${extracted.notes}` : null,
-              `Creado automáticamente por IA`,
-            ].filter(Boolean).join(' | '),
-            orderItems: { create: [orderItemData] },
-          },
-        });
-
-        await this.prisma.conversation.update({
-          where: { conversationId },
-          data: { status: 'pending_human' },
-        });
-
-        this.logger.log(`✅ Orden creada: ${order.orderId} | Total: $${total}`);
-
-        const nombreCliente = customer.name ? `, ${customer.name}` : '';
-        const precioTexto = unitPrice === 0
-          ? 'Por confirmar (precio variable)'
-          : `$${total.toLocaleString('es-CO')}`;
-
-        const confirmMessage =
-          `¡Perfecto${nombreCliente}! 🎉 Tu pedido fue registrado.\n\n` +
-          `📦 *Resumen:*\n` +
-          `• ${itemName}\n` +
-          `• Cantidad: ${extracted.quantity}\n` +
-          `• Total: ${precioTexto}\n` +
-          `• Dirección: ${extracted.deliveryAddress}\n\n` +
-          `Un asesor te contactará pronto para coordinar el pago y confirmar el envío. ¡Gracias! 😊`;
-
-        return { created: true, message: confirmMessage };
-
-      } finally {
-        // Siempre liberar el guard
-        this.orderInProgress.delete(conversationId);
       }
 
-    } catch (err: any) {
+      const total = unitPrice * extracted.quantity;
+
+      const order = await this.prisma.order.create({
+        data: {
+          storeId,
+          customerId: customer.customerId,
+          status: 'pending',
+          total,
+          deliveryAddress: extracted.deliveryAddress,
+          notes: [
+            extracted.notes ? `Notas: ${extracted.notes}` : null,
+            `Creado automáticamente por IA`,
+          ].filter(Boolean).join(' | '),
+          orderItems: { create: [orderItemData] },
+        },
+      });
+
+      await this.prisma.conversation.update({
+        where: { conversationId },
+        data: { status: 'pending_human' },
+      });
+
+      // Limpiar cache después de crear la orden
+      this.pendingExtractions.delete(conversationId);
+      this.logger.log(`✅ Orden creada: ${order.orderId} | Total: $${total}`);
+
+      const nombreCliente = customer.name ? `, ${customer.name}` : '';
+      const precioTexto = unitPrice === 0
+        ? 'Por confirmar (precio variable)'
+        : `$${total.toLocaleString('es-CO')}`;
+
+      const confirmMessage =
+        `¡Perfecto${nombreCliente}! 🎉 Tu pedido fue registrado.\n\n` +
+        `📦 *Resumen:*\n` +
+        `• ${itemName}\n` +
+        `• Cantidad: ${extracted.quantity}\n` +
+        `• Total: ${precioTexto}\n` +
+        `• Dirección: ${extracted.deliveryAddress}\n\n` +
+        `Un asesor te contactará pronto para coordinar el pago y confirmar el envío. ¡Gracias! 😊`;
+
+      return { created: true, message: confirmMessage };
+
+    } finally {
       this.orderInProgress.delete(conversationId);
-      this.logger.error(`Error en extracción de orden: ${err.message}`);
-      return { created: false };
     }
   }
 
@@ -373,7 +393,6 @@ Responde ÚNICAMENTE con este JSON (sin markdown):
   ): string {
     const sep = '\n===================================================\n';
 
-    // ── Cliente ────────────────────────────────────────────────────────────
     const nombreCliente = customer.name ?? null;
     const clienteSection = `CLIENTE:
 - Nombre: ${nombreCliente ?? 'No registrado'}
@@ -384,7 +403,6 @@ Responde ÚNICAMENTE con este JSON (sin markdown):
 - Adapta el tono al del cliente: formal si escribe formal, cercano si es casual.
 - NUNCA menciones datos de otros clientes.`;
 
-    // ── Datos ya recopilados en esta conversación ──────────────────────────
     const clientMessages = [
       ...history.filter((m: any) => !m.isAiResponse).map((m: any) => m.content),
       latestMessage,
@@ -406,7 +424,6 @@ Responde ÚNICAMENTE con este JSON (sin markdown):
       ? `DATOS YA RECOPILADOS (NO LOS VUELVAS A PEDIR):\n${datosMencionados.join('\n')}`
       : `DATOS RECOPILADOS: Ninguno aún.`;
 
-    // ── Órdenes previas ────────────────────────────────────────────────────
     const STATUS_LABELS: Record<string, string> = {
       pending: 'Pendiente', confirmed: 'Confirmado', preparing: 'En preparación',
       ready: 'Listo', delivered: 'Entregado', cancelled: 'Cancelado',
@@ -425,7 +442,6 @@ Responde ÚNICAMENTE con este JSON (sin markdown):
       ordenesSection = `PEDIDOS ANTERIORES:\n${textoOrdenes}\nREGLA: Solo muestra estos. Si pregunta por uno que no aparece, remite a asesor.`;
     }
 
-    // ── Catálogo ───────────────────────────────────────────────────────────
     const hasItems = products.length > 0 || services.length > 0;
     let catalogoSection: string;
 
@@ -455,7 +471,6 @@ Responde ÚNICAMENTE con este JSON (sin markdown):
             const precioTxt = s.price ? `$${s.price}` : '💡 Precio variable (asesor lo confirma)';
             const lines = [`  · ${s.name} — ${precioTxt}`];
             if (s.description) lines.push(`    ${s.description}`);
-            if (s.duration) lines.push(`    Duración aprox: ${s.duration} min`);
             return lines.join('\n');
           }).join('\n\n')
         : null;
@@ -473,7 +488,6 @@ REGLAS:
 - Para servicios con precio variable, di que un asesor confirmará el precio.`;
     }
 
-    // ── Flujo de orden ─────────────────────────────────────────────────────
     const flujoSection = `FLUJO DE TOMA DE ORDEN:
 
 1. Datos necesarios: a) item del catálogo  b) cantidad  c) dirección de entrega completa

@@ -15,6 +15,10 @@ export class CreateOrderItemDto {
 
   @IsString()
   @IsOptional()
+  variantId?: string;
+
+  @IsString()
+  @IsOptional()
   @MaxLength(200)
   description?: string;
 
