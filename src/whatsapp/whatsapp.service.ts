@@ -3,8 +3,6 @@ import {
 } from '@nestjs/common';
 import { Boom } from '@hapi/boom';
 import * as qrcode from 'qrcode-terminal';
-import { join } from 'path';
-import { mkdirSync } from 'fs';
 import P from 'pino';
 import { AiService } from '../ai/ai.service';
 import { ConversationsService } from '../conversations/conversations.service';
@@ -16,13 +14,11 @@ import { BlockedService } from '../blocked/blocked.service';
 const ASK_NAME_MARKER = '__ASK_NAME__';
 const ASK_CITY_MARKER = '__ASK_CITY__';
 
-// ── Tipos de mensaje que SÍ son del usuario ──────────────────────────────────
 const MEDIA_TYPES = [
   'imageMessage', 'audioMessage', 'videoMessage',
   'documentMessage', 'stickerMessage',
 ];
 
-// ── Mensajes internos de WhatsApp que se deben IGNORAR completamente ──────────
 const IGNORED_TYPES = [
   'protocolMessage',
   'senderKeyDistributionMessage',
@@ -33,19 +29,119 @@ const IGNORED_TYPES = [
   'pollUpdateMessage',
   'groupInviteMessage',
   'callLogMessage',
-  'ptvMessage',           // video-nota (thumbnail interno)
+  'ptvMessage',
   'editedMessage',
 ];
+
+const NAME_BLACKLIST = new Set([
+  'hola', 'hello', 'hi', 'hey', 'buenas', 'buenos', 'buen', 'dias', 'tardes',
+  'noches', 'ok', 'okas', 'oka', 'okay', 'dale', 'listo', 'si', 'sí', 'no',
+  'jaja', 'jajaja', 'jajajaja', 'jajjajaja', 'jeje', 'xd', 'lol', 'omg',
+  'amen', 'amén', 'test', 'prueba', 'info', 'precio', 'precios', 'holi',
+  'que', 'qué', 'como', 'cómo', 'bien', 'mal', 'nada', 'todo', 'algo',
+  'gracias', 'claro', 'perfecto', 'genial', 'excelente', 'chévere', 'chevere',
+]);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// useDBAuthState: reemplaza useMultiFileAuthState — guarda la sesión en Neon
+// en lugar del filesystem de Render (que es efímero y se borra en cada deploy).
+// ─────────────────────────────────────────────────────────────────────────────
+async function useDBAuthState(prisma: PrismaService, storeId: string) {
+  const { BufferJSON, initAuthCreds } = await import('@whiskeysockets/baileys');
+
+  // Cargar datos guardados de la BD
+  async function readData(): Promise<Record<string, any>> {
+    const row = await prisma.whatsappSession.findUnique({
+      where: { storeId },
+    });
+    if (!row || !row.data) return {};
+    try {
+      // row.data es un Json de Prisma — puede ser objeto o string
+      const raw = typeof row.data === 'string' ? row.data : JSON.stringify(row.data);
+      return JSON.parse(raw, BufferJSON.reviver);
+    } catch {
+      return {};
+    }
+  }
+
+  // Guardar datos en la BD (upsert)
+  async function writeData(data: Record<string, any>): Promise<void> {
+    const serialized = JSON.stringify(data, BufferJSON.replacer);
+    await prisma.whatsappSession.upsert({
+      where: { storeId },
+      update: { data: JSON.parse(serialized) },
+      create: { storeId, data: JSON.parse(serialized) },
+    });
+  }
+
+  // Borrar un archivo específico de la sesión
+  async function removeData(key: string): Promise<void> {
+    const current = await readData();
+    delete current[key];
+    await writeData(current);
+  }
+
+  const stored = await readData();
+
+  // Credenciales principales (creds)
+  const creds = stored['creds']
+    ? stored['creds']
+    : initAuthCreds();
+
+  // Guardar creds inmediatamente si son nuevas
+  if (!stored['creds']) {
+    await writeData({ ...stored, creds });
+  }
+
+  return {
+    state: {
+      creds,
+      // Signal keys (pre-keys, sessions, sender-keys, etc.)
+      keys: {
+        get: async (type: string, ids: string[]) => {
+          const current = await readData();
+          const data: Record<string, any> = {};
+          for (const id of ids) {
+            const key = `key-${type}-${id}`;
+            const val = current[key];
+            if (val !== undefined) data[id] = val;
+          }
+          return data;
+        },
+        set: async (data: Record<string, Record<string, any>>) => {
+          const current = await readData();
+          for (const [type, typeData] of Object.entries(data)) {
+            for (const [id, value] of Object.entries(typeData)) {
+              const key = `key-${type}-${id}`;
+              if (value) {
+                current[key] = value;
+              } else {
+                delete current[key];
+              }
+            }
+          }
+          await writeData(current);
+        },
+      },
+    },
+    saveCreds: async () => {
+      const current = await readData();
+      await writeData({ ...current, creds: state.creds });
+    },
+  };
+
+  // Necesario para que saveCreds acceda al creds actualizado
+  var state = { creds } as any;
+}
 
 @Injectable()
 export class WhatsappService implements OnModuleInit {
   private readonly logger = new Logger(WhatsappService.name);
-  // storeId → socket
   private sockets: Map<string, any> = new Map();
-  // storeId → QR string
   private qrCodes: Map<string, string> = new Map();
-  // storeId → reconexión en progreso
   private reconnecting: Set<string> = new Set();
+  // Deduplicación de mensajes (evita procesar el mismo msg múltiples veces)
+  private processedMsgIds: Set<string> = new Set();
 
   constructor(
     private prisma: PrismaService,
@@ -58,32 +154,19 @@ export class WhatsappService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    // Solo reconectar stores que tenían sesión activa (waSessionId != null)
-    const stores = await this.prisma.store.findMany({
-      where: { isActive: true, waSessionId: { not: null } },
+    // Reconectar stores que tienen sesión guardada en BD
+    const sessions = await this.prisma.whatsappSession.findMany({
+      include: { store: { select: { isActive: true, name: true } } },
     });
-    for (const store of stores) {
-      const sessionPath = join(process.cwd(), 'sessions', store.storeId);
-      // Si no existe la carpeta de sesión, limpiar el waSessionId y no intentar reconectar
-      try {
-        const fs = await import('fs');
-        if (!fs.existsSync(join(sessionPath, 'creds.json'))) {
-          this.logger.warn(`Sesión inválida para store ${store.name} — limpiando BD`);
-          await this.prisma.store.update({
-            where: { storeId: store.storeId },
-            data: { waSessionId: null },
-          });
-          continue;
-        }
-      } catch {}
 
-      this.logger.log(`Reconectando store: ${store.name}`);
-      await this.connectStore(store.storeId);
+    for (const session of sessions) {
+      if (!session.store.isActive) continue;
+      this.logger.log(`Reconectando store: ${session.store.name}`);
+      await this.connectStore(session.storeId);
     }
   }
 
   async connectStore(storeId: string) {
-    // Evitar doble conexión simultánea
     if (this.reconnecting.has(storeId)) {
       this.logger.warn(`Ya hay una reconexión en progreso para ${storeId}`);
       return;
@@ -92,18 +175,15 @@ export class WhatsappService implements OnModuleInit {
     const {
       default: makeWASocket,
       DisconnectReason,
-      useMultiFileAuthState,
       fetchLatestBaileysVersion,
       makeCacheableSignalKeyStore,
     } = await import('@whiskeysockets/baileys');
 
-    const sessionPath = join(process.cwd(), 'sessions', storeId);
-    // Asegurar que la carpeta existe antes de que Baileys intente escribir
-    mkdirSync(sessionPath, { recursive: true });
-
     const baileysLogger = P({ level: 'silent' });
-    const { state, saveCreds } = await useMultiFileAuthState(sessionPath);
     const { version } = await fetchLatestBaileysVersion();
+
+    // Usar sesión en BD en lugar de filesystem
+    const { state, saveCreds } = await useDBAuthState(this.prisma, storeId);
 
     const sock = makeWASocket({
       version,
@@ -113,14 +193,21 @@ export class WhatsappService implements OnModuleInit {
       },
       printQRInTerminal: false,
       logger: baileysLogger,
-      // Mejoras de estabilidad
       keepAliveIntervalMs: 30_000,
       connectTimeoutMs: 60_000,
       retryRequestDelayMs: 2_000,
+      // Necesario para re-entrega de mensajes perdidos durante desconexiones
+      getMessage: async (_key) => ({ conversation: '' }),
     });
 
     this.sockets.set(storeId, sock);
-    sock.ev.on('creds.update', saveCreds);
+
+    // Persistir creds cada vez que Baileys las actualiza
+    sock.ev.on('creds.update', async () => {
+      // Actualizar el creds en el state antes de guardar
+      Object.assign(state.creds, sock.authState?.creds ?? {});
+      await saveCreds();
+    });
 
     sock.ev.on('connection.update', async (update) => {
       const { connection, lastDisconnect, qr } = update;
@@ -153,27 +240,18 @@ export class WhatsappService implements OnModuleInit {
           this.qrCodes.delete(storeId);
           this.reconnecting.delete(storeId);
 
-          // Actualizar BD
+          // Borrar sesión de la BD y limpiar waSessionId
+          await this.prisma.whatsappSession.deleteMany({
+            where: { storeId },
+          }).catch(() => {});
           await this.prisma.store.update({
             where: { storeId },
             data: { waSessionId: null },
           }).catch(() => {});
 
-          // Esperar a que Baileys cierre todos los file handles antes de borrar
-          setTimeout(async () => {
-            try {
-              const fs = await import('fs');
-              if (fs.existsSync(sessionPath)) {
-                fs.rmSync(sessionPath, { recursive: true, force: true });
-                this.logger.log(`🗑️ Sesión borrada: ${storeId}`);
-              }
-            } catch (e) {
-              this.logger.warn(`No se pudo borrar sesión: ${e.message}`);
-            }
-          }, 3000); // 3s de gracia para que Baileys cierre archivos
+          this.logger.log(`🗑️ Sesión borrada de BD: ${storeId}`);
 
         } else if (!this.reconnecting.has(storeId)) {
-          // Reconexión automática (no logged out)
           this.reconnecting.add(storeId);
           const delay = statusCode === 408 ? 5000 : 3000;
           this.logger.log(`Reconectando ${storeId} en ${delay}ms...`);
@@ -188,10 +266,18 @@ export class WhatsappService implements OnModuleInit {
     });
 
     sock.ev.on('messages.upsert', async ({ messages, type }) => {
-      if (type !== 'notify') return;
+      // 'notify' = mensaje nuevo en vivo
+      // 'append' = mensajes perdidos durante desconexión (history sync)
+      if (type !== 'notify' && type !== 'append') return;
+
+      // Para history sync solo procesar mensajes de las últimas 24h
+      const cutoffMs = type === 'append' ? Date.now() - 24 * 60 * 60 * 1000 : 0;
 
       for (const msg of messages) {
         try {
+          const msgTimestampMs = (Number(msg.messageTimestamp) || 0) * 1000;
+          if (cutoffMs > 0 && msgTimestampMs < cutoffMs) continue;
+
           await this.processMessage(msg, storeId, sock);
         } catch (err) {
           this.logger.error(`Error procesando mensaje: ${err.message}`);
@@ -206,23 +292,31 @@ export class WhatsappService implements OnModuleInit {
     if (msg.key.fromMe) return;
     if (!msg.message) return;
 
+    // Deduplicación por messageId
+    const msgId = msg.key.id;
+    if (msgId) {
+      if (this.processedMsgIds.has(msgId)) {
+        this.logger.debug(`Mensaje duplicado ignorado: ${msgId}`);
+        return;
+      }
+      this.processedMsgIds.add(msgId);
+      setTimeout(() => this.processedMsgIds.delete(msgId), 10 * 60 * 1000);
+    }
+
     const jid = msg.key.remoteJid ?? '';
-    if (!jid.endsWith('@s.whatsapp.net')) return; // ignorar grupos
+    if (!jid.endsWith('@s.whatsapp.net')) return;
 
     const phoneRaw = jid.replace('@s.whatsapp.net', '');
     if (!phoneRaw) return;
     const phone = `+${phoneRaw}`;
 
-    // ── Detectar tipo ────────────────────────────────────────────────────────
     const messageType = Object.keys(msg.message)[0];
 
-    // Ignorar mensajes internos de WhatsApp
     if (IGNORED_TYPES.includes(messageType)) {
       this.logger.debug(`Ignorando mensaje interno (${messageType}) de ${phone}`);
       return;
     }
 
-    // ── Lista negra ──────────────────────────────────────────────────────────
     const blocked = await this.blockedService.isBlocked(storeId, phone);
     if (blocked) {
       this.logger.log(`🚫 Número bloqueado ignorado: ${phone}`);
@@ -321,7 +415,6 @@ export class WhatsappService implements OnModuleInit {
       return;
     }
 
-    // ── Palabra clave !stop ──────────────────────────────────────────────────
     if (content.trim().toLowerCase() === '!stop') {
       await this.prisma.conversation.update({
         where: { conversationId: conversation.conversationId },
@@ -375,13 +468,6 @@ export class WhatsappService implements OnModuleInit {
     this.logger.log(`🤖 IA respondió a ${phone}`);
   }
 
-  /**
-   * Extrae el nombre real de frases como:
-   * "mi nombre es Alex" → "Alex"
-   * "me llamo María José" → "María José"
-   * "soy Pedro" → "Pedro"
-   * "Alex" → "Alex"
-   */
   private extractName(input: string): string {
     const cleaned = input.trim();
     const patterns = [
@@ -394,13 +480,6 @@ export class WhatsappService implements OnModuleInit {
     return cleaned;
   }
 
-  /**
-   * Extrae la ciudad de frases como:
-   * "soy de Bogotá" → "Bogotá"
-   * "estoy en Medellín" → "Medellín"
-   * "de Cali" → "Cali"
-   * "Neiva" → "Neiva"
-   */
   private extractCity(input: string): string {
     const cleaned = input.trim();
     const patterns = [
@@ -413,9 +492,20 @@ export class WhatsappService implements OnModuleInit {
     return cleaned;
   }
 
-  /** Valida que el valor tenga al menos 2 letras (no solo símbolos/números) */
   private isValidText(value: string): boolean {
     return /[a-záéíóúüñA-ZÁÉÍÓÚÜÑ]{2,}/.test(value);
+  }
+
+  private isValidName(value: string): boolean {
+    const lower = value.toLowerCase().trim();
+    if (/\d/.test(lower)) return false;
+    if (lower.length > 30) return false;
+    const words = lower.split(/\s+/);
+    if (words.length > 3) return false;
+    if (!this.isValidText(value)) return false;
+    if (words.some(w => NAME_BLACKLIST.has(w))) return false;
+    if (/^(ja|je|ji|ha|he|xd){2,}/i.test(lower)) return false;
+    return true;
   }
 
   private async handleOnboarding(
@@ -434,15 +524,13 @@ export class WhatsappService implements OnModuleInit {
       if (lastBotContent.includes(ASK_NAME_MARKER)) {
         const name = this.extractName(content);
 
-        // Validar que sea un nombre real
-        if (!this.isValidText(name)) {
-          const msg = `No entendí tu nombre 😅 ¿Me lo puedes escribir de nuevo? (solo el nombre)`;
+        if (!this.isValidName(name)) {
+          const msg = `No entendí tu nombre 😅 ¿Me lo puedes escribir de nuevo? (ejemplo: "María" o "Juan Pérez")`;
           await sock.sendMessage(jid, { text: msg });
           await this.saveOnboardingMessage(conversation.conversationId, storeId, `${msg} ${ASK_NAME_MARKER}`);
           return true;
         }
 
-        // Capitalizar primera letra de cada palabra
         const nameFormatted = name.replace(/\b\w/g, l => l.toUpperCase());
         await this.customersService.update(customer.customerId, { name: nameFormatted });
         this.logger.log(`✅ Nombre guardado: ${nameFormatted} (${phone})`);
@@ -462,7 +550,6 @@ export class WhatsappService implements OnModuleInit {
       if (lastBotContent.includes(ASK_CITY_MARKER)) {
         const city = this.extractCity(content);
 
-        // Validar que sea una ciudad real
         if (!this.isValidText(city)) {
           const msg = `No entendí la ciudad 😅 ¿Me la puedes escribir de nuevo?`;
           await sock.sendMessage(jid, { text: msg });
@@ -517,6 +604,7 @@ export class WhatsappService implements OnModuleInit {
       }
     }
 
+    await this.prisma.whatsappSession.deleteMany({ where: { storeId } }).catch(() => {});
     await this.prisma.store.update({
       where: { storeId },
       data: { waSessionId: null },

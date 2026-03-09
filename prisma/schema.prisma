@@ -29,6 +29,7 @@ model Store {
   campaigns       Campaign[]
   aiConfig        AIConfiguration?
   blockedContacts BlockedContact[]
+  waSession       WhatsappSession?
 
   @@map("stores")
 }
@@ -218,11 +219,22 @@ model BlockedContact {
   blockedId String   @id @default(uuid()) @map("blocked_id")
   storeId   String   @map("store_id")
   phone     String   @db.VarChar(20)
-  label     String?  @db.VarChar(100) // Ej: "Distribuidor", "Empleado", "Proveedor"
+  label     String?  @db.VarChar(100)
   createdAt DateTime @default(now()) @map("created_at")
 
   store Store @relation(fields: [storeId], references: [storeId], onDelete: Cascade)
 
   @@unique([storeId, phone])
   @@map("blocked_contacts")
+}
+
+// Sesión de WhatsApp persistente en BD (sobrevive reinicios de Render)
+model WhatsappSession {
+  storeId   String   @id @map("store_id")
+  data      Json     // Todos los archivos de sesión de Baileys en un solo JSON
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  store Store @relation(fields: [storeId], references: [storeId], onDelete: Cascade)
+
+  @@map("whatsapp_sessions")
 }

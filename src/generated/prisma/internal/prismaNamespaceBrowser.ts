@@ -61,7 +61,8 @@ export const ModelName = {
   AIConfiguration: 'AIConfiguration',
   Campaign: 'Campaign',
   User: 'User',
-  BlockedContact: 'BlockedContact'
+  BlockedContact: 'BlockedContact',
+  WhatsappSession: 'WhatsappSession'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -259,6 +260,15 @@ export const BlockedContactScalarFieldEnum = {
 } as const
 
 export type BlockedContactScalarFieldEnum = (typeof BlockedContactScalarFieldEnum)[keyof typeof BlockedContactScalarFieldEnum]
+
+
+export const WhatsappSessionScalarFieldEnum = {
+  storeId: 'storeId',
+  data: 'data',
+  updatedAt: 'updatedAt'
+} as const
+
+export type WhatsappSessionScalarFieldEnum = (typeof WhatsappSessionScalarFieldEnum)[keyof typeof WhatsappSessionScalarFieldEnum]
 
 
 export const SortOrder = {

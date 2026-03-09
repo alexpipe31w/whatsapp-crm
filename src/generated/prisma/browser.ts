@@ -82,3 +82,8 @@ export type User = Prisma.UserModel
  * 
  */
 export type BlockedContact = Prisma.BlockedContactModel
+/**
+ * Model WhatsappSession
+ * 
+ */
+export type WhatsappSession = Prisma.WhatsappSessionModel
