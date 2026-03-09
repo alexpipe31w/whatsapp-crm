@@ -203,7 +203,7 @@ export class WhatsappService implements OnModuleInit {
       makeCacheableSignalKeyStore,
     } = await import('@whiskeysockets/baileys');
 
-    const baileysLogger = P({ level: 'silent' });
+    const baileysLogger = P({ level: 'warn' });
     const { version } = await fetchLatestBaileysVersion();
 
     // Usar sesión en BD en lugar de filesystem
