@@ -43,20 +43,21 @@ const NAME_BLACKLIST = new Set([
 ]);
 
 // ─────────────────────────────────────────────────────────────────────────────
-// useDBAuthState: reemplaza useMultiFileAuthState — guarda la sesión en Neon
-// en lugar del filesystem de Render (que es efímero y se borra en cada deploy).
+// useDBAuthState: guarda la sesión de Baileys en Neon en lugar del filesystem
+// de Render (que es efímero y se borra en cada deploy).
+//
+// CLAVE: usa caché en memoria para todas las operaciones de keys durante el
+// handshake del QR — sin esto cada key.get/set hace una query a Neon y el QR
+// expira antes de que termine la conexión. La BD se actualiza en background.
 // ─────────────────────────────────────────────────────────────────────────────
 async function useDBAuthState(prisma: PrismaService, storeId: string) {
   const { BufferJSON, initAuthCreds } = await import('@whiskeysockets/baileys');
 
-  // Cargar datos guardados de la BD
-  async function readData(): Promise<Record<string, any>> {
-    const row = await prisma.whatsappSession.findUnique({
-      where: { storeId },
-    });
-    if (!row || !row.data) return {};
+  // ── 1. Cargar TODO de una sola vez al inicio ─────────────────────────────
+  async function loadFromDB(): Promise<Record<string, any>> {
+    const row = await prisma.whatsappSession.findUnique({ where: { storeId } });
+    if (!row?.data) return {};
     try {
-      // row.data es un Json de Prisma — puede ser objeto o string
       const raw = typeof row.data === 'string' ? row.data : JSON.stringify(row.data);
       return JSON.parse(raw, BufferJSON.reviver);
     } catch {
@@ -64,74 +65,70 @@ async function useDBAuthState(prisma: PrismaService, storeId: string) {
     }
   }
 
-  // Guardar datos en la BD (upsert)
-  async function writeData(data: Record<string, any>): Promise<void> {
-    const serialized = JSON.stringify(data, BufferJSON.replacer);
-    await prisma.whatsappSession.upsert({
-      where: { storeId },
-      update: { data: JSON.parse(serialized) },
-      create: { storeId, data: JSON.parse(serialized) },
-    });
+  // ── 2. Caché en memoria — todas las ops de keys son síncronas ────────────
+  const cache: Record<string, any> = await loadFromDB();
+
+  // ── 3. Escritura a BD en background (no bloquea el handshake) ────────────
+  let saveTimer: ReturnType<typeof setTimeout> | null = null;
+  function scheduleSave() {
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(async () => {
+      try {
+        const serialized = JSON.stringify(cache, BufferJSON.replacer);
+        const parsed = JSON.parse(serialized);
+        await prisma.whatsappSession.upsert({
+          where: { storeId },
+          update: { data: parsed },
+          create: { storeId, data: parsed },
+        });
+      } catch (e) {
+        // Silencioso — se reintentará en el próximo cambio
+      }
+      saveTimer = null;
+    }, 500); // debounce 500ms: agrupa múltiples writes en uno solo
   }
 
-  // Borrar un archivo específico de la sesión
-  async function removeData(key: string): Promise<void> {
-    const current = await readData();
-    delete current[key];
-    await writeData(current);
+  // ── 4. Inicializar creds si no existen ───────────────────────────────────
+  if (!cache['creds']) {
+    cache['creds'] = initAuthCreds();
+    scheduleSave();
   }
 
-  const stored = await readData();
-
-  // Credenciales principales (creds)
-  const creds = stored['creds']
-    ? stored['creds']
-    : initAuthCreds();
-
-  // Guardar creds inmediatamente si son nuevas
-  if (!stored['creds']) {
-    await writeData({ ...stored, creds });
-  }
-
-  return {
-    state: {
-      creds,
-      // Signal keys (pre-keys, sessions, sender-keys, etc.)
-      keys: {
-        get: async (type: string, ids: string[]) => {
-          const current = await readData();
-          const data: Record<string, any> = {};
-          for (const id of ids) {
+  const state = {
+    creds: cache['creds'],
+    keys: {
+      get: (type: string, ids: string[]) => {
+        // Síncrono — lee desde caché en memoria, sin tocar la BD
+        const result: Record<string, any> = {};
+        for (const id of ids) {
+          const val = cache[`key-${type}-${id}`];
+          if (val !== undefined) result[id] = val;
+        }
+        return result;
+      },
+      set: (data: Record<string, Record<string, any>>) => {
+        // Síncrono — escribe en caché, persiste en BD en background
+        for (const [type, typeData] of Object.entries(data)) {
+          for (const [id, value] of Object.entries(typeData)) {
             const key = `key-${type}-${id}`;
-            const val = current[key];
-            if (val !== undefined) data[id] = val;
-          }
-          return data;
-        },
-        set: async (data: Record<string, Record<string, any>>) => {
-          const current = await readData();
-          for (const [type, typeData] of Object.entries(data)) {
-            for (const [id, value] of Object.entries(typeData)) {
-              const key = `key-${type}-${id}`;
-              if (value) {
-                current[key] = value;
-              } else {
-                delete current[key];
-              }
+            if (value != null) {
+              cache[key] = value;
+            } else {
+              delete cache[key];
             }
           }
-          await writeData(current);
-        },
+        }
+        scheduleSave();
       },
-    },
-    saveCreds: async () => {
-      const current = await readData();
-      await writeData({ ...current, creds: state.creds });
     },
   };
 
-  // Necesario para que saveCreds acceda al creds actualizado
-  var state = { creds } as any;
+  const saveCreds = () => {
+    cache['creds'] = state.creds;
+    scheduleSave();
+  };
+
+  return { state, saveCreds };
 }
 
 @Injectable()
@@ -203,11 +200,7 @@ export class WhatsappService implements OnModuleInit {
     this.sockets.set(storeId, sock);
 
     // Persistir creds cada vez que Baileys las actualiza
-    sock.ev.on('creds.update', async () => {
-      // Actualizar el creds en el state antes de guardar
-      Object.assign(state.creds, sock.authState?.creds ?? {});
-      await saveCreds();
-    });
+    sock.ev.on('creds.update', saveCreds);
 
     sock.ev.on('connection.update', async (update) => {
       const { connection, lastDisconnect, qr } = update;
