@@ -1,7 +1,10 @@
-import { Injectable, Logger, OnModuleInit, Inject, forwardRef } from '@nestjs/common';
+import {
+  Injectable, Logger, OnModuleInit, Inject, forwardRef,
+} from '@nestjs/common';
 import { Boom } from '@hapi/boom';
 import * as qrcode from 'qrcode-terminal';
 import { join } from 'path';
+import { mkdirSync } from 'fs';
 import P from 'pino';
 import { AiService } from '../ai/ai.service';
 import { ConversationsService } from '../conversations/conversations.service';
@@ -12,12 +15,37 @@ import { BlockedService } from '../blocked/blocked.service';
 
 const ASK_NAME_MARKER = '__ASK_NAME__';
 const ASK_CITY_MARKER = '__ASK_CITY__';
-const MEDIA_TYPES = ['imageMessage', 'audioMessage', 'videoMessage', 'documentMessage', 'stickerMessage'];
+
+// ── Tipos de mensaje que SÍ son del usuario ──────────────────────────────────
+const MEDIA_TYPES = [
+  'imageMessage', 'audioMessage', 'videoMessage',
+  'documentMessage', 'stickerMessage',
+];
+
+// ── Mensajes internos de WhatsApp que se deben IGNORAR completamente ──────────
+const IGNORED_TYPES = [
+  'protocolMessage',
+  'senderKeyDistributionMessage',
+  'messageContextInfo',
+  'ephemeralMessage',
+  'reactionMessage',
+  'pollCreationMessage',
+  'pollUpdateMessage',
+  'groupInviteMessage',
+  'callLogMessage',
+  'ptvMessage',           // video-nota (thumbnail interno)
+  'editedMessage',
+];
 
 @Injectable()
 export class WhatsappService implements OnModuleInit {
   private readonly logger = new Logger(WhatsappService.name);
+  // storeId → socket
   private sockets: Map<string, any> = new Map();
+  // storeId → QR string
+  private qrCodes: Map<string, string> = new Map();
+  // storeId → reconexión en progreso
+  private reconnecting: Set<string> = new Set();
 
   constructor(
     private prisma: PrismaService,
@@ -30,16 +58,37 @@ export class WhatsappService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
+    // Solo reconectar stores que tenían sesión activa (waSessionId != null)
     const stores = await this.prisma.store.findMany({
       where: { isActive: true, waSessionId: { not: null } },
     });
     for (const store of stores) {
+      const sessionPath = join(process.cwd(), 'sessions', store.storeId);
+      // Si no existe la carpeta de sesión, limpiar el waSessionId y no intentar reconectar
+      try {
+        const fs = await import('fs');
+        if (!fs.existsSync(join(sessionPath, 'creds.json'))) {
+          this.logger.warn(`Sesión inválida para store ${store.name} — limpiando BD`);
+          await this.prisma.store.update({
+            where: { storeId: store.storeId },
+            data: { waSessionId: null },
+          });
+          continue;
+        }
+      } catch {}
+
       this.logger.log(`Reconectando store: ${store.name}`);
       await this.connectStore(store.storeId);
     }
   }
 
   async connectStore(storeId: string) {
+    // Evitar doble conexión simultánea
+    if (this.reconnecting.has(storeId)) {
+      this.logger.warn(`Ya hay una reconexión en progreso para ${storeId}`);
+      return;
+    }
+
     const {
       default: makeWASocket,
       DisconnectReason,
@@ -48,10 +97,12 @@ export class WhatsappService implements OnModuleInit {
       makeCacheableSignalKeyStore,
     } = await import('@whiskeysockets/baileys');
 
-    const authPath = join(process.cwd(), 'sessions', storeId);
-    const baileysLogger = P({ level: 'silent' });
+    const sessionPath = join(process.cwd(), 'sessions', storeId);
+    // Asegurar que la carpeta existe antes de que Baileys intente escribir
+    mkdirSync(sessionPath, { recursive: true });
 
-    const { state, saveCreds } = await useMultiFileAuthState(authPath);
+    const baileysLogger = P({ level: 'silent' });
+    const { state, saveCreds } = await useMultiFileAuthState(sessionPath);
     const { version } = await fetchLatestBaileysVersion();
 
     const sock = makeWASocket({
@@ -62,6 +113,10 @@ export class WhatsappService implements OnModuleInit {
       },
       printQRInTerminal: false,
       logger: baileysLogger,
+      // Mejoras de estabilidad
+      keepAliveIntervalMs: 30_000,
+      connectTimeoutMs: 60_000,
+      retryRequestDelayMs: 2_000,
     });
 
     this.sockets.set(storeId, sock);
@@ -71,46 +126,63 @@ export class WhatsappService implements OnModuleInit {
       const { connection, lastDisconnect, qr } = update;
 
       if (qr) {
-        this.logger.log(`QR para store ${storeId}:`);
+        this.logger.log(`QR generado para store: ${storeId}`);
         qrcode.generate(qr, { small: true });
-        this.sockets.set(`${storeId}_qr`, qr);
+        this.qrCodes.set(storeId, qr);
       }
 
       if (connection === 'open') {
-        this.logger.log(`✅ WhatsApp conectado para store: ${storeId}`);
-        this.sockets.delete(`${storeId}_qr`);
+        this.logger.log(`✅ WhatsApp conectado: ${storeId}`);
+        this.qrCodes.delete(storeId);
+        this.reconnecting.delete(storeId);
         await this.prisma.store.update({
           where: { storeId },
           data: { waSessionId: storeId },
-        });
+        }).catch(() => {});
       }
 
       if (connection === 'close') {
-        const shouldReconnect =
-          (lastDisconnect?.error as Boom)?.output?.statusCode !== DisconnectReason.loggedOut;
+        const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
+        const loggedOut = statusCode === DisconnectReason.loggedOut;
 
-        if (shouldReconnect) {
-          this.logger.log(`Reconectando store: ${storeId}`);
-          await this.connectStore(storeId);
-        } else {
-          this.logger.warn(`Store ${storeId} desconectada (logged out)`);
+        this.logger.warn(`Conexión cerrada para ${storeId} — código: ${statusCode}`);
+
+        if (loggedOut) {
+          this.logger.warn(`Store ${storeId} hizo logout — limpiando sesión`);
           this.sockets.delete(storeId);
-          this.sockets.delete(`${storeId}_qr`);
+          this.qrCodes.delete(storeId);
+          this.reconnecting.delete(storeId);
+
+          // Actualizar BD
           await this.prisma.store.update({
             where: { storeId },
             data: { waSessionId: null },
-          });
-          // Borrar archivos de sesión para forzar QR nuevo en próxima conexión
-          try {
-            const fs = await import('fs');
-            const sessionPath = join(process.cwd(), 'sessions', storeId);
-            if (fs.existsSync(sessionPath)) {
-              fs.rmSync(sessionPath, { recursive: true, force: true });
-              this.logger.log(`🗑️ Sesión borrada para store: ${storeId}`);
+          }).catch(() => {});
+
+          // Esperar a que Baileys cierre todos los file handles antes de borrar
+          setTimeout(async () => {
+            try {
+              const fs = await import('fs');
+              if (fs.existsSync(sessionPath)) {
+                fs.rmSync(sessionPath, { recursive: true, force: true });
+                this.logger.log(`🗑️ Sesión borrada: ${storeId}`);
+              }
+            } catch (e) {
+              this.logger.warn(`No se pudo borrar sesión: ${e.message}`);
             }
-          } catch (e) {
-            this.logger.warn(`No se pudo borrar sesión: ${e.message}`);
-          }
+          }, 3000); // 3s de gracia para que Baileys cierre archivos
+
+        } else if (!this.reconnecting.has(storeId)) {
+          // Reconexión automática (no logged out)
+          this.reconnecting.add(storeId);
+          const delay = statusCode === 408 ? 5000 : 3000;
+          this.logger.log(`Reconectando ${storeId} en ${delay}ms...`);
+          setTimeout(() => {
+            this.reconnecting.delete(storeId);
+            this.connectStore(storeId).catch(e =>
+              this.logger.error(`Error reconectando: ${e.message}`)
+            );
+          }, delay);
         }
       }
     });
@@ -119,45 +191,8 @@ export class WhatsappService implements OnModuleInit {
       if (type !== 'notify') return;
 
       for (const msg of messages) {
-        if (msg.key.fromMe) continue;
-        if (!msg.message) continue;
-
-        const jid = msg.key.remoteJid ?? '';
-        if (!jid.endsWith('@s.whatsapp.net')) continue;
-
-        const phoneRaw = jid.replace('@s.whatsapp.net', '');
-        if (!phoneRaw) continue;
-
-        const phone = `+${phoneRaw}`;
-
-        // ── OPCIÓN 1: Lista negra ─────────────────────────────────────────
-        const blocked = await this.blockedService.isBlocked(storeId, phone);
-        if (blocked) {
-          this.logger.log(`🚫 Número bloqueado ignorado: ${phone}`);
-          continue;
-        }
-
-        const messageType = Object.keys(msg.message)[0];
-        const isMedia = MEDIA_TYPES.includes(messageType);
-
-        const content =
-          msg.message?.conversation ||
-          msg.message?.extendedTextMessage?.text ||
-          '';
-
-        if (isMedia || !content) {
-          try {
-            await this.handleMediaMessage(storeId, phone, messageType, sock);
-          } catch (err) {
-            this.logger.error(`Error procesando media: ${err.message}`);
-          }
-          continue;
-        }
-
-        this.logger.log(`📩 Mensaje de ${phone}: ${content}`);
-
         try {
-          await this.handleIncomingMessage(storeId, phone, content, sock);
+          await this.processMessage(msg, storeId, sock);
         } catch (err) {
           this.logger.error(`Error procesando mensaje: ${err.message}`);
         }
@@ -167,6 +202,50 @@ export class WhatsappService implements OnModuleInit {
     return sock;
   }
 
+  private async processMessage(msg: any, storeId: string, sock: any) {
+    if (msg.key.fromMe) return;
+    if (!msg.message) return;
+
+    const jid = msg.key.remoteJid ?? '';
+    if (!jid.endsWith('@s.whatsapp.net')) return; // ignorar grupos
+
+    const phoneRaw = jid.replace('@s.whatsapp.net', '');
+    if (!phoneRaw) return;
+    const phone = `+${phoneRaw}`;
+
+    // ── Detectar tipo ────────────────────────────────────────────────────────
+    const messageType = Object.keys(msg.message)[0];
+
+    // Ignorar mensajes internos de WhatsApp
+    if (IGNORED_TYPES.includes(messageType)) {
+      this.logger.debug(`Ignorando mensaje interno (${messageType}) de ${phone}`);
+      return;
+    }
+
+    // ── Lista negra ──────────────────────────────────────────────────────────
+    const blocked = await this.blockedService.isBlocked(storeId, phone);
+    if (blocked) {
+      this.logger.log(`🚫 Número bloqueado ignorado: ${phone}`);
+      return;
+    }
+
+    const isMedia = MEDIA_TYPES.includes(messageType);
+    const content =
+      msg.message?.conversation ||
+      msg.message?.extendedTextMessage?.text ||
+      '';
+
+    if (isMedia || (!content && !MEDIA_TYPES.includes(messageType))) {
+      if (isMedia) {
+        await this.handleMediaMessage(storeId, phone, messageType, sock);
+      }
+      return;
+    }
+
+    this.logger.log(`📩 Mensaje de ${phone}: ${content}`);
+    await this.handleIncomingMessage(storeId, phone, content, sock);
+  }
+
   private async handleMediaMessage(
     storeId: string,
     phone: string,
@@ -174,22 +253,20 @@ export class WhatsappService implements OnModuleInit {
     sock: any,
   ) {
     const jid = `${phone.replace('+', '')}@s.whatsapp.net`;
-
     const customer = await this.customersService.findOrCreate({ storeId, phone });
     const conversation = await this.conversationsService.findOrCreate(
-      customer.customerId,
-      storeId,
+      customer.customerId, storeId,
     );
 
     if (conversation.status === 'human' || conversation.status === 'closed') return;
 
     let reply: string;
     if (messageType === 'audioMessage') {
-      reply = `¡Hola! 😊 Por el momento no puedo escuchar audios, pero con gusto te atiendo. ¿Puedes contarme en texto qué necesitas? Si prefieres hablar con un asesor, dímelo y te conecto ahora mismo 🍯`;
+      reply = `¡Hola! 😊 Por el momento no puedo escuchar audios. ¿Puedes contarme en texto qué necesitas? Si prefieres un asesor, dímelo y te conecto ahora mismo.`;
     } else if (messageType === 'imageMessage') {
-      reply = `¡Gracias por escribirnos! 😊 No puedo ver imágenes por este canal automático, pero un asesor puede ayudarte de inmediato. ¿Te conecto con él ahora?`;
+      reply = `¡Gracias por escribirnos! 😊 No puedo ver imágenes por este canal automático, pero un asesor puede ayudarte. ¿Te conecto?`;
     } else {
-      reply = `¡Hola! 😊 Recibí tu archivo pero no puedo procesarlo aquí. ¿Te conecto con un asesor para ayudarte mejor?`;
+      reply = `¡Hola! 😊 Recibí tu archivo pero no puedo procesarlo. ¿Te conecto con un asesor?`;
     }
 
     await this.prisma.conversation.update({
@@ -227,8 +304,7 @@ export class WhatsappService implements OnModuleInit {
   ) {
     const customer = await this.customersService.findOrCreate({ storeId, phone });
     const conversation = await this.conversationsService.findOrCreate(
-      customer.customerId,
-      storeId,
+      customer.customerId, storeId,
     );
 
     await this.messagesService.create({
@@ -241,19 +317,17 @@ export class WhatsappService implements OnModuleInit {
     });
 
     if (conversation.status === 'human' || conversation.status === 'closed') {
-      this.logger.log(`👤 Conversación ${conversation.conversationId} en modo humano — bot silenciado`);
+      this.logger.log(`👤 Conv ${conversation.conversationId} en modo humano — bot silenciado`);
       return;
     }
 
-    // ── OPCIÓN 2: Palabra clave !stop (enviada por el cliente) ────────────
-    // Nota: esto es para que el propio cliente pueda silenciar el bot
-    // El asesor lo hace desde el panel con takeoverConversation
+    // ── Palabra clave !stop ──────────────────────────────────────────────────
     if (content.trim().toLowerCase() === '!stop') {
       await this.prisma.conversation.update({
         where: { conversationId: conversation.conversationId },
         data: { status: 'human' },
       });
-      this.logger.log(`🛑 !stop recibido de ${phone} — bot silenciado permanentemente`);
+      this.logger.log(`🛑 !stop de ${phone} — bot silenciado`);
       return;
     }
 
@@ -269,27 +343,22 @@ export class WhatsappService implements OnModuleInit {
       'no quiero el bot', 'ayuda humana',
     ];
 
-    const needsHuman = humanKeywords.some((kw) => content.toLowerCase().includes(kw));
-
-    if (needsHuman) {
+    if (humanKeywords.some(kw => content.toLowerCase().includes(kw))) {
       await this.prisma.conversation.update({
         where: { conversationId: conversation.conversationId },
         data: { status: 'pending_human' },
       });
       const jid = `${phone.replace('+', '')}@s.whatsapp.net`;
       await sock.sendMessage(jid, {
-        text: '👤 Entendido! Te voy a conectar con un asesor. Por favor espera un momento...',
+        text: '👤 Entendido! Te conecto con un asesor. Por favor espera un momento...',
       });
-      this.logger.log(`🚨 Cliente ${phone} necesita atención humana`);
+      this.logger.log(`🚨 ${phone} solicita asesor humano`);
       return;
     }
 
     const aiReply = await this.aiService.generateReply(
-      storeId,
-      content,
-      conversation.conversationId,
+      storeId, content, conversation.conversationId,
     );
-
     if (!aiReply) return;
 
     await this.messagesService.create({
@@ -303,16 +372,55 @@ export class WhatsappService implements OnModuleInit {
 
     const jid = `${phone.replace('+', '')}@s.whatsapp.net`;
     await sock.sendMessage(jid, { text: aiReply });
-    this.logger.log(`🤖 Respuesta IA enviada a ${phone}`);
+    this.logger.log(`🤖 IA respondió a ${phone}`);
+  }
+
+  /**
+   * Extrae el nombre real de frases como:
+   * "mi nombre es Alex" → "Alex"
+   * "me llamo María José" → "María José"
+   * "soy Pedro" → "Pedro"
+   * "Alex" → "Alex"
+   */
+  private extractName(input: string): string {
+    const cleaned = input.trim();
+    const patterns = [
+      /^(?:mi nombre es|me llamo|soy|mi nombre:|nombre:)\s+(.+)/i,
+    ];
+    for (const pattern of patterns) {
+      const match = cleaned.match(pattern);
+      if (match) return match[1].trim();
+    }
+    return cleaned;
+  }
+
+  /**
+   * Extrae la ciudad de frases como:
+   * "soy de Bogotá" → "Bogotá"
+   * "estoy en Medellín" → "Medellín"
+   * "de Cali" → "Cali"
+   * "Neiva" → "Neiva"
+   */
+  private extractCity(input: string): string {
+    const cleaned = input.trim();
+    const patterns = [
+      /^(?:soy de|estoy en|vivo en|desde|de|en)\s+(.+)/i,
+    ];
+    for (const pattern of patterns) {
+      const match = cleaned.match(pattern);
+      if (match) return match[1].trim();
+    }
+    return cleaned;
+  }
+
+  /** Valida que el valor tenga al menos 2 letras (no solo símbolos/números) */
+  private isValidText(value: string): boolean {
+    return /[a-záéíóúüñA-ZÁÉÍÓÚÜÑ]{2,}/.test(value);
   }
 
   private async handleOnboarding(
-    customer: any,
-    conversation: any,
-    content: string,
-    sock: any,
-    phone: string,
-    storeId: string,
+    customer: any, conversation: any, content: string,
+    sock: any, phone: string, storeId: string,
   ): Promise<boolean> {
     const jid = `${phone.replace('+', '')}@s.whatsapp.net`;
 
@@ -324,34 +432,53 @@ export class WhatsappService implements OnModuleInit {
 
     if (!customer.name) {
       if (lastBotContent.includes(ASK_NAME_MARKER)) {
-        const name = content.trim();
-        await this.customersService.update(customer.customerId, { name });
-        this.logger.log(`✅ Nombre guardado: ${name} (${phone})`);
+        const name = this.extractName(content);
 
-        const visibleMsg = `¡Gracias, ${name}! 😊 ¿De qué ciudad nos escribes? 🏙️`;
-        await sock.sendMessage(jid, { text: visibleMsg });
-        await this.saveOnboardingMessage(conversation.conversationId, storeId, `${visibleMsg} ${ASK_CITY_MARKER}`);
+        // Validar que sea un nombre real
+        if (!this.isValidText(name)) {
+          const msg = `No entendí tu nombre 😅 ¿Me lo puedes escribir de nuevo? (solo el nombre)`;
+          await sock.sendMessage(jid, { text: msg });
+          await this.saveOnboardingMessage(conversation.conversationId, storeId, `${msg} ${ASK_NAME_MARKER}`);
+          return true;
+        }
+
+        // Capitalizar primera letra de cada palabra
+        const nameFormatted = name.replace(/\b\w/g, l => l.toUpperCase());
+        await this.customersService.update(customer.customerId, { name: nameFormatted });
+        this.logger.log(`✅ Nombre guardado: ${nameFormatted} (${phone})`);
+
+        const msg = `¡Gracias, ${nameFormatted}! 😊 ¿De qué ciudad nos escribes? 🏙️`;
+        await sock.sendMessage(jid, { text: msg });
+        await this.saveOnboardingMessage(conversation.conversationId, storeId, `${msg} ${ASK_CITY_MARKER}`);
         return true;
       }
-
-      const visibleMsg = `¡Hola! Bienvenido/a 👋 Soy el asistente virtual. Para atenderte mejor, ¿cuál es tu nombre?`;
-      await sock.sendMessage(jid, { text: visibleMsg });
-      await this.saveOnboardingMessage(conversation.conversationId, storeId, `${visibleMsg} ${ASK_NAME_MARKER}`);
+      const msg = `¡Hola! Bienvenido/a 👋 Soy el asistente virtual. Para atenderte mejor, ¿cuál es tu nombre?`;
+      await sock.sendMessage(jid, { text: msg });
+      await this.saveOnboardingMessage(conversation.conversationId, storeId, `${msg} ${ASK_NAME_MARKER}`);
       return true;
     }
 
     if (!customer.city) {
       if (lastBotContent.includes(ASK_CITY_MARKER)) {
-        const city = content.trim();
-        await this.customersService.update(customer.customerId, { city });
-        this.logger.log(`✅ Ciudad guardada: ${city} (${phone})`);
+        const city = this.extractCity(content);
+
+        // Validar que sea una ciudad real
+        if (!this.isValidText(city)) {
+          const msg = `No entendí la ciudad 😅 ¿Me la puedes escribir de nuevo?`;
+          await sock.sendMessage(jid, { text: msg });
+          await this.saveOnboardingMessage(conversation.conversationId, storeId, `${msg} ${ASK_CITY_MARKER}`);
+          return true;
+        }
+
+        const cityFormatted = city.replace(/\b\w/g, l => l.toUpperCase());
+        await this.customersService.update(customer.customerId, { city: cityFormatted });
+        this.logger.log(`✅ Ciudad guardada: ${cityFormatted} (${phone})`);
         return false;
       }
-
       if (!lastBotContent) {
-        const visibleMsg = `¡Hola de nuevo, ${customer.name}! 👋 ¿De qué ciudad nos escribes? 🏙️`;
-        await sock.sendMessage(jid, { text: visibleMsg });
-        await this.saveOnboardingMessage(conversation.conversationId, storeId, `${visibleMsg} ${ASK_CITY_MARKER}`);
+        const msg = `¡Hola de nuevo, ${customer.name}! 👋 ¿De qué ciudad nos escribes? 🏙️`;
+        await sock.sendMessage(jid, { text: msg });
+        await this.saveOnboardingMessage(conversation.conversationId, storeId, `${msg} ${ASK_CITY_MARKER}`);
         return true;
       }
     }
@@ -359,38 +486,46 @@ export class WhatsappService implements OnModuleInit {
     return false;
   }
 
-  private async saveOnboardingMessage(conversationId: string, storeId: string, contentWithMarker: string) {
+  private async saveOnboardingMessage(conversationId: string, storeId: string, content: string) {
     await this.messagesService.create({
-      conversationId,
-      storeId,
-      content: contentWithMarker,
-      type: 'text',
-      sender: 'store',
-      isAiResponse: true,
+      conversationId, storeId, content,
+      type: 'text', sender: 'store', isAiResponse: true,
     });
   }
 
+  // ── API pública ─────────────────────────────────────────────────────────────
+
   getQR(storeId: string): string | null {
-    return this.sockets.get(`${storeId}_qr`) ?? null;
+    return this.qrCodes.get(storeId) ?? null;
   }
 
   isConnected(storeId: string): boolean {
-    const sock = this.sockets.get(storeId);
-    return sock?.user != null;
+    return this.sockets.get(storeId)?.user != null;
   }
 
   async disconnectStore(storeId: string) {
     const sock = this.sockets.get(storeId);
+    this.sockets.delete(storeId);
+    this.qrCodes.delete(storeId);
+    this.reconnecting.delete(storeId);
+
     if (sock) {
-      await sock.logout();
-      this.sockets.delete(storeId);
+      try {
+        await sock.logout();
+      } catch {
+        try { sock.end(undefined); } catch {}
+      }
     }
+
+    await this.prisma.store.update({
+      where: { storeId },
+      data: { waSessionId: null },
+    }).catch(() => {});
   }
 
   async sendMessage(storeId: string, phone: string, content: string) {
     const sock = this.sockets.get(storeId);
     if (!sock) throw new Error(`No hay socket activo para store: ${storeId}`);
-
     const jid = `${phone.replace('+', '')}@s.whatsapp.net`;
     await sock.sendMessage(jid, { text: content });
     this.logger.log(`📤 Mensaje enviado a ${phone}`);
