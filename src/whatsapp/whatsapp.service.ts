@@ -43,17 +43,25 @@ const NAME_BLACKLIST = new Set([
 ]);
 
 // ─────────────────────────────────────────────────────────────────────────────
-// useDBAuthState: guarda la sesión de Baileys en Neon en lugar del filesystem
-// de Render (que es efímero y se borra en cada deploy).
+// useDBAuthState: guarda la sesión de Baileys en Neon.
 //
-// CLAVE: usa caché en memoria para todas las operaciones de keys durante el
-// handshake del QR — sin esto cada key.get/set hace una query a Neon y el QR
-// expira antes de que termine la conexión. La BD se actualiza en background.
+// CRÍTICO: los Signal keys contienen objetos Buffer. Deben ser serializados
+// con BufferJSON.replacer antes de guardar y deserializados con BufferJSON.reviver
+// al leer. Si no se hace esto, los pre-keys de nuevos contactos se corrompen
+// y Baileys no puede establecer la primera sesión → mensajes perdidos.
 // ─────────────────────────────────────────────────────────────────────────────
 async function useDBAuthState(prisma: PrismaService, storeId: string) {
   const { BufferJSON, initAuthCreds } = await import('@whiskeysockets/baileys');
 
-  // ── 1. Cargar TODO de una sola vez al inicio ─────────────────────────────
+  // ── Serialización segura de Buffers ──────────────────────────────────────
+  function serialize(obj: any): any {
+    return JSON.parse(JSON.stringify(obj, BufferJSON.replacer));
+  }
+  function deserialize(obj: any): any {
+    return JSON.parse(JSON.stringify(obj), BufferJSON.reviver);
+  }
+
+  // ── 1. Cargar TODO de BD al inicio — deserializando Buffers ─────────────
   async function loadFromDB(): Promise<Record<string, any>> {
     const row = await prisma.whatsappSession.findUnique({ where: { storeId } });
     if (!row?.data) return {};
@@ -65,15 +73,16 @@ async function useDBAuthState(prisma: PrismaService, storeId: string) {
     }
   }
 
-  // ── 2. Caché en memoria — todas las ops de keys son síncronas ────────────
+  // ── 2. Caché en memoria ───────────────────────────────────────────────────
   const cache: Record<string, any> = await loadFromDB();
 
-  // ── 3. Escritura a BD en background (no bloquea el handshake) ────────────
+  // ── 3. Escritura a BD en background con debounce ─────────────────────────
   let saveTimer: ReturnType<typeof setTimeout> | null = null;
   function scheduleSave() {
     if (saveTimer) clearTimeout(saveTimer);
     saveTimer = setTimeout(async () => {
       try {
+        // Serializar con BufferJSON.replacer para preservar Buffers en JSON
         const serialized = JSON.stringify(cache, BufferJSON.replacer);
         const parsed = JSON.parse(serialized);
         await prisma.whatsappSession.upsert({
@@ -81,14 +90,14 @@ async function useDBAuthState(prisma: PrismaService, storeId: string) {
           update: { data: parsed },
           create: { storeId, data: parsed },
         });
-      } catch (e) {
-        // Silencioso — se reintentará en el próximo cambio
+      } catch {
+        // Se reintentará en el próximo cambio
       }
       saveTimer = null;
-    }, 500); // debounce 500ms: agrupa múltiples writes en uno solo
+    }, 300);
   }
 
-  // ── 4. Inicializar creds si no existen ───────────────────────────────────
+  // ── 4. Inicializar creds ──────────────────────────────────────────────────
   if (!cache['creds']) {
     cache['creds'] = initAuthCreds();
     scheduleSave();
@@ -97,22 +106,32 @@ async function useDBAuthState(prisma: PrismaService, storeId: string) {
   const state = {
     creds: cache['creds'],
     keys: {
-      get: (type: string, ids: string[]) => {
-        // Síncrono — lee desde caché en memoria, sin tocar la BD
+      get: async (type: string, ids: string[]) => {
+        // CRÍTICO: deserializar Buffers al leer para que Signal funcione
         const result: Record<string, any> = {};
         for (const id of ids) {
-          const val = cache[`key-${type}-${id}`];
-          if (val !== undefined) result[id] = val;
+          const raw = cache[`key-${type}-${id}`];
+          if (raw != null) {
+            try {
+              result[id] = deserialize(raw);
+            } catch {
+              result[id] = raw;
+            }
+          }
         }
         return result;
       },
-      set: (data: Record<string, Record<string, any>>) => {
-        // Síncrono — escribe en caché, persiste en BD en background
+      set: async (data: Record<string, Record<string, any>>) => {
+        // CRÍTICO: serializar+deserializar para normalizar Buffers antes de guardar
         for (const [type, typeData] of Object.entries(data)) {
           for (const [id, value] of Object.entries(typeData)) {
             const key = `key-${type}-${id}`;
             if (value != null) {
-              cache[key] = value;
+              try {
+                cache[key] = deserialize(serialize(value));
+              } catch {
+                cache[key] = value;
+              }
             } else {
               delete cache[key];
             }
