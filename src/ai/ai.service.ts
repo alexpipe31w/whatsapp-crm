@@ -4,23 +4,21 @@ import { PrismaService } from '../prisma/prisma.service';
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
-// TTL del caché de configuración y catálogo (no cambian entre mensajes)
-const CONFIG_CACHE_TTL_MS = 60_000;       // 1 minuto
-const CATALOG_CACHE_TTL_MS = 120_000;     // 2 minutos
+const CONFIG_CACHE_TTL_MS   = 60_000;
+const CATALOG_CACHE_TTL_MS  = 120_000;
+const GROQ_TIMEOUT_MAIN_MS  = 30_000;
+const GROQ_TIMEOUT_EXT_MS   = 20_000;
+const ORDER_GUARD_TTL_MS    = 10 * 60 * 1000;
+const MAX_HISTORY_MESSAGES  = 20;
 
-// Timeout de llamadas a Groq
-const GROQ_TIMEOUT_MAIN_MS = 30_000;
-const GROQ_TIMEOUT_EXTRACTOR_MS = 15_000;
+// Solo corre el extractor si el mensaje tiene señales de compra
+const PURCHASE_INTENT_RE = /\b(quiero|deseo|pedir|pido|ordenar|comprar|llevar|encargar|confirm|dale|listo|acepto|perfecto|procede|adelante|claro|exacto|sip|yep|yes|sí|si\b|ok\b|pedido|orden|dirección|entrega|envío|cantidad|unidades?)\b/i;
 
-// Historial máximo a enviar al modelo principal
-const MAX_HISTORY_MESSAGES = 20;
+// Detecta si el cliente está confirmando un resumen previo
+const CONFIRMATION_RE = /\b(confirm|sí|si\b|ok\b|dale|listo|acepto|perfecto|procede|adelante|claro|exacto|sip|yep|yes)\b/i;
 
-// TTL del guard anti-duplicado de orden y de extracción cacheada
-const ORDER_GUARD_TTL_MS = 10 * 60 * 1000;
-
-// Palabras clave que indican intención de compra — solo en estos casos
-// se corre el extractor para ahorrar una llamada a Groq innecesaria.
-const PURCHASE_INTENT_RE = /\b(quiero|deseo|pedir|pido|ordenar|comprar|llevar|encargar|confirmo?|dale|listo|sí|si\b|ok\b|pedido|orden|dirección|entrega|envío|cantidad|unidades?)\b/i;
+// Detecta dirección en texto del cliente
+const ADDRESS_RE = /\b(calle|carrera|cra|cl\b|av\b|avenida|barrio|#|\d{2,}[-–]\d+|diagonal|transversal|manzana|casa|apto|apartamento)\b/i;
 
 // ─── Tipos internos ───────────────────────────────────────────────────────────
 
@@ -29,26 +27,34 @@ interface CacheEntry<T> {
   expiresAt: number;
 }
 
+interface ExtractedItem {
+  itemType: 'producto' | 'servicio';
+  productId: string | null;
+  serviceId: string | null;
+  variantId: string | null;
+  quantity: number;
+  description?: string | null;
+}
+
+interface ExtractionResult {
+  complete: boolean;
+  items: ExtractedItem[];
+  deliveryAddress: string | null;
+  notes: string | null;
+  reason: string;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Injectable()
 export class AiService {
   private readonly logger = new Logger(AiService.name);
 
-  // Cache de clientes Groq por apiKey
-  private readonly groqClients = new Map<string, Groq>();
-
-  // Cache de configuración IA por storeId (evita query por cada mensaje)
-  private readonly configCache = new Map<string, CacheEntry<any>>();
-
-  // Cache de catálogo por storeId (productos + servicios cambian poco)
-  private readonly catalogCache = new Map<string, CacheEntry<{ products: any[]; services: any[] }>>();
-
-  // Guard anti-duplicado de orden en curso por conversationId
-  private readonly orderInProgress = new Set<string>();
-
-  // Cache de extracción pendiente — evita re-extraer cuando el cliente confirma
-  private readonly pendingExtractions = new Map<string, any>();
+  private readonly groqClients        = new Map<string, Groq>();
+  private readonly configCache        = new Map<string, CacheEntry<any>>();
+  private readonly catalogCache       = new Map<string, CacheEntry<{ products: any[]; services: any[] }>>();
+  private readonly orderInProgress    = new Set<string>();
+  private readonly pendingExtractions = new Map<string, ExtractionResult>();
 
   constructor(private readonly prisma: PrismaService) {}
 
@@ -66,26 +72,14 @@ export class AiService {
   private getCached<T>(cache: Map<string, CacheEntry<T>>, key: string): T | null {
     const entry = cache.get(key);
     if (!entry) return null;
-    if (Date.now() > entry.expiresAt) {
-      cache.delete(key);
-      return null;
-    }
+    if (Date.now() > entry.expiresAt) { cache.delete(key); return null; }
     return entry.value;
   }
 
-  private setCached<T>(
-    cache: Map<string, CacheEntry<T>>,
-    key: string,
-    value: T,
-    ttlMs: number,
-  ): void {
+  private setCached<T>(cache: Map<string, CacheEntry<T>>, key: string, value: T, ttlMs: number): void {
     cache.set(key, { value, expiresAt: Date.now() + ttlMs });
   }
 
-  /**
-   * Invalida el cache de catálogo de una tienda.
-   * Llamar desde ProductsService/ServicesService cuando se modifica el catálogo.
-   */
   invalidateCatalogCache(storeId: string): void {
     this.catalogCache.delete(storeId);
   }
@@ -98,7 +92,7 @@ export class AiService {
     conversationId: string,
   ): Promise<string | null> {
     try {
-      // ── 1. Cargar config (con cache) ────────────────────────────────────────
+      // ── 1. Config (cacheada) ────────────────────────────────────────────────
       let config = this.getCached(this.configCache, storeId);
       if (!config) {
         config = await this.prisma.aIConfiguration.findUnique({ where: { storeId } });
@@ -109,7 +103,7 @@ export class AiService {
         this.setCached(this.configCache, storeId, config, CONFIG_CACHE_TTL_MS);
       }
 
-      // ── 2. Cargar catálogo (con cache) ──────────────────────────────────────
+      // ── 2. Catálogo (cacheado) ──────────────────────────────────────────────
       let catalog = this.getCached(this.catalogCache, storeId);
       if (!catalog) {
         const [products, services] = await Promise.all([
@@ -128,9 +122,8 @@ export class AiService {
       }
       const { products, services } = catalog;
 
-      // ── 3. Cargar conversación, órdenes e historial EN PARALELO ─────────────
-      // Estas 3 queries no dependen entre sí — las corremos simultáneamente.
-      const [conversationWithCustomer, orders, history] = await Promise.all([
+      // ── 3. Conversación + órdenes + historial EN PARALELO ───────────────────
+      const [conversationRow, orders, history] = await Promise.all([
         this.prisma.conversation.findFirst({
           where: { conversationId, storeId },
           include: { customer: true },
@@ -152,23 +145,22 @@ export class AiService {
         }),
       ]);
 
-      if (!conversationWithCustomer) {
+      if (!conversationRow) {
         this.logger.warn(`Conversación ${conversationId} no pertenece a store ${storeId}`);
         return null;
       }
-      const customer = conversationWithCustomer.customer;
-
+      const customer = conversationRow.customer;
       const groq = this.getGroqClient(config.groqApiKey);
 
-      // ── 4. Extractor de orden (solo si hay intención de compra) ─────────────
-      // Evita desperdiciar una llamada a Groq en mensajes que claramente
-      // no son una compra (preguntas de precio, saludos, dudas, etc.).
-      const hasCatalog = products.length > 0 || services.length > 0;
-      const hasPurchaseIntent = PURCHASE_INTENT_RE.test(userMessage);
+      // ── 4. Extractor (solo con intención de compra) ─────────────────────────
+      const hasCatalog          = products.length > 0 || services.length > 0;
+      const hasPurchaseIntent   = PURCHASE_INTENT_RE.test(userMessage);
+      const hasPendingExtraction = this.pendingExtractions.has(conversationId);
+
       const shouldTryOrder =
         hasCatalog &&
         history.length >= 3 &&
-        (hasPurchaseIntent || this.pendingExtractions.has(conversationId)) &&
+        (hasPurchaseIntent || hasPendingExtraction) &&
         !this.orderInProgress.has(conversationId);
 
       if (shouldTryOrder) {
@@ -176,9 +168,7 @@ export class AiService {
           groq, config.model, history, userMessage,
           products, services, customer, storeId, conversationId,
         );
-        if (orderResult.created) {
-          return orderResult.message!;
-        }
+        if (orderResult.created) return orderResult.message!;
       }
 
       // ── 5. Respuesta principal ───────────────────────────────────────────────
@@ -191,9 +181,16 @@ export class AiService {
         hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota',
       });
 
+      // Detectar si la dirección ya fue dada en el historial
+      const allClientText = [
+        ...history.filter((m: any) => !m.isAiResponse).map((m: any) => m.content),
+        userMessage,
+      ].join(' ');
+      const addressAlreadyGiven = ADDRESS_RE.test(allClientText);
+
       const enrichedSystemPrompt = this.buildSystemPrompt(
         config.systemPrompt, customer, orders, products, services,
-        fechaActual, horaActual, history, userMessage,
+        fechaActual, horaActual, history, userMessage, addressAlreadyGiven,
       );
 
       const messages: any[] = [
@@ -219,7 +216,7 @@ export class AiService {
           ),
         ]) as any;
       } catch (modelErr: any) {
-        this.logger.warn(`Modelo ${config.model} falló, usando fallback: ${modelErr.message?.slice(0, 80)}`);
+        this.logger.warn(`Modelo ${config.model} falló, fallback: ${modelErr.message?.slice(0, 80)}`);
         response = await groq.chat.completions.create({
           model: 'llama-3.3-70b-versatile',
           messages,
@@ -236,7 +233,7 @@ export class AiService {
     }
   }
 
-  // ─── Extracción y creación de orden ──────────────────────────────────────────
+  // ─── Extracción y creación de orden multi-item ────────────────────────────────
 
   private async tryExtractAndCreateOrder(
     groq: Groq,
@@ -250,23 +247,30 @@ export class AiService {
     conversationId: string,
   ): Promise<{ created: boolean; message?: string }> {
 
-    const CONFIRMATION_RE = /\b(confirm|sí|si\b|ok\b|dale|listo|acepto|perfecto|procede|adelante|claro|exacto|sip|yep|yes)\b/i;
     const cached = this.pendingExtractions.get(conversationId);
+    let extracted: ExtractionResult;
 
-    let extracted: any;
-
-    if (cached && CONFIRMATION_RE.test(latestMessage.trim())) {
-      this.logger.log(`Usando extracción cacheada para ${conversationId}`);
+    // ── Caso 1: extracción completa cacheada + cliente confirma ───────────────
+    if (cached?.complete && cached.deliveryAddress && CONFIRMATION_RE.test(latestMessage.trim())) {
+      this.logger.log(`Usando extracción completa cacheada para ${conversationId}`);
       extracted = cached;
       this.pendingExtractions.delete(conversationId);
+
+    // ── Caso 2: había items pero faltaba dirección, y ahora llega ────────────
+    } else if (cached?.items?.length && !cached.deliveryAddress && ADDRESS_RE.test(latestMessage)) {
+      this.logger.log(`Completando extracción con dirección para ${conversationId}`);
+      extracted = { ...cached, deliveryAddress: latestMessage.trim(), complete: true };
+      this.pendingExtractions.delete(conversationId);
+
+    // ── Caso 3: correr el extractor normalmente ───────────────────────────────
     } else {
-      const productLines = products.map((p: any) => {
+      const productLines = products.flatMap((p: any) => {
         if (p.variants?.length > 0) {
           return p.variants.map((v: any) =>
             `- "${p.name} - ${v.name}" | tipo:producto | productId:${p.productId} | variantId:${v.variantId} | precio:${v.salePrice} | stock:${v.stock}`
-          ).join('\n');
+          );
         }
-        return `- "${p.name}" | tipo:producto | productId:${p.productId} | precio:${p.salePrice} | stock:${p.stock}`;
+        return [`- "${p.name}" | tipo:producto | productId:${p.productId} | variantId:null | precio:${p.salePrice} | stock:${p.stock}`];
       });
 
       const serviceLines = services.map((s: any) =>
@@ -282,40 +286,43 @@ export class AiService {
         `Cliente: ${latestMessage}`,
       ].join('\n');
 
-      const extractorPrompt = `Eres un extractor de datos de órdenes. Analiza la conversación y determina si el cliente YA CONFIRMÓ todos los datos para crear una orden.
+      const extractorPrompt = `Eres un extractor de datos de órdenes de compra. Tu única tarea es leer la conversación y extraer los datos del pedido en JSON.
 
-CATÁLOGO:
+CATÁLOGO DISPONIBLE (usa EXACTAMENTE estos IDs):
 ${catalogSummary}
 
 CONVERSACIÓN:
 ${conversationText}
 
-DATOS REQUERIDOS:
-1. productId o serviceId (según tipo)
-2. variantId (solo si el producto tiene variantes, sino null)
-3. quantity (entero positivo)
-4. deliveryAddress (dirección completa — solo ciudad NO es suficiente)
+REGLAS ESTRICTAS:
+1. "complete":true SOLO si se cumplen LAS 3 CONDICIONES SIMULTÁNEAMENTE:
+   a) El cliente especificó al menos un producto/servicio del catálogo con cantidad
+   b) El cliente proporcionó una dirección con calle, carrera, barrio o similar (solo decir una ciudad NO es suficiente)
+   c) El cliente confirmó explícitamente (dijo sí, confirmo, listo, dale, ok, etc.)
+2. Si falta CUALQUIERA de las 3 condiciones → "complete":false sin excepción.
+3. Para productos CON variantes: el variantId es OBLIGATORIO. Identifícalo por el tamaño o nombre que pidió el cliente.
+4. Para productos SIN variantes: variantId debe ser null.
+5. Si el cliente pide múltiples productos, inclúyelos TODOS en el array "items".
+6. Si el stock de un item es 0, NO lo incluyas y explícalo en "reason".
+7. "deliveryAddress": copia textualmente lo que dijo el cliente. Si no hay dirección válida → null.
+8. Si hay varios mensajes con dirección, usa el más reciente.
 
-REGLAS:
-- complete:true SOLO si el cliente confirmó TODOS los datos en esta conversación.
-- Si el stock es 0, complete:false.
-- Si es un servicio con precio variable, quantity puede ser 1.
-- Dirección debe tener calle/carrera/barrio + ciudad o similar.
-- No extraigas datos de mensajes del asistente.
-- Si solo preguntó por precio o métodos de pago, complete:false.
-- Si el producto tiene variantes, DEBES incluir el variantId correcto.
-
-Responde ÚNICAMENTE con este JSON (sin markdown):
+Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
 {
   "complete": boolean,
-  "itemType": "producto" | "servicio",
-  "productId": "string o null",
-  "serviceId": "string o null",
-  "variantId": "string o null",
-  "quantity": number,
+  "items": [
+    {
+      "itemType": "producto" | "servicio",
+      "productId": "uuid o null",
+      "serviceId": "uuid o null",
+      "variantId": "uuid o null",
+      "quantity": number,
+      "description": "nombre legible del item para mostrar al cliente"
+    }
+  ],
   "deliveryAddress": "string o null",
   "notes": "string o null",
-  "reason": "string"
+  "reason": "explicación de por qué complete es true o false"
 }`;
 
       try {
@@ -324,10 +331,10 @@ Responde ÚNICAMENTE con este JSON (sin markdown):
             model: 'llama-3.1-8b-instant',
             messages: [{ role: 'user', content: extractorPrompt }],
             temperature: 0,
-            max_tokens: 350,
+            max_tokens: 800,
           }),
           new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Extractor timeout')), GROQ_TIMEOUT_EXTRACTOR_MS)
+            setTimeout(() => reject(new Error('Extractor timeout')), GROQ_TIMEOUT_EXT_MS)
           ),
         ]) as any;
 
@@ -336,23 +343,24 @@ Responde ÚNICAMENTE con este JSON (sin markdown):
         if (!jsonMatch) return { created: false };
 
         extracted = JSON.parse(jsonMatch[0]);
-        this.logger.log(`Extracción de orden: ${JSON.stringify(extracted)}`);
+        this.logger.log(`Extracción: ${JSON.stringify(extracted)}`);
 
-        if (extracted.complete && extracted.quantity && extracted.deliveryAddress) {
+        // Cachear siempre que haya items aunque falten otros datos
+        if (extracted.items?.length > 0) {
           this.pendingExtractions.set(conversationId, extracted);
           setTimeout(() => this.pendingExtractions.delete(conversationId), ORDER_GUARD_TTL_MS);
         }
 
       } catch (err: any) {
-        this.orderInProgress.delete(conversationId);
-        this.logger.error(`Error en extracción de orden: ${err.message}`);
+        this.logger.error(`Error en extractor: ${err.message}`);
         return { created: false };
       }
     }
 
-    if (!extracted?.complete || !extracted.quantity || !extracted.deliveryAddress) {
-      return { created: false };
-    }
+    // ── Validación final ───────────────────────────────────────────────────────
+    if (!extracted?.complete)           return { created: false };
+    if (!extracted.items?.length)       return { created: false };
+    if (!extracted.deliveryAddress)     return { created: false };
 
     if (this.orderInProgress.has(conversationId)) {
       this.logger.warn(`Orden ya en progreso para ${conversationId}`);
@@ -361,56 +369,64 @@ Responde ÚNICAMENTE con este JSON (sin markdown):
     this.orderInProgress.add(conversationId);
 
     try {
-      let unitPrice: number;
-      let orderItemData: any;
-      let itemName: string;
+      const orderItemsData: any[]    = [];
+      const orderItemsSummary: string[] = [];
+      let total = 0;
 
-      if (extracted.itemType === 'servicio' && extracted.serviceId) {
-        const service = services.find((s: any) => s.serviceId === extracted.serviceId);
-        if (!service) return { created: false };
-        unitPrice = service.price ? Number(service.price) : 0;
-        itemName = service.name;
-        orderItemData = {
-          service: { connect: { serviceId: extracted.serviceId } },
-          quantity: extracted.quantity,
-          unitPrice,
-        };
-      } else {
-        if (!extracted.productId) return { created: false };
-        const product = products.find((p: any) => p.productId === extracted.productId);
-        if (!product) return { created: false };
+      for (const item of extracted.items) {
+        if (item.itemType === 'servicio' && item.serviceId) {
+          const service = services.find((s: any) => s.serviceId === item.serviceId);
+          if (!service) { this.logger.warn(`Servicio no encontrado: ${item.serviceId}`); continue; }
+          const unitPrice = service.price ? Number(service.price) : 0;
+          const subtotal  = unitPrice * item.quantity;
+          total += subtotal;
+          orderItemsData.push({
+            service: { connect: { serviceId: item.serviceId } },
+            description: item.description ?? service.name,
+            quantity: item.quantity,
+            unitPrice,
+          });
+          orderItemsSummary.push(`• ${item.description ?? service.name} x${item.quantity} — $${subtotal.toLocaleString('es-CO')}`);
 
-        if (extracted.variantId) {
-          const variant = product.variants?.find((v: any) => v.variantId === extracted.variantId);
-          if (!variant) return { created: false };
-          if (variant.stock < extracted.quantity) {
-            this.logger.warn(`Stock insuficiente: ${variant.stock} < ${extracted.quantity}`);
-            return { created: false };
+        } else if (item.productId) {
+          const product = products.find((p: any) => p.productId === item.productId);
+          if (!product) { this.logger.warn(`Producto no encontrado: ${item.productId}`); continue; }
+
+          if (item.variantId) {
+            const variant = product.variants?.find((v: any) => v.variantId === item.variantId);
+            if (!variant) { this.logger.warn(`Variante no encontrada: ${item.variantId}`); continue; }
+            if (variant.stock < item.quantity) { this.logger.warn(`Stock insuficiente variante ${variant.name}`); continue; }
+            const unitPrice = Number(variant.salePrice);
+            const subtotal  = unitPrice * item.quantity;
+            total += subtotal;
+            orderItemsData.push({
+              product: { connect: { productId: item.productId } },
+              description: item.description ?? `${product.name} - ${variant.name}`,
+              quantity: item.quantity,
+              unitPrice,
+            });
+            orderItemsSummary.push(`• ${item.description ?? `${product.name} - ${variant.name}`} x${item.quantity} — $${subtotal.toLocaleString('es-CO')}`);
+
+          } else {
+            if (product.stock < item.quantity) { this.logger.warn(`Stock insuficiente: ${product.name}`); continue; }
+            const unitPrice = Number(product.salePrice);
+            const subtotal  = unitPrice * item.quantity;
+            total += subtotal;
+            orderItemsData.push({
+              product: { connect: { productId: item.productId } },
+              description: item.description ?? product.name,
+              quantity: item.quantity,
+              unitPrice,
+            });
+            orderItemsSummary.push(`• ${item.description ?? product.name} x${item.quantity} — $${subtotal.toLocaleString('es-CO')}`);
           }
-          unitPrice = Number(variant.salePrice);
-          itemName = `${product.name} - ${variant.name}`;
-          orderItemData = {
-            product: { connect: { productId: extracted.productId } },
-            variant: { connect: { variantId: extracted.variantId } },
-            quantity: extracted.quantity,
-            unitPrice,
-          };
-        } else {
-          if (product.stock < extracted.quantity) {
-            this.logger.warn(`Stock insuficiente: ${product.stock} < ${extracted.quantity}`);
-            return { created: false };
-          }
-          unitPrice = Number(product.salePrice);
-          itemName = product.name;
-          orderItemData = {
-            product: { connect: { productId: extracted.productId } },
-            quantity: extracted.quantity,
-            unitPrice,
-          };
         }
       }
 
-      const total = unitPrice * extracted.quantity;
+      if (orderItemsData.length === 0) {
+        this.logger.warn(`Sin items válidos para crear la orden`);
+        return { created: false };
+      }
 
       const order = await this.prisma.order.create({
         data: {
@@ -423,7 +439,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown):
             extracted.notes ? `Notas: ${extracted.notes}` : null,
             `Creado automáticamente por IA`,
           ].filter(Boolean).join(' | '),
-          orderItems: { create: [orderItemData] },
+          orderItems: { create: orderItemsData },
         },
       });
 
@@ -433,23 +449,19 @@ Responde ÚNICAMENTE con este JSON (sin markdown):
       });
 
       this.pendingExtractions.delete(conversationId);
-      this.logger.log(`✅ Orden creada: ${order.orderId} | Total: $${total}`);
+      this.logger.log(`✅ Orden ${order.orderId} — ${orderItemsData.length} items — Total: $${total}`);
 
       const nombreCliente = customer.name ? `, ${customer.name}` : '';
-      const precioTexto = unitPrice === 0
-        ? 'Por confirmar (precio variable)'
-        : `$${total.toLocaleString('es-CO')}`;
 
       return {
         created: true,
         message:
-          `¡Perfecto${nombreCliente}! 🎉 Tu pedido fue registrado.\n\n` +
-          `📦 *Resumen:*\n` +
-          `• ${itemName}\n` +
-          `• Cantidad: ${extracted.quantity}\n` +
-          `• Total: ${precioTexto}\n` +
-          `• Dirección: ${extracted.deliveryAddress}\n\n` +
-          `Un asesor te contactará pronto para coordinar el pago y confirmar el envío. ¡Gracias! 😊`,
+          `¡Perfecto${nombreCliente}! 🎉 Tu pedido fue registrado exitosamente.\n\n` +
+          `📦 *Resumen del pedido:*\n` +
+          orderItemsSummary.join('\n') +
+          `\n\n💰 *Total: $${total.toLocaleString('es-CO')}*\n` +
+          `📍 *Dirección:* ${extracted.deliveryAddress}\n\n` +
+          `Un asesor te contactará pronto para coordinar el pago y confirmar el envío. ¡Gracias por tu compra! 😊`,
       };
 
     } finally {
@@ -469,9 +481,9 @@ Responde ÚNICAMENTE con este JSON (sin markdown):
     horaActual: string,
     history: any[],
     latestMessage: string,
+    addressAlreadyGiven: boolean,
   ): string {
     const sep = '\n===================================================\n';
-
     const nombreCliente = customer.name ?? null;
 
     const clienteSection = `CLIENTE:
@@ -480,7 +492,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown):
 - ${nombreCliente
     ? `Llámalo ${nombreCliente} de forma natural (no en cada mensaje).`
     : `No sabes el nombre. No lo inventes.`}
-- Adapta el tono al del cliente: formal si escribe formal, cercano si es casual.
+- Adapta el tono al del cliente.
 - NUNCA menciones datos de otros clientes.`;
 
     const clientMessages = [
@@ -495,8 +507,8 @@ Responde ÚNICAMENTE con este JSON (sin markdown):
         datosMencionados.push(`✅ Item mencionado: "${item.name}"`);
       }
     });
-    if (/calle|carrera|avenida|cra|cl |av |#|barrio|dirección|entrega/.test(allClientText)) {
-      datosMencionados.push('✅ Dirección: ya fue proporcionada');
+    if (addressAlreadyGiven) {
+      datosMencionados.push('✅ Dirección de entrega: YA FUE PROPORCIONADA — NO LA VUELVAS A PEDIR BAJO NINGUNA CIRCUNSTANCIA');
     }
     if (/\b(una?|dos|tres|cuatro|cinco|\d+)\s*(unidad|unidades|)/i.test(allClientText)) {
       datosMencionados.push('✅ Cantidad: ya fue mencionada');
@@ -527,7 +539,6 @@ Responde ÚNICAMENTE con este JSON (sin markdown):
 
     const hasItems = products.length > 0 || services.length > 0;
     let catalogoSection: string;
-
     if (!hasItems) {
       catalogoSection = `CATÁLOGO: Sin productos ni servicios registrados.`;
     } else {
@@ -565,7 +576,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown):
 
       catalogoSection = `CATÁLOGO:\n${partes}
 REGLAS:
-- Habla SOLO de estos items. Si piden algo que no está, dilo y sugiere lo más cercano.
+- Habla SOLO de estos items.
 - No inventes precios ni características.
 - Si el stock es AGOTADO, avísalo y ofrece alternativa si hay.
 - Para servicios con precio variable, di que un asesor confirmará el precio.`;
@@ -573,20 +584,29 @@ REGLAS:
 
     const flujoSection = `FLUJO DE TOMA DE ORDEN:
 
-1. Datos necesarios: a) item del catálogo  b) cantidad  c) dirección de entrega completa
-2. Si ya tienes un dato (ver DATOS YA RECOPILADOS), NO lo pidas de nuevo.
-3. Pide los datos faltantes DE UNO EN UNO.
-4. Cuando tengas los 3, confirma el resumen y espera confirmación del cliente.
-5. El sistema creará la orden automáticamente.
+Para crear un pedido necesito EXACTAMENTE 3 cosas:
+  a) Qué productos quiere y en qué cantidad (puede ser múltiples productos)
+  b) Dirección de entrega completa (calle/carrera + número + barrio + ciudad)
+  c) Confirmación explícita del cliente ("sí", "confirmo", "listo", etc.)
 
-PAGOS — MUY IMPORTANTE:
-- NUNCA des información de cuentas, nequi, bancolombia, ni métodos de pago.
-- Si preguntan por pago: "Un asesor te contactará con los detalles del pago."
+REGLAS ANTI-LOOP — MUY IMPORTANTE:
+- Si un dato ya está en DATOS YA RECOPILADOS, NO lo vuelvas a pedir. NUNCA.
+- Si la dirección ya fue proporcionada, pasa al siguiente paso.
+- Si ya tienes (a) y (b), muestra el resumen con todos los productos y precios, y pide SOLO confirmación.
+- Cuando el cliente confirme, el sistema crea la orden automáticamente y cierra el pedido.
+- NO hagas preguntas innecesarias después de que el cliente confirme.
 
-PROHIBIDO:
-- Inventar reseñas, artículos o fuentes externas.
-- Pedir datos ya proporcionados.
-- Dar información de pago.
+SOBRE ENVÍO Y PAGOS — MUY IMPORTANTE:
+- NUNCA calcules ni menciones costos de envío. No tienes esa información.
+- NUNCA des datos de cuentas bancarias, Nequi, Bancolombia ni métodos de pago.
+- Si preguntan: "Un asesor te contactará con esos detalles."
+
+COTIZACIÓN: Si el cliente pide cotización antes de confirmar, muéstrala con los precios del catálogo sin inventar costos adicionales.
+
+PROHIBIDO absolutamente:
+- Pedir datos que ya tienes.
+- Calcular o mencionar costos de envío.
+- Dar información de métodos de pago.
 - Mencionar items fuera del catálogo.`;
 
     return [
