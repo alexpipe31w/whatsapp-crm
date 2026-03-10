@@ -2,17 +2,57 @@ import { Injectable, Logger } from '@nestjs/common';
 import Groq from 'groq-sdk';
 import { PrismaService } from '../prisma/prisma.service';
 
+// ─── Constantes ───────────────────────────────────────────────────────────────
+
+// TTL del caché de configuración y catálogo (no cambian entre mensajes)
+const CONFIG_CACHE_TTL_MS = 60_000;       // 1 minuto
+const CATALOG_CACHE_TTL_MS = 120_000;     // 2 minutos
+
+// Timeout de llamadas a Groq
+const GROQ_TIMEOUT_MAIN_MS = 30_000;
+const GROQ_TIMEOUT_EXTRACTOR_MS = 15_000;
+
+// Historial máximo a enviar al modelo principal
+const MAX_HISTORY_MESSAGES = 20;
+
+// TTL del guard anti-duplicado de orden y de extracción cacheada
+const ORDER_GUARD_TTL_MS = 10 * 60 * 1000;
+
+// Palabras clave que indican intención de compra — solo en estos casos
+// se corre el extractor para ahorrar una llamada a Groq innecesaria.
+const PURCHASE_INTENT_RE = /\b(quiero|deseo|pedir|pido|ordenar|comprar|llevar|encargar|confirmo?|dale|listo|sí|si\b|ok\b|pedido|orden|dirección|entrega|envío|cantidad|unidades?)\b/i;
+
+// ─── Tipos internos ───────────────────────────────────────────────────────────
+
+interface CacheEntry<T> {
+  value: T;
+  expiresAt: number;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 @Injectable()
 export class AiService {
   private readonly logger = new Logger(AiService.name);
-  // Cache de clientes Groq por apiKey
-  private groqClients: Map<string, Groq> = new Map();
-  // Guard anti-duplicado de orden en curso
-  private orderInProgress: Set<string> = new Set();
-  // Cache de extracción pendiente — evita re-extraer en "Confirmo"
-  private pendingExtractions: Map<string, any> = new Map();
 
-  constructor(private prisma: PrismaService) {}
+  // Cache de clientes Groq por apiKey
+  private readonly groqClients = new Map<string, Groq>();
+
+  // Cache de configuración IA por storeId (evita query por cada mensaje)
+  private readonly configCache = new Map<string, CacheEntry<any>>();
+
+  // Cache de catálogo por storeId (productos + servicios cambian poco)
+  private readonly catalogCache = new Map<string, CacheEntry<{ products: any[]; services: any[] }>>();
+
+  // Guard anti-duplicado de orden en curso por conversationId
+  private readonly orderInProgress = new Set<string>();
+
+  // Cache de extracción pendiente — evita re-extraer cuando el cliente confirma
+  private readonly pendingExtractions = new Map<string, any>();
+
+  constructor(private readonly prisma: PrismaService) {}
+
+  // ─── Groq client ─────────────────────────────────────────────────────────────
 
   private getGroqClient(apiKey: string): Groq {
     if (!this.groqClients.has(apiKey)) {
@@ -21,76 +61,114 @@ export class AiService {
     return this.groqClients.get(apiKey)!;
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // ENTRADA PRINCIPAL
-  // ─────────────────────────────────────────────────────────────────────────
+  // ─── Cache helpers ────────────────────────────────────────────────────────────
+
+  private getCached<T>(cache: Map<string, CacheEntry<T>>, key: string): T | null {
+    const entry = cache.get(key);
+    if (!entry) return null;
+    if (Date.now() > entry.expiresAt) {
+      cache.delete(key);
+      return null;
+    }
+    return entry.value;
+  }
+
+  private setCached<T>(
+    cache: Map<string, CacheEntry<T>>,
+    key: string,
+    value: T,
+    ttlMs: number,
+  ): void {
+    cache.set(key, { value, expiresAt: Date.now() + ttlMs });
+  }
+
+  /**
+   * Invalida el cache de catálogo de una tienda.
+   * Llamar desde ProductsService/ServicesService cuando se modifica el catálogo.
+   */
+  invalidateCatalogCache(storeId: string): void {
+    this.catalogCache.delete(storeId);
+  }
+
+  // ─── Entrada principal ────────────────────────────────────────────────────────
+
   async generateReply(
     storeId: string,
     userMessage: string,
     conversationId: string,
   ): Promise<string | null> {
     try {
-      const config = await this.prisma.aIConfiguration.findUnique({
-        where: { storeId },
-      });
+      // ── 1. Cargar config (con cache) ────────────────────────────────────────
+      let config = this.getCached(this.configCache, storeId);
       if (!config) {
-        this.logger.warn(`No hay AIConfiguration para store: ${storeId}`);
-        return null;
+        config = await this.prisma.aIConfiguration.findUnique({ where: { storeId } });
+        if (!config) {
+          this.logger.warn(`No hay AIConfiguration para store: ${storeId}`);
+          return null;
+        }
+        this.setCached(this.configCache, storeId, config, CONFIG_CACHE_TTL_MS);
       }
 
-      const conversation = await this.prisma.conversation.findFirst({
-        where: { conversationId, storeId },
-        include: { customer: true },
-      });
-      if (!conversation) {
-        this.logger.warn(`Conversación ${conversationId} no pertenece a store ${storeId}`);
-        return null;
+      // ── 2. Cargar catálogo (con cache) ──────────────────────────────────────
+      let catalog = this.getCached(this.catalogCache, storeId);
+      if (!catalog) {
+        const [products, services] = await Promise.all([
+          this.prisma.product.findMany({
+            where: { storeId, isActive: true },
+            include: { variants: { where: { isActive: true }, orderBy: { name: 'asc' } } },
+            orderBy: { name: 'asc' },
+          }),
+          this.prisma.service.findMany({
+            where: { storeId, isActive: true },
+            orderBy: { name: 'asc' },
+          }),
+        ]);
+        catalog = { products, services };
+        this.setCached(this.catalogCache, storeId, catalog, CATALOG_CACHE_TTL_MS);
       }
-      const customer = conversation.customer;
+      const { products, services } = catalog;
 
-      const orders = await this.prisma.order.findMany({
-        where: { customerId: customer.customerId, storeId },
-        include: {
-          orderItems: {
-            include: { product: { select: { name: true, salePrice: true } } },
-          },
-        },
-        orderBy: { createdAt: 'desc' },
-        take: 5,
-      });
-
-      const [products, services] = await Promise.all([
-        this.prisma.product.findMany({
-          where: { storeId, isActive: true },
-          include: { variants: { where: { isActive: true }, orderBy: { name: 'asc' } } },
-          orderBy: { name: 'asc' },
+      // ── 3. Cargar conversación, órdenes e historial EN PARALELO ─────────────
+      // Estas 3 queries no dependen entre sí — las corremos simultáneamente.
+      const [conversationWithCustomer, orders, history] = await Promise.all([
+        this.prisma.conversation.findFirst({
+          where: { conversationId, storeId },
+          include: { customer: true },
         }),
-        this.prisma.service.findMany({
-          where: { storeId, isActive: true },
-          orderBy: { name: 'asc' },
+        this.prisma.order.findMany({
+          where: { storeId, customer: { conversations: { some: { conversationId } } } },
+          include: {
+            orderItems: {
+              include: { product: { select: { name: true, salePrice: true } } },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 5,
+        }),
+        this.prisma.message.findMany({
+          where: { conversationId },
+          orderBy: { createdAt: 'asc' },
+          take: MAX_HISTORY_MESSAGES,
         }),
       ]);
 
-      const history = await this.prisma.message.findMany({
-        where: { conversationId },
-        orderBy: { createdAt: 'asc' },
-        take: 20,
-      });
-
-      const now = new Date();
-      const fechaActual = now.toLocaleDateString('es-CO', {
-        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-        timeZone: 'America/Bogota',
-      });
-      const horaActual = now.toLocaleTimeString('es-CO', {
-        hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota',
-      });
+      if (!conversationWithCustomer) {
+        this.logger.warn(`Conversación ${conversationId} no pertenece a store ${storeId}`);
+        return null;
+      }
+      const customer = conversationWithCustomer.customer;
 
       const groq = this.getGroqClient(config.groqApiKey);
 
+      // ── 4. Extractor de orden (solo si hay intención de compra) ─────────────
+      // Evita desperdiciar una llamada a Groq en mensajes que claramente
+      // no son una compra (preguntas de precio, saludos, dudas, etc.).
+      const hasCatalog = products.length > 0 || services.length > 0;
+      const hasPurchaseIntent = PURCHASE_INTENT_RE.test(userMessage);
       const shouldTryOrder =
-        (products.length > 0 || services.length > 0) &&
+        hasCatalog &&
         history.length >= 3 &&
+        (hasPurchaseIntent || this.pendingExtractions.has(conversationId)) &&
         !this.orderInProgress.has(conversationId);
 
       if (shouldTryOrder) {
@@ -102,6 +180,16 @@ export class AiService {
           return orderResult.message!;
         }
       }
+
+      // ── 5. Respuesta principal ───────────────────────────────────────────────
+      const now = new Date();
+      const fechaActual = now.toLocaleDateString('es-CO', {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+        timeZone: 'America/Bogota',
+      });
+      const horaActual = now.toLocaleTimeString('es-CO', {
+        hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota',
+      });
 
       const enrichedSystemPrompt = this.buildSystemPrompt(
         config.systemPrompt, customer, orders, products, services,
@@ -127,7 +215,7 @@ export class AiService {
             max_tokens: config.maxTokens,
           } as any),
           new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Groq timeout')), 30_000)
+            setTimeout(() => reject(new Error('Groq timeout')), GROQ_TIMEOUT_MAIN_MS)
           ),
         ]) as any;
       } catch (modelErr: any) {
@@ -141,15 +229,15 @@ export class AiService {
       }
 
       return response.choices[0]?.message?.content ?? null;
+
     } catch (err: any) {
       this.logger.error(`Error generando respuesta IA: ${err.message}`);
       return null;
     }
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // EXTRACCIÓN Y CREACIÓN DE ORDEN
-  // ─────────────────────────────────────────────────────────────────────────
+  // ─── Extracción y creación de orden ──────────────────────────────────────────
+
   private async tryExtractAndCreateOrder(
     groq: Groq,
     model: string,
@@ -162,20 +250,16 @@ export class AiService {
     conversationId: string,
   ): Promise<{ created: boolean; message?: string }> {
 
-    // ── Verificar si el cliente está confirmando una extracción previa ──────
-    // Esto evita que el extractor pierda variantId cuando el cliente dice "Confirmo"
     const CONFIRMATION_RE = /\b(confirm|sí|si\b|ok\b|dale|listo|acepto|perfecto|procede|adelante|claro|exacto|sip|yep|yes)\b/i;
     const cached = this.pendingExtractions.get(conversationId);
 
     let extracted: any;
 
     if (cached && CONFIRMATION_RE.test(latestMessage.trim())) {
-      // Reutilizar extracción cacheada — el cliente solo confirmó
       this.logger.log(`Usando extracción cacheada para ${conversationId}`);
       extracted = cached;
       this.pendingExtractions.delete(conversationId);
     } else {
-      // Correr el extractor normalmente
       const productLines = products.map((p: any) => {
         if (p.variants?.length > 0) {
           return p.variants.map((v: any) =>
@@ -192,7 +276,9 @@ export class AiService {
       const catalogSummary = [...productLines, ...serviceLines].join('\n');
 
       const conversationText = [
-        ...history.map((m: any) => `${m.isAiResponse ? 'Asistente' : 'Cliente'}: ${m.content.replace(/__ASK_NAME__|__ASK_CITY__/g, '').trim()}`),
+        ...history.map((m: any) =>
+          `${m.isAiResponse ? 'Asistente' : 'Cliente'}: ${m.content.replace(/__ASK_NAME__|__ASK_CITY__/g, '').trim()}`
+        ),
         `Cliente: ${latestMessage}`,
       ].join('\n');
 
@@ -217,7 +303,7 @@ REGLAS:
 - Dirección debe tener calle/carrera/barrio + ciudad o similar.
 - No extraigas datos de mensajes del asistente.
 - Si solo preguntó por precio o métodos de pago, complete:false.
-- Si el producto tiene variantes, DEBES incluir el variantId correcto según lo que pidió el cliente.
+- Si el producto tiene variantes, DEBES incluir el variantId correcto.
 
 Responde ÚNICAMENTE con este JSON (sin markdown):
 {
@@ -241,7 +327,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown):
             max_tokens: 350,
           }),
           new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Extractor timeout')), 15_000)
+            setTimeout(() => reject(new Error('Extractor timeout')), GROQ_TIMEOUT_EXTRACTOR_MS)
           ),
         ]) as any;
 
@@ -252,11 +338,9 @@ Responde ÚNICAMENTE con este JSON (sin markdown):
         extracted = JSON.parse(jsonMatch[0]);
         this.logger.log(`Extracción de orden: ${JSON.stringify(extracted)}`);
 
-        // Si está completa, cachear para el próximo "Confirmo"
         if (extracted.complete && extracted.quantity && extracted.deliveryAddress) {
           this.pendingExtractions.set(conversationId, extracted);
-          // TTL de 10 minutos — limpiar si no se confirma
-          setTimeout(() => this.pendingExtractions.delete(conversationId), 10 * 60 * 1000);
+          setTimeout(() => this.pendingExtractions.delete(conversationId), ORDER_GUARD_TTL_MS);
         }
 
       } catch (err: any) {
@@ -270,7 +354,6 @@ Responde ÚNICAMENTE con este JSON (sin markdown):
       return { created: false };
     }
 
-    // Guard anti-duplicado
     if (this.orderInProgress.has(conversationId)) {
       this.logger.warn(`Orden ya en progreso para ${conversationId}`);
       return { created: false };
@@ -287,7 +370,6 @@ Responde ÚNICAMENTE con este JSON (sin markdown):
         if (!service) return { created: false };
         unitPrice = service.price ? Number(service.price) : 0;
         itemName = service.name;
-        // ✅ Usar connect para Prisma
         orderItemData = {
           service: { connect: { serviceId: extracted.serviceId } },
           quantity: extracted.quantity,
@@ -307,7 +389,6 @@ Responde ÚNICAMENTE con este JSON (sin markdown):
           }
           unitPrice = Number(variant.salePrice);
           itemName = `${product.name} - ${variant.name}`;
-          // ✅ Usar connect para Prisma — fix del bug "Unknown argument productId"
           orderItemData = {
             product: { connect: { productId: extracted.productId } },
             variant: { connect: { variantId: extracted.variantId } },
@@ -321,7 +402,6 @@ Responde ÚNICAMENTE con este JSON (sin markdown):
           }
           unitPrice = Number(product.salePrice);
           itemName = product.name;
-          // ✅ Usar connect para Prisma
           orderItemData = {
             product: { connect: { productId: extracted.productId } },
             quantity: extracted.quantity,
@@ -352,7 +432,6 @@ Responde ÚNICAMENTE con este JSON (sin markdown):
         data: { status: 'pending_human' },
       });
 
-      // Limpiar cache después de crear la orden
       this.pendingExtractions.delete(conversationId);
       this.logger.log(`✅ Orden creada: ${order.orderId} | Total: $${total}`);
 
@@ -361,25 +440,25 @@ Responde ÚNICAMENTE con este JSON (sin markdown):
         ? 'Por confirmar (precio variable)'
         : `$${total.toLocaleString('es-CO')}`;
 
-      const confirmMessage =
-        `¡Perfecto${nombreCliente}! 🎉 Tu pedido fue registrado.\n\n` +
-        `📦 *Resumen:*\n` +
-        `• ${itemName}\n` +
-        `• Cantidad: ${extracted.quantity}\n` +
-        `• Total: ${precioTexto}\n` +
-        `• Dirección: ${extracted.deliveryAddress}\n\n` +
-        `Un asesor te contactará pronto para coordinar el pago y confirmar el envío. ¡Gracias! 😊`;
-
-      return { created: true, message: confirmMessage };
+      return {
+        created: true,
+        message:
+          `¡Perfecto${nombreCliente}! 🎉 Tu pedido fue registrado.\n\n` +
+          `📦 *Resumen:*\n` +
+          `• ${itemName}\n` +
+          `• Cantidad: ${extracted.quantity}\n` +
+          `• Total: ${precioTexto}\n` +
+          `• Dirección: ${extracted.deliveryAddress}\n\n` +
+          `Un asesor te contactará pronto para coordinar el pago y confirmar el envío. ¡Gracias! 😊`,
+      };
 
     } finally {
       this.orderInProgress.delete(conversationId);
     }
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // CONSTRUCCIÓN DEL SYSTEM PROMPT
-  // ─────────────────────────────────────────────────────────────────────────
+  // ─── Construcción del system prompt ──────────────────────────────────────────
+
   private buildSystemPrompt(
     basePrompt: string,
     customer: any,
@@ -394,6 +473,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown):
     const sep = '\n===================================================\n';
 
     const nombreCliente = customer.name ?? null;
+
     const clienteSection = `CLIENTE:
 - Nombre: ${nombreCliente ?? 'No registrado'}
 - Ciudad: ${customer.city ?? 'No registrada'}
@@ -415,10 +495,12 @@ Responde ÚNICAMENTE con este JSON (sin markdown):
         datosMencionados.push(`✅ Item mencionado: "${item.name}"`);
       }
     });
-    const tieneDir = /calle|carrera|avenida|cra|cl |av |#|barrio|dirección|entrega/.test(allClientText);
-    if (tieneDir) datosMencionados.push('✅ Dirección: ya fue proporcionada');
-    const cantMatch = allClientText.match(/\b(una?|dos|tres|cuatro|cinco|\d+)\s*(unidad|unidades|)/i);
-    if (cantMatch) datosMencionados.push(`✅ Cantidad: ya fue mencionada`);
+    if (/calle|carrera|avenida|cra|cl |av |#|barrio|dirección|entrega/.test(allClientText)) {
+      datosMencionados.push('✅ Dirección: ya fue proporcionada');
+    }
+    if (/\b(una?|dos|tres|cuatro|cinco|\d+)\s*(unidad|unidades|)/i.test(allClientText)) {
+      datosMencionados.push('✅ Cantidad: ya fue mencionada');
+    }
 
     const datosSection = datosMencionados.length > 0
       ? `DATOS YA RECOPILADOS (NO LOS VUELVAS A PEDIR):\n${datosMencionados.join('\n')}`
@@ -428,6 +510,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown):
       pending: 'Pendiente', confirmed: 'Confirmado', preparing: 'En preparación',
       ready: 'Listo', delivered: 'Entregado', cancelled: 'Cancelado',
     };
+
     let ordenesSection: string;
     if (orders.length === 0) {
       ordenesSection = `PEDIDOS ANTERIORES: Ninguno.`;
