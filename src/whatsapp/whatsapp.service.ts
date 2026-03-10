@@ -332,6 +332,16 @@ private async processMessage(msg: any, storeId: string, sock: any) {
 
   const jid = msg.key.remoteJid ?? '';
 
+
+// DIAGNÓSTICO TEMPORAL
+if (jid.endsWith('@lid')) {
+  this.logger.log(`🔍 LID MSG COMPLETO: ${JSON.stringify({
+    key: msg.key,
+    pushName: msg.pushName,
+    verifiedBizName: msg.verifiedBizName,
+    message: msg.message ? Object.keys(msg.message) : null,
+  })}`);
+}
   // DIAGNÓSTICO
   this.logger.log(`🔍 jid: ${jid} — endsWithNet: ${jid.endsWith('@s.whatsapp.net')}`);
 
