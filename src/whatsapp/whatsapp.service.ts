@@ -312,57 +312,70 @@ sock.ev.on('messages.upsert', async ({ messages, type }) => {
     return sock;
   }
 
-  private async processMessage(msg: any, storeId: string, sock: any) {
-    if (msg.key.fromMe) return;
-    if (!msg.message) return;
+private async processMessage(msg: any, storeId: string, sock: any) {
+  if (msg.key.fromMe) return;
 
-    // Deduplicación por messageId
-    const msgId = msg.key.id;
-    if (msgId) {
-      if (this.processedMsgIds.has(msgId)) {
-        this.logger.debug(`Mensaje duplicado ignorado: ${msgId}`);
-        return;
-      }
-      this.processedMsgIds.add(msgId);
-      setTimeout(() => this.processedMsgIds.delete(msgId), 10 * 60 * 1000);
-    }
+  // DIAGNÓSTICO
+  this.logger.log(`🔍 processMessage — fromMe: ${msg.key.fromMe} — hasMessage: ${!!msg.message} — jid: ${msg.key.remoteJid}`);
 
-    const jid = msg.key.remoteJid ?? '';
-    if (!jid.endsWith('@s.whatsapp.net')) return;
+  if (!msg.message) return;
 
-    const phoneRaw = jid.replace('@s.whatsapp.net', '');
-    if (!phoneRaw) return;
-    const phone = `+${phoneRaw}`;
-
-    const messageType = Object.keys(msg.message)[0];
-
-    if (IGNORED_TYPES.includes(messageType)) {
-      this.logger.debug(`Ignorando mensaje interno (${messageType}) de ${phone}`);
+  const msgId = msg.key.id;
+  if (msgId) {
+    if (this.processedMsgIds.has(msgId)) {
+      this.logger.debug(`Mensaje duplicado ignorado: ${msgId}`);
       return;
     }
-
-    const blocked = await this.blockedService.isBlocked(storeId, phone);
-    if (blocked) {
-      this.logger.log(`🚫 Número bloqueado ignorado: ${phone}`);
-      return;
-    }
-
-    const isMedia = MEDIA_TYPES.includes(messageType);
-    const content =
-      msg.message?.conversation ||
-      msg.message?.extendedTextMessage?.text ||
-      '';
-
-    if (isMedia || (!content && !MEDIA_TYPES.includes(messageType))) {
-      if (isMedia) {
-        await this.handleMediaMessage(storeId, phone, messageType, sock);
-      }
-      return;
-    }
-
-    this.logger.log(`📩 Mensaje de ${phone}: ${content}`);
-    await this.handleIncomingMessage(storeId, phone, content, sock);
+    this.processedMsgIds.add(msgId);
+    setTimeout(() => this.processedMsgIds.delete(msgId), 10 * 60 * 1000);
   }
+
+  const jid = msg.key.remoteJid ?? '';
+
+  // DIAGNÓSTICO
+  this.logger.log(`🔍 jid: ${jid} — endsWithNet: ${jid.endsWith('@s.whatsapp.net')}`);
+
+  if (!jid.endsWith('@s.whatsapp.net')) return;
+
+  const phoneRaw = jid.replace('@s.whatsapp.net', '');
+  if (!phoneRaw) return;
+  const phone = `+${phoneRaw}`;
+
+  const messageType = Object.keys(msg.message)[0];
+
+  // DIAGNÓSTICO
+  this.logger.log(`🔍 phone: ${phone} — messageType: ${messageType}`);
+
+  if (IGNORED_TYPES.includes(messageType)) {
+    this.logger.debug(`Ignorando mensaje interno (${messageType}) de ${phone}`);
+    return;
+  }
+
+  const blocked = await this.blockedService.isBlocked(storeId, phone);
+  if (blocked) {
+    this.logger.log(`🚫 Número bloqueado ignorado: ${phone}`);
+    return;
+  }
+
+  const isMedia = MEDIA_TYPES.includes(messageType);
+  const content =
+    msg.message?.conversation ||
+    msg.message?.extendedTextMessage?.text ||
+    '';
+
+  // DIAGNÓSTICO
+  this.logger.log(`🔍 isMedia: ${isMedia} — content: "${content}"`);
+
+  if (isMedia || (!content && !MEDIA_TYPES.includes(messageType))) {
+    if (isMedia) {
+      await this.handleMediaMessage(storeId, phone, messageType, sock);
+    }
+    return;
+  }
+
+  this.logger.log(`📩 Mensaje de ${phone}: ${content}`);
+  await this.handleIncomingMessage(storeId, phone, content, sock);
+}
 
   private async handleMediaMessage(
     storeId: string,
