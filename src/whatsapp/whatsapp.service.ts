@@ -11,15 +11,17 @@ import { CustomersService } from '../customers/customers.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { BlockedService } from '../blocked/blocked.service';
 
+// ─── Constantes ──────────────────────────────────────────────────────────────
+
 const ASK_NAME_MARKER = '__ASK_NAME__';
 const ASK_CITY_MARKER = '__ASK_CITY__';
 
-const MEDIA_TYPES = [
+const MEDIA_TYPES = new Set([
   'imageMessage', 'audioMessage', 'videoMessage',
   'documentMessage', 'stickerMessage',
-];
+]);
 
-const IGNORED_TYPES = [
+const IGNORED_TYPES = new Set([
   'protocolMessage',
   'senderKeyDistributionMessage',
   'messageContextInfo',
@@ -31,7 +33,7 @@ const IGNORED_TYPES = [
   'callLogMessage',
   'ptvMessage',
   'editedMessage',
-];
+]);
 
 const NAME_BLACKLIST = new Set([
   'hola', 'hello', 'hi', 'hey', 'buenas', 'buenos', 'buen', 'dias', 'tardes',
@@ -42,26 +44,47 @@ const NAME_BLACKLIST = new Set([
   'gracias', 'claro', 'perfecto', 'genial', 'excelente', 'chévere', 'chevere',
 ]);
 
-// ─────────────────────────────────────────────────────────────────────────────
-// useDBAuthState: guarda la sesión de Baileys en Neon.
+const HUMAN_KEYWORDS = [
+  'hablar con una persona', 'hablar con alguien',
+  'quiero pagar', 'voy a pagar', 'hacer el pago',
+  'persona real', 'asesor', 'operador',
+  'no quiero el bot', 'ayuda humana',
+];
+
+// Tiempo máximo de deduplicación de mensajes en memoria
+const MSG_DEDUP_TTL_MS = 10 * 60 * 1000;
+
+// Tiempo de history sync: solo procesar mensajes de las últimas 24h
+const HISTORY_SYNC_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+// Delays de reconexión por código de error
+const RECONNECT_DELAYS: Record<number, number> = {
+  408: 5_000,
+  440: 8_000,
+};
+const DEFAULT_RECONNECT_DELAY = 3_000;
+
+// ─── useDBAuthState ───────────────────────────────────────────────────────────
 //
-// CRÍTICO: los Signal keys contienen objetos Buffer. Deben ser serializados
-// con BufferJSON.replacer antes de guardar y deserializados con BufferJSON.reviver
-// al leer. Si no se hace esto, los pre-keys de nuevos contactos se corrompen
-// y Baileys no puede establecer la primera sesión → mensajes perdidos.
+// Persiste la sesión de Baileys en PostgreSQL (Neon) en lugar del filesystem.
+// Sobrevive reinicios de Render/Railway sin perder la sesión.
+//
+// CRÍTICO: los Signal keys contienen Buffers. Se serializan con BufferJSON.replacer
+// antes de guardar y se deserializan con BufferJSON.reviver al leer.
+// Si no se hace esto, los pre-keys de nuevos contactos se corrompen y Baileys
+// no puede establecer la primera sesión → mensajes perdidos.
 // ─────────────────────────────────────────────────────────────────────────────
 async function useDBAuthState(prisma: PrismaService, storeId: string) {
   const { BufferJSON, initAuthCreds } = await import('@whiskeysockets/baileys');
 
-  // ── Serialización segura de Buffers ──────────────────────────────────────
   function serialize(obj: any): any {
     return JSON.parse(JSON.stringify(obj, BufferJSON.replacer));
   }
+
   function deserialize(obj: any): any {
     return JSON.parse(JSON.stringify(obj), BufferJSON.reviver);
   }
 
-  // ── 1. Cargar TODO de BD al inicio — deserializando Buffers ─────────────
   async function loadFromDB(): Promise<Record<string, any>> {
     const row = await prisma.whatsappSession.findUnique({ where: { storeId } });
     if (!row?.data) return {};
@@ -73,16 +96,14 @@ async function useDBAuthState(prisma: PrismaService, storeId: string) {
     }
   }
 
-  // ── 2. Caché en memoria ───────────────────────────────────────────────────
   const cache: Record<string, any> = await loadFromDB();
 
-  // ── 3. Escritura a BD en background con debounce ─────────────────────────
   let saveTimer: ReturnType<typeof setTimeout> | null = null;
-  function scheduleSave() {
+
+  function scheduleSave(): void {
     if (saveTimer) clearTimeout(saveTimer);
     saveTimer = setTimeout(async () => {
       try {
-        // Serializar con BufferJSON.replacer para preservar Buffers en JSON
         const serialized = JSON.stringify(cache, BufferJSON.replacer);
         const parsed = JSON.parse(serialized);
         await prisma.whatsappSession.upsert({
@@ -91,13 +112,12 @@ async function useDBAuthState(prisma: PrismaService, storeId: string) {
           create: { storeId, data: parsed },
         });
       } catch {
-        // Se reintentará en el próximo cambio
+        // Se reintentará en el próximo cambio de estado
       }
       saveTimer = null;
     }, 300);
   }
 
-  // ── 4. Inicializar creds ──────────────────────────────────────────────────
   if (!cache['creds']) {
     cache['creds'] = initAuthCreds();
     scheduleSave();
@@ -107,7 +127,6 @@ async function useDBAuthState(prisma: PrismaService, storeId: string) {
     creds: cache['creds'],
     keys: {
       get: async (type: string, ids: string[]) => {
-        // CRÍTICO: deserializar Buffers al leer para que Signal funcione
         const result: Record<string, any> = {};
         for (const id of ids) {
           const raw = cache[`key-${type}-${id}`];
@@ -122,7 +141,6 @@ async function useDBAuthState(prisma: PrismaService, storeId: string) {
         return result;
       },
       set: async (data: Record<string, Record<string, any>>) => {
-        // CRÍTICO: serializar+deserializar para normalizar Buffers antes de guardar
         for (const [type, typeData] of Object.entries(data)) {
           for (const [id, value] of Object.entries(typeData)) {
             const key = `key-${type}-${id}`;
@@ -150,50 +168,94 @@ async function useDBAuthState(prisma: PrismaService, storeId: string) {
   return { state, saveCreds };
 }
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/**
+ * Resuelve el JID real de un mensaje.
+ *
+ * WhatsApp está migrando cuentas nuevas al sistema LID (Linked Identity).
+ * En ese caso, remoteJid viene como "<id>@lid" y el número de teléfono
+ * real se encuentra en remoteJidAlt como "<phone>@s.whatsapp.net".
+ *
+ * Sin este fallback, los mensajes de cuentas LID se descartan silenciosamente.
+ */
+function resolveJid(key: { remoteJid?: string; remoteJidAlt?: string }): string {
+  const rawJid = key.remoteJid ?? '';
+  if (rawJid.endsWith('@lid') && key.remoteJidAlt) {
+    return key.remoteJidAlt;
+  }
+  return rawJid;
+}
+
+/**
+ * Extrae el número de teléfono formateado (+<country><number>) desde un JID.
+ * Retorna null si el JID no corresponde a un chat individual.
+ */
+function phoneFromJid(jid: string): string | null {
+  if (!jid.endsWith('@s.whatsapp.net')) return null;
+  const raw = jid.replace('@s.whatsapp.net', '');
+  return raw ? `+${raw}` : null;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 @Injectable()
 export class WhatsappService implements OnModuleInit {
   private readonly logger = new Logger(WhatsappService.name);
-  private sockets: Map<string, any> = new Map();
-  private qrCodes: Map<string, string> = new Map();
-  private reconnecting: Set<string> = new Set();
-  // Deduplicación de mensajes (evita procesar el mismo msg múltiples veces)
-  private processedMsgIds: Set<string> = new Set();
+
+  // Mapa de sockets activos por storeId
+  private readonly sockets = new Map<string, any>();
+
+  // QR codes pendientes de escanear por storeId
+  private readonly qrCodes = new Map<string, string>();
+
+  // Stores que ya tienen una reconexión en progreso (evita storms)
+  private readonly reconnecting = new Set<string>();
+
+  // IDs de mensajes ya procesados (deduplicación en memoria)
+  private readonly processedMsgIds = new Set<string>();
 
   constructor(
-    private prisma: PrismaService,
-    private aiService: AiService,
-    private conversationsService: ConversationsService,
+    private readonly prisma: PrismaService,
+    private readonly aiService: AiService,
+    private readonly conversationsService: ConversationsService,
     @Inject(forwardRef(() => MessagesService))
-    private messagesService: MessagesService,
-    private customersService: CustomersService,
-    private blockedService: BlockedService,
+    private readonly messagesService: MessagesService,
+    private readonly customersService: CustomersService,
+    private readonly blockedService: BlockedService,
   ) {}
 
-  async onModuleInit() {
-    // Reconectar stores que tienen sesión guardada en BD
+  // ─── Ciclo de vida ──────────────────────────────────────────────────────────
+
+  async onModuleInit(): Promise<void> {
     const sessions = await this.prisma.whatsappSession.findMany({
       include: { store: { select: { isActive: true, name: true } } },
     });
 
-    for (const session of sessions) {
-      if (!session.store.isActive) continue;
-      this.logger.log(`Reconectando store: ${session.store.name}`);
-      await this.connectStore(session.storeId);
-    }
+    const active = sessions.filter(s => s.store.isActive);
+    this.logger.log(`Reconectando ${active.length} store(s) con sesión guardada`);
+
+    await Promise.allSettled(
+      active.map(s => this.connectStore(s.storeId).catch(err =>
+        this.logger.error(`Error al reconectar store ${s.storeId}: ${err.message}`)
+      )),
+    );
   }
 
-  async connectStore(storeId: string) {
+  // ─── Conexión ───────────────────────────────────────────────────────────────
+
+  async connectStore(storeId: string): Promise<any> {
     if (this.reconnecting.has(storeId)) {
-      this.logger.warn(`Ya hay una reconexión en progreso para ${storeId}`);
+      this.logger.warn(`Reconexión ya en progreso para ${storeId}, ignorando`);
       return;
     }
 
-    // Cerrar socket anterior si existe antes de crear uno nuevo
-    // Sin esto, el socket viejo sigue vivo y compite con el nuevo → loop 440
+    // Cerrar socket anterior antes de crear uno nuevo.
+    // Sin esto, el socket viejo sigue vivo y compite → loop código 440.
     const existingSock = this.sockets.get(storeId);
     if (existingSock) {
       this.sockets.delete(storeId);
-      try { existingSock.end(undefined); } catch {}
+      try { existingSock.end(undefined); } catch { /* ignorar */ }
     }
 
     const {
@@ -203,10 +265,8 @@ export class WhatsappService implements OnModuleInit {
       makeCacheableSignalKeyStore,
     } = await import('@whiskeysockets/baileys');
 
-    const baileysLogger = P({ level: 'warn' });
+    const baileysLogger = P({ level: 'silent' });
     const { version } = await fetchLatestBaileysVersion();
-
-    // Usar sesión en BD en lugar de filesystem
     const { state, saveCreds } = await useDBAuthState(this.prisma, storeId);
 
     const sock = makeWASocket({
@@ -226,82 +286,23 @@ export class WhatsappService implements OnModuleInit {
 
     this.sockets.set(storeId, sock);
 
-    // Persistir creds cada vez que Baileys las actualiza
     sock.ev.on('creds.update', saveCreds);
 
     sock.ev.on('connection.update', async (update) => {
-      const { connection, lastDisconnect, qr } = update;
-
-      if (qr) {
-        this.logger.log(`QR generado para store: ${storeId}`);
-        qrcode.generate(qr, { small: true });
-        this.qrCodes.set(storeId, qr);
-      }
-
-      if (connection === 'open') {
-        this.logger.log(`✅ WhatsApp conectado: ${storeId}`);
-        this.qrCodes.delete(storeId);
-        this.reconnecting.delete(storeId);
-        await this.prisma.store.update({
-          where: { storeId },
-          data: { waSessionId: storeId },
-        }).catch(() => {});
-      }
-
-      if (connection === 'close') {
-        const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
-        const loggedOut = statusCode === DisconnectReason.loggedOut;
-
-        this.logger.warn(`Conexión cerrada para ${storeId} — código: ${statusCode}`);
-
-        if (loggedOut) {
-          this.logger.warn(`Store ${storeId} hizo logout — limpiando sesión`);
-          this.sockets.delete(storeId);
-          this.qrCodes.delete(storeId);
-          this.reconnecting.delete(storeId);
-
-          // Borrar sesión de la BD y limpiar waSessionId
-          await this.prisma.whatsappSession.deleteMany({
-            where: { storeId },
-          }).catch(() => {});
-          await this.prisma.store.update({
-            where: { storeId },
-            data: { waSessionId: null },
-          }).catch(() => {});
-
-          this.logger.log(`🗑️ Sesión borrada de BD: ${storeId}`);
-
-        } else if (!this.reconnecting.has(storeId)) {
-          this.reconnecting.add(storeId);
-          // 440 = sesión reemplazada, esperar más para evitar storm de reconexiones
-          const delay = statusCode === 408 ? 5000
-                      : statusCode === 440 ? 8000
-                      : 3000;
-          this.logger.log(`Reconectando ${storeId} en ${delay}ms...`);
-          setTimeout(() => {
-            this.reconnecting.delete(storeId);
-            this.connectStore(storeId).catch(e =>
-              this.logger.error(`Error reconectando: ${e.message}`)
-            );
-          }, delay);
-        }
-      }
+      await this.handleConnectionUpdate(update, storeId, DisconnectReason);
     });
 
-sock.ev.on('messages.upsert', async ({ messages, type }) => {
-  // TEMPORAL DIAGNÓSTICO
-  this.logger.log(`📬 messages.upsert disparado — type: ${type} — msgs: ${messages.length}`);
-  
-  if (type !== 'notify' && type !== 'append') return;
+    sock.ev.on('messages.upsert', async ({ messages, type }) => {
+      // 'notify' = mensaje nuevo en vivo
+      // 'append' = mensajes perdidos durante desconexión (history sync)
+      if (type !== 'notify' && type !== 'append') return;
 
-      // Para history sync solo procesar mensajes de las últimas 24h
-      const cutoffMs = type === 'append' ? Date.now() - 24 * 60 * 60 * 1000 : 0;
+      const cutoffMs = type === 'append' ? Date.now() - HISTORY_SYNC_WINDOW_MS : 0;
 
       for (const msg of messages) {
         try {
           const msgTimestampMs = (Number(msg.messageTimestamp) || 0) * 1000;
           if (cutoffMs > 0 && msgTimestampMs < cutoffMs) continue;
-
           await this.processMessage(msg, storeId, sock);
         } catch (err) {
           this.logger.error(`Error procesando mensaje: ${err.message}`);
@@ -312,87 +313,139 @@ sock.ev.on('messages.upsert', async ({ messages, type }) => {
     return sock;
   }
 
-private async processMessage(msg: any, storeId: string, sock: any) {
-  if (msg.key.fromMe) return;
+  // ─── Handlers de conexión ───────────────────────────────────────────────────
 
-  // DIAGNÓSTICO
-  this.logger.log(`🔍 processMessage — fromMe: ${msg.key.fromMe} — hasMessage: ${!!msg.message} — jid: ${msg.key.remoteJid}`);
+  private async handleConnectionUpdate(
+    update: any,
+    storeId: string,
+    DisconnectReason: any,
+  ): Promise<void> {
+    const { connection, lastDisconnect, qr } = update;
 
-  if (!msg.message) return;
+    if (qr) {
+      this.logger.log(`QR generado para store: ${storeId}`);
+      qrcode.generate(qr, { small: true });
+      this.qrCodes.set(storeId, qr);
+    }
 
-  const msgId = msg.key.id;
-  if (msgId) {
-    if (this.processedMsgIds.has(msgId)) {
-      this.logger.debug(`Mensaje duplicado ignorado: ${msgId}`);
+    if (connection === 'open') {
+      this.logger.log(`✅ WhatsApp conectado: ${storeId}`);
+      this.qrCodes.delete(storeId);
+      this.reconnecting.delete(storeId);
+      await this.prisma.store.update({
+        where: { storeId },
+        data: { waSessionId: storeId },
+      }).catch(() => {});
+    }
+
+    if (connection === 'close') {
+      await this.handleDisconnect(storeId, lastDisconnect, DisconnectReason);
+    }
+  }
+
+  private async handleDisconnect(
+    storeId: string,
+    lastDisconnect: any,
+    DisconnectReason: any,
+  ): Promise<void> {
+    const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
+    const loggedOut = statusCode === DisconnectReason.loggedOut;
+
+    this.logger.warn(`Conexión cerrada para ${storeId} — código: ${statusCode}`);
+
+    if (loggedOut) {
+      this.logger.warn(`Store ${storeId} hizo logout — limpiando sesión`);
+      this.sockets.delete(storeId);
+      this.qrCodes.delete(storeId);
+      this.reconnecting.delete(storeId);
+
+      await Promise.allSettled([
+        this.prisma.whatsappSession.deleteMany({ where: { storeId } }),
+        this.prisma.store.update({ where: { storeId }, data: { waSessionId: null } }),
+      ]);
+
+      this.logger.log(`🗑️ Sesión borrada de BD: ${storeId}`);
       return;
     }
-    this.processedMsgIds.add(msgId);
-    setTimeout(() => this.processedMsgIds.delete(msgId), 10 * 60 * 1000);
+
+    if (this.reconnecting.has(storeId)) return;
+
+    this.reconnecting.add(storeId);
+    const delay = RECONNECT_DELAYS[statusCode] ?? DEFAULT_RECONNECT_DELAY;
+    this.logger.log(`Reconectando ${storeId} en ${delay}ms...`);
+
+    setTimeout(() => {
+      this.reconnecting.delete(storeId);
+      this.connectStore(storeId).catch(err =>
+        this.logger.error(`Error reconectando ${storeId}: ${err.message}`)
+      );
+    }, delay);
   }
 
-  const jid = msg.key.remoteJid ?? '';
+  // ─── Procesamiento de mensajes ──────────────────────────────────────────────
 
+  private async processMessage(msg: any, storeId: string, sock: any): Promise<void> {
+    if (msg.key.fromMe) return;
+    if (!msg.message) return;
 
-// DIAGNÓSTICO TEMPORAL
-if (jid.endsWith('@lid')) {
-  this.logger.log(`🔍 LID MSG COMPLETO: ${JSON.stringify({
-    key: msg.key,
-    pushName: msg.pushName,
-    verifiedBizName: msg.verifiedBizName,
-    message: msg.message ? Object.keys(msg.message) : null,
-  })}`);
-}
-  // DIAGNÓSTICO
-  this.logger.log(`🔍 jid: ${jid} — endsWithNet: ${jid.endsWith('@s.whatsapp.net')}`);
+    // Deduplicación por messageId
+    const msgId = msg.key.id;
+    if (msgId) {
+      if (this.processedMsgIds.has(msgId)) {
+        this.logger.debug(`Mensaje duplicado ignorado: ${msgId}`);
+        return;
+      }
+      this.processedMsgIds.add(msgId);
+      setTimeout(() => this.processedMsgIds.delete(msgId), MSG_DEDUP_TTL_MS);
+    }
 
-  if (!jid.endsWith('@s.whatsapp.net')) return;
+    // ── Soporte LID ──────────────────────────────────────────────────────────
+    // Cuentas nuevas de WhatsApp usan el sistema LID (Linked Identity).
+    // remoteJid llega como "<id>@lid" y el teléfono real está en remoteJidAlt.
+    // resolveJid() hace el fallback automáticamente.
+    // ────────────────────────────────────────────────────────────────────────
+    const jid = resolveJid(msg.key);
+    const phone = phoneFromJid(jid);
+    if (!phone) return; // Grupos, status, etc.
 
-  const phoneRaw = jid.replace('@s.whatsapp.net', '');
-  if (!phoneRaw) return;
-  const phone = `+${phoneRaw}`;
+    const messageType = Object.keys(msg.message)[0];
 
-  const messageType = Object.keys(msg.message)[0];
+    if (IGNORED_TYPES.has(messageType)) {
+      this.logger.debug(`Ignorando mensaje interno (${messageType}) de ${phone}`);
+      return;
+    }
 
-  // DIAGNÓSTICO
-  this.logger.log(`🔍 phone: ${phone} — messageType: ${messageType}`);
+    const blocked = await this.blockedService.isBlocked(storeId, phone);
+    if (blocked) {
+      this.logger.log(`🚫 Número bloqueado ignorado: ${phone}`);
+      return;
+    }
 
-  if (IGNORED_TYPES.includes(messageType)) {
-    this.logger.debug(`Ignorando mensaje interno (${messageType}) de ${phone}`);
-    return;
-  }
+    const isMedia = MEDIA_TYPES.has(messageType);
+    const content =
+      msg.message?.conversation ||
+      msg.message?.extendedTextMessage?.text ||
+      '';
 
-  const blocked = await this.blockedService.isBlocked(storeId, phone);
-  if (blocked) {
-    this.logger.log(`🚫 Número bloqueado ignorado: ${phone}`);
-    return;
-  }
-
-  const isMedia = MEDIA_TYPES.includes(messageType);
-  const content =
-    msg.message?.conversation ||
-    msg.message?.extendedTextMessage?.text ||
-    '';
-
-  // DIAGNÓSTICO
-  this.logger.log(`🔍 isMedia: ${isMedia} — content: "${content}"`);
-
-  if (isMedia || (!content && !MEDIA_TYPES.includes(messageType))) {
     if (isMedia) {
       await this.handleMediaMessage(storeId, phone, messageType, sock);
+      return;
     }
-    return;
+
+    if (!content) return;
+
+    this.logger.log(`📩 Mensaje de ${phone}: ${content}`);
+    await this.handleIncomingMessage(storeId, phone, content, sock);
   }
 
-  this.logger.log(`📩 Mensaje de ${phone}: ${content}`);
-  await this.handleIncomingMessage(storeId, phone, content, sock);
-}
+  // ─── Mensajes de media ──────────────────────────────────────────────────────
 
   private async handleMediaMessage(
     storeId: string,
     phone: string,
     messageType: string,
     sock: any,
-  ) {
+  ): Promise<void> {
     const jid = `${phone.replace('+', '')}@s.whatsapp.net`;
     const customer = await this.customersService.findOrCreate({ storeId, phone });
     const conversation = await this.conversationsService.findOrCreate(
@@ -401,14 +454,7 @@ if (jid.endsWith('@lid')) {
 
     if (conversation.status === 'human' || conversation.status === 'closed') return;
 
-    let reply: string;
-    if (messageType === 'audioMessage') {
-      reply = `¡Hola! 😊 Por el momento no puedo escuchar audios. ¿Puedes contarme en texto qué necesitas? Si prefieres un asesor, dímelo y te conecto ahora mismo.`;
-    } else if (messageType === 'imageMessage') {
-      reply = `¡Gracias por escribirnos! 😊 No puedo ver imágenes por este canal automático, pero un asesor puede ayudarte. ¿Te conecto?`;
-    } else {
-      reply = `¡Hola! 😊 Recibí tu archivo pero no puedo procesarlo. ¿Te conecto con un asesor?`;
-    }
+    const reply = this.getMediaReply(messageType);
 
     await this.prisma.conversation.update({
       where: { conversationId: conversation.conversationId },
@@ -425,6 +471,7 @@ if (jid.endsWith('@lid')) {
     });
 
     await sock.sendMessage(jid, { text: reply });
+
     await this.messagesService.create({
       conversationId: conversation.conversationId,
       storeId,
@@ -437,12 +484,24 @@ if (jid.endsWith('@lid')) {
     this.logger.log(`🎙️ Media de ${phone} (${messageType}) → transferido a asesor`);
   }
 
+  private getMediaReply(messageType: string): string {
+    if (messageType === 'audioMessage') {
+      return `¡Hola! 😊 Por el momento no puedo escuchar audios. ¿Puedes contarme en texto qué necesitas? Si prefieres un asesor, dímelo y te conecto ahora mismo.`;
+    }
+    if (messageType === 'imageMessage') {
+      return `¡Gracias por escribirnos! 😊 No puedo ver imágenes por este canal automático, pero un asesor puede ayudarte. ¿Te conecto?`;
+    }
+    return `¡Hola! 😊 Recibí tu archivo pero no puedo procesarlo. ¿Te conecto con un asesor?`;
+  }
+
+  // ─── Mensajes de texto ──────────────────────────────────────────────────────
+
   private async handleIncomingMessage(
     storeId: string,
     phone: string,
     content: string,
     sock: any,
-  ) {
+  ): Promise<void> {
     const customer = await this.customersService.findOrCreate({ storeId, phone });
     const conversation = await this.conversationsService.findOrCreate(
       customer.customerId, storeId,
@@ -471,24 +530,19 @@ if (jid.endsWith('@lid')) {
       return;
     }
 
+    const jid = `${phone.replace('+', '')}@s.whatsapp.net`;
+
     const onboardingHandled = await this.handleOnboarding(
-      customer, conversation, content, sock, phone, storeId,
+      customer, conversation, content, sock, jid, phone, storeId,
     );
     if (onboardingHandled) return;
 
-    const humanKeywords = [
-      'hablar con una persona', 'hablar con alguien',
-      'quiero pagar', 'voy a pagar', 'hacer el pago',
-      'persona real', 'asesor', 'operador',
-      'no quiero el bot', 'ayuda humana',
-    ];
-
-    if (humanKeywords.some(kw => content.toLowerCase().includes(kw))) {
+    const contentLower = content.toLowerCase();
+    if (HUMAN_KEYWORDS.some(kw => contentLower.includes(kw))) {
       await this.prisma.conversation.update({
         where: { conversationId: conversation.conversationId },
         data: { status: 'pending_human' },
       });
-      const jid = `${phone.replace('+', '')}@s.whatsapp.net`;
       await sock.sendMessage(jid, {
         text: '👤 Entendido! Te conecto con un asesor. Por favor espera un momento...',
       });
@@ -510,57 +564,21 @@ if (jid.endsWith('@lid')) {
       isAiResponse: true,
     });
 
-    const jid = `${phone.replace('+', '')}@s.whatsapp.net`;
     await sock.sendMessage(jid, { text: aiReply });
     this.logger.log(`🤖 IA respondió a ${phone}`);
   }
 
-  private extractName(input: string): string {
-    const cleaned = input.trim();
-    const patterns = [
-      /^(?:mi nombre es|me llamo|soy|mi nombre:|nombre:)\s+(.+)/i,
-    ];
-    for (const pattern of patterns) {
-      const match = cleaned.match(pattern);
-      if (match) return match[1].trim();
-    }
-    return cleaned;
-  }
-
-  private extractCity(input: string): string {
-    const cleaned = input.trim();
-    const patterns = [
-      /^(?:soy de|estoy en|vivo en|desde|de|en)\s+(.+)/i,
-    ];
-    for (const pattern of patterns) {
-      const match = cleaned.match(pattern);
-      if (match) return match[1].trim();
-    }
-    return cleaned;
-  }
-
-  private isValidText(value: string): boolean {
-    return /[a-záéíóúüñA-ZÁÉÍÓÚÜÑ]{2,}/.test(value);
-  }
-
-  private isValidName(value: string): boolean {
-    const lower = value.toLowerCase().trim();
-    if (/\d/.test(lower)) return false;
-    if (lower.length > 30) return false;
-    const words = lower.split(/\s+/);
-    if (words.length > 3) return false;
-    if (!this.isValidText(value)) return false;
-    if (words.some(w => NAME_BLACKLIST.has(w))) return false;
-    if (/^(ja|je|ji|ha|he|xd){2,}/i.test(lower)) return false;
-    return true;
-  }
+  // ─── Onboarding ─────────────────────────────────────────────────────────────
 
   private async handleOnboarding(
-    customer: any, conversation: any, content: string,
-    sock: any, phone: string, storeId: string,
+    customer: any,
+    conversation: any,
+    content: string,
+    sock: any,
+    jid: string,
+    phone: string,
+    storeId: string,
   ): Promise<boolean> {
-    const jid = `${phone.replace('+', '')}@s.whatsapp.net`;
-
     const lastBotMsg = await this.prisma.message.findFirst({
       where: { conversationId: conversation.conversationId, sender: 'store' },
       orderBy: { createdAt: 'desc' },
@@ -587,6 +605,7 @@ if (jid.endsWith('@lid')) {
         await this.saveOnboardingMessage(conversation.conversationId, storeId, `${msg} ${ASK_CITY_MARKER}`);
         return true;
       }
+
       const msg = `¡Hola! Bienvenido/a 👋 Soy el asistente virtual. Para atenderte mejor, ¿cuál es tu nombre?`;
       await sock.sendMessage(jid, { text: msg });
       await this.saveOnboardingMessage(conversation.conversationId, storeId, `${msg} ${ASK_NAME_MARKER}`);
@@ -609,6 +628,7 @@ if (jid.endsWith('@lid')) {
         this.logger.log(`✅ Ciudad guardada: ${cityFormatted} (${phone})`);
         return false;
       }
+
       if (!lastBotContent) {
         const msg = `¡Hola de nuevo, ${customer.name}! 👋 ¿De qué ciudad nos escribes? 🏙️`;
         await sock.sendMessage(jid, { text: msg });
@@ -620,14 +640,48 @@ if (jid.endsWith('@lid')) {
     return false;
   }
 
-  private async saveOnboardingMessage(conversationId: string, storeId: string, content: string) {
+  private async saveOnboardingMessage(
+    conversationId: string,
+    storeId: string,
+    content: string,
+  ): Promise<void> {
     await this.messagesService.create({
       conversationId, storeId, content,
       type: 'text', sender: 'store', isAiResponse: true,
     });
   }
 
-  // ── API pública ─────────────────────────────────────────────────────────────
+  // ─── Utilidades de texto ────────────────────────────────────────────────────
+
+  private extractName(input: string): string {
+    const cleaned = input.trim();
+    const match = cleaned.match(/^(?:mi nombre es|me llamo|soy|mi nombre:|nombre:)\s+(.+)/i);
+    return match ? match[1].trim() : cleaned;
+  }
+
+  private extractCity(input: string): string {
+    const cleaned = input.trim();
+    const match = cleaned.match(/^(?:soy de|estoy en|vivo en|desde|de|en)\s+(.+)/i);
+    return match ? match[1].trim() : cleaned;
+  }
+
+  private isValidText(value: string): boolean {
+    return /[a-záéíóúüñA-ZÁÉÍÓÚÜÑ]{2,}/.test(value);
+  }
+
+  private isValidName(value: string): boolean {
+    const lower = value.toLowerCase().trim();
+    if (/\d/.test(lower)) return false;
+    if (lower.length > 30) return false;
+    const words = lower.split(/\s+/);
+    if (words.length > 3) return false;
+    if (!this.isValidText(value)) return false;
+    if (words.some(w => NAME_BLACKLIST.has(w))) return false;
+    if (/^(ja|je|ji|ha|he|xd){2,}/i.test(lower)) return false;
+    return true;
+  }
+
+  // ─── API pública ─────────────────────────────────────────────────────────────
 
   getQR(storeId: string): string | null {
     return this.qrCodes.get(storeId) ?? null;
@@ -637,7 +691,7 @@ if (jid.endsWith('@lid')) {
     return this.sockets.get(storeId)?.user != null;
   }
 
-  async disconnectStore(storeId: string) {
+  async disconnectStore(storeId: string): Promise<void> {
     const sock = this.sockets.get(storeId);
     this.sockets.delete(storeId);
     this.qrCodes.delete(storeId);
@@ -647,18 +701,17 @@ if (jid.endsWith('@lid')) {
       try {
         await sock.logout();
       } catch {
-        try { sock.end(undefined); } catch {}
+        try { sock.end(undefined); } catch { /* ignorar */ }
       }
     }
 
-    await this.prisma.whatsappSession.deleteMany({ where: { storeId } }).catch(() => {});
-    await this.prisma.store.update({
-      where: { storeId },
-      data: { waSessionId: null },
-    }).catch(() => {});
+    await Promise.allSettled([
+      this.prisma.whatsappSession.deleteMany({ where: { storeId } }),
+      this.prisma.store.update({ where: { storeId }, data: { waSessionId: null } }),
+    ]);
   }
 
-  async sendMessage(storeId: string, phone: string, content: string) {
+  async sendMessage(storeId: string, phone: string, content: string): Promise<void> {
     const sock = this.sockets.get(storeId);
     if (!sock) throw new Error(`No hay socket activo para store: ${storeId}`);
     const jid = `${phone.replace('+', '')}@s.whatsapp.net`;
