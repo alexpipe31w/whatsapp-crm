@@ -288,10 +288,11 @@ export class WhatsappService implements OnModuleInit {
       }
     });
 
-    sock.ev.on('messages.upsert', async ({ messages, type }) => {
-      // 'notify' = mensaje nuevo en vivo
-      // 'append' = mensajes perdidos durante desconexión (history sync)
-      if (type !== 'notify' && type !== 'append') return;
+sock.ev.on('messages.upsert', async ({ messages, type }) => {
+  // TEMPORAL DIAGNÓSTICO
+  this.logger.log(`📬 messages.upsert disparado — type: ${type} — msgs: ${messages.length}`);
+  
+  if (type !== 'notify' && type !== 'append') return;
 
       // Para history sync solo procesar mensajes de las últimas 24h
       const cutoffMs = type === 'append' ? Date.now() - 24 * 60 * 60 * 1000 : 0;
