@@ -31,6 +31,7 @@ import { AppointmentsModule } from './appointments/appointments.module';
     DashboardModule,
     ProductsModule,
     ServicesModule,
+    AppointmentsModule,
     OrdersModule,
     MessagesModule,
     CampaignsModule,
