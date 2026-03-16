@@ -58,6 +58,7 @@ export const ModelName = {
   Service: 'Service',
   Order: 'Order',
   OrderItem: 'OrderItem',
+  Appointment: 'Appointment',
   AIConfiguration: 'AIConfiguration',
   Campaign: 'Campaign',
   User: 'User',
@@ -100,8 +101,10 @@ export const CustomerScalarFieldEnum = {
   storeId: 'storeId',
   phone: 'phone',
   name: 'name',
+  cedula: 'cedula',
   city: 'city',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 } as const
 
 export type CustomerScalarFieldEnum = (typeof CustomerScalarFieldEnum)[keyof typeof CustomerScalarFieldEnum]
@@ -146,7 +149,8 @@ export const ProductScalarFieldEnum = {
   imageUrl: 'imageUrl',
   hasShipping: 'hasShipping',
   isActive: 'isActive',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 } as const
 
 export type ProductScalarFieldEnum = (typeof ProductScalarFieldEnum)[keyof typeof ProductScalarFieldEnum]
@@ -190,7 +194,8 @@ export const OrderScalarFieldEnum = {
   notes: 'notes',
   estimatedTime: 'estimatedTime',
   deliveryAddress: 'deliveryAddress',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 } as const
 
 export type OrderScalarFieldEnum = (typeof OrderScalarFieldEnum)[keyof typeof OrderScalarFieldEnum]
@@ -207,6 +212,23 @@ export const OrderItemScalarFieldEnum = {
 } as const
 
 export type OrderItemScalarFieldEnum = (typeof OrderItemScalarFieldEnum)[keyof typeof OrderItemScalarFieldEnum]
+
+
+export const AppointmentScalarFieldEnum = {
+  appointmentId: 'appointmentId',
+  storeId: 'storeId',
+  customerId: 'customerId',
+  type: 'type',
+  scheduledAt: 'scheduledAt',
+  description: 'description',
+  address: 'address',
+  status: 'status',
+  notes: 'notes',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type AppointmentScalarFieldEnum = (typeof AppointmentScalarFieldEnum)[keyof typeof AppointmentScalarFieldEnum]
 
 
 export const AIConfigurationScalarFieldEnum = {

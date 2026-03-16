@@ -26,6 +26,7 @@ model Store {
   users           User[]
   services        Service[]
   orders          Order[]
+  appointments    Appointment[]
   campaigns       Campaign[]
   aiConfig        AIConfiguration?
   blockedContacts BlockedContact[]
@@ -39,14 +40,18 @@ model Customer {
   storeId    String   @map("store_id")
   phone      String   @db.VarChar(20)
   name       String?  @db.VarChar(100)
+  cedula     String?  @db.VarChar(20)
   city       String?  @db.VarChar(100)
   createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
 
   store         Store          @relation(fields: [storeId], references: [storeId], onDelete: Cascade)
   conversations Conversation[]
   orders        Order[]
+  appointments  Appointment[]
 
   @@unique([storeId, phone])
+  @@index([storeId, createdAt])
   @@map("customers")
 }
 
@@ -63,6 +68,8 @@ model Conversation {
   customer Customer @relation(fields: [customerId], references: [customerId])
   messages Message[]
 
+  @@index([storeId, status])
+  @@index([customerId, status])
   @@map("conversations")
 }
 
@@ -79,6 +86,8 @@ model Message {
   conversation Conversation @relation(fields: [conversationId], references: [conversationId])
   store        Store        @relation(fields: [storeId], references: [storeId])
 
+  @@index([conversationId, createdAt])
+  @@index([storeId, createdAt])
   @@map("messages")
 }
 
@@ -95,12 +104,14 @@ model Product {
   hasShipping Boolean  @default(false) @map("has_shipping")
   isActive    Boolean  @default(true) @map("is_active")
   createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
   store      Store            @relation(fields: [storeId], references: [storeId])
   orderItems OrderItem[]
   variants   ProductVariant[]
 
   @@unique([storeId, sku])
+  @@index([storeId, isActive])
   @@map("products")
 }
 
@@ -146,11 +157,14 @@ model Order {
   estimatedTime   Int?     @map("estimated_time")
   deliveryAddress String?  @map("delivery_address")
   createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
   store      Store       @relation(fields: [storeId], references: [storeId])
   customer   Customer    @relation(fields: [customerId], references: [customerId])
   orderItems OrderItem[]
 
+  @@index([storeId, status])
+  @@index([storeId, createdAt])
   @@map("orders")
 }
 
@@ -168,6 +182,33 @@ model OrderItem {
   service Service? @relation(fields: [serviceId], references: [serviceId])
 
   @@map("order_items")
+}
+
+// ─── Agendamientos / Citas ────────────────────────────────────────────────────
+// Maneja citas, visitas técnicas y cualquier tipo de agendamiento.
+// La IA crea estos registros automáticamente cuando detecta intención de agendar.
+model Appointment {
+  appointmentId String   @id @default(uuid()) @map("appointment_id")
+  storeId       String   @map("store_id")
+  customerId    String   @map("customer_id")
+  // tipo: "cita" | "visita_tecnica" | "otro"
+  type          String   @default("cita")
+  scheduledAt   DateTime @map("scheduled_at")
+  description   String?
+  address       String?
+  // status: "pending" | "confirmed" | "completed" | "cancelled"
+  status        String   @default("pending")
+  notes         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  store    Store    @relation(fields: [storeId], references: [storeId])
+  customer Customer @relation(fields: [customerId], references: [customerId])
+
+  @@index([storeId, scheduledAt])
+  @@index([storeId, status])
+  @@index([customerId])
+  @@map("appointments")
 }
 
 model AIConfiguration {
@@ -228,10 +269,9 @@ model BlockedContact {
   @@map("blocked_contacts")
 }
 
-// Sesión de WhatsApp persistente en BD (sobrevive reinicios de Render)
 model WhatsappSession {
   storeId   String   @id @map("store_id")
-  data      Json     // Todos los archivos de sesión de Baileys en un solo JSON
+  data      Json
   updatedAt DateTime @updatedAt @map("updated_at")
 
   store Store @relation(fields: [storeId], references: [storeId], onDelete: Cascade)

@@ -13,8 +13,12 @@ import { BlockedService } from '../blocked/blocked.service';
 
 // ─── Constantes ──────────────────────────────────────────────────────────────
 
-const ASK_NAME_MARKER = '__ASK_NAME__';
-const ASK_CITY_MARKER = '__ASK_CITY__';
+/**
+ * Tiempo de debounce por cliente.
+ * Si el cliente manda 3 mensajes en < 1.5s se agrupan en uno solo
+ * antes de llamar a la IA → elimina race conditions de mensajes paralelos.
+ */
+const MSG_DEBOUNCE_MS = 1_500;
 
 const MEDIA_TYPES = new Set([
   'imageMessage', 'audioMessage', 'videoMessage',
@@ -35,15 +39,6 @@ const IGNORED_TYPES = new Set([
   'editedMessage',
 ]);
 
-const NAME_BLACKLIST = new Set([
-  'hola', 'hello', 'hi', 'hey', 'buenas', 'buenos', 'buen', 'dias', 'tardes',
-  'noches', 'ok', 'okas', 'oka', 'okay', 'dale', 'listo', 'si', 'sí', 'no',
-  'jaja', 'jajaja', 'jajajaja', 'jajjajaja', 'jeje', 'xd', 'lol', 'omg',
-  'amen', 'amén', 'test', 'prueba', 'info', 'precio', 'precios', 'holi',
-  'que', 'qué', 'como', 'cómo', 'bien', 'mal', 'nada', 'todo', 'algo',
-  'gracias', 'claro', 'perfecto', 'genial', 'excelente', 'chévere', 'chevere',
-]);
-
 const HUMAN_KEYWORDS = [
   'hablar con una persona', 'hablar con alguien',
   'quiero pagar', 'voy a pagar', 'hacer el pago',
@@ -51,13 +46,9 @@ const HUMAN_KEYWORDS = [
   'no quiero el bot', 'ayuda humana',
 ];
 
-// Tiempo máximo de deduplicación de mensajes en memoria
-const MSG_DEDUP_TTL_MS = 10 * 60 * 1000;
-
-// Tiempo de history sync: solo procesar mensajes de las últimas 24h
+const MSG_DEDUP_TTL_MS       = 10 * 60 * 1000;
 const HISTORY_SYNC_WINDOW_MS = 24 * 60 * 60 * 1000;
 
-// Delays de reconexión por código de error
 const RECONNECT_DELAYS: Record<number, number> = {
   408: 5_000,
   440: 8_000,
@@ -71,8 +62,6 @@ const DEFAULT_RECONNECT_DELAY = 3_000;
 //
 // CRÍTICO: los Signal keys contienen Buffers. Se serializan con BufferJSON.replacer
 // antes de guardar y se deserializan con BufferJSON.reviver al leer.
-// Si no se hace esto, los pre-keys de nuevos contactos se corrompen y Baileys
-// no puede establecer la primera sesión → mensajes perdidos.
 // ─────────────────────────────────────────────────────────────────────────────
 async function useDBAuthState(prisma: PrismaService, storeId: string) {
   const { BufferJSON, initAuthCreds } = await import('@whiskeysockets/baileys');
@@ -97,7 +86,6 @@ async function useDBAuthState(prisma: PrismaService, storeId: string) {
   }
 
   const cache: Record<string, any> = await loadFromDB();
-
   let saveTimer: ReturnType<typeof setTimeout> | null = null;
 
   function scheduleSave(): void {
@@ -131,11 +119,7 @@ async function useDBAuthState(prisma: PrismaService, storeId: string) {
         for (const id of ids) {
           const raw = cache[`key-${type}-${id}`];
           if (raw != null) {
-            try {
-              result[id] = deserialize(raw);
-            } catch {
-              result[id] = raw;
-            }
+            try { result[id] = deserialize(raw); } catch { result[id] = raw; }
           }
         }
         return result;
@@ -145,11 +129,7 @@ async function useDBAuthState(prisma: PrismaService, storeId: string) {
           for (const [id, value] of Object.entries(typeData)) {
             const key = `key-${type}-${id}`;
             if (value != null) {
-              try {
-                cache[key] = deserialize(serialize(value));
-              } catch {
-                cache[key] = value;
-              }
+              try { cache[key] = deserialize(serialize(value)); } catch { cache[key] = value; }
             } else {
               delete cache[key];
             }
@@ -172,29 +152,22 @@ async function useDBAuthState(prisma: PrismaService, storeId: string) {
 
 /**
  * Resuelve el JID real de un mensaje.
- *
  * WhatsApp está migrando cuentas nuevas al sistema LID (Linked Identity).
- * En ese caso, remoteJid viene como "<id>@lid" y el número de teléfono
- * real se encuentra en remoteJidAlt como "<phone>@s.whatsapp.net".
- *
- * Sin este fallback, los mensajes de cuentas LID se descartan silenciosamente.
  */
 function resolveJid(key: { remoteJid?: string; remoteJidAlt?: string }): string {
   const rawJid = key.remoteJid ?? '';
-  if (rawJid.endsWith('@lid') && key.remoteJidAlt) {
-    return key.remoteJidAlt;
-  }
+  if (rawJid.endsWith('@lid') && key.remoteJidAlt) return key.remoteJidAlt;
   return rawJid;
 }
 
-/**
- * Extrae el número de teléfono formateado (+<country><number>) desde un JID.
- * Retorna null si el JID no corresponde a un chat individual.
- */
 function phoneFromJid(jid: string): string | null {
   if (!jid.endsWith('@s.whatsapp.net')) return null;
   const raw = jid.replace('@s.whatsapp.net', '');
   return raw ? `+${raw}` : null;
+}
+
+function jidFromPhone(phone: string): string {
+  return `${phone.replace('+', '')}@s.whatsapp.net`;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -203,17 +176,31 @@ function phoneFromJid(jid: string): string | null {
 export class WhatsappService implements OnModuleInit {
   private readonly logger = new Logger(WhatsappService.name);
 
-  // Mapa de sockets activos por storeId
-  private readonly sockets = new Map<string, any>();
-
-  // QR codes pendientes de escanear por storeId
-  private readonly qrCodes = new Map<string, string>();
-
-  // Stores que ya tienen una reconexión en progreso (evita storms)
+  // Sockets activos por storeId
+  private readonly sockets      = new Map<string, any>();
+  // QR codes pendientes
+  private readonly qrCodes      = new Map<string, string>();
+  // Stores con reconexión en progreso (evita storms)
   private readonly reconnecting = new Set<string>();
-
-  // IDs de mensajes ya procesados (deduplicación en memoria)
+  // Deduplicación de mensajes por messageId
   private readonly processedMsgIds = new Set<string>();
+
+  /**
+   * Cola de procesamiento por cliente (storeId:phone).
+   * Garantiza que los mensajes de un mismo cliente se procesen de forma
+   * estrictamente secuencial aunque lleguen en paralelo.
+   */
+  private readonly messageQueues = new Map<string, Promise<void>>();
+
+  /**
+   * Buffer de debounce por cliente.
+   * Agrupa mensajes enviados en menos de MSG_DEBOUNCE_MS en un solo texto
+   * antes de pasarlos a la IA, eliminando respuestas parciales/duplicadas.
+   */
+  private readonly messageBuffers = new Map<string, {
+    contents: string[];
+    timer: ReturnType<typeof setTimeout>;
+  }>();
 
   constructor(
     private readonly prisma: PrismaService,
@@ -250,8 +237,6 @@ export class WhatsappService implements OnModuleInit {
       return;
     }
 
-    // Cerrar socket anterior antes de crear uno nuevo.
-    // Sin esto, el socket viejo sigue vivo y compite → loop código 440.
     const existingSock = this.sockets.get(storeId);
     if (existingSock) {
       this.sockets.delete(storeId);
@@ -280,7 +265,6 @@ export class WhatsappService implements OnModuleInit {
       keepAliveIntervalMs: 30_000,
       connectTimeoutMs: 60_000,
       retryRequestDelayMs: 2_000,
-      // Necesario para re-entrega de mensajes perdidos durante desconexiones
       getMessage: async (_key) => ({ conversation: '' }),
     });
 
@@ -293,8 +277,6 @@ export class WhatsappService implements OnModuleInit {
     });
 
     sock.ev.on('messages.upsert', async ({ messages, type }) => {
-      // 'notify' = mensaje nuevo en vivo
-      // 'append' = mensajes perdidos durante desconexión (history sync)
       if (type !== 'notify' && type !== 'append') return;
 
       const cutoffMs = type === 'append' ? Date.now() - HISTORY_SYNC_WINDOW_MS : 0;
@@ -304,7 +286,7 @@ export class WhatsappService implements OnModuleInit {
           const msgTimestampMs = (Number(msg.messageTimestamp) || 0) * 1000;
           if (cutoffMs > 0 && msgTimestampMs < cutoffMs) continue;
           await this.processMessage(msg, storeId, sock);
-        } catch (err) {
+        } catch (err: any) {
           this.logger.error(`Error procesando mensaje: ${err.message}`);
         }
       }
@@ -349,7 +331,7 @@ export class WhatsappService implements OnModuleInit {
     DisconnectReason: any,
   ): Promise<void> {
     const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
-    const loggedOut = statusCode === DisconnectReason.loggedOut;
+    const loggedOut  = statusCode === DisconnectReason.loggedOut;
 
     this.logger.warn(`Conexión cerrada para ${storeId} — código: ${statusCode}`);
 
@@ -399,19 +381,14 @@ export class WhatsappService implements OnModuleInit {
       setTimeout(() => this.processedMsgIds.delete(msgId), MSG_DEDUP_TTL_MS);
     }
 
-    // ── Soporte LID ──────────────────────────────────────────────────────────
-    // Cuentas nuevas de WhatsApp usan el sistema LID (Linked Identity).
-    // remoteJid llega como "<id>@lid" y el teléfono real está en remoteJidAlt.
-    // resolveJid() hace el fallback automáticamente.
-    // ────────────────────────────────────────────────────────────────────────
-    const jid = resolveJid(msg.key);
+    const jid   = resolveJid(msg.key);
     const phone = phoneFromJid(jid);
-    if (!phone) return; // Grupos, status, etc.
+    if (!phone) return; // grupos, status, etc.
 
     const messageType = Object.keys(msg.message)[0];
 
     if (IGNORED_TYPES.has(messageType)) {
-      this.logger.debug(`Ignorando mensaje interno (${messageType}) de ${phone}`);
+      this.logger.debug(`Ignorando tipo interno (${messageType}) de ${phone}`);
       return;
     }
 
@@ -428,6 +405,7 @@ export class WhatsappService implements OnModuleInit {
       '';
 
     if (isMedia) {
+      // Los mensajes de media van directo sin debounce (respuesta inmediata fija)
       await this.handleMediaMessage(storeId, phone, messageType, sock);
       return;
     }
@@ -435,7 +413,77 @@ export class WhatsappService implements OnModuleInit {
     if (!content) return;
 
     this.logger.log(`📩 Mensaje de ${phone}: ${content}`);
-    await this.handleIncomingMessage(storeId, phone, content, sock);
+
+    // ── Debounce + cola ──────────────────────────────────────────────────────
+    // bufferAndProcess agrupa mensajes rápidos y los encola secuencialmente.
+    // Esto elimina el race condition de múltiples mensajes paralelos a la IA.
+    this.bufferAndProcess(storeId, phone, content, sock);
+  }
+
+  // ─── Debounce + cola secuencial ──────────────────────────────────────────────
+
+  /**
+   * Acumula mensajes del mismo cliente durante MSG_DEBOUNCE_MS.
+   * Si el cliente manda 3 mensajes en 1 segundo, se juntan en uno solo.
+   * Una vez vence el timer, el mensaje combinado entra a la cola secuencial.
+   */
+  private bufferAndProcess(
+    storeId: string,
+    phone: string,
+    content: string,
+    sock: any,
+  ): void {
+    const key = `${storeId}:${phone}`;
+    const existing = this.messageBuffers.get(key);
+
+    if (existing) {
+      clearTimeout(existing.timer);
+      existing.contents.push(content);
+      this.logger.debug(`📥 Buffer [${key}] — ${existing.contents.length} msgs acumulados`);
+    } else {
+      this.messageBuffers.set(key, { contents: [content], timer: null! });
+    }
+
+    const buffer = this.messageBuffers.get(key)!;
+
+    buffer.timer = setTimeout(() => {
+      this.messageBuffers.delete(key);
+      const combined = buffer.contents.join('\n');
+
+      if (buffer.contents.length > 1) {
+        this.logger.log(
+          `🔗 ${buffer.contents.length} msgs agrupados de ${phone}: "${combined.slice(0, 80)}..."`,
+        );
+      }
+
+      this.enqueueMessage(key, () =>
+        this.handleIncomingMessage(storeId, phone, combined, sock),
+      );
+    }, MSG_DEBOUNCE_MS);
+  }
+
+  /**
+   * Encola el procesamiento de un mensaje para un cliente.
+   * El siguiente mensaje de ese cliente espera a que el anterior termine.
+   * Garantiza historial completo en cada llamada a la IA.
+   */
+  private enqueueMessage(key: string, fn: () => Promise<void>): void {
+    const prev = this.messageQueues.get(key) ?? Promise.resolve();
+
+    const next = prev
+      .then(fn)
+      .catch(err =>
+        this.logger.error(`Error en cola [${key}]: ${err.message}`)
+      );
+
+    this.messageQueues.set(key, next);
+
+    // Limpieza automática cuando la cola queda vacía
+    next.finally(() => {
+      if (this.messageQueues.get(key) === next) {
+        this.messageQueues.delete(key);
+      }
+    });
   }
 
   // ─── Mensajes de media ──────────────────────────────────────────────────────
@@ -446,8 +494,8 @@ export class WhatsappService implements OnModuleInit {
     messageType: string,
     sock: any,
   ): Promise<void> {
-    const jid = `${phone.replace('+', '')}@s.whatsapp.net`;
-    const customer = await this.customersService.findOrCreate({ storeId, phone });
+    const jid          = jidFromPhone(phone);
+    const customer     = await this.customersService.findOrCreate({ storeId, phone });
     const conversation = await this.conversationsService.findOrCreate(
       customer.customerId, storeId,
     );
@@ -502,7 +550,7 @@ export class WhatsappService implements OnModuleInit {
     content: string,
     sock: any,
   ): Promise<void> {
-    const customer = await this.customersService.findOrCreate({ storeId, phone });
+    const customer     = await this.customersService.findOrCreate({ storeId, phone });
     const conversation = await this.conversationsService.findOrCreate(
       customer.customerId, storeId,
     );
@@ -530,26 +578,22 @@ export class WhatsappService implements OnModuleInit {
       return;
     }
 
-    const jid = `${phone.replace('+', '')}@s.whatsapp.net`;
-
-    const onboardingHandled = await this.handleOnboarding(
-      customer, conversation, content, sock, jid, phone, storeId,
-    );
-    if (onboardingHandled) return;
-
+    const jid         = jidFromPhone(phone);
     const contentLower = content.toLowerCase();
+
     if (HUMAN_KEYWORDS.some(kw => contentLower.includes(kw))) {
       await this.prisma.conversation.update({
         where: { conversationId: conversation.conversationId },
         data: { status: 'pending_human' },
       });
       await sock.sendMessage(jid, {
-        text: '👤 Entendido! Te conecto con un asesor. Por favor espera un momento...',
+        text: '👤 Entendido, te conecto con un asesor. Por favor espera un momento...',
       });
       this.logger.log(`🚨 ${phone} solicita asesor humano`);
       return;
     }
 
+    // ── Respuesta de la IA ───────────────────────────────────────────────────
     const aiReply = await this.aiService.generateReply(
       storeId, content, conversation.conversationId,
     );
@@ -566,119 +610,6 @@ export class WhatsappService implements OnModuleInit {
 
     await sock.sendMessage(jid, { text: aiReply });
     this.logger.log(`🤖 IA respondió a ${phone}`);
-  }
-
-  // ─── Onboarding ─────────────────────────────────────────────────────────────
-
-  private async handleOnboarding(
-    customer: any,
-    conversation: any,
-    content: string,
-    sock: any,
-    jid: string,
-    phone: string,
-    storeId: string,
-  ): Promise<boolean> {
-    const lastBotMsg = await this.prisma.message.findFirst({
-      where: { conversationId: conversation.conversationId, sender: 'store' },
-      orderBy: { createdAt: 'desc' },
-    });
-    const lastBotContent = lastBotMsg?.content ?? '';
-
-    if (!customer.name) {
-      if (lastBotContent.includes(ASK_NAME_MARKER)) {
-        const name = this.extractName(content);
-
-        if (!this.isValidName(name)) {
-          const msg = `No entendí tu nombre 😅 ¿Me lo puedes escribir de nuevo? (ejemplo: "María" o "Juan Pérez")`;
-          await sock.sendMessage(jid, { text: msg });
-          await this.saveOnboardingMessage(conversation.conversationId, storeId, `${msg} ${ASK_NAME_MARKER}`);
-          return true;
-        }
-
-        const nameFormatted = name.replace(/\b\w/g, l => l.toUpperCase());
-        await this.customersService.update(customer.customerId, { name: nameFormatted });
-        this.logger.log(`✅ Nombre guardado: ${nameFormatted} (${phone})`);
-
-        const msg = `¡Gracias, ${nameFormatted}! 😊 ¿De qué ciudad nos escribes? 🏙️`;
-        await sock.sendMessage(jid, { text: msg });
-        await this.saveOnboardingMessage(conversation.conversationId, storeId, `${msg} ${ASK_CITY_MARKER}`);
-        return true;
-      }
-
-      const msg = `¡Hola! Bienvenido/a 👋 Soy el asistente virtual. Para atenderte mejor, ¿cuál es tu nombre?`;
-      await sock.sendMessage(jid, { text: msg });
-      await this.saveOnboardingMessage(conversation.conversationId, storeId, `${msg} ${ASK_NAME_MARKER}`);
-      return true;
-    }
-
-    if (!customer.city) {
-      if (lastBotContent.includes(ASK_CITY_MARKER)) {
-        const city = this.extractCity(content);
-
-        if (!this.isValidText(city)) {
-          const msg = `No entendí la ciudad 😅 ¿Me la puedes escribir de nuevo?`;
-          await sock.sendMessage(jid, { text: msg });
-          await this.saveOnboardingMessage(conversation.conversationId, storeId, `${msg} ${ASK_CITY_MARKER}`);
-          return true;
-        }
-
-        const cityFormatted = city.replace(/\b\w/g, l => l.toUpperCase());
-        await this.customersService.update(customer.customerId, { city: cityFormatted });
-        this.logger.log(`✅ Ciudad guardada: ${cityFormatted} (${phone})`);
-        return false;
-      }
-
-      if (!lastBotContent) {
-        const msg = `¡Hola de nuevo, ${customer.name}! 👋 ¿De qué ciudad nos escribes? 🏙️`;
-        await sock.sendMessage(jid, { text: msg });
-        await this.saveOnboardingMessage(conversation.conversationId, storeId, `${msg} ${ASK_CITY_MARKER}`);
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  private async saveOnboardingMessage(
-    conversationId: string,
-    storeId: string,
-    content: string,
-  ): Promise<void> {
-    await this.messagesService.create({
-      conversationId, storeId, content,
-      type: 'text', sender: 'store', isAiResponse: true,
-    });
-  }
-
-  // ─── Utilidades de texto ────────────────────────────────────────────────────
-
-  private extractName(input: string): string {
-    const cleaned = input.trim();
-    const match = cleaned.match(/^(?:mi nombre es|me llamo|soy|mi nombre:|nombre:)\s+(.+)/i);
-    return match ? match[1].trim() : cleaned;
-  }
-
-  private extractCity(input: string): string {
-    const cleaned = input.trim();
-    const match = cleaned.match(/^(?:soy de|estoy en|vivo en|desde|de|en)\s+(.+)/i);
-    return match ? match[1].trim() : cleaned;
-  }
-
-  private isValidText(value: string): boolean {
-    return /[a-záéíóúüñA-ZÁÉÍÓÚÜÑ]{2,}/.test(value);
-  }
-
-  private isValidName(value: string): boolean {
-    const lower = value.toLowerCase().trim();
-    if (/\d/.test(lower)) return false;
-    if (lower.length > 30) return false;
-    const words = lower.split(/\s+/);
-    if (words.length > 3) return false;
-    if (!this.isValidText(value)) return false;
-    if (words.some(w => NAME_BLACKLIST.has(w))) return false;
-    if (/^(ja|je|ji|ha|he|xd){2,}/i.test(lower)) return false;
-    return true;
   }
 
   // ─── API pública ─────────────────────────────────────────────────────────────
@@ -698,9 +629,7 @@ export class WhatsappService implements OnModuleInit {
     this.reconnecting.delete(storeId);
 
     if (sock) {
-      try {
-        await sock.logout();
-      } catch {
+      try { await sock.logout(); } catch {
         try { sock.end(undefined); } catch { /* ignorar */ }
       }
     }
@@ -714,7 +643,7 @@ export class WhatsappService implements OnModuleInit {
   async sendMessage(storeId: string, phone: string, content: string): Promise<void> {
     const sock = this.sockets.get(storeId);
     if (!sock) throw new Error(`No hay socket activo para store: ${storeId}`);
-    const jid = `${phone.replace('+', '')}@s.whatsapp.net`;
+    const jid = jidFromPhone(phone);
     await sock.sendMessage(jid, { text: content });
     this.logger.log(`📤 Mensaje enviado a ${phone}`);
   }

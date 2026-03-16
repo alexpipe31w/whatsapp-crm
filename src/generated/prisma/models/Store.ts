@@ -213,6 +213,7 @@ export type StoreWhereInput = {
   users?: Prisma.UserListRelationFilter
   services?: Prisma.ServiceListRelationFilter
   orders?: Prisma.OrderListRelationFilter
+  appointments?: Prisma.AppointmentListRelationFilter
   campaigns?: Prisma.CampaignListRelationFilter
   aiConfig?: Prisma.XOR<Prisma.AIConfigurationNullableScalarRelationFilter, Prisma.AIConfigurationWhereInput> | null
   blockedContacts?: Prisma.BlockedContactListRelationFilter
@@ -235,6 +236,7 @@ export type StoreOrderByWithRelationInput = {
   users?: Prisma.UserOrderByRelationAggregateInput
   services?: Prisma.ServiceOrderByRelationAggregateInput
   orders?: Prisma.OrderOrderByRelationAggregateInput
+  appointments?: Prisma.AppointmentOrderByRelationAggregateInput
   campaigns?: Prisma.CampaignOrderByRelationAggregateInput
   aiConfig?: Prisma.AIConfigurationOrderByWithRelationInput
   blockedContacts?: Prisma.BlockedContactOrderByRelationAggregateInput
@@ -260,6 +262,7 @@ export type StoreWhereUniqueInput = Prisma.AtLeast<{
   users?: Prisma.UserListRelationFilter
   services?: Prisma.ServiceListRelationFilter
   orders?: Prisma.OrderListRelationFilter
+  appointments?: Prisma.AppointmentListRelationFilter
   campaigns?: Prisma.CampaignListRelationFilter
   aiConfig?: Prisma.XOR<Prisma.AIConfigurationNullableScalarRelationFilter, Prisma.AIConfigurationWhereInput> | null
   blockedContacts?: Prisma.BlockedContactListRelationFilter
@@ -310,6 +313,7 @@ export type StoreCreateInput = {
   users?: Prisma.UserCreateNestedManyWithoutStoreInput
   services?: Prisma.ServiceCreateNestedManyWithoutStoreInput
   orders?: Prisma.OrderCreateNestedManyWithoutStoreInput
+  appointments?: Prisma.AppointmentCreateNestedManyWithoutStoreInput
   campaigns?: Prisma.CampaignCreateNestedManyWithoutStoreInput
   aiConfig?: Prisma.AIConfigurationCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
@@ -332,6 +336,7 @@ export type StoreUncheckedCreateInput = {
   users?: Prisma.UserUncheckedCreateNestedManyWithoutStoreInput
   services?: Prisma.ServiceUncheckedCreateNestedManyWithoutStoreInput
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutStoreInput
+  appointments?: Prisma.AppointmentUncheckedCreateNestedManyWithoutStoreInput
   campaigns?: Prisma.CampaignUncheckedCreateNestedManyWithoutStoreInput
   aiConfig?: Prisma.AIConfigurationUncheckedCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
@@ -354,6 +359,7 @@ export type StoreUpdateInput = {
   users?: Prisma.UserUpdateManyWithoutStoreNestedInput
   services?: Prisma.ServiceUpdateManyWithoutStoreNestedInput
   orders?: Prisma.OrderUpdateManyWithoutStoreNestedInput
+  appointments?: Prisma.AppointmentUpdateManyWithoutStoreNestedInput
   campaigns?: Prisma.CampaignUpdateManyWithoutStoreNestedInput
   aiConfig?: Prisma.AIConfigurationUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
@@ -376,6 +382,7 @@ export type StoreUncheckedUpdateInput = {
   users?: Prisma.UserUncheckedUpdateManyWithoutStoreNestedInput
   services?: Prisma.ServiceUncheckedUpdateManyWithoutStoreNestedInput
   orders?: Prisma.OrderUncheckedUpdateManyWithoutStoreNestedInput
+  appointments?: Prisma.AppointmentUncheckedUpdateManyWithoutStoreNestedInput
   campaigns?: Prisma.CampaignUncheckedUpdateManyWithoutStoreNestedInput
   aiConfig?: Prisma.AIConfigurationUncheckedUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
@@ -558,6 +565,20 @@ export type StoreUpdateOneRequiredWithoutOrdersNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.StoreUpdateToOneWithWhereWithoutOrdersInput, Prisma.StoreUpdateWithoutOrdersInput>, Prisma.StoreUncheckedUpdateWithoutOrdersInput>
 }
 
+export type StoreCreateNestedOneWithoutAppointmentsInput = {
+  create?: Prisma.XOR<Prisma.StoreCreateWithoutAppointmentsInput, Prisma.StoreUncheckedCreateWithoutAppointmentsInput>
+  connectOrCreate?: Prisma.StoreCreateOrConnectWithoutAppointmentsInput
+  connect?: Prisma.StoreWhereUniqueInput
+}
+
+export type StoreUpdateOneRequiredWithoutAppointmentsNestedInput = {
+  create?: Prisma.XOR<Prisma.StoreCreateWithoutAppointmentsInput, Prisma.StoreUncheckedCreateWithoutAppointmentsInput>
+  connectOrCreate?: Prisma.StoreCreateOrConnectWithoutAppointmentsInput
+  upsert?: Prisma.StoreUpsertWithoutAppointmentsInput
+  connect?: Prisma.StoreWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.StoreUpdateToOneWithWhereWithoutAppointmentsInput, Prisma.StoreUpdateWithoutAppointmentsInput>, Prisma.StoreUncheckedUpdateWithoutAppointmentsInput>
+}
+
 export type StoreCreateNestedOneWithoutAiConfigInput = {
   create?: Prisma.XOR<Prisma.StoreCreateWithoutAiConfigInput, Prisma.StoreUncheckedCreateWithoutAiConfigInput>
   connectOrCreate?: Prisma.StoreCreateOrConnectWithoutAiConfigInput
@@ -645,6 +666,7 @@ export type StoreCreateWithoutCustomersInput = {
   users?: Prisma.UserCreateNestedManyWithoutStoreInput
   services?: Prisma.ServiceCreateNestedManyWithoutStoreInput
   orders?: Prisma.OrderCreateNestedManyWithoutStoreInput
+  appointments?: Prisma.AppointmentCreateNestedManyWithoutStoreInput
   campaigns?: Prisma.CampaignCreateNestedManyWithoutStoreInput
   aiConfig?: Prisma.AIConfigurationCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
@@ -666,6 +688,7 @@ export type StoreUncheckedCreateWithoutCustomersInput = {
   users?: Prisma.UserUncheckedCreateNestedManyWithoutStoreInput
   services?: Prisma.ServiceUncheckedCreateNestedManyWithoutStoreInput
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutStoreInput
+  appointments?: Prisma.AppointmentUncheckedCreateNestedManyWithoutStoreInput
   campaigns?: Prisma.CampaignUncheckedCreateNestedManyWithoutStoreInput
   aiConfig?: Prisma.AIConfigurationUncheckedCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
@@ -703,6 +726,7 @@ export type StoreUpdateWithoutCustomersInput = {
   users?: Prisma.UserUpdateManyWithoutStoreNestedInput
   services?: Prisma.ServiceUpdateManyWithoutStoreNestedInput
   orders?: Prisma.OrderUpdateManyWithoutStoreNestedInput
+  appointments?: Prisma.AppointmentUpdateManyWithoutStoreNestedInput
   campaigns?: Prisma.CampaignUpdateManyWithoutStoreNestedInput
   aiConfig?: Prisma.AIConfigurationUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
@@ -724,6 +748,7 @@ export type StoreUncheckedUpdateWithoutCustomersInput = {
   users?: Prisma.UserUncheckedUpdateManyWithoutStoreNestedInput
   services?: Prisma.ServiceUncheckedUpdateManyWithoutStoreNestedInput
   orders?: Prisma.OrderUncheckedUpdateManyWithoutStoreNestedInput
+  appointments?: Prisma.AppointmentUncheckedUpdateManyWithoutStoreNestedInput
   campaigns?: Prisma.CampaignUncheckedUpdateManyWithoutStoreNestedInput
   aiConfig?: Prisma.AIConfigurationUncheckedUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
@@ -745,6 +770,7 @@ export type StoreCreateWithoutConversationsInput = {
   users?: Prisma.UserCreateNestedManyWithoutStoreInput
   services?: Prisma.ServiceCreateNestedManyWithoutStoreInput
   orders?: Prisma.OrderCreateNestedManyWithoutStoreInput
+  appointments?: Prisma.AppointmentCreateNestedManyWithoutStoreInput
   campaigns?: Prisma.CampaignCreateNestedManyWithoutStoreInput
   aiConfig?: Prisma.AIConfigurationCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
@@ -766,6 +792,7 @@ export type StoreUncheckedCreateWithoutConversationsInput = {
   users?: Prisma.UserUncheckedCreateNestedManyWithoutStoreInput
   services?: Prisma.ServiceUncheckedCreateNestedManyWithoutStoreInput
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutStoreInput
+  appointments?: Prisma.AppointmentUncheckedCreateNestedManyWithoutStoreInput
   campaigns?: Prisma.CampaignUncheckedCreateNestedManyWithoutStoreInput
   aiConfig?: Prisma.AIConfigurationUncheckedCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
@@ -803,6 +830,7 @@ export type StoreUpdateWithoutConversationsInput = {
   users?: Prisma.UserUpdateManyWithoutStoreNestedInput
   services?: Prisma.ServiceUpdateManyWithoutStoreNestedInput
   orders?: Prisma.OrderUpdateManyWithoutStoreNestedInput
+  appointments?: Prisma.AppointmentUpdateManyWithoutStoreNestedInput
   campaigns?: Prisma.CampaignUpdateManyWithoutStoreNestedInput
   aiConfig?: Prisma.AIConfigurationUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
@@ -824,6 +852,7 @@ export type StoreUncheckedUpdateWithoutConversationsInput = {
   users?: Prisma.UserUncheckedUpdateManyWithoutStoreNestedInput
   services?: Prisma.ServiceUncheckedUpdateManyWithoutStoreNestedInput
   orders?: Prisma.OrderUncheckedUpdateManyWithoutStoreNestedInput
+  appointments?: Prisma.AppointmentUncheckedUpdateManyWithoutStoreNestedInput
   campaigns?: Prisma.CampaignUncheckedUpdateManyWithoutStoreNestedInput
   aiConfig?: Prisma.AIConfigurationUncheckedUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
@@ -845,6 +874,7 @@ export type StoreCreateWithoutMessagesInput = {
   users?: Prisma.UserCreateNestedManyWithoutStoreInput
   services?: Prisma.ServiceCreateNestedManyWithoutStoreInput
   orders?: Prisma.OrderCreateNestedManyWithoutStoreInput
+  appointments?: Prisma.AppointmentCreateNestedManyWithoutStoreInput
   campaigns?: Prisma.CampaignCreateNestedManyWithoutStoreInput
   aiConfig?: Prisma.AIConfigurationCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
@@ -866,6 +896,7 @@ export type StoreUncheckedCreateWithoutMessagesInput = {
   users?: Prisma.UserUncheckedCreateNestedManyWithoutStoreInput
   services?: Prisma.ServiceUncheckedCreateNestedManyWithoutStoreInput
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutStoreInput
+  appointments?: Prisma.AppointmentUncheckedCreateNestedManyWithoutStoreInput
   campaigns?: Prisma.CampaignUncheckedCreateNestedManyWithoutStoreInput
   aiConfig?: Prisma.AIConfigurationUncheckedCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
@@ -903,6 +934,7 @@ export type StoreUpdateWithoutMessagesInput = {
   users?: Prisma.UserUpdateManyWithoutStoreNestedInput
   services?: Prisma.ServiceUpdateManyWithoutStoreNestedInput
   orders?: Prisma.OrderUpdateManyWithoutStoreNestedInput
+  appointments?: Prisma.AppointmentUpdateManyWithoutStoreNestedInput
   campaigns?: Prisma.CampaignUpdateManyWithoutStoreNestedInput
   aiConfig?: Prisma.AIConfigurationUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
@@ -924,6 +956,7 @@ export type StoreUncheckedUpdateWithoutMessagesInput = {
   users?: Prisma.UserUncheckedUpdateManyWithoutStoreNestedInput
   services?: Prisma.ServiceUncheckedUpdateManyWithoutStoreNestedInput
   orders?: Prisma.OrderUncheckedUpdateManyWithoutStoreNestedInput
+  appointments?: Prisma.AppointmentUncheckedUpdateManyWithoutStoreNestedInput
   campaigns?: Prisma.CampaignUncheckedUpdateManyWithoutStoreNestedInput
   aiConfig?: Prisma.AIConfigurationUncheckedUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
@@ -945,6 +978,7 @@ export type StoreCreateWithoutProductsInput = {
   users?: Prisma.UserCreateNestedManyWithoutStoreInput
   services?: Prisma.ServiceCreateNestedManyWithoutStoreInput
   orders?: Prisma.OrderCreateNestedManyWithoutStoreInput
+  appointments?: Prisma.AppointmentCreateNestedManyWithoutStoreInput
   campaigns?: Prisma.CampaignCreateNestedManyWithoutStoreInput
   aiConfig?: Prisma.AIConfigurationCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
@@ -966,6 +1000,7 @@ export type StoreUncheckedCreateWithoutProductsInput = {
   users?: Prisma.UserUncheckedCreateNestedManyWithoutStoreInput
   services?: Prisma.ServiceUncheckedCreateNestedManyWithoutStoreInput
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutStoreInput
+  appointments?: Prisma.AppointmentUncheckedCreateNestedManyWithoutStoreInput
   campaigns?: Prisma.CampaignUncheckedCreateNestedManyWithoutStoreInput
   aiConfig?: Prisma.AIConfigurationUncheckedCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
@@ -1003,6 +1038,7 @@ export type StoreUpdateWithoutProductsInput = {
   users?: Prisma.UserUpdateManyWithoutStoreNestedInput
   services?: Prisma.ServiceUpdateManyWithoutStoreNestedInput
   orders?: Prisma.OrderUpdateManyWithoutStoreNestedInput
+  appointments?: Prisma.AppointmentUpdateManyWithoutStoreNestedInput
   campaigns?: Prisma.CampaignUpdateManyWithoutStoreNestedInput
   aiConfig?: Prisma.AIConfigurationUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
@@ -1024,6 +1060,7 @@ export type StoreUncheckedUpdateWithoutProductsInput = {
   users?: Prisma.UserUncheckedUpdateManyWithoutStoreNestedInput
   services?: Prisma.ServiceUncheckedUpdateManyWithoutStoreNestedInput
   orders?: Prisma.OrderUncheckedUpdateManyWithoutStoreNestedInput
+  appointments?: Prisma.AppointmentUncheckedUpdateManyWithoutStoreNestedInput
   campaigns?: Prisma.CampaignUncheckedUpdateManyWithoutStoreNestedInput
   aiConfig?: Prisma.AIConfigurationUncheckedUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
@@ -1045,6 +1082,7 @@ export type StoreCreateWithoutServicesInput = {
   products?: Prisma.ProductCreateNestedManyWithoutStoreInput
   users?: Prisma.UserCreateNestedManyWithoutStoreInput
   orders?: Prisma.OrderCreateNestedManyWithoutStoreInput
+  appointments?: Prisma.AppointmentCreateNestedManyWithoutStoreInput
   campaigns?: Prisma.CampaignCreateNestedManyWithoutStoreInput
   aiConfig?: Prisma.AIConfigurationCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
@@ -1066,6 +1104,7 @@ export type StoreUncheckedCreateWithoutServicesInput = {
   products?: Prisma.ProductUncheckedCreateNestedManyWithoutStoreInput
   users?: Prisma.UserUncheckedCreateNestedManyWithoutStoreInput
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutStoreInput
+  appointments?: Prisma.AppointmentUncheckedCreateNestedManyWithoutStoreInput
   campaigns?: Prisma.CampaignUncheckedCreateNestedManyWithoutStoreInput
   aiConfig?: Prisma.AIConfigurationUncheckedCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
@@ -1103,6 +1142,7 @@ export type StoreUpdateWithoutServicesInput = {
   products?: Prisma.ProductUpdateManyWithoutStoreNestedInput
   users?: Prisma.UserUpdateManyWithoutStoreNestedInput
   orders?: Prisma.OrderUpdateManyWithoutStoreNestedInput
+  appointments?: Prisma.AppointmentUpdateManyWithoutStoreNestedInput
   campaigns?: Prisma.CampaignUpdateManyWithoutStoreNestedInput
   aiConfig?: Prisma.AIConfigurationUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
@@ -1124,6 +1164,7 @@ export type StoreUncheckedUpdateWithoutServicesInput = {
   products?: Prisma.ProductUncheckedUpdateManyWithoutStoreNestedInput
   users?: Prisma.UserUncheckedUpdateManyWithoutStoreNestedInput
   orders?: Prisma.OrderUncheckedUpdateManyWithoutStoreNestedInput
+  appointments?: Prisma.AppointmentUncheckedUpdateManyWithoutStoreNestedInput
   campaigns?: Prisma.CampaignUncheckedUpdateManyWithoutStoreNestedInput
   aiConfig?: Prisma.AIConfigurationUncheckedUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
@@ -1145,6 +1186,7 @@ export type StoreCreateWithoutOrdersInput = {
   products?: Prisma.ProductCreateNestedManyWithoutStoreInput
   users?: Prisma.UserCreateNestedManyWithoutStoreInput
   services?: Prisma.ServiceCreateNestedManyWithoutStoreInput
+  appointments?: Prisma.AppointmentCreateNestedManyWithoutStoreInput
   campaigns?: Prisma.CampaignCreateNestedManyWithoutStoreInput
   aiConfig?: Prisma.AIConfigurationCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
@@ -1166,6 +1208,7 @@ export type StoreUncheckedCreateWithoutOrdersInput = {
   products?: Prisma.ProductUncheckedCreateNestedManyWithoutStoreInput
   users?: Prisma.UserUncheckedCreateNestedManyWithoutStoreInput
   services?: Prisma.ServiceUncheckedCreateNestedManyWithoutStoreInput
+  appointments?: Prisma.AppointmentUncheckedCreateNestedManyWithoutStoreInput
   campaigns?: Prisma.CampaignUncheckedCreateNestedManyWithoutStoreInput
   aiConfig?: Prisma.AIConfigurationUncheckedCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
@@ -1203,6 +1246,7 @@ export type StoreUpdateWithoutOrdersInput = {
   products?: Prisma.ProductUpdateManyWithoutStoreNestedInput
   users?: Prisma.UserUpdateManyWithoutStoreNestedInput
   services?: Prisma.ServiceUpdateManyWithoutStoreNestedInput
+  appointments?: Prisma.AppointmentUpdateManyWithoutStoreNestedInput
   campaigns?: Prisma.CampaignUpdateManyWithoutStoreNestedInput
   aiConfig?: Prisma.AIConfigurationUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
@@ -1224,6 +1268,111 @@ export type StoreUncheckedUpdateWithoutOrdersInput = {
   products?: Prisma.ProductUncheckedUpdateManyWithoutStoreNestedInput
   users?: Prisma.UserUncheckedUpdateManyWithoutStoreNestedInput
   services?: Prisma.ServiceUncheckedUpdateManyWithoutStoreNestedInput
+  appointments?: Prisma.AppointmentUncheckedUpdateManyWithoutStoreNestedInput
+  campaigns?: Prisma.CampaignUncheckedUpdateManyWithoutStoreNestedInput
+  aiConfig?: Prisma.AIConfigurationUncheckedUpdateOneWithoutStoreNestedInput
+  blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
+  waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
+}
+
+export type StoreCreateWithoutAppointmentsInput = {
+  storeId?: string
+  name: string
+  phone: string
+  ownerName?: string | null
+  waSessionId?: string | null
+  isActive?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  customers?: Prisma.CustomerCreateNestedManyWithoutStoreInput
+  conversations?: Prisma.ConversationCreateNestedManyWithoutStoreInput
+  messages?: Prisma.MessageCreateNestedManyWithoutStoreInput
+  products?: Prisma.ProductCreateNestedManyWithoutStoreInput
+  users?: Prisma.UserCreateNestedManyWithoutStoreInput
+  services?: Prisma.ServiceCreateNestedManyWithoutStoreInput
+  orders?: Prisma.OrderCreateNestedManyWithoutStoreInput
+  campaigns?: Prisma.CampaignCreateNestedManyWithoutStoreInput
+  aiConfig?: Prisma.AIConfigurationCreateNestedOneWithoutStoreInput
+  blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
+  waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
+}
+
+export type StoreUncheckedCreateWithoutAppointmentsInput = {
+  storeId?: string
+  name: string
+  phone: string
+  ownerName?: string | null
+  waSessionId?: string | null
+  isActive?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  customers?: Prisma.CustomerUncheckedCreateNestedManyWithoutStoreInput
+  conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutStoreInput
+  messages?: Prisma.MessageUncheckedCreateNestedManyWithoutStoreInput
+  products?: Prisma.ProductUncheckedCreateNestedManyWithoutStoreInput
+  users?: Prisma.UserUncheckedCreateNestedManyWithoutStoreInput
+  services?: Prisma.ServiceUncheckedCreateNestedManyWithoutStoreInput
+  orders?: Prisma.OrderUncheckedCreateNestedManyWithoutStoreInput
+  campaigns?: Prisma.CampaignUncheckedCreateNestedManyWithoutStoreInput
+  aiConfig?: Prisma.AIConfigurationUncheckedCreateNestedOneWithoutStoreInput
+  blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
+  waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
+}
+
+export type StoreCreateOrConnectWithoutAppointmentsInput = {
+  where: Prisma.StoreWhereUniqueInput
+  create: Prisma.XOR<Prisma.StoreCreateWithoutAppointmentsInput, Prisma.StoreUncheckedCreateWithoutAppointmentsInput>
+}
+
+export type StoreUpsertWithoutAppointmentsInput = {
+  update: Prisma.XOR<Prisma.StoreUpdateWithoutAppointmentsInput, Prisma.StoreUncheckedUpdateWithoutAppointmentsInput>
+  create: Prisma.XOR<Prisma.StoreCreateWithoutAppointmentsInput, Prisma.StoreUncheckedCreateWithoutAppointmentsInput>
+  where?: Prisma.StoreWhereInput
+}
+
+export type StoreUpdateToOneWithWhereWithoutAppointmentsInput = {
+  where?: Prisma.StoreWhereInput
+  data: Prisma.XOR<Prisma.StoreUpdateWithoutAppointmentsInput, Prisma.StoreUncheckedUpdateWithoutAppointmentsInput>
+}
+
+export type StoreUpdateWithoutAppointmentsInput = {
+  storeId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  customers?: Prisma.CustomerUpdateManyWithoutStoreNestedInput
+  conversations?: Prisma.ConversationUpdateManyWithoutStoreNestedInput
+  messages?: Prisma.MessageUpdateManyWithoutStoreNestedInput
+  products?: Prisma.ProductUpdateManyWithoutStoreNestedInput
+  users?: Prisma.UserUpdateManyWithoutStoreNestedInput
+  services?: Prisma.ServiceUpdateManyWithoutStoreNestedInput
+  orders?: Prisma.OrderUpdateManyWithoutStoreNestedInput
+  campaigns?: Prisma.CampaignUpdateManyWithoutStoreNestedInput
+  aiConfig?: Prisma.AIConfigurationUpdateOneWithoutStoreNestedInput
+  blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
+  waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
+}
+
+export type StoreUncheckedUpdateWithoutAppointmentsInput = {
+  storeId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  customers?: Prisma.CustomerUncheckedUpdateManyWithoutStoreNestedInput
+  conversations?: Prisma.ConversationUncheckedUpdateManyWithoutStoreNestedInput
+  messages?: Prisma.MessageUncheckedUpdateManyWithoutStoreNestedInput
+  products?: Prisma.ProductUncheckedUpdateManyWithoutStoreNestedInput
+  users?: Prisma.UserUncheckedUpdateManyWithoutStoreNestedInput
+  services?: Prisma.ServiceUncheckedUpdateManyWithoutStoreNestedInput
+  orders?: Prisma.OrderUncheckedUpdateManyWithoutStoreNestedInput
   campaigns?: Prisma.CampaignUncheckedUpdateManyWithoutStoreNestedInput
   aiConfig?: Prisma.AIConfigurationUncheckedUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
@@ -1246,6 +1395,7 @@ export type StoreCreateWithoutAiConfigInput = {
   users?: Prisma.UserCreateNestedManyWithoutStoreInput
   services?: Prisma.ServiceCreateNestedManyWithoutStoreInput
   orders?: Prisma.OrderCreateNestedManyWithoutStoreInput
+  appointments?: Prisma.AppointmentCreateNestedManyWithoutStoreInput
   campaigns?: Prisma.CampaignCreateNestedManyWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
@@ -1267,6 +1417,7 @@ export type StoreUncheckedCreateWithoutAiConfigInput = {
   users?: Prisma.UserUncheckedCreateNestedManyWithoutStoreInput
   services?: Prisma.ServiceUncheckedCreateNestedManyWithoutStoreInput
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutStoreInput
+  appointments?: Prisma.AppointmentUncheckedCreateNestedManyWithoutStoreInput
   campaigns?: Prisma.CampaignUncheckedCreateNestedManyWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
@@ -1304,6 +1455,7 @@ export type StoreUpdateWithoutAiConfigInput = {
   users?: Prisma.UserUpdateManyWithoutStoreNestedInput
   services?: Prisma.ServiceUpdateManyWithoutStoreNestedInput
   orders?: Prisma.OrderUpdateManyWithoutStoreNestedInput
+  appointments?: Prisma.AppointmentUpdateManyWithoutStoreNestedInput
   campaigns?: Prisma.CampaignUpdateManyWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
@@ -1325,6 +1477,7 @@ export type StoreUncheckedUpdateWithoutAiConfigInput = {
   users?: Prisma.UserUncheckedUpdateManyWithoutStoreNestedInput
   services?: Prisma.ServiceUncheckedUpdateManyWithoutStoreNestedInput
   orders?: Prisma.OrderUncheckedUpdateManyWithoutStoreNestedInput
+  appointments?: Prisma.AppointmentUncheckedUpdateManyWithoutStoreNestedInput
   campaigns?: Prisma.CampaignUncheckedUpdateManyWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
@@ -1346,6 +1499,7 @@ export type StoreCreateWithoutCampaignsInput = {
   users?: Prisma.UserCreateNestedManyWithoutStoreInput
   services?: Prisma.ServiceCreateNestedManyWithoutStoreInput
   orders?: Prisma.OrderCreateNestedManyWithoutStoreInput
+  appointments?: Prisma.AppointmentCreateNestedManyWithoutStoreInput
   aiConfig?: Prisma.AIConfigurationCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
@@ -1367,6 +1521,7 @@ export type StoreUncheckedCreateWithoutCampaignsInput = {
   users?: Prisma.UserUncheckedCreateNestedManyWithoutStoreInput
   services?: Prisma.ServiceUncheckedCreateNestedManyWithoutStoreInput
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutStoreInput
+  appointments?: Prisma.AppointmentUncheckedCreateNestedManyWithoutStoreInput
   aiConfig?: Prisma.AIConfigurationUncheckedCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
@@ -1404,6 +1559,7 @@ export type StoreUpdateWithoutCampaignsInput = {
   users?: Prisma.UserUpdateManyWithoutStoreNestedInput
   services?: Prisma.ServiceUpdateManyWithoutStoreNestedInput
   orders?: Prisma.OrderUpdateManyWithoutStoreNestedInput
+  appointments?: Prisma.AppointmentUpdateManyWithoutStoreNestedInput
   aiConfig?: Prisma.AIConfigurationUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
@@ -1425,6 +1581,7 @@ export type StoreUncheckedUpdateWithoutCampaignsInput = {
   users?: Prisma.UserUncheckedUpdateManyWithoutStoreNestedInput
   services?: Prisma.ServiceUncheckedUpdateManyWithoutStoreNestedInput
   orders?: Prisma.OrderUncheckedUpdateManyWithoutStoreNestedInput
+  appointments?: Prisma.AppointmentUncheckedUpdateManyWithoutStoreNestedInput
   aiConfig?: Prisma.AIConfigurationUncheckedUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
@@ -1445,6 +1602,7 @@ export type StoreCreateWithoutUsersInput = {
   products?: Prisma.ProductCreateNestedManyWithoutStoreInput
   services?: Prisma.ServiceCreateNestedManyWithoutStoreInput
   orders?: Prisma.OrderCreateNestedManyWithoutStoreInput
+  appointments?: Prisma.AppointmentCreateNestedManyWithoutStoreInput
   campaigns?: Prisma.CampaignCreateNestedManyWithoutStoreInput
   aiConfig?: Prisma.AIConfigurationCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
@@ -1466,6 +1624,7 @@ export type StoreUncheckedCreateWithoutUsersInput = {
   products?: Prisma.ProductUncheckedCreateNestedManyWithoutStoreInput
   services?: Prisma.ServiceUncheckedCreateNestedManyWithoutStoreInput
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutStoreInput
+  appointments?: Prisma.AppointmentUncheckedCreateNestedManyWithoutStoreInput
   campaigns?: Prisma.CampaignUncheckedCreateNestedManyWithoutStoreInput
   aiConfig?: Prisma.AIConfigurationUncheckedCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
@@ -1503,6 +1662,7 @@ export type StoreUpdateWithoutUsersInput = {
   products?: Prisma.ProductUpdateManyWithoutStoreNestedInput
   services?: Prisma.ServiceUpdateManyWithoutStoreNestedInput
   orders?: Prisma.OrderUpdateManyWithoutStoreNestedInput
+  appointments?: Prisma.AppointmentUpdateManyWithoutStoreNestedInput
   campaigns?: Prisma.CampaignUpdateManyWithoutStoreNestedInput
   aiConfig?: Prisma.AIConfigurationUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
@@ -1524,6 +1684,7 @@ export type StoreUncheckedUpdateWithoutUsersInput = {
   products?: Prisma.ProductUncheckedUpdateManyWithoutStoreNestedInput
   services?: Prisma.ServiceUncheckedUpdateManyWithoutStoreNestedInput
   orders?: Prisma.OrderUncheckedUpdateManyWithoutStoreNestedInput
+  appointments?: Prisma.AppointmentUncheckedUpdateManyWithoutStoreNestedInput
   campaigns?: Prisma.CampaignUncheckedUpdateManyWithoutStoreNestedInput
   aiConfig?: Prisma.AIConfigurationUncheckedUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
@@ -1546,6 +1707,7 @@ export type StoreCreateWithoutBlockedContactsInput = {
   users?: Prisma.UserCreateNestedManyWithoutStoreInput
   services?: Prisma.ServiceCreateNestedManyWithoutStoreInput
   orders?: Prisma.OrderCreateNestedManyWithoutStoreInput
+  appointments?: Prisma.AppointmentCreateNestedManyWithoutStoreInput
   campaigns?: Prisma.CampaignCreateNestedManyWithoutStoreInput
   aiConfig?: Prisma.AIConfigurationCreateNestedOneWithoutStoreInput
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
@@ -1567,6 +1729,7 @@ export type StoreUncheckedCreateWithoutBlockedContactsInput = {
   users?: Prisma.UserUncheckedCreateNestedManyWithoutStoreInput
   services?: Prisma.ServiceUncheckedCreateNestedManyWithoutStoreInput
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutStoreInput
+  appointments?: Prisma.AppointmentUncheckedCreateNestedManyWithoutStoreInput
   campaigns?: Prisma.CampaignUncheckedCreateNestedManyWithoutStoreInput
   aiConfig?: Prisma.AIConfigurationUncheckedCreateNestedOneWithoutStoreInput
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
@@ -1604,6 +1767,7 @@ export type StoreUpdateWithoutBlockedContactsInput = {
   users?: Prisma.UserUpdateManyWithoutStoreNestedInput
   services?: Prisma.ServiceUpdateManyWithoutStoreNestedInput
   orders?: Prisma.OrderUpdateManyWithoutStoreNestedInput
+  appointments?: Prisma.AppointmentUpdateManyWithoutStoreNestedInput
   campaigns?: Prisma.CampaignUpdateManyWithoutStoreNestedInput
   aiConfig?: Prisma.AIConfigurationUpdateOneWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
@@ -1625,6 +1789,7 @@ export type StoreUncheckedUpdateWithoutBlockedContactsInput = {
   users?: Prisma.UserUncheckedUpdateManyWithoutStoreNestedInput
   services?: Prisma.ServiceUncheckedUpdateManyWithoutStoreNestedInput
   orders?: Prisma.OrderUncheckedUpdateManyWithoutStoreNestedInput
+  appointments?: Prisma.AppointmentUncheckedUpdateManyWithoutStoreNestedInput
   campaigns?: Prisma.CampaignUncheckedUpdateManyWithoutStoreNestedInput
   aiConfig?: Prisma.AIConfigurationUncheckedUpdateOneWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
@@ -1646,6 +1811,7 @@ export type StoreCreateWithoutWaSessionInput = {
   users?: Prisma.UserCreateNestedManyWithoutStoreInput
   services?: Prisma.ServiceCreateNestedManyWithoutStoreInput
   orders?: Prisma.OrderCreateNestedManyWithoutStoreInput
+  appointments?: Prisma.AppointmentCreateNestedManyWithoutStoreInput
   campaigns?: Prisma.CampaignCreateNestedManyWithoutStoreInput
   aiConfig?: Prisma.AIConfigurationCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
@@ -1667,6 +1833,7 @@ export type StoreUncheckedCreateWithoutWaSessionInput = {
   users?: Prisma.UserUncheckedCreateNestedManyWithoutStoreInput
   services?: Prisma.ServiceUncheckedCreateNestedManyWithoutStoreInput
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutStoreInput
+  appointments?: Prisma.AppointmentUncheckedCreateNestedManyWithoutStoreInput
   campaigns?: Prisma.CampaignUncheckedCreateNestedManyWithoutStoreInput
   aiConfig?: Prisma.AIConfigurationUncheckedCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
@@ -1704,6 +1871,7 @@ export type StoreUpdateWithoutWaSessionInput = {
   users?: Prisma.UserUpdateManyWithoutStoreNestedInput
   services?: Prisma.ServiceUpdateManyWithoutStoreNestedInput
   orders?: Prisma.OrderUpdateManyWithoutStoreNestedInput
+  appointments?: Prisma.AppointmentUpdateManyWithoutStoreNestedInput
   campaigns?: Prisma.CampaignUpdateManyWithoutStoreNestedInput
   aiConfig?: Prisma.AIConfigurationUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
@@ -1725,6 +1893,7 @@ export type StoreUncheckedUpdateWithoutWaSessionInput = {
   users?: Prisma.UserUncheckedUpdateManyWithoutStoreNestedInput
   services?: Prisma.ServiceUncheckedUpdateManyWithoutStoreNestedInput
   orders?: Prisma.OrderUncheckedUpdateManyWithoutStoreNestedInput
+  appointments?: Prisma.AppointmentUncheckedUpdateManyWithoutStoreNestedInput
   campaigns?: Prisma.CampaignUncheckedUpdateManyWithoutStoreNestedInput
   aiConfig?: Prisma.AIConfigurationUncheckedUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
@@ -1743,6 +1912,7 @@ export type StoreCountOutputType = {
   users: number
   services: number
   orders: number
+  appointments: number
   campaigns: number
   blockedContacts: number
 }
@@ -1755,6 +1925,7 @@ export type StoreCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.
   users?: boolean | StoreCountOutputTypeCountUsersArgs
   services?: boolean | StoreCountOutputTypeCountServicesArgs
   orders?: boolean | StoreCountOutputTypeCountOrdersArgs
+  appointments?: boolean | StoreCountOutputTypeCountAppointmentsArgs
   campaigns?: boolean | StoreCountOutputTypeCountCampaignsArgs
   blockedContacts?: boolean | StoreCountOutputTypeCountBlockedContactsArgs
 }
@@ -1821,6 +1992,13 @@ export type StoreCountOutputTypeCountOrdersArgs<ExtArgs extends runtime.Types.Ex
 /**
  * StoreCountOutputType without action
  */
+export type StoreCountOutputTypeCountAppointmentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.AppointmentWhereInput
+}
+
+/**
+ * StoreCountOutputType without action
+ */
 export type StoreCountOutputTypeCountCampaignsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.CampaignWhereInput
 }
@@ -1849,6 +2027,7 @@ export type StoreSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   users?: boolean | Prisma.Store$usersArgs<ExtArgs>
   services?: boolean | Prisma.Store$servicesArgs<ExtArgs>
   orders?: boolean | Prisma.Store$ordersArgs<ExtArgs>
+  appointments?: boolean | Prisma.Store$appointmentsArgs<ExtArgs>
   campaigns?: boolean | Prisma.Store$campaignsArgs<ExtArgs>
   aiConfig?: boolean | Prisma.Store$aiConfigArgs<ExtArgs>
   blockedContacts?: boolean | Prisma.Store$blockedContactsArgs<ExtArgs>
@@ -1898,6 +2077,7 @@ export type StoreInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   users?: boolean | Prisma.Store$usersArgs<ExtArgs>
   services?: boolean | Prisma.Store$servicesArgs<ExtArgs>
   orders?: boolean | Prisma.Store$ordersArgs<ExtArgs>
+  appointments?: boolean | Prisma.Store$appointmentsArgs<ExtArgs>
   campaigns?: boolean | Prisma.Store$campaignsArgs<ExtArgs>
   aiConfig?: boolean | Prisma.Store$aiConfigArgs<ExtArgs>
   blockedContacts?: boolean | Prisma.Store$blockedContactsArgs<ExtArgs>
@@ -1917,6 +2097,7 @@ export type $StorePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     users: Prisma.$UserPayload<ExtArgs>[]
     services: Prisma.$ServicePayload<ExtArgs>[]
     orders: Prisma.$OrderPayload<ExtArgs>[]
+    appointments: Prisma.$AppointmentPayload<ExtArgs>[]
     campaigns: Prisma.$CampaignPayload<ExtArgs>[]
     aiConfig: Prisma.$AIConfigurationPayload<ExtArgs> | null
     blockedContacts: Prisma.$BlockedContactPayload<ExtArgs>[]
@@ -2332,6 +2513,7 @@ export interface Prisma__StoreClient<T, Null = never, ExtArgs extends runtime.Ty
   users<T extends Prisma.Store$usersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Store$usersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   services<T extends Prisma.Store$servicesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Store$servicesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ServicePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   orders<T extends Prisma.Store$ordersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Store$ordersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$OrderPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  appointments<T extends Prisma.Store$appointmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Store$appointmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AppointmentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   campaigns<T extends Prisma.Store$campaignsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Store$campaignsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CampaignPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   aiConfig<T extends Prisma.Store$aiConfigArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Store$aiConfigArgs<ExtArgs>>): Prisma.Prisma__AIConfigurationClient<runtime.Types.Result.GetResult<Prisma.$AIConfigurationPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   blockedContacts<T extends Prisma.Store$blockedContactsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Store$blockedContactsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BlockedContactPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -2926,6 +3108,30 @@ export type Store$ordersArgs<ExtArgs extends runtime.Types.Extensions.InternalAr
   take?: number
   skip?: number
   distinct?: Prisma.OrderScalarFieldEnum | Prisma.OrderScalarFieldEnum[]
+}
+
+/**
+ * Store.appointments
+ */
+export type Store$appointmentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Appointment
+   */
+  select?: Prisma.AppointmentSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Appointment
+   */
+  omit?: Prisma.AppointmentOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.AppointmentInclude<ExtArgs> | null
+  where?: Prisma.AppointmentWhereInput
+  orderBy?: Prisma.AppointmentOrderByWithRelationInput | Prisma.AppointmentOrderByWithRelationInput[]
+  cursor?: Prisma.AppointmentWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.AppointmentScalarFieldEnum | Prisma.AppointmentScalarFieldEnum[]
 }
 
 /**

@@ -16,6 +16,7 @@ import { AiModule } from './ai/ai.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { AuthModule } from './auth/auth.module';
 import { BlockedModule } from './blocked/blocked.module';
+import { AppointmentsModule } from './appointments/appointments.module';
 
 @Module({
   imports: [

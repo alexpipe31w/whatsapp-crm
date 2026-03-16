@@ -11,14 +11,20 @@ const GROQ_TIMEOUT_EXT_MS   = 20_000;
 const ORDER_GUARD_TTL_MS    = 10 * 60 * 1000;
 const MAX_HISTORY_MESSAGES  = 20;
 
-// Solo corre el extractor si el mensaje tiene señales de compra
+// Intención de compra de producto
 const PURCHASE_INTENT_RE = /\b(quiero|deseo|pedir|pido|ordenar|comprar|llevar|encargar|confirm|dale|listo|acepto|perfecto|procede|adelante|claro|exacto|sip|yep|yes|sí|si\b|ok\b|pedido|orden|dirección|entrega|envío|cantidad|unidades?)\b/i;
 
-// Detecta si el cliente está confirmando un resumen previo
+// Intención de agendar cita o visita
+const APPOINTMENT_INTENT_RE = /\b(agendar|agenda|cita|visita|visita técnica|técnico|técnica|programar|reservar|reserva|turno|appointment|quiero una cita|necesito una visita|instalar|instalación|mantenimiento)\b/i;
+
+// El cliente confirma algo
 const CONFIRMATION_RE = /\b(confirm|sí|si\b|ok\b|dale|listo|acepto|perfecto|procede|adelante|claro|exacto|sip|yep|yes)\b/i;
 
-// Detecta dirección en texto del cliente
+// Detecta dirección
 const ADDRESS_RE = /\b(calle|carrera|cra|cl\b|av\b|avenida|barrio|#|\d{2,}[-–]\d+|diagonal|transversal|manzana|casa|apto|apartamento)\b/i;
+
+// Detecta cédula colombiana (6-10 dígitos)
+const CEDULA_RE = /\b(\d{6,10})\b/;
 
 // ─── Tipos internos ───────────────────────────────────────────────────────────
 
@@ -42,6 +48,23 @@ interface ExtractionResult {
   deliveryAddress: string | null;
   notes: string | null;
   reason: string;
+  // Datos del cliente — se recogen al momento de la orden si faltan
+  customerName: string | null;
+  customerCedula: string | null;
+}
+
+interface AppointmentExtractionResult {
+  complete: boolean;
+  type: 'cita' | 'visita_tecnica' | 'otro';
+  scheduledDate: string | null;  // "2024-03-15"
+  scheduledTime: string | null;  // "14:00"
+  description: string | null;
+  address: string | null;
+  notes: string | null;
+  reason: string;
+  // Datos del cliente — se recogen al momento de agendar si faltan
+  customerName: string | null;
+  customerCedula: string | null;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -50,11 +73,13 @@ interface ExtractionResult {
 export class AiService {
   private readonly logger = new Logger(AiService.name);
 
-  private readonly groqClients        = new Map<string, Groq>();
-  private readonly configCache        = new Map<string, CacheEntry<any>>();
-  private readonly catalogCache       = new Map<string, CacheEntry<{ products: any[]; services: any[] }>>();
-  private readonly orderInProgress    = new Set<string>();
-  private readonly pendingExtractions = new Map<string, ExtractionResult>();
+  private readonly groqClients          = new Map<string, Groq>();
+  private readonly configCache          = new Map<string, CacheEntry<any>>();
+  private readonly catalogCache         = new Map<string, CacheEntry<{ products: any[]; services: any[] }>>();
+  private readonly orderInProgress      = new Set<string>();
+  private readonly pendingExtractions   = new Map<string, ExtractionResult>();
+  private readonly appointmentInProgress = new Set<string>();
+  private readonly pendingAppointments  = new Map<string, AppointmentExtractionResult>();
 
   constructor(private readonly prisma: PrismaService) {}
 
@@ -76,7 +101,12 @@ export class AiService {
     return entry.value;
   }
 
-  private setCached<T>(cache: Map<string, CacheEntry<T>>, key: string, value: T, ttlMs: number): void {
+  private setCached<T>(
+    cache: Map<string, CacheEntry<T>>,
+    key: string,
+    value: T,
+    ttlMs: number,
+  ): void {
     cache.set(key, { value, expiresAt: Date.now() + ttlMs });
   }
 
@@ -109,7 +139,9 @@ export class AiService {
         const [products, services] = await Promise.all([
           this.prisma.product.findMany({
             where: { storeId, isActive: true },
-            include: { variants: { where: { isActive: true }, orderBy: { name: 'asc' } } },
+            include: {
+              variants: { where: { isActive: true }, orderBy: { name: 'asc' } },
+            },
             orderBy: { name: 'asc' },
           }),
           this.prisma.service.findMany({
@@ -122,20 +154,31 @@ export class AiService {
       }
       const { products, services } = catalog;
 
-      // ── 3. Conversación + órdenes + historial EN PARALELO ───────────────────
-      const [conversationRow, orders, history] = await Promise.all([
+      // ── 3. Conversación + órdenes + citas + historial EN PARALELO ───────────
+      const [conversationRow, orders, appointments, history] = await Promise.all([
         this.prisma.conversation.findFirst({
           where: { conversationId, storeId },
           include: { customer: true },
         }),
         this.prisma.order.findMany({
-          where: { storeId, customer: { conversations: { some: { conversationId } } } },
+          where: {
+            storeId,
+            customer: { conversations: { some: { conversationId } } },
+          },
           include: {
             orderItems: {
               include: { product: { select: { name: true, salePrice: true } } },
             },
           },
           orderBy: { createdAt: 'desc' },
+          take: 5,
+        }),
+        this.prisma.appointment.findMany({
+          where: {
+            storeId,
+            customer: { conversations: { some: { conversationId } } },
+          },
+          orderBy: { scheduledAt: 'asc' },
           take: 5,
         }),
         this.prisma.message.findMany({
@@ -149,18 +192,34 @@ export class AiService {
         this.logger.warn(`Conversación ${conversationId} no pertenece a store ${storeId}`);
         return null;
       }
-      const customer = conversationRow.customer;
-      const groq = this.getGroqClient(config.groqApiKey);
 
-      // ── 4. Extractor (solo con intención de compra) ─────────────────────────
+      const customer = conversationRow.customer;
+      const groq     = this.getGroqClient(config.groqApiKey);
+
+      // ── 4. Detección de intención: orden o cita ─────────────────────────────
       const hasCatalog          = products.length > 0 || services.length > 0;
       const hasPurchaseIntent   = PURCHASE_INTENT_RE.test(userMessage);
-      const hasPendingExtraction = this.pendingExtractions.has(conversationId);
+      const hasAppointmentIntent = APPOINTMENT_INTENT_RE.test(userMessage);
+      const hasPendingOrder     = this.pendingExtractions.has(conversationId);
+      const hasPendingAppt      = this.pendingAppointments.has(conversationId);
 
+      // ── 4a. Flujo de agendamiento ────────────────────────────────────────────
+      if (
+        (hasAppointmentIntent || hasPendingAppt) &&
+        !this.appointmentInProgress.has(conversationId)
+      ) {
+        const apptResult = await this.tryExtractAndCreateAppointment(
+          groq, config.model, history, userMessage,
+          customer, storeId, conversationId,
+        );
+        if (apptResult.created) return apptResult.message!;
+      }
+
+      // ── 4b. Flujo de orden de productos ─────────────────────────────────────
       const shouldTryOrder =
         hasCatalog &&
-        history.length >= 3 &&
-        (hasPurchaseIntent || hasPendingExtraction) &&
+        history.length >= 2 &&
+        (hasPurchaseIntent || hasPendingOrder) &&
         !this.orderInProgress.has(conversationId);
 
       if (shouldTryOrder) {
@@ -171,7 +230,7 @@ export class AiService {
         if (orderResult.created) return orderResult.message!;
       }
 
-      // ── 5. Respuesta principal ───────────────────────────────────────────────
+      // ── 5. Respuesta principal de la IA ──────────────────────────────────────
       const now = new Date();
       const fechaActual = now.toLocaleDateString('es-CO', {
         weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
@@ -181,7 +240,6 @@ export class AiService {
         hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota',
       });
 
-      // Detectar si la dirección ya fue dada en el historial
       const allClientText = [
         ...history.filter((m: any) => !m.isAiResponse).map((m: any) => m.content),
         userMessage,
@@ -189,15 +247,16 @@ export class AiService {
       const addressAlreadyGiven = ADDRESS_RE.test(allClientText);
 
       const enrichedSystemPrompt = this.buildSystemPrompt(
-        config.systemPrompt, customer, orders, products, services,
-        fechaActual, horaActual, history, userMessage, addressAlreadyGiven,
+        config.systemPrompt, customer, orders, appointments,
+        products, services, fechaActual, horaActual,
+        history, userMessage, addressAlreadyGiven,
       );
 
       const messages: any[] = [
         { role: 'system', content: enrichedSystemPrompt },
         ...history.map((m: any) => ({
           role: m.isAiResponse ? 'assistant' : 'user',
-          content: m.content.replace(/__ASK_NAME__|__ASK_CITY__/g, '').trim(),
+          content: m.content.trim(),
         })),
         { role: 'user', content: userMessage },
       ];
@@ -233,7 +292,7 @@ export class AiService {
     }
   }
 
-  // ─── Extracción y creación de orden multi-item ────────────────────────────────
+  // ─── Extracción y creación de orden ──────────────────────────────────────────
 
   private async tryExtractAndCreateOrder(
     groq: Groq,
@@ -250,8 +309,15 @@ export class AiService {
     const cached = this.pendingExtractions.get(conversationId);
     let extracted: ExtractionResult;
 
+    const needsCustomerData = !customer.name || !customer.cedula;
+
     // ── Caso 1: extracción completa cacheada + cliente confirma ───────────────
-    if (cached?.complete && cached.deliveryAddress && CONFIRMATION_RE.test(latestMessage.trim())) {
+    if (
+      cached?.complete &&
+      cached.deliveryAddress &&
+      (!needsCustomerData || (cached.customerName && cached.customerCedula)) &&
+      CONFIRMATION_RE.test(latestMessage.trim())
+    ) {
       this.logger.log(`Usando extracción completa cacheada para ${conversationId}`);
       extracted = cached;
       this.pendingExtractions.delete(conversationId);
@@ -262,7 +328,7 @@ export class AiService {
       extracted = { ...cached, deliveryAddress: latestMessage.trim(), complete: true };
       this.pendingExtractions.delete(conversationId);
 
-    // ── Caso 3: correr el extractor normalmente ───────────────────────────────
+    // ── Caso 3: correr el extractor ───────────────────────────────────────────
     } else {
       const productLines = products.flatMap((p: any) => {
         if (p.variants?.length > 0) {
@@ -281,10 +347,17 @@ export class AiService {
 
       const conversationText = [
         ...history.map((m: any) =>
-          `${m.isAiResponse ? 'Asistente' : 'Cliente'}: ${m.content.replace(/__ASK_NAME__|__ASK_CITY__/g, '').trim()}`
+          `${m.isAiResponse ? 'Asistente' : 'Cliente'}: ${m.content.trim()}`
         ),
         `Cliente: ${latestMessage}`,
       ].join('\n');
+
+      const customerDataInstruction = needsCustomerData
+        ? `
+DATOS DEL CLIENTE REQUERIDOS:
+El cliente aún no tiene nombre o cédula registrados. Extráelos de la conversación si fueron mencionados.
+Si no aparecen → null. La orden NO puede ser "complete":true si faltan nombre o cédula.`
+        : `DATOS DEL CLIENTE: Ya registrados. No es necesario extraerlos.`;
 
       const extractorPrompt = `Eres un extractor de datos de órdenes de compra. Tu única tarea es leer la conversación y extraer los datos del pedido en JSON.
 
@@ -294,18 +367,19 @@ ${catalogSummary}
 CONVERSACIÓN:
 ${conversationText}
 
+${customerDataInstruction}
+
 REGLAS ESTRICTAS:
-1. "complete":true SOLO si se cumplen LAS 3 CONDICIONES SIMULTÁNEAMENTE:
-   a) El cliente especificó al menos un producto/servicio del catálogo con cantidad
-   b) El cliente proporcionó una dirección con calle, carrera, barrio o similar (solo decir una ciudad NO es suficiente)
-   c) El cliente confirmó explícitamente (dijo sí, confirmo, listo, dale, ok, etc.)
-2. Si falta CUALQUIERA de las 3 condiciones → "complete":false sin excepción.
-3. Para productos CON variantes: el variantId es OBLIGATORIO. Identifícalo por el tamaño o nombre que pidió el cliente.
+1. "complete":true SOLO si se cumplen TODAS las condiciones simultáneamente:
+   a) Al menos un producto/servicio del catálogo con cantidad
+   b) Dirección con calle, carrera, barrio o similar (solo ciudad NO es suficiente)
+   c) Confirmación explícita del cliente (sí, confirmo, listo, dale, ok, etc.)
+   d) Si se requieren datos del cliente: nombre Y cédula presentes
+2. Si falta CUALQUIER condición → "complete":false.
+3. Para productos CON variantes: variantId es OBLIGATORIO.
 4. Para productos SIN variantes: variantId debe ser null.
-5. Si el cliente pide múltiples productos, inclúyelos TODOS en el array "items".
-6. Si el stock de un item es 0, NO lo incluyas y explícalo en "reason".
-7. "deliveryAddress": copia textualmente lo que dijo el cliente. Si no hay dirección válida → null.
-8. Si hay varios mensajes con dirección, usa el más reciente.
+5. Si el stock de un item es 0, NO lo incluyas y explícalo en "reason".
+6. "deliveryAddress": copia textualmente lo que dijo el cliente. Sin dirección válida → null.
 
 Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
 {
@@ -317,12 +391,14 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
       "serviceId": "uuid o null",
       "variantId": "uuid o null",
       "quantity": number,
-      "description": "nombre legible del item para mostrar al cliente"
+      "description": "nombre legible del item"
     }
   ],
   "deliveryAddress": "string o null",
   "notes": "string o null",
-  "reason": "explicación de por qué complete es true o false"
+  "reason": "explicación breve",
+  "customerName": "nombre completo del cliente o null",
+  "customerCedula": "número de cédula o null"
 }`;
 
       try {
@@ -331,7 +407,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
             model: 'llama-3.1-8b-instant',
             messages: [{ role: 'user', content: extractorPrompt }],
             temperature: 0,
-            max_tokens: 800,
+            max_tokens: 900,
           }),
           new Promise((_, reject) =>
             setTimeout(() => reject(new Error('Extractor timeout')), GROQ_TIMEOUT_EXT_MS)
@@ -343,24 +419,28 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
         if (!jsonMatch) return { created: false };
 
         extracted = JSON.parse(jsonMatch[0]);
-        this.logger.log(`Extracción: ${JSON.stringify(extracted)}`);
+        this.logger.log(`Extracción orden: ${JSON.stringify(extracted)}`);
 
-        // Cachear siempre que haya items aunque falten otros datos
         if (extracted.items?.length > 0) {
           this.pendingExtractions.set(conversationId, extracted);
           setTimeout(() => this.pendingExtractions.delete(conversationId), ORDER_GUARD_TTL_MS);
         }
 
       } catch (err: any) {
-        this.logger.error(`Error en extractor: ${err.message}`);
+        this.logger.error(`Error en extractor orden: ${err.message}`);
         return { created: false };
       }
     }
 
     // ── Validación final ───────────────────────────────────────────────────────
-    if (!extracted?.complete)           return { created: false };
-    if (!extracted.items?.length)       return { created: false };
-    if (!extracted.deliveryAddress)     return { created: false };
+    if (!extracted?.complete)       return { created: false };
+    if (!extracted.items?.length)   return { created: false };
+    if (!extracted.deliveryAddress) return { created: false };
+
+    // Validar datos del cliente si son necesarios
+    if (needsCustomerData && (!extracted.customerName || !extracted.customerCedula)) {
+      return { created: false };
+    }
 
     if (this.orderInProgress.has(conversationId)) {
       this.logger.warn(`Orden ya en progreso para ${conversationId}`);
@@ -369,13 +449,26 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
     this.orderInProgress.add(conversationId);
 
     try {
-      const orderItemsData: any[]    = [];
+      // Guardar datos del cliente si se recopilaron ahora
+      if (needsCustomerData && extracted.customerName && extracted.customerCedula) {
+        await this.prisma.customer.update({
+          where: { customerId: customer.customerId },
+          data: {
+            name: extracted.customerName.replace(/\b\w/g, l => l.toUpperCase()),
+            cedula: extracted.customerCedula,
+          },
+        });
+        this.logger.log(`✅ Cliente actualizado: ${extracted.customerName} — CC ${extracted.customerCedula}`);
+      }
+
+      const orderItemsData: any[]       = [];
       const orderItemsSummary: string[] = [];
       let total = 0;
 
       for (const item of extracted.items) {
         if (item.itemType === 'servicio' && item.serviceId) {
-          const service = services.find((s: any) => s.serviceId === item.serviceId);
+          const service = (await this.getCached(this.catalogCache, customer.storeId ?? storeId))
+            ?.services?.find((s: any) => s.serviceId === item.serviceId);
           if (!service) { this.logger.warn(`Servicio no encontrado: ${item.serviceId}`); continue; }
           const unitPrice = service.price ? Number(service.price) : 0;
           const subtotal  = unitPrice * item.quantity;
@@ -389,7 +482,8 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
           orderItemsSummary.push(`• ${item.description ?? service.name} x${item.quantity} — $${subtotal.toLocaleString('es-CO')}`);
 
         } else if (item.productId) {
-          const product = products.find((p: any) => p.productId === item.productId);
+          const catalogData = this.getCached(this.catalogCache, storeId);
+          const product = catalogData?.products?.find((p: any) => p.productId === item.productId);
           if (!product) { this.logger.warn(`Producto no encontrado: ${item.productId}`); continue; }
 
           if (item.variantId) {
@@ -406,7 +500,6 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
               unitPrice,
             });
             orderItemsSummary.push(`• ${item.description ?? `${product.name} - ${variant.name}`} x${item.quantity} — $${subtotal.toLocaleString('es-CO')}`);
-
           } else {
             if (product.stock < item.quantity) { this.logger.warn(`Stock insuficiente: ${product.name}`); continue; }
             const unitPrice = Number(product.salePrice);
@@ -451,7 +544,9 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
       this.pendingExtractions.delete(conversationId);
       this.logger.log(`✅ Orden ${order.orderId} — ${orderItemsData.length} items — Total: $${total}`);
 
-      const nombreCliente = customer.name ? `, ${customer.name}` : '';
+      const nombreCliente = extracted.customerName
+        ? `, ${extracted.customerName.split(' ')[0]}`
+        : customer.name ? `, ${customer.name}` : '';
 
       return {
         created: true,
@@ -469,12 +564,226 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
     }
   }
 
+  // ─── Extracción y creación de cita/agendamiento ───────────────────────────────
+
+  private async tryExtractAndCreateAppointment(
+    groq: Groq,
+    model: string,
+    history: any[],
+    latestMessage: string,
+    customer: any,
+    storeId: string,
+    conversationId: string,
+  ): Promise<{ created: boolean; message?: string }> {
+
+    const cached = this.pendingAppointments.get(conversationId);
+    let extracted: AppointmentExtractionResult;
+    const needsCustomerData = !customer.name || !customer.cedula;
+
+    // ── Caso 1: extracción completa cacheada + cliente confirma ───────────────
+    if (
+      cached?.complete &&
+      (!needsCustomerData || (cached.customerName && cached.customerCedula)) &&
+      CONFIRMATION_RE.test(latestMessage.trim())
+    ) {
+      this.logger.log(`Usando cita cacheada para ${conversationId}`);
+      extracted = cached;
+      this.pendingAppointments.delete(conversationId);
+
+    // ── Caso 2: correr el extractor ───────────────────────────────────────────
+    } else {
+      const conversationText = [
+        ...history.map((m: any) =>
+          `${m.isAiResponse ? 'Asistente' : 'Cliente'}: ${m.content.trim()}`
+        ),
+        `Cliente: ${latestMessage}`,
+      ].join('\n');
+
+      const customerDataInstruction = needsCustomerData
+        ? `
+DATOS DEL CLIENTE REQUERIDOS:
+El cliente no tiene nombre o cédula registrados. Extráelos si están en la conversación.
+La cita NO puede ser "complete":true si faltan nombre o cédula del cliente.`
+        : `DATOS DEL CLIENTE: Ya registrados. No es necesario extraerlos.`;
+
+      const now = new Date();
+      const fechaHoy = now.toISOString().split('T')[0];
+
+      const appointmentPrompt = `Eres un extractor de datos para agendamiento de citas y visitas técnicas. Lee la conversación y extrae los datos en JSON.
+
+FECHA ACTUAL: ${fechaHoy} (Colombia)
+
+CONVERSACIÓN:
+${conversationText}
+
+${customerDataInstruction}
+
+TIPOS DE CITA:
+- "cita": cita general, consulta, reunión
+- "visita_tecnica": visita técnica, instalación, mantenimiento, reparación
+- "otro": cualquier otro tipo de agendamiento
+
+REGLAS ESTRICTAS:
+1. "complete":true SOLO si se cumplen TODAS las condiciones:
+   a) Fecha específica (día y mes como mínimo)
+   b) Hora específica
+   c) Descripción de qué tipo de cita/visita es
+   d) Confirmación explícita del cliente (sí, confirmo, listo, dale, etc.)
+   e) Si se requieren datos del cliente: nombre Y cédula presentes
+2. Si falta CUALQUIER condición → "complete":false
+3. "scheduledDate": formato "YYYY-MM-DD". Si dicen "mañana" calcula desde hoy.
+4. "scheduledTime": formato "HH:MM" en 24h. Si dicen "2pm" → "14:00"
+5. "address": dirección si es visita técnica. null si es cita en local.
+
+Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
+{
+  "complete": boolean,
+  "type": "cita" | "visita_tecnica" | "otro",
+  "scheduledDate": "YYYY-MM-DD o null",
+  "scheduledTime": "HH:MM o null",
+  "description": "descripción de la cita o null",
+  "address": "dirección si aplica o null",
+  "notes": "notas adicionales o null",
+  "reason": "explicación breve de por qué complete es true o false",
+  "customerName": "nombre completo del cliente o null",
+  "customerCedula": "número de cédula o null"
+}`;
+
+      try {
+        const extractResponse = await Promise.race([
+          groq.chat.completions.create({
+            model: 'llama-3.1-8b-instant',
+            messages: [{ role: 'user', content: appointmentPrompt }],
+            temperature: 0,
+            max_tokens: 600,
+          }),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Appointment extractor timeout')), GROQ_TIMEOUT_EXT_MS)
+          ),
+        ]) as any;
+
+        const raw = extractResponse.choices[0]?.message?.content ?? '';
+        const jsonMatch = raw.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) return { created: false };
+
+        extracted = JSON.parse(jsonMatch[0]);
+        this.logger.log(`Extracción cita: ${JSON.stringify(extracted)}`);
+
+        // Cachear si hay alguna fecha o descripción
+        if (extracted.scheduledDate || extracted.description) {
+          this.pendingAppointments.set(conversationId, extracted);
+          setTimeout(() => this.pendingAppointments.delete(conversationId), ORDER_GUARD_TTL_MS);
+        }
+
+      } catch (err: any) {
+        this.logger.error(`Error en extractor cita: ${err.message}`);
+        return { created: false };
+      }
+    }
+
+    // ── Validación final ───────────────────────────────────────────────────────
+    if (!extracted?.complete)     return { created: false };
+    if (!extracted.scheduledDate) return { created: false };
+    if (!extracted.scheduledTime) return { created: false };
+
+    if (needsCustomerData && (!extracted.customerName || !extracted.customerCedula)) {
+      return { created: false };
+    }
+
+    if (this.appointmentInProgress.has(conversationId)) {
+      this.logger.warn(`Cita ya en progreso para ${conversationId}`);
+      return { created: false };
+    }
+    this.appointmentInProgress.add(conversationId);
+
+    try {
+      // Guardar datos del cliente si se recopilaron ahora
+      if (needsCustomerData && extracted.customerName && extracted.customerCedula) {
+        await this.prisma.customer.update({
+          where: { customerId: customer.customerId },
+          data: {
+            name: extracted.customerName.replace(/\b\w/g, l => l.toUpperCase()),
+            cedula: extracted.customerCedula,
+          },
+        });
+      }
+
+      // Combinar fecha y hora en un DateTime
+      const scheduledAt = new Date(`${extracted.scheduledDate}T${extracted.scheduledTime}:00-05:00`);
+
+      if (isNaN(scheduledAt.getTime())) {
+        this.logger.warn(`Fecha inválida: ${extracted.scheduledDate}T${extracted.scheduledTime}`);
+        return { created: false };
+      }
+
+      const appointment = await this.prisma.appointment.create({
+        data: {
+          storeId,
+          customerId: customer.customerId,
+          type: extracted.type,
+          scheduledAt,
+          description: extracted.description ?? null,
+          address: extracted.address ?? null,
+          notes: [
+            extracted.notes ? `Notas: ${extracted.notes}` : null,
+            `Creado automáticamente por IA`,
+          ].filter(Boolean).join(' | ') || null,
+          status: 'pending',
+        },
+      });
+
+      await this.prisma.conversation.update({
+        where: { conversationId },
+        data: { status: 'pending_human' },
+      });
+
+      this.pendingAppointments.delete(conversationId);
+      this.logger.log(`✅ Cita ${appointment.appointmentId} agendada para ${extracted.scheduledDate} ${extracted.scheduledTime}`);
+
+      const nombreCliente = extracted.customerName
+        ? `, ${extracted.customerName.split(' ')[0]}`
+        : customer.name ? `, ${customer.name}` : '';
+
+      const fechaFormateada = scheduledAt.toLocaleDateString('es-CO', {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+        timeZone: 'America/Bogota',
+      });
+      const horaFormateada = scheduledAt.toLocaleTimeString('es-CO', {
+        hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota',
+      });
+
+      const typeLabels: Record<string, string> = {
+        cita: '📅 Cita',
+        visita_tecnica: '🔧 Visita técnica',
+        otro: '📌 Agendamiento',
+      };
+
+      const tipoLabel = typeLabels[extracted.type] ?? '📅 Cita';
+      const addressLine = extracted.address ? `\n📍 *Dirección:* ${extracted.address}` : '';
+
+      return {
+        created: true,
+        message:
+          `¡${tipoLabel} agendada${nombreCliente}! ✅\n\n` +
+          `📆 *Fecha:* ${fechaFormateada}\n` +
+          `🕐 *Hora:* ${horaFormateada}` +
+          addressLine +
+          (extracted.description ? `\n📝 *Descripción:* ${extracted.description}` : '') +
+          `\n\nUn asesor confirmará tu cita pronto. ¡Gracias! 😊`,
+      };
+
+    } finally {
+      this.appointmentInProgress.delete(conversationId);
+    }
+  }
+
   // ─── Construcción del system prompt ──────────────────────────────────────────
 
   private buildSystemPrompt(
     basePrompt: string,
     customer: any,
     orders: any[],
+    appointments: any[],
     products: any[],
     services: any[],
     fechaActual: string,
@@ -487,12 +796,12 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
     const nombreCliente = customer.name ?? null;
 
     const clienteSection = `CLIENTE:
-- Nombre: ${nombreCliente ?? 'No registrado'}
+- Nombre: ${nombreCliente ?? 'No registrado aún'}
+- Cédula: ${customer.cedula ?? 'No registrada aún'}
 - Ciudad: ${customer.city ?? 'No registrada'}
 - ${nombreCliente
     ? `Llámalo ${nombreCliente} de forma natural (no en cada mensaje).`
-    : `No sabes el nombre. No lo inventes.`}
-- Adapta el tono al del cliente.
+    : `No sabes el nombre. No lo inventes. Lo pedirás cuando generes una orden o cita.`}
 - NUNCA menciones datos de otros clientes.`;
 
     const clientMessages = [
@@ -508,10 +817,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
       }
     });
     if (addressAlreadyGiven) {
-      datosMencionados.push('✅ Dirección de entrega: YA FUE PROPORCIONADA — NO LA VUELVAS A PEDIR BAJO NINGUNA CIRCUNSTANCIA');
-    }
-    if (/\b(una?|dos|tres|cuatro|cinco|\d+)\s*(unidad|unidades|)/i.test(allClientText)) {
-      datosMencionados.push('✅ Cantidad: ya fue mencionada');
+      datosMencionados.push('✅ Dirección: YA FUE DADA — NO LA VUELVAS A PEDIR');
     }
 
     const datosSection = datosMencionados.length > 0
@@ -521,6 +827,11 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
     const STATUS_LABELS: Record<string, string> = {
       pending: 'Pendiente', confirmed: 'Confirmado', preparing: 'En preparación',
       ready: 'Listo', delivered: 'Entregado', cancelled: 'Cancelado',
+    };
+
+    const APPT_STATUS_LABELS: Record<string, string> = {
+      pending: 'Pendiente', confirmed: 'Confirmada',
+      completed: 'Completada', cancelled: 'Cancelada',
     };
 
     let ordenesSection: string;
@@ -535,6 +846,23 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
         return `  Pedido #${i + 1} (${fecha}) — ${STATUS_LABELS[o.status] ?? o.status} — $${o.total}\n${items}`;
       }).join('\n\n');
       ordenesSection = `PEDIDOS ANTERIORES:\n${textoOrdenes}\nREGLA: Solo muestra estos. Si pregunta por uno que no aparece, remite a asesor.`;
+    }
+
+    let citasSection: string;
+    if (appointments.length === 0) {
+      citasSection = `CITAS/AGENDAMIENTOS ANTERIORES: Ninguno.`;
+    } else {
+      const textoCitas = appointments.map((a: any, i: number) => {
+        const fecha = new Date(a.scheduledAt).toLocaleDateString('es-CO', {
+          weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+          timeZone: 'America/Bogota',
+        });
+        const hora = new Date(a.scheduledAt).toLocaleTimeString('es-CO', {
+          hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota',
+        });
+        return `  Cita #${i + 1} — ${fecha} a las ${hora} — ${APPT_STATUS_LABELS[a.status] ?? a.status}${a.description ? `\n    Descripción: ${a.description}` : ''}`;
+      }).join('\n\n');
+      citasSection = `CITAS/AGENDAMIENTOS:\n${textoCitas}`;
     }
 
     const hasItems = products.length > 0 || services.length > 0;
@@ -562,7 +890,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
 
       const serviciosTxt = services.length > 0
         ? services.map((s: any) => {
-            const precioTxt = s.price ? `$${s.price}` : '💡 Precio variable (asesor lo confirma)';
+            const precioTxt = s.price ? `$${s.price}` : '💡 Precio variable (asesor confirma)';
             const lines = [`  · ${s.name} — ${precioTxt}`];
             if (s.description) lines.push(`    ${s.description}`);
             return lines.join('\n');
@@ -578,40 +906,62 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
 REGLAS:
 - Habla SOLO de estos items.
 - No inventes precios ni características.
-- Si el stock es AGOTADO, avísalo y ofrece alternativa si hay.
-- Para servicios con precio variable, di que un asesor confirmará el precio.`;
+- Si el stock es AGOTADO, avísalo y ofrece alternativa si hay.`;
     }
 
-    const flujoSection = `FLUJO DE TOMA DE ORDEN:
+    const clienteDataPendiente = !customer.name || !customer.cedula;
 
-Para crear un pedido necesito EXACTAMENTE 3 cosas:
-  a) Qué productos quiere y en qué cantidad (puede ser múltiples productos)
-  b) Dirección de entrega completa (calle/carrera + número + barrio + ciudad)
-  c) Confirmación explícita del cliente ("sí", "confirmo", "listo", etc.)
+    const flujoSection = `FLUJO DE TOMA DE ORDEN (PRODUCTOS):
 
-REGLAS ANTI-LOOP — MUY IMPORTANTE:
-- Si un dato ya está en DATOS YA RECOPILADOS, NO lo vuelvas a pedir. NUNCA.
-- Si la dirección ya fue proporcionada, pasa al siguiente paso.
-- Si ya tienes (a) y (b), muestra el resumen con todos los productos y precios, y pide SOLO confirmación.
-- Cuando el cliente confirme, el sistema crea la orden automáticamente y cierra el pedido.
-- NO hagas preguntas innecesarias después de que el cliente confirme.
+Para crear un pedido necesito EXACTAMENTE estas cosas:
+  a) Productos/cantidad
+  b) Dirección de entrega completa
+  c) ${clienteDataPendiente ? 'Nombre completo y número de cédula del cliente' : '(datos del cliente ya registrados)'}
+  d) Confirmación explícita
 
-SOBRE ENVÍO Y PAGOS — MUY IMPORTANTE:
-- NUNCA calcules ni menciones costos de envío. No tienes esa información.
-- NUNCA des datos de cuentas bancarias, Nequi, Bancolombia ni métodos de pago.
+${clienteDataPendiente ? `IMPORTANTE: Como no tenemos nombre ni cédula del cliente aún, cuando el cliente muestre intención de compra PIDE:
+"Para registrar tu pedido necesito: tu nombre completo, número de cédula y dirección de entrega."
+Pídelos todos juntos en un solo mensaje para no hacer la conversación tediosa.` : ''}
+
+ANTI-LOOP:
+- Si un dato ya está en DATOS YA RECOPILADOS, NO lo vuelvas a pedir.
+- Si ya tienes todo, muestra el resumen y pide SOLO confirmación.
+
+SOBRE ENVÍO Y PAGOS:
+- NUNCA calcules ni menciones costos de envío.
+- NUNCA des datos de cuentas bancarias o métodos de pago.
 - Si preguntan: "Un asesor te contactará con esos detalles."
 
-COTIZACIÓN: Si el cliente pide cotización antes de confirmar, muéstrala con los precios del catálogo sin inventar costos adicionales.
-
-PROHIBIDO absolutamente:
+PROHIBIDO:
 - Pedir datos que ya tienes.
-- Calcular o mencionar costos de envío.
-- Dar información de métodos de pago.
+- Inventar precios o características.
 - Mencionar items fuera del catálogo.`;
+
+    const agendamientoSection = `FLUJO DE AGENDAMIENTO (CITAS/VISITAS TÉCNICAS):
+
+Cuando el cliente quiera agendar, necesito:
+  a) Tipo de cita (cita general, visita técnica, instalación, etc.)
+  b) Fecha (día, mes y año)
+  c) Hora
+  d) Descripción breve de qué necesita
+  e) Dirección (solo si es visita técnica a domicilio)
+  f) ${clienteDataPendiente ? 'Nombre completo y cédula del cliente' : '(datos del cliente ya registrados)'}
+  g) Confirmación explícita
+
+${clienteDataPendiente ? `Si el cliente quiere una cita y no tenemos sus datos, pide:
+"Para agendar tu cita necesito: tu nombre completo y número de cédula."` : ''}
+
+Cuando tengas todo, muestra el resumen y pide confirmación:
+"¿Confirmas esta cita para el [fecha] a las [hora]?"
+
+IMPORTANTE:
+- Si el cliente menciona "mañana", calcula la fecha real desde hoy.
+- Si la hora es ambigua (ej: "2"), confirma: "¿A las 2pm o 2am?"`;
 
     return [
       basePrompt, sep, clienteSection, sep, datosSection, sep,
-      ordenesSection, sep, catalogoSection, sep, flujoSection, sep,
+      ordenesSection, sep, citasSection, sep, catalogoSection, sep,
+      flujoSection, sep, agendamientoSection, sep,
       `FECHA Y HORA: ${fechaActual}, ${horaActual} (Colombia).`,
     ].join('\n');
   }
