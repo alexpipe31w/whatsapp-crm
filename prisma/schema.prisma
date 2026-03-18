@@ -9,6 +9,45 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum PriceType {
+  FIXED
+  PER_HOUR
+  PER_DAY
+  PER_UNIT
+  VARIABLE
+}
+
+/// Estados del ciclo de vida de una cita
+enum AppointmentStatus {
+  PENDING      // Recién creada — esperando confirmación
+  CONFIRMED    // Confirmada por el negocio
+  IN_PROGRESS  // En curso
+  COMPLETED    // Finalizada exitosamente
+  CANCELLED    // Cancelada (ver cancelReason)
+  NO_SHOW      // El cliente no se presentó
+  RESCHEDULED  // Reagendada — se crea nueva cita, esta queda como historial
+}
+
+/// Prioridad de atención
+enum AppointmentPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+/// Quién o qué originó la cita
+enum AppointmentSource {
+  AI         // Creada automáticamente por el bot de WhatsApp
+  MANUAL     // Creada manualmente por el admin desde el dashboard
+  WHATSAPP   // Creada por el cliente vía WhatsApp sin IA
+  API        // Creada vía integración externa
+}
+
+// ─── Store ────────────────────────────────────────────────────────────────────
+
 model Store {
   storeId     String   @id @default(uuid()) @map("store_id")
   name        String   @db.VarChar(100)
@@ -23,6 +62,7 @@ model Store {
   conversations   Conversation[]
   messages        Message[]
   products        Product[]
+  categories      Category[]
   users           User[]
   services        Service[]
   orders          Order[]
@@ -34,6 +74,8 @@ model Store {
 
   @@map("stores")
 }
+
+// ─── Customer ─────────────────────────────────────────────────────────────────
 
 model Customer {
   customerId String   @id @default(uuid()) @map("customer_id")
@@ -55,6 +97,8 @@ model Customer {
   @@map("customers")
 }
 
+// ─── Conversation ─────────────────────────────────────────────────────────────
+
 model Conversation {
   conversationId String   @id @default(uuid()) @map("conversation_id")
   storeId        String   @map("store_id")
@@ -64,14 +108,16 @@ model Conversation {
   lastMessageAt  DateTime @default(now()) @map("last_message_at")
   createdAt      DateTime @default(now()) @map("created_at")
 
-  store    Store    @relation(fields: [storeId], references: [storeId])
-  customer Customer @relation(fields: [customerId], references: [customerId])
+  store    Store     @relation(fields: [storeId], references: [storeId])
+  customer Customer  @relation(fields: [customerId], references: [customerId])
   messages Message[]
 
   @@index([storeId, status])
   @@index([customerId, status])
   @@map("conversations")
 }
+
+// ─── Message ──────────────────────────────────────────────────────────────────
 
 model Message {
   messageId      String   @id @default(uuid()) @map("message_id")
@@ -91,60 +137,159 @@ model Message {
   @@map("messages")
 }
 
-model Product {
-  productId   String   @id @default(uuid()) @map("product_id")
-  storeId     String   @map("store_id")
-  sku         String?  @db.VarChar(100)
-  name        String   @db.VarChar(200)
-  costPrice   Decimal  @map("cost_price") @db.Decimal(10, 2)
-  salePrice   Decimal  @map("sale_price") @db.Decimal(10, 2)
-  stock       Int      @default(0)
-  description String?
-  imageUrl    String?  @map("image_url")
-  hasShipping Boolean  @default(false) @map("has_shipping")
-  isActive    Boolean  @default(true) @map("is_active")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+// ─── Category ─────────────────────────────────────────────────────────────────
 
-  store      Store            @relation(fields: [storeId], references: [storeId])
+model Category {
+  categoryId String   @id @default(uuid()) @map("category_id")
+  storeId    String   @map("store_id")
+  name       String   @db.VarChar(100)
+  slug       String   @db.VarChar(100)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  store    Store     @relation(fields: [storeId], references: [storeId], onDelete: Cascade)
+  products Product[]
+
+  @@unique([storeId, slug])
+  @@index([storeId])
+  @@map("categories")
+}
+
+// ─── Product ──────────────────────────────────────────────────────────────────
+
+model Product {
+  productId    String   @id @default(uuid()) @map("product_id")
+  storeId      String   @map("store_id")
+  categoryId   String?  @map("category_id")
+
+  sku          String?  @db.VarChar(100)
+  name         String   @db.VarChar(200)
+  description  String?  @db.Text
+
+  salePrice    Decimal  @map("sale_price")  @db.Decimal(10, 2)
+  costPrice    Decimal  @default(0) @map("cost_price") @db.Decimal(10, 2)
+  profitMargin Decimal? @map("profit_margin") @db.Decimal(5, 2)
+
+  stock       Int     @default(0)
+  hasVariants Boolean @default(false) @map("has_variants")
+
+  imageUrl         String?  @map("image_url") @db.VarChar(500)
+  hasShipping      Boolean  @default(false) @map("has_shipping")
+  weight           Decimal? @db.Decimal(8, 3)
+  shippingStandard Decimal? @default(0) @map("shipping_standard") @db.Decimal(10, 2)
+  shippingExpress  Decimal? @default(0) @map("shipping_express")  @db.Decimal(10, 2)
+
+  isActive  Boolean  @default(true) @map("is_active")
+  version   Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt     @map("updated_at")
+
+  store      Store            @relation(fields: [storeId], references: [storeId], onDelete: Cascade)
+  category   Category?        @relation(fields: [categoryId], references: [categoryId])
   orderItems OrderItem[]
   variants   ProductVariant[]
 
   @@unique([storeId, sku])
   @@index([storeId, isActive])
+  @@index([storeId, categoryId])
+  @@index([storeId, createdAt])
   @@map("products")
 }
 
+// ─── ProductVariant ───────────────────────────────────────────────────────────
+
 model ProductVariant {
-  variantId  String  @id @default(uuid()) @map("variant_id")
-  productId  String  @map("product_id")
-  name       String  @db.VarChar(200)
-  sku        String? @db.VarChar(100)
-  costPrice  Decimal @map("cost_price") @db.Decimal(10, 2)
-  salePrice  Decimal @map("sale_price") @db.Decimal(10, 2)
+  variantId    String   @id @default(uuid()) @map("variant_id")
+  productId    String   @map("product_id")
+
+  name         String   @db.VarChar(200)
+  sku          String?  @db.VarChar(100)
+
+  salePrice    Decimal? @map("sale_price")  @db.Decimal(10, 2)
+  costPrice    Decimal? @default(0) @map("cost_price") @db.Decimal(10, 2)
+  profitMargin Decimal? @map("profit_margin") @db.Decimal(5, 2)
+
   stock      Int     @default(0)
-  isActive   Boolean @default(true) @map("is_active")
+  attributes Json    @default("{}")
+  imageUrl   String? @map("image_url") @db.VarChar(500)
+  weight     Decimal? @db.Decimal(8, 3)
 
-  product Product @relation(fields: [productId], references: [productId], onDelete: Cascade)
+  isActive  Boolean  @default(true) @map("is_active")
+  sortOrder Int      @default(0)    @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt     @map("updated_at")
 
+  product    Product     @relation(fields: [productId], references: [productId], onDelete: Cascade)
+  orderItems OrderItem[]
+
+  @@index([productId, isActive])
+  @@index([productId])
   @@map("product_variants")
 }
 
+// ─── Service ──────────────────────────────────────────────────────────────────
+
 model Service {
-  serviceId   String   @id @default(uuid()) @map("service_id")
-  storeId     String   @map("store_id")
-  name        String   @db.VarChar(200)
-  description String?
-  price       Decimal? @db.Decimal(10, 2)
-  duration    Int?
-  isActive    Boolean  @default(true) @map("is_active")
-  createdAt   DateTime @default(now()) @map("created_at")
+  serviceId   String    @id @default(uuid()) @map("service_id")
+  storeId     String    @map("store_id")
 
-  store      Store       @relation(fields: [storeId], references: [storeId])
-  orderItems OrderItem[]
+  name        String    @db.VarChar(200)
+  description String?   @db.Text
+  category    String?   @db.VarChar(100)
+  imageUrl    String?   @map("image_url") @db.VarChar(500)
 
+  priceType PriceType @default(FIXED) @map("price_type")
+  basePrice Decimal?  @map("base_price") @db.Decimal(10, 2)
+  minPrice  Decimal?  @map("min_price")  @db.Decimal(10, 2)
+  maxPrice  Decimal?  @map("max_price")  @db.Decimal(10, 2)
+  costPrice Decimal?  @map("cost_price") @db.Decimal(10, 2)
+  unitLabel String?   @map("unit_label") @db.VarChar(50)
+
+  hasVariants      Boolean @default(false) @map("has_variants")
+  estimatedMinutes Int?    @map("estimated_minutes")
+  customFields     Json?   @default("{}") @map("custom_fields")
+
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt     @map("updated_at")
+
+  store        Store            @relation(fields: [storeId], references: [storeId], onDelete: Cascade)
+  variants     ServiceVariant[]
+  orderItems   OrderItem[]
+  appointments Appointment[]
+
+  @@index([storeId, isActive])
+  @@index([storeId, priceType])
   @@map("services")
 }
+
+// ─── ServiceVariant ───────────────────────────────────────────────────────────
+
+model ServiceVariant {
+  variantId   String   @id @default(uuid()) @map("variant_id")
+  serviceId   String   @map("service_id")
+
+  name        String   @db.VarChar(200)
+  description String?  @db.Text
+
+  priceOverride    Decimal? @map("price_override") @db.Decimal(10, 2)
+  priceModifier    Decimal? @map("price_modifier") @db.Decimal(5, 2)
+  estimatedMinutes Int?     @map("estimated_minutes")
+
+  isActive  Boolean  @default(true) @map("is_active")
+  sortOrder Int      @default(0)    @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt     @map("updated_at")
+
+  service      Service       @relation(fields: [serviceId], references: [serviceId], onDelete: Cascade)
+  orderItems   OrderItem[]
+  appointments Appointment[]
+
+  @@index([serviceId, isActive])
+  @@index([serviceId])
+  @@map("service_variants")
+}
+
+// ─── Order ────────────────────────────────────────────────────────────────────
 
 model Order {
   orderId         String   @id @default(uuid()) @map("order_id")
@@ -153,11 +298,11 @@ model Order {
   type            String   @default("product")
   total           Decimal  @default(0) @db.Decimal(10, 2)
   status          String   @default("pending")
-  notes           String?
+  notes           String?  @db.Text
   estimatedTime   Int?     @map("estimated_time")
   deliveryAddress String?  @map("delivery_address")
   createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  updatedAt       DateTime @updatedAt      @map("updated_at")
 
   store      Store       @relation(fields: [storeId], references: [storeId])
   customer   Customer    @relation(fields: [customerId], references: [customerId])
@@ -168,48 +313,145 @@ model Order {
   @@map("orders")
 }
 
+// ─── OrderItem ────────────────────────────────────────────────────────────────
+
 model OrderItem {
-  itemId      String  @id @default(uuid()) @map("item_id")
-  orderId     String  @map("order_id")
-  productId   String? @map("product_id")
-  serviceId   String? @map("service_id")
-  description String?
-  quantity    Int
-  unitPrice   Decimal @map("unit_price") @db.Decimal(10, 2)
+  itemId           String  @id @default(uuid()) @map("item_id")
+  orderId          String  @map("order_id")
+  productId        String? @map("product_id")
+  variantId        String? @map("variant_id")
+  serviceId        String? @map("service_id")
+  serviceVariantId String? @map("service_variant_id")
+  description      String? @db.VarChar(500)
+  quantity         Int
+  unitPrice        Decimal @map("unit_price") @db.Decimal(10, 2)
 
-  order   Order    @relation(fields: [orderId], references: [orderId], onDelete: Cascade)
-  product Product? @relation(fields: [productId], references: [productId])
-  service Service? @relation(fields: [serviceId], references: [serviceId])
+  order          Order           @relation(fields: [orderId], references: [orderId], onDelete: Cascade)
+  product        Product?        @relation(fields: [productId], references: [productId])
+  variant        ProductVariant? @relation(fields: [variantId], references: [variantId])
+  service        Service?        @relation(fields: [serviceId], references: [serviceId])
+  serviceVariant ServiceVariant? @relation(fields: [serviceVariantId], references: [variantId])
 
+  @@index([orderId])
+  @@index([productId])
+  @@index([serviceId])
   @@map("order_items")
 }
 
-// ─── Agendamientos / Citas ────────────────────────────────────────────────────
-// Maneja citas, visitas técnicas y cualquier tipo de agendamiento.
-// La IA crea estos registros automáticamente cuando detecta intención de agendar.
-model Appointment {
-  appointmentId String   @id @default(uuid()) @map("appointment_id")
-  storeId       String   @map("store_id")
-  customerId    String   @map("customer_id")
-  // tipo: "cita" | "visita_tecnica" | "otro"
-  type          String   @default("cita")
-  scheduledAt   DateTime @map("scheduled_at")
-  description   String?
-  address       String?
-  // status: "pending" | "confirmed" | "completed" | "cancelled"
-  status        String   @default("pending")
-  notes         String?
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+// ─── Appointment ──────────────────────────────────────────────────────────────
 
-  store    Store    @relation(fields: [storeId], references: [storeId])
-  customer Customer @relation(fields: [customerId], references: [customerId])
+/// Cita o agendamiento de servicio.
+///
+/// Flujo de estados:
+///   PENDING → CONFIRMED → IN_PROGRESS → COMPLETED
+///   PENDING → CANCELLED
+///   CONFIRMED → CANCELLED | NO_SHOW | RESCHEDULED
+///
+/// Vinculación al catálogo (opcional):
+///   Si la cita corresponde a un servicio registrado, se vincula vía
+///   serviceId / serviceVariantId para tener contexto de precio y duración.
+///   Si no, description explica libremente qué se va a hacer.
+///
+/// Fuentes:
+///   - AI: el bot de WhatsApp extrae los datos y crea la cita automáticamente
+///   - MANUAL: el admin la crea desde el dashboard
+///   - WHATSAPP: el cliente coordina vía chat sin que la IA tome los datos
+model Appointment {
+  appointmentId String @id @default(uuid()) @map("appointment_id")
+  storeId       String @map("store_id")
+  customerId    String @map("customer_id")
+
+  // ── Vínculo al catálogo (opcional) ────────────────────────────────────────
+  serviceId        String? @map("service_id")
+  serviceVariantId String? @map("service_variant_id")
+
+  // ── Clasificación ─────────────────────────────────────────────────────────
+  // type: texto libre que describe el tipo cuando no hay servicio vinculado.
+  // Ej: "visita_tecnica", "consulta", "corte", "instalacion", "mantenimiento"
+  type     String              @default("cita") @db.VarChar(100)
+  status   AppointmentStatus   @default(PENDING)
+  priority AppointmentPriority @default(NORMAL)
+  source   AppointmentSource   @default(MANUAL)
+
+  // ── Tiempo ────────────────────────────────────────────────────────────────
+  scheduledAt     DateTime  @map("scheduled_at")       // Inicio de la cita
+  endsAt          DateTime? @map("ends_at")             // Fin (scheduledAt + durationMinutes)
+  durationMinutes Int?      @map("duration_minutes")    // Duración estimada en minutos
+
+  // ── Contenido ─────────────────────────────────────────────────────────────
+  description   String? @db.Text // Qué se va a hacer — visible para cliente y admin
+  address       String? @db.Text // Dirección si es visita a domicilio
+  notes         String? @db.Text // Notas del cliente / visibles al cliente
+  internalNotes String? @db.Text @map("internal_notes") // Solo admin — NO visible al cliente
+
+  // ── Precio acordado ───────────────────────────────────────────────────────
+  // Snapshot del precio al momento de agendar.
+  // Independiente de cambios futuros en el catálogo.
+  agreedPrice Decimal? @map("agreed_price") @db.Decimal(10, 2)
+
+  // ── Timestamps del ciclo de vida ──────────────────────────────────────────
+  confirmedAt  DateTime? @map("confirmed_at")
+  startedAt    DateTime? @map("started_at")
+  completedAt  DateTime? @map("completed_at")
+  cancelledAt  DateTime? @map("cancelled_at")
+  cancelReason String?   @db.VarChar(500) @map("cancel_reason")
+
+  // ── Recordatorio ──────────────────────────────────────────────────────────
+  reminderSentAt DateTime? @map("reminder_sent_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  store          Store                 @relation(fields: [storeId], references: [storeId])
+  customer       Customer              @relation(fields: [customerId], references: [customerId])
+  service        Service?              @relation(fields: [serviceId], references: [serviceId])
+  serviceVariant ServiceVariant?       @relation(fields: [serviceVariantId], references: [variantId])
+  timeline       AppointmentTimeline[]
 
   @@index([storeId, scheduledAt])
   @@index([storeId, status])
+  @@index([storeId, status, scheduledAt])
   @@index([customerId])
+  @@index([serviceId])
+  @@index([storeId, createdAt])
   @@map("appointments")
 }
+
+// ─── AppointmentTimeline ──────────────────────────────────────────────────────
+
+/// Historial inmutable de todos los cambios de una cita.
+/// Sirve para auditoría, soporte y trazabilidad completa.
+/// isPublic = true  → el cliente puede verlo en su seguimiento
+/// isPublic = false → solo visible para el admin
+model AppointmentTimeline {
+  timelineId    String @id @default(uuid()) @map("timeline_id")
+  appointmentId String @map("appointment_id")
+
+  // Acción que disparó este registro:
+  // CREATED | CONFIRMED | IN_PROGRESS | COMPLETED | CANCELLED |
+  // NO_SHOW | RESCHEDULED | NOTE_ADDED | REMINDER_SENT | UPDATED
+  action String @db.VarChar(100)
+
+  previousStatus AppointmentStatus? @map("previous_status")
+  newStatus      AppointmentStatus? @map("new_status")
+
+  note     String?  @db.Text      // Descripción legible del cambio
+  isPublic Boolean  @default(true) @map("is_public")
+
+  // null = cambio automático del sistema o IA
+  // uuid = userId del admin que hizo el cambio
+  performedById String? @map("performed_by_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  appointment Appointment @relation(fields: [appointmentId], references: [appointmentId], onDelete: Cascade)
+
+  @@index([appointmentId])
+  @@index([appointmentId, createdAt])
+  @@map("appointment_timelines")
+}
+
+// ─── AIConfiguration ─────────────────────────────────────────────────────────
 
 model AIConfiguration {
   configId     String  @id @default(uuid()) @map("config_id")
@@ -226,6 +468,8 @@ model AIConfiguration {
   @@map("ai_configurations")
 }
 
+// ─── Campaign ─────────────────────────────────────────────────────────────────
+
 model Campaign {
   campaignId  String    @id @default(uuid()) @map("campaign_id")
   storeId     String    @map("store_id")
@@ -240,6 +484,8 @@ model Campaign {
 
   @@map("campaigns")
 }
+
+// ─── User ─────────────────────────────────────────────────────────────────────
 
 model User {
   userId    String   @id @default(uuid()) @map("user_id")
@@ -256,6 +502,8 @@ model User {
   @@map("users")
 }
 
+// ─── BlockedContact ───────────────────────────────────────────────────────────
+
 model BlockedContact {
   blockedId String   @id @default(uuid()) @map("blocked_id")
   storeId   String   @map("store_id")
@@ -268,6 +516,8 @@ model BlockedContact {
   @@unique([storeId, phone])
   @@map("blocked_contacts")
 }
+
+// ─── WhatsappSession ─────────────────────────────────────────────────────────
 
 model WhatsappSession {
   storeId   String   @id @map("store_id")

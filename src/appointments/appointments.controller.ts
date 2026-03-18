@@ -13,33 +13,56 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 export class AppointmentsController {
   constructor(private readonly appointmentsService: AppointmentsService) {}
 
-  @Get()
-  findAll(
-    @Request() req: any,
-    @Query('status') status?: string,
-    @Query('type')   type?: string,
-    @Query('from')   from?: string,
-    @Query('to')     to?: string,
-  ) {
-    return this.appointmentsService.findAll(req.user.storeId, {
-      status, type, from, to,
-    });
-  }
+  // ─── Stats — antes de :id para que no colisione ───────────────────────────
 
   @Get('stats')
   getStats(@Request() req: any) {
     return this.appointmentsService.getStats(req.user.storeId);
   }
 
+  // ─── Listar ───────────────────────────────────────────────────────────────
+
+  @Get()
+  findAll(
+    @Request() req: any,
+    @Query('status')    status?:    string,
+    @Query('type')      type?:      string,
+    @Query('from')      from?:      string,
+    @Query('to')        to?:        string,
+    @Query('serviceId') serviceId?: string,
+    @Query('priority')  priority?:  string,
+  ) {
+    return this.appointmentsService.findAll(req.user.storeId, {
+      status, type, from, to, serviceId, priority,
+    });
+  }
+
+  // ─── Detalle ──────────────────────────────────────────────────────────────
+
   @Get(':id')
   findOne(@Param('id') id: string, @Request() req: any) {
     return this.appointmentsService.findOne(id, req.user.storeId);
   }
 
+  // ─── Timeline de una cita ─────────────────────────────────────────────────
+
+  @Get(':id/timeline')
+  getTimeline(@Param('id') id: string, @Request() req: any) {
+    return this.appointmentsService.getTimeline(id, req.user.storeId);
+  }
+
+  // ─── Crear ────────────────────────────────────────────────────────────────
+
   @Post()
   create(@Body() dto: CreateAppointmentDto, @Request() req: any) {
-    return this.appointmentsService.create(req.user.storeId, dto);
+    return this.appointmentsService.create(
+      req.user.storeId,
+      dto,
+      req.user.userId,
+    );
   }
+
+  // ─── Actualizar ───────────────────────────────────────────────────────────
 
   @Patch(':id')
   update(
@@ -47,8 +70,15 @@ export class AppointmentsController {
     @Body() dto: UpdateAppointmentDto,
     @Request() req: any,
   ) {
-    return this.appointmentsService.update(id, req.user.storeId, dto);
+    return this.appointmentsService.update(
+      id,
+      req.user.storeId,
+      dto,
+      req.user.userId,
+    );
   }
+
+  // ─── Eliminar ─────────────────────────────────────────────────────────────
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)

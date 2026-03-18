@@ -394,12 +394,15 @@ export const ModelName = {
   Customer: 'Customer',
   Conversation: 'Conversation',
   Message: 'Message',
+  Category: 'Category',
   Product: 'Product',
   ProductVariant: 'ProductVariant',
   Service: 'Service',
+  ServiceVariant: 'ServiceVariant',
   Order: 'Order',
   OrderItem: 'OrderItem',
   Appointment: 'Appointment',
+  AppointmentTimeline: 'AppointmentTimeline',
   AIConfiguration: 'AIConfiguration',
   Campaign: 'Campaign',
   User: 'User',
@@ -420,7 +423,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "store" | "customer" | "conversation" | "message" | "product" | "productVariant" | "service" | "order" | "orderItem" | "appointment" | "aIConfiguration" | "campaign" | "user" | "blockedContact" | "whatsappSession"
+    modelProps: "store" | "customer" | "conversation" | "message" | "category" | "product" | "productVariant" | "service" | "serviceVariant" | "order" | "orderItem" | "appointment" | "appointmentTimeline" | "aIConfiguration" | "campaign" | "user" | "blockedContact" | "whatsappSession"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -720,6 +723,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    Category: {
+      payload: Prisma.$CategoryPayload<ExtArgs>
+      fields: Prisma.CategoryFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CategoryFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CategoryPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CategoryFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CategoryPayload>
+        }
+        findFirst: {
+          args: Prisma.CategoryFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CategoryPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CategoryFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CategoryPayload>
+        }
+        findMany: {
+          args: Prisma.CategoryFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CategoryPayload>[]
+        }
+        create: {
+          args: Prisma.CategoryCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CategoryPayload>
+        }
+        createMany: {
+          args: Prisma.CategoryCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CategoryCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CategoryPayload>[]
+        }
+        delete: {
+          args: Prisma.CategoryDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CategoryPayload>
+        }
+        update: {
+          args: Prisma.CategoryUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CategoryPayload>
+        }
+        deleteMany: {
+          args: Prisma.CategoryDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CategoryUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CategoryUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CategoryPayload>[]
+        }
+        upsert: {
+          args: Prisma.CategoryUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CategoryPayload>
+        }
+        aggregate: {
+          args: Prisma.CategoryAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCategory>
+        }
+        groupBy: {
+          args: Prisma.CategoryGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CategoryGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CategoryCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CategoryCountAggregateOutputType> | number
+        }
+      }
+    }
     Product: {
       payload: Prisma.$ProductPayload<ExtArgs>
       fields: Prisma.ProductFieldRefs
@@ -942,6 +1019,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    ServiceVariant: {
+      payload: Prisma.$ServiceVariantPayload<ExtArgs>
+      fields: Prisma.ServiceVariantFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ServiceVariantFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ServiceVariantPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ServiceVariantFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ServiceVariantPayload>
+        }
+        findFirst: {
+          args: Prisma.ServiceVariantFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ServiceVariantPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ServiceVariantFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ServiceVariantPayload>
+        }
+        findMany: {
+          args: Prisma.ServiceVariantFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ServiceVariantPayload>[]
+        }
+        create: {
+          args: Prisma.ServiceVariantCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ServiceVariantPayload>
+        }
+        createMany: {
+          args: Prisma.ServiceVariantCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ServiceVariantCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ServiceVariantPayload>[]
+        }
+        delete: {
+          args: Prisma.ServiceVariantDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ServiceVariantPayload>
+        }
+        update: {
+          args: Prisma.ServiceVariantUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ServiceVariantPayload>
+        }
+        deleteMany: {
+          args: Prisma.ServiceVariantDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ServiceVariantUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ServiceVariantUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ServiceVariantPayload>[]
+        }
+        upsert: {
+          args: Prisma.ServiceVariantUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ServiceVariantPayload>
+        }
+        aggregate: {
+          args: Prisma.ServiceVariantAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateServiceVariant>
+        }
+        groupBy: {
+          args: Prisma.ServiceVariantGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ServiceVariantGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ServiceVariantCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ServiceVariantCountAggregateOutputType> | number
+        }
+      }
+    }
     Order: {
       payload: Prisma.$OrderPayload<ExtArgs>
       fields: Prisma.OrderFieldRefs
@@ -1161,6 +1312,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.AppointmentCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.AppointmentCountAggregateOutputType> | number
+        }
+      }
+    }
+    AppointmentTimeline: {
+      payload: Prisma.$AppointmentTimelinePayload<ExtArgs>
+      fields: Prisma.AppointmentTimelineFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.AppointmentTimelineFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppointmentTimelinePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.AppointmentTimelineFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppointmentTimelinePayload>
+        }
+        findFirst: {
+          args: Prisma.AppointmentTimelineFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppointmentTimelinePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.AppointmentTimelineFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppointmentTimelinePayload>
+        }
+        findMany: {
+          args: Prisma.AppointmentTimelineFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppointmentTimelinePayload>[]
+        }
+        create: {
+          args: Prisma.AppointmentTimelineCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppointmentTimelinePayload>
+        }
+        createMany: {
+          args: Prisma.AppointmentTimelineCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.AppointmentTimelineCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppointmentTimelinePayload>[]
+        }
+        delete: {
+          args: Prisma.AppointmentTimelineDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppointmentTimelinePayload>
+        }
+        update: {
+          args: Prisma.AppointmentTimelineUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppointmentTimelinePayload>
+        }
+        deleteMany: {
+          args: Prisma.AppointmentTimelineDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.AppointmentTimelineUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.AppointmentTimelineUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppointmentTimelinePayload>[]
+        }
+        upsert: {
+          args: Prisma.AppointmentTimelineUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AppointmentTimelinePayload>
+        }
+        aggregate: {
+          args: Prisma.AppointmentTimelineAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAppointmentTimeline>
+        }
+        groupBy: {
+          args: Prisma.AppointmentTimelineGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AppointmentTimelineGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.AppointmentTimelineCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AppointmentTimelineCountAggregateOutputType> | number
         }
       }
     }
@@ -1628,18 +1853,36 @@ export const MessageScalarFieldEnum = {
 export type MessageScalarFieldEnum = (typeof MessageScalarFieldEnum)[keyof typeof MessageScalarFieldEnum]
 
 
+export const CategoryScalarFieldEnum = {
+  categoryId: 'categoryId',
+  storeId: 'storeId',
+  name: 'name',
+  slug: 'slug',
+  createdAt: 'createdAt'
+} as const
+
+export type CategoryScalarFieldEnum = (typeof CategoryScalarFieldEnum)[keyof typeof CategoryScalarFieldEnum]
+
+
 export const ProductScalarFieldEnum = {
   productId: 'productId',
   storeId: 'storeId',
+  categoryId: 'categoryId',
   sku: 'sku',
   name: 'name',
-  costPrice: 'costPrice',
-  salePrice: 'salePrice',
-  stock: 'stock',
   description: 'description',
+  salePrice: 'salePrice',
+  costPrice: 'costPrice',
+  profitMargin: 'profitMargin',
+  stock: 'stock',
+  hasVariants: 'hasVariants',
   imageUrl: 'imageUrl',
   hasShipping: 'hasShipping',
+  weight: 'weight',
+  shippingStandard: 'shippingStandard',
+  shippingExpress: 'shippingExpress',
   isActive: 'isActive',
+  version: 'version',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -1652,10 +1895,17 @@ export const ProductVariantScalarFieldEnum = {
   productId: 'productId',
   name: 'name',
   sku: 'sku',
-  costPrice: 'costPrice',
   salePrice: 'salePrice',
+  costPrice: 'costPrice',
+  profitMargin: 'profitMargin',
   stock: 'stock',
-  isActive: 'isActive'
+  attributes: 'attributes',
+  imageUrl: 'imageUrl',
+  weight: 'weight',
+  isActive: 'isActive',
+  sortOrder: 'sortOrder',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 } as const
 
 export type ProductVariantScalarFieldEnum = (typeof ProductVariantScalarFieldEnum)[keyof typeof ProductVariantScalarFieldEnum]
@@ -1666,13 +1916,40 @@ export const ServiceScalarFieldEnum = {
   storeId: 'storeId',
   name: 'name',
   description: 'description',
-  price: 'price',
-  duration: 'duration',
+  category: 'category',
+  imageUrl: 'imageUrl',
+  priceType: 'priceType',
+  basePrice: 'basePrice',
+  minPrice: 'minPrice',
+  maxPrice: 'maxPrice',
+  costPrice: 'costPrice',
+  unitLabel: 'unitLabel',
+  hasVariants: 'hasVariants',
+  estimatedMinutes: 'estimatedMinutes',
+  customFields: 'customFields',
   isActive: 'isActive',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 } as const
 
 export type ServiceScalarFieldEnum = (typeof ServiceScalarFieldEnum)[keyof typeof ServiceScalarFieldEnum]
+
+
+export const ServiceVariantScalarFieldEnum = {
+  variantId: 'variantId',
+  serviceId: 'serviceId',
+  name: 'name',
+  description: 'description',
+  priceOverride: 'priceOverride',
+  priceModifier: 'priceModifier',
+  estimatedMinutes: 'estimatedMinutes',
+  isActive: 'isActive',
+  sortOrder: 'sortOrder',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ServiceVariantScalarFieldEnum = (typeof ServiceVariantScalarFieldEnum)[keyof typeof ServiceVariantScalarFieldEnum]
 
 
 export const OrderScalarFieldEnum = {
@@ -1696,7 +1973,9 @@ export const OrderItemScalarFieldEnum = {
   itemId: 'itemId',
   orderId: 'orderId',
   productId: 'productId',
+  variantId: 'variantId',
   serviceId: 'serviceId',
+  serviceVariantId: 'serviceVariantId',
   description: 'description',
   quantity: 'quantity',
   unitPrice: 'unitPrice'
@@ -1709,17 +1988,46 @@ export const AppointmentScalarFieldEnum = {
   appointmentId: 'appointmentId',
   storeId: 'storeId',
   customerId: 'customerId',
+  serviceId: 'serviceId',
+  serviceVariantId: 'serviceVariantId',
   type: 'type',
+  status: 'status',
+  priority: 'priority',
+  source: 'source',
   scheduledAt: 'scheduledAt',
+  endsAt: 'endsAt',
+  durationMinutes: 'durationMinutes',
   description: 'description',
   address: 'address',
-  status: 'status',
   notes: 'notes',
+  internalNotes: 'internalNotes',
+  agreedPrice: 'agreedPrice',
+  confirmedAt: 'confirmedAt',
+  startedAt: 'startedAt',
+  completedAt: 'completedAt',
+  cancelledAt: 'cancelledAt',
+  cancelReason: 'cancelReason',
+  reminderSentAt: 'reminderSentAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
 export type AppointmentScalarFieldEnum = (typeof AppointmentScalarFieldEnum)[keyof typeof AppointmentScalarFieldEnum]
+
+
+export const AppointmentTimelineScalarFieldEnum = {
+  timelineId: 'timelineId',
+  appointmentId: 'appointmentId',
+  action: 'action',
+  previousStatus: 'previousStatus',
+  newStatus: 'newStatus',
+  note: 'note',
+  isPublic: 'isPublic',
+  performedById: 'performedById',
+  createdAt: 'createdAt'
+} as const
+
+export type AppointmentTimelineScalarFieldEnum = (typeof AppointmentTimelineScalarFieldEnum)[keyof typeof AppointmentTimelineScalarFieldEnum]
 
 
 export const AIConfigurationScalarFieldEnum = {
@@ -1797,6 +2105,14 @@ export const JsonNullValueInput = {
 } as const
 
 export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
+
+
+export const NullableJsonNullValueInput = {
+  DbNull: DbNull,
+  JsonNull: JsonNull
+} as const
+
+export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
 
 
 export const QueryMode = {
@@ -1908,6 +2224,62 @@ export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$Prisma
 
 
 /**
+ * Reference to a field of type 'PriceType'
+ */
+export type EnumPriceTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PriceType'>
+    
+
+
+/**
+ * Reference to a field of type 'PriceType[]'
+ */
+export type ListEnumPriceTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PriceType[]'>
+    
+
+
+/**
+ * Reference to a field of type 'AppointmentStatus'
+ */
+export type EnumAppointmentStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AppointmentStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'AppointmentStatus[]'
+ */
+export type ListEnumAppointmentStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AppointmentStatus[]'>
+    
+
+
+/**
+ * Reference to a field of type 'AppointmentPriority'
+ */
+export type EnumAppointmentPriorityFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AppointmentPriority'>
+    
+
+
+/**
+ * Reference to a field of type 'AppointmentPriority[]'
+ */
+export type ListEnumAppointmentPriorityFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AppointmentPriority[]'>
+    
+
+
+/**
+ * Reference to a field of type 'AppointmentSource'
+ */
+export type EnumAppointmentSourceFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AppointmentSource'>
+    
+
+
+/**
+ * Reference to a field of type 'AppointmentSource[]'
+ */
+export type ListEnumAppointmentSourceFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AppointmentSource[]'>
+    
+
+
+/**
  * Reference to a field of type 'Float'
  */
 export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
@@ -2011,12 +2383,15 @@ export type GlobalOmitConfig = {
   customer?: Prisma.CustomerOmit
   conversation?: Prisma.ConversationOmit
   message?: Prisma.MessageOmit
+  category?: Prisma.CategoryOmit
   product?: Prisma.ProductOmit
   productVariant?: Prisma.ProductVariantOmit
   service?: Prisma.ServiceOmit
+  serviceVariant?: Prisma.ServiceVariantOmit
   order?: Prisma.OrderOmit
   orderItem?: Prisma.OrderItemOmit
   appointment?: Prisma.AppointmentOmit
+  appointmentTimeline?: Prisma.AppointmentTimelineOmit
   aIConfiguration?: Prisma.AIConfigurationOmit
   campaign?: Prisma.CampaignOmit
   user?: Prisma.UserOmit

@@ -39,11 +39,35 @@ const IGNORED_TYPES = new Set([
   'editedMessage',
 ]);
 
+/**
+ * Palabras clave para detectar que el cliente quiere hablar con un humano.
+ * Genéricas — aplican para cualquier negocio en la plataforma.
+ */
 const HUMAN_KEYWORDS = [
-  'hablar con una persona', 'hablar con alguien',
-  'quiero pagar', 'voy a pagar', 'hacer el pago',
-  'persona real', 'asesor', 'operador',
-  'no quiero el bot', 'ayuda humana',
+  // Pedir asesor / persona directamente
+  'hablar con una persona', 'hablar con alguien', 'hablar con un asesor',
+  'quiero un asesor', 'necesito un asesor', 'comunícame con un asesor',
+  'conectame con un asesor', 'conéctame con un asesor',
+  'persona real', 'persona humana', 'humano', 'agente',
+  'asesor', 'asesora', 'operador', 'operadora',
+  'ayuda humana', 'ayuda de verdad',
+  // Rechazar el bot explícitamente
+  'no quiero el bot', 'no quiero hablar con el bot',
+  'no quiero hablar con una ia', 'no quiero ia',
+  'no eres una persona', 'eres un bot', 'eres una ia',
+  'quiero hablar con alguien de verdad', 'alguien de verdad',
+  'quiero hablar con alguien real', 'alguien real',
+  'hablar con una persona de verdad', 'hablar con una persona real',
+  // Pedir dueño / encargado
+  'quiero hablar con el dueño', 'quiero hablar con la dueña',
+  'quiero hablar con el encargado', 'quiero hablar con la encargada',
+  'quiero hablar con el administrador', 'quiero hablar con la administradora',
+  // Frases informales
+  'pásamelo con alguien', 'pasame con alguien',
+  'pásamelo con una persona', 'paseme con alguien',
+  'contactarme con alguien', 'comunicarme con alguien',
+  'me pueden comunicar', 'me puedes comunicar',
+  'hay alguien', 'hay una persona',
 ];
 
 const MSG_DEDUP_TTL_MS       = 10 * 60 * 1000;
@@ -57,7 +81,7 @@ const DEFAULT_RECONNECT_DELAY = 3_000;
 
 // ─── useDBAuthState ───────────────────────────────────────────────────────────
 //
-// Persiste la sesión de Baileys en PostgreSQL (Neon) en lugar del filesystem.
+// Persiste la sesión de Baileys en PostgreSQL en lugar del filesystem.
 // Sobrevive reinicios de Render/Railway sin perder la sesión.
 //
 // CRÍTICO: los Signal keys contienen Buffers. Se serializan con BufferJSON.replacer
@@ -405,7 +429,6 @@ export class WhatsappService implements OnModuleInit {
       '';
 
     if (isMedia) {
-      // Los mensajes de media van directo sin debounce (respuesta inmediata fija)
       await this.handleMediaMessage(storeId, phone, messageType, sock);
       return;
     }
@@ -414,19 +437,11 @@ export class WhatsappService implements OnModuleInit {
 
     this.logger.log(`📩 Mensaje de ${phone}: ${content}`);
 
-    // ── Debounce + cola ──────────────────────────────────────────────────────
-    // bufferAndProcess agrupa mensajes rápidos y los encola secuencialmente.
-    // Esto elimina el race condition de múltiples mensajes paralelos a la IA.
     this.bufferAndProcess(storeId, phone, content, sock);
   }
 
   // ─── Debounce + cola secuencial ──────────────────────────────────────────────
 
-  /**
-   * Acumula mensajes del mismo cliente durante MSG_DEBOUNCE_MS.
-   * Si el cliente manda 3 mensajes en 1 segundo, se juntan en uno solo.
-   * Una vez vence el timer, el mensaje combinado entra a la cola secuencial.
-   */
   private bufferAndProcess(
     storeId: string,
     phone: string,
@@ -462,11 +477,6 @@ export class WhatsappService implements OnModuleInit {
     }, MSG_DEBOUNCE_MS);
   }
 
-  /**
-   * Encola el procesamiento de un mensaje para un cliente.
-   * El siguiente mensaje de ese cliente espera a que el anterior termine.
-   * Garantiza historial completo en cada llamada a la IA.
-   */
   private enqueueMessage(key: string, fn: () => Promise<void>): void {
     const prev = this.messageQueues.get(key) ?? Promise.resolve();
 
@@ -478,7 +488,6 @@ export class WhatsappService implements OnModuleInit {
 
     this.messageQueues.set(key, next);
 
-    // Limpieza automática cuando la cola queda vacía
     next.finally(() => {
       if (this.messageQueues.get(key) === next) {
         this.messageQueues.delete(key);
@@ -534,12 +543,12 @@ export class WhatsappService implements OnModuleInit {
 
   private getMediaReply(messageType: string): string {
     if (messageType === 'audioMessage') {
-      return `¡Hola! 😊 Por el momento no puedo escuchar audios. ¿Puedes contarme en texto qué necesitas? Si prefieres un asesor, dímelo y te conecto ahora mismo.`;
+      return `¡Hola! 😊 Por el momento no puedo escuchar audios. ¿Puedes contarme en texto qué necesitas? Si prefieres hablar con un asesor, dímelo y te conecto ahora mismo.`;
     }
     if (messageType === 'imageMessage') {
-      return `¡Gracias por escribirnos! 😊 No puedo ver imágenes por este canal automático, pero un asesor puede ayudarte. ¿Te conecto?`;
+      return `¡Gracias por escribirnos! 😊 No puedo ver imágenes por este canal automático, pero un asesor puede ayudarte de inmediato. ¿Te conecto?`;
     }
-    return `¡Hola! 😊 Recibí tu archivo pero no puedo procesarlo. ¿Te conecto con un asesor?`;
+    return `¡Hola! 😊 Recibí tu archivo pero no puedo procesarlo por este canal. ¿Te conecto con un asesor?`;
   }
 
   // ─── Mensajes de texto ──────────────────────────────────────────────────────
@@ -564,11 +573,13 @@ export class WhatsappService implements OnModuleInit {
       isAiResponse: false,
     });
 
+    // Si ya está en manos de un humano o cerrada, el bot no interviene
     if (conversation.status === 'human' || conversation.status === 'closed') {
       this.logger.log(`👤 Conv ${conversation.conversationId} en modo humano — bot silenciado`);
       return;
     }
 
+    // Comando de override interno para forzar modo humano
     if (content.trim().toLowerCase() === '!stop') {
       await this.prisma.conversation.update({
         where: { conversationId: conversation.conversationId },
@@ -578,18 +589,36 @@ export class WhatsappService implements OnModuleInit {
       return;
     }
 
-    const jid         = jidFromPhone(phone);
+    const jid          = jidFromPhone(phone);
     const contentLower = content.toLowerCase();
 
+    // ── Detección de solicitud de asesor humano ──────────────────────────────
+    // Status 'human' directo — el bot queda silenciado de inmediato para
+    // cualquier mensaje siguiente, sin esperar intervención manual.
     if (HUMAN_KEYWORDS.some(kw => contentLower.includes(kw))) {
       await this.prisma.conversation.update({
         where: { conversationId: conversation.conversationId },
-        data: { status: 'pending_human' },
+        data: { status: 'human' },
       });
-      await sock.sendMessage(jid, {
-        text: '👤 Entendido, te conecto con un asesor. Por favor espera un momento...',
+
+      const handoffReply =
+        `Entendido, ahora mismo te conecto con un asesor. ` +
+        `Por favor espera un momento, pronto alguien te atenderá. 😊`;
+
+      await sock.sendMessage(jid, { text: handoffReply });
+
+      await this.messagesService.create({
+        conversationId: conversation.conversationId,
+        storeId,
+        content: handoffReply,
+        type: 'text',
+        sender: 'store',
+        isAiResponse: false,
       });
-      this.logger.log(`🚨 ${phone} solicita asesor humano`);
+
+      this.logger.log(
+        `🚨 ${phone} solicitó asesor → conv ${conversation.conversationId} en modo HUMAN`,
+      );
       return;
     }
 

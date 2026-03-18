@@ -9,7 +9,45 @@
 * 🟢 You can import this file directly.
 */
 
+export const PriceType = {
+  FIXED: 'FIXED',
+  PER_HOUR: 'PER_HOUR',
+  PER_DAY: 'PER_DAY',
+  PER_UNIT: 'PER_UNIT',
+  VARIABLE: 'VARIABLE'
+} as const
+
+export type PriceType = (typeof PriceType)[keyof typeof PriceType]
 
 
-// This file is empty because there are no enums in the schema.
-export {}
+export const AppointmentStatus = {
+  PENDING: 'PENDING',
+  CONFIRMED: 'CONFIRMED',
+  IN_PROGRESS: 'IN_PROGRESS',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED',
+  NO_SHOW: 'NO_SHOW',
+  RESCHEDULED: 'RESCHEDULED'
+} as const
+
+export type AppointmentStatus = (typeof AppointmentStatus)[keyof typeof AppointmentStatus]
+
+
+export const AppointmentPriority = {
+  LOW: 'LOW',
+  NORMAL: 'NORMAL',
+  HIGH: 'HIGH',
+  URGENT: 'URGENT'
+} as const
+
+export type AppointmentPriority = (typeof AppointmentPriority)[keyof typeof AppointmentPriority]
+
+
+export const AppointmentSource = {
+  AI: 'AI',
+  MANUAL: 'MANUAL',
+  WHATSAPP: 'WHATSAPP',
+  API: 'API'
+} as const
+
+export type AppointmentSource = (typeof AppointmentSource)[keyof typeof AppointmentSource]

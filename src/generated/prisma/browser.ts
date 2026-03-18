@@ -38,6 +38,11 @@ export type Conversation = Prisma.ConversationModel
  */
 export type Message = Prisma.MessageModel
 /**
+ * Model Category
+ * 
+ */
+export type Category = Prisma.CategoryModel
+/**
  * Model Product
  * 
  */
@@ -53,6 +58,11 @@ export type ProductVariant = Prisma.ProductVariantModel
  */
 export type Service = Prisma.ServiceModel
 /**
+ * Model ServiceVariant
+ * 
+ */
+export type ServiceVariant = Prisma.ServiceVariantModel
+/**
  * Model Order
  * 
  */
@@ -64,9 +74,32 @@ export type Order = Prisma.OrderModel
 export type OrderItem = Prisma.OrderItemModel
 /**
  * Model Appointment
+ * Cita o agendamiento de servicio.
  * 
+ * Flujo de estados:
+ * PENDING → CONFIRMED → IN_PROGRESS → COMPLETED
+ * PENDING → CANCELLED
+ * CONFIRMED → CANCELLED | NO_SHOW | RESCHEDULED
+ * 
+ * Vinculación al catálogo (opcional):
+ * Si la cita corresponde a un servicio registrado, se vincula vía
+ * serviceId / serviceVariantId para tener contexto de precio y duración.
+ * Si no, description explica libremente qué se va a hacer.
+ * 
+ * Fuentes:
+ * - AI: el bot de WhatsApp extrae los datos y crea la cita automáticamente
+ * - MANUAL: el admin la crea desde el dashboard
+ * - WHATSAPP: el cliente coordina vía chat sin que la IA tome los datos
  */
 export type Appointment = Prisma.AppointmentModel
+/**
+ * Model AppointmentTimeline
+ * Historial inmutable de todos los cambios de una cita.
+ * Sirve para auditoría, soporte y trazabilidad completa.
+ * isPublic = true  → el cliente puede verlo en su seguimiento
+ * isPublic = false → solo visible para el admin
+ */
+export type AppointmentTimeline = Prisma.AppointmentTimelineModel
 /**
  * Model AIConfiguration
  * 

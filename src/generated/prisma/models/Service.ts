@@ -27,13 +27,19 @@ export type AggregateService = {
 }
 
 export type ServiceAvgAggregateOutputType = {
-  price: runtime.Decimal | null
-  duration: number | null
+  basePrice: runtime.Decimal | null
+  minPrice: runtime.Decimal | null
+  maxPrice: runtime.Decimal | null
+  costPrice: runtime.Decimal | null
+  estimatedMinutes: number | null
 }
 
 export type ServiceSumAggregateOutputType = {
-  price: runtime.Decimal | null
-  duration: number | null
+  basePrice: runtime.Decimal | null
+  minPrice: runtime.Decimal | null
+  maxPrice: runtime.Decimal | null
+  costPrice: runtime.Decimal | null
+  estimatedMinutes: number | null
 }
 
 export type ServiceMinAggregateOutputType = {
@@ -41,10 +47,19 @@ export type ServiceMinAggregateOutputType = {
   storeId: string | null
   name: string | null
   description: string | null
-  price: runtime.Decimal | null
-  duration: number | null
+  category: string | null
+  imageUrl: string | null
+  priceType: $Enums.PriceType | null
+  basePrice: runtime.Decimal | null
+  minPrice: runtime.Decimal | null
+  maxPrice: runtime.Decimal | null
+  costPrice: runtime.Decimal | null
+  unitLabel: string | null
+  hasVariants: boolean | null
+  estimatedMinutes: number | null
   isActive: boolean | null
   createdAt: Date | null
+  updatedAt: Date | null
 }
 
 export type ServiceMaxAggregateOutputType = {
@@ -52,10 +67,19 @@ export type ServiceMaxAggregateOutputType = {
   storeId: string | null
   name: string | null
   description: string | null
-  price: runtime.Decimal | null
-  duration: number | null
+  category: string | null
+  imageUrl: string | null
+  priceType: $Enums.PriceType | null
+  basePrice: runtime.Decimal | null
+  minPrice: runtime.Decimal | null
+  maxPrice: runtime.Decimal | null
+  costPrice: runtime.Decimal | null
+  unitLabel: string | null
+  hasVariants: boolean | null
+  estimatedMinutes: number | null
   isActive: boolean | null
   createdAt: Date | null
+  updatedAt: Date | null
 }
 
 export type ServiceCountAggregateOutputType = {
@@ -63,22 +87,38 @@ export type ServiceCountAggregateOutputType = {
   storeId: number
   name: number
   description: number
-  price: number
-  duration: number
+  category: number
+  imageUrl: number
+  priceType: number
+  basePrice: number
+  minPrice: number
+  maxPrice: number
+  costPrice: number
+  unitLabel: number
+  hasVariants: number
+  estimatedMinutes: number
+  customFields: number
   isActive: number
   createdAt: number
+  updatedAt: number
   _all: number
 }
 
 
 export type ServiceAvgAggregateInputType = {
-  price?: true
-  duration?: true
+  basePrice?: true
+  minPrice?: true
+  maxPrice?: true
+  costPrice?: true
+  estimatedMinutes?: true
 }
 
 export type ServiceSumAggregateInputType = {
-  price?: true
-  duration?: true
+  basePrice?: true
+  minPrice?: true
+  maxPrice?: true
+  costPrice?: true
+  estimatedMinutes?: true
 }
 
 export type ServiceMinAggregateInputType = {
@@ -86,10 +126,19 @@ export type ServiceMinAggregateInputType = {
   storeId?: true
   name?: true
   description?: true
-  price?: true
-  duration?: true
+  category?: true
+  imageUrl?: true
+  priceType?: true
+  basePrice?: true
+  minPrice?: true
+  maxPrice?: true
+  costPrice?: true
+  unitLabel?: true
+  hasVariants?: true
+  estimatedMinutes?: true
   isActive?: true
   createdAt?: true
+  updatedAt?: true
 }
 
 export type ServiceMaxAggregateInputType = {
@@ -97,10 +146,19 @@ export type ServiceMaxAggregateInputType = {
   storeId?: true
   name?: true
   description?: true
-  price?: true
-  duration?: true
+  category?: true
+  imageUrl?: true
+  priceType?: true
+  basePrice?: true
+  minPrice?: true
+  maxPrice?: true
+  costPrice?: true
+  unitLabel?: true
+  hasVariants?: true
+  estimatedMinutes?: true
   isActive?: true
   createdAt?: true
+  updatedAt?: true
 }
 
 export type ServiceCountAggregateInputType = {
@@ -108,10 +166,20 @@ export type ServiceCountAggregateInputType = {
   storeId?: true
   name?: true
   description?: true
-  price?: true
-  duration?: true
+  category?: true
+  imageUrl?: true
+  priceType?: true
+  basePrice?: true
+  minPrice?: true
+  maxPrice?: true
+  costPrice?: true
+  unitLabel?: true
+  hasVariants?: true
+  estimatedMinutes?: true
+  customFields?: true
   isActive?: true
   createdAt?: true
+  updatedAt?: true
   _all?: true
 }
 
@@ -206,10 +274,20 @@ export type ServiceGroupByOutputType = {
   storeId: string
   name: string
   description: string | null
-  price: runtime.Decimal | null
-  duration: number | null
+  category: string | null
+  imageUrl: string | null
+  priceType: $Enums.PriceType
+  basePrice: runtime.Decimal | null
+  minPrice: runtime.Decimal | null
+  maxPrice: runtime.Decimal | null
+  costPrice: runtime.Decimal | null
+  unitLabel: string | null
+  hasVariants: boolean
+  estimatedMinutes: number | null
+  customFields: runtime.JsonValue | null
   isActive: boolean
   createdAt: Date
+  updatedAt: Date
   _count: ServiceCountAggregateOutputType | null
   _avg: ServiceAvgAggregateOutputType | null
   _sum: ServiceSumAggregateOutputType | null
@@ -240,12 +318,24 @@ export type ServiceWhereInput = {
   storeId?: Prisma.StringFilter<"Service"> | string
   name?: Prisma.StringFilter<"Service"> | string
   description?: Prisma.StringNullableFilter<"Service"> | string | null
-  price?: Prisma.DecimalNullableFilter<"Service"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  duration?: Prisma.IntNullableFilter<"Service"> | number | null
+  category?: Prisma.StringNullableFilter<"Service"> | string | null
+  imageUrl?: Prisma.StringNullableFilter<"Service"> | string | null
+  priceType?: Prisma.EnumPriceTypeFilter<"Service"> | $Enums.PriceType
+  basePrice?: Prisma.DecimalNullableFilter<"Service"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: Prisma.DecimalNullableFilter<"Service"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  maxPrice?: Prisma.DecimalNullableFilter<"Service"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  costPrice?: Prisma.DecimalNullableFilter<"Service"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  unitLabel?: Prisma.StringNullableFilter<"Service"> | string | null
+  hasVariants?: Prisma.BoolFilter<"Service"> | boolean
+  estimatedMinutes?: Prisma.IntNullableFilter<"Service"> | number | null
+  customFields?: Prisma.JsonNullableFilter<"Service">
   isActive?: Prisma.BoolFilter<"Service"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Service"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"Service"> | Date | string
   store?: Prisma.XOR<Prisma.StoreScalarRelationFilter, Prisma.StoreWhereInput>
+  variants?: Prisma.ServiceVariantListRelationFilter
   orderItems?: Prisma.OrderItemListRelationFilter
+  appointments?: Prisma.AppointmentListRelationFilter
 }
 
 export type ServiceOrderByWithRelationInput = {
@@ -253,12 +343,24 @@ export type ServiceOrderByWithRelationInput = {
   storeId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
-  price?: Prisma.SortOrderInput | Prisma.SortOrder
-  duration?: Prisma.SortOrderInput | Prisma.SortOrder
+  category?: Prisma.SortOrderInput | Prisma.SortOrder
+  imageUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  priceType?: Prisma.SortOrder
+  basePrice?: Prisma.SortOrderInput | Prisma.SortOrder
+  minPrice?: Prisma.SortOrderInput | Prisma.SortOrder
+  maxPrice?: Prisma.SortOrderInput | Prisma.SortOrder
+  costPrice?: Prisma.SortOrderInput | Prisma.SortOrder
+  unitLabel?: Prisma.SortOrderInput | Prisma.SortOrder
+  hasVariants?: Prisma.SortOrder
+  estimatedMinutes?: Prisma.SortOrderInput | Prisma.SortOrder
+  customFields?: Prisma.SortOrderInput | Prisma.SortOrder
   isActive?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
   store?: Prisma.StoreOrderByWithRelationInput
+  variants?: Prisma.ServiceVariantOrderByRelationAggregateInput
   orderItems?: Prisma.OrderItemOrderByRelationAggregateInput
+  appointments?: Prisma.AppointmentOrderByRelationAggregateInput
 }
 
 export type ServiceWhereUniqueInput = Prisma.AtLeast<{
@@ -269,12 +371,24 @@ export type ServiceWhereUniqueInput = Prisma.AtLeast<{
   storeId?: Prisma.StringFilter<"Service"> | string
   name?: Prisma.StringFilter<"Service"> | string
   description?: Prisma.StringNullableFilter<"Service"> | string | null
-  price?: Prisma.DecimalNullableFilter<"Service"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  duration?: Prisma.IntNullableFilter<"Service"> | number | null
+  category?: Prisma.StringNullableFilter<"Service"> | string | null
+  imageUrl?: Prisma.StringNullableFilter<"Service"> | string | null
+  priceType?: Prisma.EnumPriceTypeFilter<"Service"> | $Enums.PriceType
+  basePrice?: Prisma.DecimalNullableFilter<"Service"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: Prisma.DecimalNullableFilter<"Service"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  maxPrice?: Prisma.DecimalNullableFilter<"Service"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  costPrice?: Prisma.DecimalNullableFilter<"Service"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  unitLabel?: Prisma.StringNullableFilter<"Service"> | string | null
+  hasVariants?: Prisma.BoolFilter<"Service"> | boolean
+  estimatedMinutes?: Prisma.IntNullableFilter<"Service"> | number | null
+  customFields?: Prisma.JsonNullableFilter<"Service">
   isActive?: Prisma.BoolFilter<"Service"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Service"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"Service"> | Date | string
   store?: Prisma.XOR<Prisma.StoreScalarRelationFilter, Prisma.StoreWhereInput>
+  variants?: Prisma.ServiceVariantListRelationFilter
   orderItems?: Prisma.OrderItemListRelationFilter
+  appointments?: Prisma.AppointmentListRelationFilter
 }, "serviceId">
 
 export type ServiceOrderByWithAggregationInput = {
@@ -282,10 +396,20 @@ export type ServiceOrderByWithAggregationInput = {
   storeId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
-  price?: Prisma.SortOrderInput | Prisma.SortOrder
-  duration?: Prisma.SortOrderInput | Prisma.SortOrder
+  category?: Prisma.SortOrderInput | Prisma.SortOrder
+  imageUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  priceType?: Prisma.SortOrder
+  basePrice?: Prisma.SortOrderInput | Prisma.SortOrder
+  minPrice?: Prisma.SortOrderInput | Prisma.SortOrder
+  maxPrice?: Prisma.SortOrderInput | Prisma.SortOrder
+  costPrice?: Prisma.SortOrderInput | Prisma.SortOrder
+  unitLabel?: Prisma.SortOrderInput | Prisma.SortOrder
+  hasVariants?: Prisma.SortOrder
+  estimatedMinutes?: Prisma.SortOrderInput | Prisma.SortOrder
+  customFields?: Prisma.SortOrderInput | Prisma.SortOrder
   isActive?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
   _count?: Prisma.ServiceCountOrderByAggregateInput
   _avg?: Prisma.ServiceAvgOrderByAggregateInput
   _max?: Prisma.ServiceMaxOrderByAggregateInput
@@ -301,22 +425,44 @@ export type ServiceScalarWhereWithAggregatesInput = {
   storeId?: Prisma.StringWithAggregatesFilter<"Service"> | string
   name?: Prisma.StringWithAggregatesFilter<"Service"> | string
   description?: Prisma.StringNullableWithAggregatesFilter<"Service"> | string | null
-  price?: Prisma.DecimalNullableWithAggregatesFilter<"Service"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  duration?: Prisma.IntNullableWithAggregatesFilter<"Service"> | number | null
+  category?: Prisma.StringNullableWithAggregatesFilter<"Service"> | string | null
+  imageUrl?: Prisma.StringNullableWithAggregatesFilter<"Service"> | string | null
+  priceType?: Prisma.EnumPriceTypeWithAggregatesFilter<"Service"> | $Enums.PriceType
+  basePrice?: Prisma.DecimalNullableWithAggregatesFilter<"Service"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: Prisma.DecimalNullableWithAggregatesFilter<"Service"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  maxPrice?: Prisma.DecimalNullableWithAggregatesFilter<"Service"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  costPrice?: Prisma.DecimalNullableWithAggregatesFilter<"Service"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  unitLabel?: Prisma.StringNullableWithAggregatesFilter<"Service"> | string | null
+  hasVariants?: Prisma.BoolWithAggregatesFilter<"Service"> | boolean
+  estimatedMinutes?: Prisma.IntNullableWithAggregatesFilter<"Service"> | number | null
+  customFields?: Prisma.JsonNullableWithAggregatesFilter<"Service">
   isActive?: Prisma.BoolWithAggregatesFilter<"Service"> | boolean
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Service"> | Date | string
+  updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Service"> | Date | string
 }
 
 export type ServiceCreateInput = {
   serviceId?: string
   name: string
   description?: string | null
-  price?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  duration?: number | null
+  category?: string | null
+  imageUrl?: string | null
+  priceType?: $Enums.PriceType
+  basePrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  maxPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  costPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  unitLabel?: string | null
+  hasVariants?: boolean
+  estimatedMinutes?: number | null
+  customFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   isActive?: boolean
   createdAt?: Date | string
+  updatedAt?: Date | string
   store: Prisma.StoreCreateNestedOneWithoutServicesInput
+  variants?: Prisma.ServiceVariantCreateNestedManyWithoutServiceInput
   orderItems?: Prisma.OrderItemCreateNestedManyWithoutServiceInput
+  appointments?: Prisma.AppointmentCreateNestedManyWithoutServiceInput
 }
 
 export type ServiceUncheckedCreateInput = {
@@ -324,23 +470,47 @@ export type ServiceUncheckedCreateInput = {
   storeId: string
   name: string
   description?: string | null
-  price?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  duration?: number | null
+  category?: string | null
+  imageUrl?: string | null
+  priceType?: $Enums.PriceType
+  basePrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  maxPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  costPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  unitLabel?: string | null
+  hasVariants?: boolean
+  estimatedMinutes?: number | null
+  customFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   isActive?: boolean
   createdAt?: Date | string
+  updatedAt?: Date | string
+  variants?: Prisma.ServiceVariantUncheckedCreateNestedManyWithoutServiceInput
   orderItems?: Prisma.OrderItemUncheckedCreateNestedManyWithoutServiceInput
+  appointments?: Prisma.AppointmentUncheckedCreateNestedManyWithoutServiceInput
 }
 
 export type ServiceUpdateInput = {
   serviceId?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  price?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  duration?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priceType?: Prisma.EnumPriceTypeFieldUpdateOperationsInput | $Enums.PriceType
+  basePrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  maxPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  costPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  unitLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasVariants?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  estimatedMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  customFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   store?: Prisma.StoreUpdateOneRequiredWithoutServicesNestedInput
+  variants?: Prisma.ServiceVariantUpdateManyWithoutServiceNestedInput
   orderItems?: Prisma.OrderItemUpdateManyWithoutServiceNestedInput
+  appointments?: Prisma.AppointmentUpdateManyWithoutServiceNestedInput
 }
 
 export type ServiceUncheckedUpdateInput = {
@@ -348,11 +518,23 @@ export type ServiceUncheckedUpdateInput = {
   storeId?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  price?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  duration?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priceType?: Prisma.EnumPriceTypeFieldUpdateOperationsInput | $Enums.PriceType
+  basePrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  maxPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  costPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  unitLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasVariants?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  estimatedMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  customFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  variants?: Prisma.ServiceVariantUncheckedUpdateManyWithoutServiceNestedInput
   orderItems?: Prisma.OrderItemUncheckedUpdateManyWithoutServiceNestedInput
+  appointments?: Prisma.AppointmentUncheckedUpdateManyWithoutServiceNestedInput
 }
 
 export type ServiceCreateManyInput = {
@@ -360,20 +542,40 @@ export type ServiceCreateManyInput = {
   storeId: string
   name: string
   description?: string | null
-  price?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  duration?: number | null
+  category?: string | null
+  imageUrl?: string | null
+  priceType?: $Enums.PriceType
+  basePrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  maxPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  costPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  unitLabel?: string | null
+  hasVariants?: boolean
+  estimatedMinutes?: number | null
+  customFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   isActive?: boolean
   createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type ServiceUpdateManyMutationInput = {
   serviceId?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  price?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  duration?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priceType?: Prisma.EnumPriceTypeFieldUpdateOperationsInput | $Enums.PriceType
+  basePrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  maxPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  costPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  unitLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasVariants?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  estimatedMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  customFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type ServiceUncheckedUpdateManyInput = {
@@ -381,10 +583,20 @@ export type ServiceUncheckedUpdateManyInput = {
   storeId?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  price?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  duration?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priceType?: Prisma.EnumPriceTypeFieldUpdateOperationsInput | $Enums.PriceType
+  basePrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  maxPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  costPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  unitLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasVariants?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  estimatedMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  customFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type ServiceListRelationFilter = {
@@ -402,15 +614,28 @@ export type ServiceCountOrderByAggregateInput = {
   storeId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   description?: Prisma.SortOrder
-  price?: Prisma.SortOrder
-  duration?: Prisma.SortOrder
+  category?: Prisma.SortOrder
+  imageUrl?: Prisma.SortOrder
+  priceType?: Prisma.SortOrder
+  basePrice?: Prisma.SortOrder
+  minPrice?: Prisma.SortOrder
+  maxPrice?: Prisma.SortOrder
+  costPrice?: Prisma.SortOrder
+  unitLabel?: Prisma.SortOrder
+  hasVariants?: Prisma.SortOrder
+  estimatedMinutes?: Prisma.SortOrder
+  customFields?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
 }
 
 export type ServiceAvgOrderByAggregateInput = {
-  price?: Prisma.SortOrder
-  duration?: Prisma.SortOrder
+  basePrice?: Prisma.SortOrder
+  minPrice?: Prisma.SortOrder
+  maxPrice?: Prisma.SortOrder
+  costPrice?: Prisma.SortOrder
+  estimatedMinutes?: Prisma.SortOrder
 }
 
 export type ServiceMaxOrderByAggregateInput = {
@@ -418,10 +643,19 @@ export type ServiceMaxOrderByAggregateInput = {
   storeId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   description?: Prisma.SortOrder
-  price?: Prisma.SortOrder
-  duration?: Prisma.SortOrder
+  category?: Prisma.SortOrder
+  imageUrl?: Prisma.SortOrder
+  priceType?: Prisma.SortOrder
+  basePrice?: Prisma.SortOrder
+  minPrice?: Prisma.SortOrder
+  maxPrice?: Prisma.SortOrder
+  costPrice?: Prisma.SortOrder
+  unitLabel?: Prisma.SortOrder
+  hasVariants?: Prisma.SortOrder
+  estimatedMinutes?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
 }
 
 export type ServiceMinOrderByAggregateInput = {
@@ -429,15 +663,32 @@ export type ServiceMinOrderByAggregateInput = {
   storeId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   description?: Prisma.SortOrder
-  price?: Prisma.SortOrder
-  duration?: Prisma.SortOrder
+  category?: Prisma.SortOrder
+  imageUrl?: Prisma.SortOrder
+  priceType?: Prisma.SortOrder
+  basePrice?: Prisma.SortOrder
+  minPrice?: Prisma.SortOrder
+  maxPrice?: Prisma.SortOrder
+  costPrice?: Prisma.SortOrder
+  unitLabel?: Prisma.SortOrder
+  hasVariants?: Prisma.SortOrder
+  estimatedMinutes?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
 }
 
 export type ServiceSumOrderByAggregateInput = {
-  price?: Prisma.SortOrder
-  duration?: Prisma.SortOrder
+  basePrice?: Prisma.SortOrder
+  minPrice?: Prisma.SortOrder
+  maxPrice?: Prisma.SortOrder
+  costPrice?: Prisma.SortOrder
+  estimatedMinutes?: Prisma.SortOrder
+}
+
+export type ServiceScalarRelationFilter = {
+  is?: Prisma.ServiceWhereInput
+  isNot?: Prisma.ServiceWhereInput
 }
 
 export type ServiceNullableScalarRelationFilter = {
@@ -487,12 +738,8 @@ export type ServiceUncheckedUpdateManyWithoutStoreNestedInput = {
   deleteMany?: Prisma.ServiceScalarWhereInput | Prisma.ServiceScalarWhereInput[]
 }
 
-export type NullableDecimalFieldUpdateOperationsInput = {
-  set?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  increment?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  decrement?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  multiply?: runtime.Decimal | runtime.DecimalJsLike | number | string
-  divide?: runtime.Decimal | runtime.DecimalJsLike | number | string
+export type EnumPriceTypeFieldUpdateOperationsInput = {
+  set?: $Enums.PriceType
 }
 
 export type NullableIntFieldUpdateOperationsInput = {
@@ -501,6 +748,20 @@ export type NullableIntFieldUpdateOperationsInput = {
   decrement?: number
   multiply?: number
   divide?: number
+}
+
+export type ServiceCreateNestedOneWithoutVariantsInput = {
+  create?: Prisma.XOR<Prisma.ServiceCreateWithoutVariantsInput, Prisma.ServiceUncheckedCreateWithoutVariantsInput>
+  connectOrCreate?: Prisma.ServiceCreateOrConnectWithoutVariantsInput
+  connect?: Prisma.ServiceWhereUniqueInput
+}
+
+export type ServiceUpdateOneRequiredWithoutVariantsNestedInput = {
+  create?: Prisma.XOR<Prisma.ServiceCreateWithoutVariantsInput, Prisma.ServiceUncheckedCreateWithoutVariantsInput>
+  connectOrCreate?: Prisma.ServiceCreateOrConnectWithoutVariantsInput
+  upsert?: Prisma.ServiceUpsertWithoutVariantsInput
+  connect?: Prisma.ServiceWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ServiceUpdateToOneWithWhereWithoutVariantsInput, Prisma.ServiceUpdateWithoutVariantsInput>, Prisma.ServiceUncheckedUpdateWithoutVariantsInput>
 }
 
 export type ServiceCreateNestedOneWithoutOrderItemsInput = {
@@ -519,26 +780,66 @@ export type ServiceUpdateOneWithoutOrderItemsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.ServiceUpdateToOneWithWhereWithoutOrderItemsInput, Prisma.ServiceUpdateWithoutOrderItemsInput>, Prisma.ServiceUncheckedUpdateWithoutOrderItemsInput>
 }
 
+export type ServiceCreateNestedOneWithoutAppointmentsInput = {
+  create?: Prisma.XOR<Prisma.ServiceCreateWithoutAppointmentsInput, Prisma.ServiceUncheckedCreateWithoutAppointmentsInput>
+  connectOrCreate?: Prisma.ServiceCreateOrConnectWithoutAppointmentsInput
+  connect?: Prisma.ServiceWhereUniqueInput
+}
+
+export type ServiceUpdateOneWithoutAppointmentsNestedInput = {
+  create?: Prisma.XOR<Prisma.ServiceCreateWithoutAppointmentsInput, Prisma.ServiceUncheckedCreateWithoutAppointmentsInput>
+  connectOrCreate?: Prisma.ServiceCreateOrConnectWithoutAppointmentsInput
+  upsert?: Prisma.ServiceUpsertWithoutAppointmentsInput
+  disconnect?: Prisma.ServiceWhereInput | boolean
+  delete?: Prisma.ServiceWhereInput | boolean
+  connect?: Prisma.ServiceWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ServiceUpdateToOneWithWhereWithoutAppointmentsInput, Prisma.ServiceUpdateWithoutAppointmentsInput>, Prisma.ServiceUncheckedUpdateWithoutAppointmentsInput>
+}
+
 export type ServiceCreateWithoutStoreInput = {
   serviceId?: string
   name: string
   description?: string | null
-  price?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  duration?: number | null
+  category?: string | null
+  imageUrl?: string | null
+  priceType?: $Enums.PriceType
+  basePrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  maxPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  costPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  unitLabel?: string | null
+  hasVariants?: boolean
+  estimatedMinutes?: number | null
+  customFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   isActive?: boolean
   createdAt?: Date | string
+  updatedAt?: Date | string
+  variants?: Prisma.ServiceVariantCreateNestedManyWithoutServiceInput
   orderItems?: Prisma.OrderItemCreateNestedManyWithoutServiceInput
+  appointments?: Prisma.AppointmentCreateNestedManyWithoutServiceInput
 }
 
 export type ServiceUncheckedCreateWithoutStoreInput = {
   serviceId?: string
   name: string
   description?: string | null
-  price?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  duration?: number | null
+  category?: string | null
+  imageUrl?: string | null
+  priceType?: $Enums.PriceType
+  basePrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  maxPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  costPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  unitLabel?: string | null
+  hasVariants?: boolean
+  estimatedMinutes?: number | null
+  customFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   isActive?: boolean
   createdAt?: Date | string
+  updatedAt?: Date | string
+  variants?: Prisma.ServiceVariantUncheckedCreateNestedManyWithoutServiceInput
   orderItems?: Prisma.OrderItemUncheckedCreateNestedManyWithoutServiceInput
+  appointments?: Prisma.AppointmentUncheckedCreateNestedManyWithoutServiceInput
 }
 
 export type ServiceCreateOrConnectWithoutStoreInput = {
@@ -575,21 +876,151 @@ export type ServiceScalarWhereInput = {
   storeId?: Prisma.StringFilter<"Service"> | string
   name?: Prisma.StringFilter<"Service"> | string
   description?: Prisma.StringNullableFilter<"Service"> | string | null
-  price?: Prisma.DecimalNullableFilter<"Service"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  duration?: Prisma.IntNullableFilter<"Service"> | number | null
+  category?: Prisma.StringNullableFilter<"Service"> | string | null
+  imageUrl?: Prisma.StringNullableFilter<"Service"> | string | null
+  priceType?: Prisma.EnumPriceTypeFilter<"Service"> | $Enums.PriceType
+  basePrice?: Prisma.DecimalNullableFilter<"Service"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: Prisma.DecimalNullableFilter<"Service"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  maxPrice?: Prisma.DecimalNullableFilter<"Service"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  costPrice?: Prisma.DecimalNullableFilter<"Service"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  unitLabel?: Prisma.StringNullableFilter<"Service"> | string | null
+  hasVariants?: Prisma.BoolFilter<"Service"> | boolean
+  estimatedMinutes?: Prisma.IntNullableFilter<"Service"> | number | null
+  customFields?: Prisma.JsonNullableFilter<"Service">
   isActive?: Prisma.BoolFilter<"Service"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Service"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"Service"> | Date | string
+}
+
+export type ServiceCreateWithoutVariantsInput = {
+  serviceId?: string
+  name: string
+  description?: string | null
+  category?: string | null
+  imageUrl?: string | null
+  priceType?: $Enums.PriceType
+  basePrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  maxPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  costPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  unitLabel?: string | null
+  hasVariants?: boolean
+  estimatedMinutes?: number | null
+  customFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  isActive?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  store: Prisma.StoreCreateNestedOneWithoutServicesInput
+  orderItems?: Prisma.OrderItemCreateNestedManyWithoutServiceInput
+  appointments?: Prisma.AppointmentCreateNestedManyWithoutServiceInput
+}
+
+export type ServiceUncheckedCreateWithoutVariantsInput = {
+  serviceId?: string
+  storeId: string
+  name: string
+  description?: string | null
+  category?: string | null
+  imageUrl?: string | null
+  priceType?: $Enums.PriceType
+  basePrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  maxPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  costPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  unitLabel?: string | null
+  hasVariants?: boolean
+  estimatedMinutes?: number | null
+  customFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  isActive?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  orderItems?: Prisma.OrderItemUncheckedCreateNestedManyWithoutServiceInput
+  appointments?: Prisma.AppointmentUncheckedCreateNestedManyWithoutServiceInput
+}
+
+export type ServiceCreateOrConnectWithoutVariantsInput = {
+  where: Prisma.ServiceWhereUniqueInput
+  create: Prisma.XOR<Prisma.ServiceCreateWithoutVariantsInput, Prisma.ServiceUncheckedCreateWithoutVariantsInput>
+}
+
+export type ServiceUpsertWithoutVariantsInput = {
+  update: Prisma.XOR<Prisma.ServiceUpdateWithoutVariantsInput, Prisma.ServiceUncheckedUpdateWithoutVariantsInput>
+  create: Prisma.XOR<Prisma.ServiceCreateWithoutVariantsInput, Prisma.ServiceUncheckedCreateWithoutVariantsInput>
+  where?: Prisma.ServiceWhereInput
+}
+
+export type ServiceUpdateToOneWithWhereWithoutVariantsInput = {
+  where?: Prisma.ServiceWhereInput
+  data: Prisma.XOR<Prisma.ServiceUpdateWithoutVariantsInput, Prisma.ServiceUncheckedUpdateWithoutVariantsInput>
+}
+
+export type ServiceUpdateWithoutVariantsInput = {
+  serviceId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priceType?: Prisma.EnumPriceTypeFieldUpdateOperationsInput | $Enums.PriceType
+  basePrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  maxPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  costPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  unitLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasVariants?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  estimatedMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  customFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  store?: Prisma.StoreUpdateOneRequiredWithoutServicesNestedInput
+  orderItems?: Prisma.OrderItemUpdateManyWithoutServiceNestedInput
+  appointments?: Prisma.AppointmentUpdateManyWithoutServiceNestedInput
+}
+
+export type ServiceUncheckedUpdateWithoutVariantsInput = {
+  serviceId?: Prisma.StringFieldUpdateOperationsInput | string
+  storeId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priceType?: Prisma.EnumPriceTypeFieldUpdateOperationsInput | $Enums.PriceType
+  basePrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  maxPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  costPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  unitLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasVariants?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  estimatedMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  customFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  orderItems?: Prisma.OrderItemUncheckedUpdateManyWithoutServiceNestedInput
+  appointments?: Prisma.AppointmentUncheckedUpdateManyWithoutServiceNestedInput
 }
 
 export type ServiceCreateWithoutOrderItemsInput = {
   serviceId?: string
   name: string
   description?: string | null
-  price?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  duration?: number | null
+  category?: string | null
+  imageUrl?: string | null
+  priceType?: $Enums.PriceType
+  basePrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  maxPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  costPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  unitLabel?: string | null
+  hasVariants?: boolean
+  estimatedMinutes?: number | null
+  customFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   isActive?: boolean
   createdAt?: Date | string
+  updatedAt?: Date | string
   store: Prisma.StoreCreateNestedOneWithoutServicesInput
+  variants?: Prisma.ServiceVariantCreateNestedManyWithoutServiceInput
+  appointments?: Prisma.AppointmentCreateNestedManyWithoutServiceInput
 }
 
 export type ServiceUncheckedCreateWithoutOrderItemsInput = {
@@ -597,10 +1028,22 @@ export type ServiceUncheckedCreateWithoutOrderItemsInput = {
   storeId: string
   name: string
   description?: string | null
-  price?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  duration?: number | null
+  category?: string | null
+  imageUrl?: string | null
+  priceType?: $Enums.PriceType
+  basePrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  maxPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  costPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  unitLabel?: string | null
+  hasVariants?: boolean
+  estimatedMinutes?: number | null
+  customFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   isActive?: boolean
   createdAt?: Date | string
+  updatedAt?: Date | string
+  variants?: Prisma.ServiceVariantUncheckedCreateNestedManyWithoutServiceInput
+  appointments?: Prisma.AppointmentUncheckedCreateNestedManyWithoutServiceInput
 }
 
 export type ServiceCreateOrConnectWithoutOrderItemsInput = {
@@ -623,11 +1066,23 @@ export type ServiceUpdateWithoutOrderItemsInput = {
   serviceId?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  price?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  duration?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priceType?: Prisma.EnumPriceTypeFieldUpdateOperationsInput | $Enums.PriceType
+  basePrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  maxPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  costPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  unitLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasVariants?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  estimatedMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  customFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   store?: Prisma.StoreUpdateOneRequiredWithoutServicesNestedInput
+  variants?: Prisma.ServiceVariantUpdateManyWithoutServiceNestedInput
+  appointments?: Prisma.AppointmentUpdateManyWithoutServiceNestedInput
 }
 
 export type ServiceUncheckedUpdateWithoutOrderItemsInput = {
@@ -635,52 +1090,216 @@ export type ServiceUncheckedUpdateWithoutOrderItemsInput = {
   storeId?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  price?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  duration?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priceType?: Prisma.EnumPriceTypeFieldUpdateOperationsInput | $Enums.PriceType
+  basePrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  maxPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  costPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  unitLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasVariants?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  estimatedMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  customFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  variants?: Prisma.ServiceVariantUncheckedUpdateManyWithoutServiceNestedInput
+  appointments?: Prisma.AppointmentUncheckedUpdateManyWithoutServiceNestedInput
+}
+
+export type ServiceCreateWithoutAppointmentsInput = {
+  serviceId?: string
+  name: string
+  description?: string | null
+  category?: string | null
+  imageUrl?: string | null
+  priceType?: $Enums.PriceType
+  basePrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  maxPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  costPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  unitLabel?: string | null
+  hasVariants?: boolean
+  estimatedMinutes?: number | null
+  customFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  isActive?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  store: Prisma.StoreCreateNestedOneWithoutServicesInput
+  variants?: Prisma.ServiceVariantCreateNestedManyWithoutServiceInput
+  orderItems?: Prisma.OrderItemCreateNestedManyWithoutServiceInput
+}
+
+export type ServiceUncheckedCreateWithoutAppointmentsInput = {
+  serviceId?: string
+  storeId: string
+  name: string
+  description?: string | null
+  category?: string | null
+  imageUrl?: string | null
+  priceType?: $Enums.PriceType
+  basePrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  maxPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  costPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  unitLabel?: string | null
+  hasVariants?: boolean
+  estimatedMinutes?: number | null
+  customFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  isActive?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  variants?: Prisma.ServiceVariantUncheckedCreateNestedManyWithoutServiceInput
+  orderItems?: Prisma.OrderItemUncheckedCreateNestedManyWithoutServiceInput
+}
+
+export type ServiceCreateOrConnectWithoutAppointmentsInput = {
+  where: Prisma.ServiceWhereUniqueInput
+  create: Prisma.XOR<Prisma.ServiceCreateWithoutAppointmentsInput, Prisma.ServiceUncheckedCreateWithoutAppointmentsInput>
+}
+
+export type ServiceUpsertWithoutAppointmentsInput = {
+  update: Prisma.XOR<Prisma.ServiceUpdateWithoutAppointmentsInput, Prisma.ServiceUncheckedUpdateWithoutAppointmentsInput>
+  create: Prisma.XOR<Prisma.ServiceCreateWithoutAppointmentsInput, Prisma.ServiceUncheckedCreateWithoutAppointmentsInput>
+  where?: Prisma.ServiceWhereInput
+}
+
+export type ServiceUpdateToOneWithWhereWithoutAppointmentsInput = {
+  where?: Prisma.ServiceWhereInput
+  data: Prisma.XOR<Prisma.ServiceUpdateWithoutAppointmentsInput, Prisma.ServiceUncheckedUpdateWithoutAppointmentsInput>
+}
+
+export type ServiceUpdateWithoutAppointmentsInput = {
+  serviceId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priceType?: Prisma.EnumPriceTypeFieldUpdateOperationsInput | $Enums.PriceType
+  basePrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  maxPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  costPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  unitLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasVariants?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  estimatedMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  customFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  store?: Prisma.StoreUpdateOneRequiredWithoutServicesNestedInput
+  variants?: Prisma.ServiceVariantUpdateManyWithoutServiceNestedInput
+  orderItems?: Prisma.OrderItemUpdateManyWithoutServiceNestedInput
+}
+
+export type ServiceUncheckedUpdateWithoutAppointmentsInput = {
+  serviceId?: Prisma.StringFieldUpdateOperationsInput | string
+  storeId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priceType?: Prisma.EnumPriceTypeFieldUpdateOperationsInput | $Enums.PriceType
+  basePrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  maxPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  costPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  unitLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasVariants?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  estimatedMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  customFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  variants?: Prisma.ServiceVariantUncheckedUpdateManyWithoutServiceNestedInput
+  orderItems?: Prisma.OrderItemUncheckedUpdateManyWithoutServiceNestedInput
 }
 
 export type ServiceCreateManyStoreInput = {
   serviceId?: string
   name: string
   description?: string | null
-  price?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  duration?: number | null
+  category?: string | null
+  imageUrl?: string | null
+  priceType?: $Enums.PriceType
+  basePrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  maxPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  costPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  unitLabel?: string | null
+  hasVariants?: boolean
+  estimatedMinutes?: number | null
+  customFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   isActive?: boolean
   createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type ServiceUpdateWithoutStoreInput = {
   serviceId?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  price?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  duration?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priceType?: Prisma.EnumPriceTypeFieldUpdateOperationsInput | $Enums.PriceType
+  basePrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  maxPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  costPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  unitLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasVariants?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  estimatedMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  customFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  variants?: Prisma.ServiceVariantUpdateManyWithoutServiceNestedInput
   orderItems?: Prisma.OrderItemUpdateManyWithoutServiceNestedInput
+  appointments?: Prisma.AppointmentUpdateManyWithoutServiceNestedInput
 }
 
 export type ServiceUncheckedUpdateWithoutStoreInput = {
   serviceId?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  price?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  duration?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priceType?: Prisma.EnumPriceTypeFieldUpdateOperationsInput | $Enums.PriceType
+  basePrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  maxPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  costPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  unitLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasVariants?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  estimatedMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  customFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  variants?: Prisma.ServiceVariantUncheckedUpdateManyWithoutServiceNestedInput
   orderItems?: Prisma.OrderItemUncheckedUpdateManyWithoutServiceNestedInput
+  appointments?: Prisma.AppointmentUncheckedUpdateManyWithoutServiceNestedInput
 }
 
 export type ServiceUncheckedUpdateManyWithoutStoreInput = {
   serviceId?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  price?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  duration?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priceType?: Prisma.EnumPriceTypeFieldUpdateOperationsInput | $Enums.PriceType
+  basePrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  minPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  maxPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  costPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  unitLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasVariants?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  estimatedMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  customFields?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 
@@ -689,11 +1308,15 @@ export type ServiceUncheckedUpdateManyWithoutStoreInput = {
  */
 
 export type ServiceCountOutputType = {
+  variants: number
   orderItems: number
+  appointments: number
 }
 
 export type ServiceCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  variants?: boolean | ServiceCountOutputTypeCountVariantsArgs
   orderItems?: boolean | ServiceCountOutputTypeCountOrderItemsArgs
+  appointments?: boolean | ServiceCountOutputTypeCountAppointmentsArgs
 }
 
 /**
@@ -709,8 +1332,22 @@ export type ServiceCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Exte
 /**
  * ServiceCountOutputType without action
  */
+export type ServiceCountOutputTypeCountVariantsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ServiceVariantWhereInput
+}
+
+/**
+ * ServiceCountOutputType without action
+ */
 export type ServiceCountOutputTypeCountOrderItemsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.OrderItemWhereInput
+}
+
+/**
+ * ServiceCountOutputType without action
+ */
+export type ServiceCountOutputTypeCountAppointmentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.AppointmentWhereInput
 }
 
 
@@ -719,12 +1356,24 @@ export type ServiceSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   storeId?: boolean
   name?: boolean
   description?: boolean
-  price?: boolean
-  duration?: boolean
+  category?: boolean
+  imageUrl?: boolean
+  priceType?: boolean
+  basePrice?: boolean
+  minPrice?: boolean
+  maxPrice?: boolean
+  costPrice?: boolean
+  unitLabel?: boolean
+  hasVariants?: boolean
+  estimatedMinutes?: boolean
+  customFields?: boolean
   isActive?: boolean
   createdAt?: boolean
+  updatedAt?: boolean
   store?: boolean | Prisma.StoreDefaultArgs<ExtArgs>
+  variants?: boolean | Prisma.Service$variantsArgs<ExtArgs>
   orderItems?: boolean | Prisma.Service$orderItemsArgs<ExtArgs>
+  appointments?: boolean | Prisma.Service$appointmentsArgs<ExtArgs>
   _count?: boolean | Prisma.ServiceCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["service"]>
 
@@ -733,10 +1382,20 @@ export type ServiceSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   storeId?: boolean
   name?: boolean
   description?: boolean
-  price?: boolean
-  duration?: boolean
+  category?: boolean
+  imageUrl?: boolean
+  priceType?: boolean
+  basePrice?: boolean
+  minPrice?: boolean
+  maxPrice?: boolean
+  costPrice?: boolean
+  unitLabel?: boolean
+  hasVariants?: boolean
+  estimatedMinutes?: boolean
+  customFields?: boolean
   isActive?: boolean
   createdAt?: boolean
+  updatedAt?: boolean
   store?: boolean | Prisma.StoreDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["service"]>
 
@@ -745,10 +1404,20 @@ export type ServiceSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   storeId?: boolean
   name?: boolean
   description?: boolean
-  price?: boolean
-  duration?: boolean
+  category?: boolean
+  imageUrl?: boolean
+  priceType?: boolean
+  basePrice?: boolean
+  minPrice?: boolean
+  maxPrice?: boolean
+  costPrice?: boolean
+  unitLabel?: boolean
+  hasVariants?: boolean
+  estimatedMinutes?: boolean
+  customFields?: boolean
   isActive?: boolean
   createdAt?: boolean
+  updatedAt?: boolean
   store?: boolean | Prisma.StoreDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["service"]>
 
@@ -757,16 +1426,28 @@ export type ServiceSelectScalar = {
   storeId?: boolean
   name?: boolean
   description?: boolean
-  price?: boolean
-  duration?: boolean
+  category?: boolean
+  imageUrl?: boolean
+  priceType?: boolean
+  basePrice?: boolean
+  minPrice?: boolean
+  maxPrice?: boolean
+  costPrice?: boolean
+  unitLabel?: boolean
+  hasVariants?: boolean
+  estimatedMinutes?: boolean
+  customFields?: boolean
   isActive?: boolean
   createdAt?: boolean
+  updatedAt?: boolean
 }
 
-export type ServiceOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"serviceId" | "storeId" | "name" | "description" | "price" | "duration" | "isActive" | "createdAt", ExtArgs["result"]["service"]>
+export type ServiceOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"serviceId" | "storeId" | "name" | "description" | "category" | "imageUrl" | "priceType" | "basePrice" | "minPrice" | "maxPrice" | "costPrice" | "unitLabel" | "hasVariants" | "estimatedMinutes" | "customFields" | "isActive" | "createdAt" | "updatedAt", ExtArgs["result"]["service"]>
 export type ServiceInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   store?: boolean | Prisma.StoreDefaultArgs<ExtArgs>
+  variants?: boolean | Prisma.Service$variantsArgs<ExtArgs>
   orderItems?: boolean | Prisma.Service$orderItemsArgs<ExtArgs>
+  appointments?: boolean | Prisma.Service$appointmentsArgs<ExtArgs>
   _count?: boolean | Prisma.ServiceCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type ServiceIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -780,17 +1461,29 @@ export type $ServicePayload<ExtArgs extends runtime.Types.Extensions.InternalArg
   name: "Service"
   objects: {
     store: Prisma.$StorePayload<ExtArgs>
+    variants: Prisma.$ServiceVariantPayload<ExtArgs>[]
     orderItems: Prisma.$OrderItemPayload<ExtArgs>[]
+    appointments: Prisma.$AppointmentPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     serviceId: string
     storeId: string
     name: string
     description: string | null
-    price: runtime.Decimal | null
-    duration: number | null
+    category: string | null
+    imageUrl: string | null
+    priceType: $Enums.PriceType
+    basePrice: runtime.Decimal | null
+    minPrice: runtime.Decimal | null
+    maxPrice: runtime.Decimal | null
+    costPrice: runtime.Decimal | null
+    unitLabel: string | null
+    hasVariants: boolean
+    estimatedMinutes: number | null
+    customFields: runtime.JsonValue | null
     isActive: boolean
     createdAt: Date
+    updatedAt: Date
   }, ExtArgs["result"]["service"]>
   composites: {}
 }
@@ -1186,7 +1879,9 @@ readonly fields: ServiceFieldRefs;
 export interface Prisma__ServiceClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   store<T extends Prisma.StoreDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.StoreDefaultArgs<ExtArgs>>): Prisma.Prisma__StoreClient<runtime.Types.Result.GetResult<Prisma.$StorePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  variants<T extends Prisma.Service$variantsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Service$variantsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ServiceVariantPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   orderItems<T extends Prisma.Service$orderItemsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Service$orderItemsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$OrderItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  appointments<T extends Prisma.Service$appointmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Service$appointmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AppointmentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1220,10 +1915,20 @@ export interface ServiceFieldRefs {
   readonly storeId: Prisma.FieldRef<"Service", 'String'>
   readonly name: Prisma.FieldRef<"Service", 'String'>
   readonly description: Prisma.FieldRef<"Service", 'String'>
-  readonly price: Prisma.FieldRef<"Service", 'Decimal'>
-  readonly duration: Prisma.FieldRef<"Service", 'Int'>
+  readonly category: Prisma.FieldRef<"Service", 'String'>
+  readonly imageUrl: Prisma.FieldRef<"Service", 'String'>
+  readonly priceType: Prisma.FieldRef<"Service", 'PriceType'>
+  readonly basePrice: Prisma.FieldRef<"Service", 'Decimal'>
+  readonly minPrice: Prisma.FieldRef<"Service", 'Decimal'>
+  readonly maxPrice: Prisma.FieldRef<"Service", 'Decimal'>
+  readonly costPrice: Prisma.FieldRef<"Service", 'Decimal'>
+  readonly unitLabel: Prisma.FieldRef<"Service", 'String'>
+  readonly hasVariants: Prisma.FieldRef<"Service", 'Boolean'>
+  readonly estimatedMinutes: Prisma.FieldRef<"Service", 'Int'>
+  readonly customFields: Prisma.FieldRef<"Service", 'Json'>
   readonly isActive: Prisma.FieldRef<"Service", 'Boolean'>
   readonly createdAt: Prisma.FieldRef<"Service", 'DateTime'>
+  readonly updatedAt: Prisma.FieldRef<"Service", 'DateTime'>
 }
     
 
@@ -1620,6 +2325,30 @@ export type ServiceDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Inter
 }
 
 /**
+ * Service.variants
+ */
+export type Service$variantsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ServiceVariant
+   */
+  select?: Prisma.ServiceVariantSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ServiceVariant
+   */
+  omit?: Prisma.ServiceVariantOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ServiceVariantInclude<ExtArgs> | null
+  where?: Prisma.ServiceVariantWhereInput
+  orderBy?: Prisma.ServiceVariantOrderByWithRelationInput | Prisma.ServiceVariantOrderByWithRelationInput[]
+  cursor?: Prisma.ServiceVariantWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ServiceVariantScalarFieldEnum | Prisma.ServiceVariantScalarFieldEnum[]
+}
+
+/**
  * Service.orderItems
  */
 export type Service$orderItemsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1641,6 +2370,30 @@ export type Service$orderItemsArgs<ExtArgs extends runtime.Types.Extensions.Inte
   take?: number
   skip?: number
   distinct?: Prisma.OrderItemScalarFieldEnum | Prisma.OrderItemScalarFieldEnum[]
+}
+
+/**
+ * Service.appointments
+ */
+export type Service$appointmentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Appointment
+   */
+  select?: Prisma.AppointmentSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Appointment
+   */
+  omit?: Prisma.AppointmentOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.AppointmentInclude<ExtArgs> | null
+  where?: Prisma.AppointmentWhereInput
+  orderBy?: Prisma.AppointmentOrderByWithRelationInput | Prisma.AppointmentOrderByWithRelationInput[]
+  cursor?: Prisma.AppointmentWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.AppointmentScalarFieldEnum | Prisma.AppointmentScalarFieldEnum[]
 }
 
 /**
