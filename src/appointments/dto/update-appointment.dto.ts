@@ -3,7 +3,7 @@ import {
   IsInt, IsNumber, Min, Max, MaxLength, IsPositive,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { AppointmentStatus, AppointmentPriority } from '../../generated/prisma';
+import { AppointmentStatus, AppointmentPriority } from '../../generated/prisma/enums';
 
 export class UpdateAppointmentDto {
 

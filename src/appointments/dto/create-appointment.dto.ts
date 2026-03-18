@@ -4,7 +4,7 @@ import {
   IsPositive,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { AppointmentPriority, AppointmentSource } from '../../generated/prisma';
+import { AppointmentPriority, AppointmentSource } from '../../generated/prisma/enums';
 
 export class CreateAppointmentDto {
 

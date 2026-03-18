@@ -4,7 +4,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
-import { AppointmentStatus, AppointmentSource } from '../generated/prisma';
+import { AppointmentStatus, AppointmentSource } from '../generated/prisma/enums';
 
 // ─── Selector reutilizable del cliente ───────────────────────────────────────
 
