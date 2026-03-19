@@ -15,7 +15,7 @@ export class CreateAiConfigDto {
 
   @IsString()
   @MinLength(10, { message: 'El system prompt debe tener al menos 10 caracteres' })
-  @MaxLength(8000, { message: 'El system prompt no puede superar 8000 caracteres' })
+  @MaxLength(100_000, { message: 'El system prompt no puede superar 100.000 caracteres' })
   systemPrompt: string;
 
   @IsString()
