@@ -13,18 +13,20 @@ import { BlockedService } from '../blocked/blocked.service';
 
 // ─── Constantes ──────────────────────────────────────────────────────────────
 
-/**
- * Tiempo de debounce por cliente.
- * Si el cliente manda 3 mensajes en < 1.5s se agrupan en uno solo
- * antes de llamar a la IA → elimina race conditions de mensajes paralelos.
- */
-const MSG_DEBOUNCE_MS = 1_500;
+const MSG_DEBOUNCE_MS        = 1_500;
+const MSG_DEDUP_TTL_MS       = 10 * 60 * 1000;
+const HISTORY_SYNC_WINDOW_MS = 24 * 60 * 60 * 1000;
+const MAX_CONTENT_LENGTH     = 4_000; // caracteres máximos que se pasan a la IA
+const SEND_RETRY_ATTEMPTS    = 3;
+const SEND_RETRY_DELAY_MS    = 1_500;
 
-const MEDIA_TYPES = new Set([
-  'imageMessage', 'audioMessage', 'videoMessage',
-  'documentMessage', 'stickerMessage',
-]);
+const RECONNECT_DELAYS: Record<number, number> = {
+  408: 5_000,
+  440: 8_000,
+};
+const DEFAULT_RECONNECT_DELAY = 3_000;
 
+// ─── Tipos de mensajes que se ignoran silenciosamente ────────────────────────
 const IGNORED_TYPES = new Set([
   'protocolMessage',
   'senderKeyDistributionMessage',
@@ -37,20 +39,33 @@ const IGNORED_TYPES = new Set([
   'callLogMessage',
   'ptvMessage',
   'editedMessage',
+  'keepInChatMessage',
+  'requestPaymentMessage',
+  'sendPaymentMessage',
+  'receiptMessage',
 ]);
 
-/**
- * Palabras clave para detectar que el cliente quiere hablar con un humano.
- * Genéricas — aplican para cualquier negocio en la plataforma.
- */
+// ─── Tipos de media ───────────────────────────────────────────────────────────
+const MEDIA_TYPES = new Set([
+  'imageMessage',
+  'audioMessage',
+  'videoMessage',
+  'documentMessage',
+  'stickerMessage',
+]);
+
+// ─── Palabras clave para detectar solicitud de humano ────────────────────────
+// Genéricas — aplican para cualquier negocio de la plataforma.
 const HUMAN_KEYWORDS = [
   // Pedir asesor / persona directamente
   'hablar con una persona', 'hablar con alguien', 'hablar con un asesor',
   'quiero un asesor', 'necesito un asesor', 'comunícame con un asesor',
   'conectame con un asesor', 'conéctame con un asesor',
-  'persona real', 'persona humana', 'humano', 'agente',
-  'asesor', 'asesora', 'operador', 'operadora',
+  'persona real', 'persona humana', 'humano real', 'agente humano',
+  'asesor humano', 'operador humano',
   'ayuda humana', 'ayuda de verdad',
+  // Una sola palabra que claramente pide humano
+  'asesor', 'asesora', 'operador', 'operadora',
   // Rechazar el bot explícitamente
   'no quiero el bot', 'no quiero hablar con el bot',
   'no quiero hablar con una ia', 'no quiero ia',
@@ -62,46 +77,29 @@ const HUMAN_KEYWORDS = [
   'quiero hablar con el dueño', 'quiero hablar con la dueña',
   'quiero hablar con el encargado', 'quiero hablar con la encargada',
   'quiero hablar con el administrador', 'quiero hablar con la administradora',
-  // Frases informales
+  // Frases informales colombianas
   'pásamelo con alguien', 'pasame con alguien',
   'pásamelo con una persona', 'paseme con alguien',
   'contactarme con alguien', 'comunicarme con alguien',
   'me pueden comunicar', 'me puedes comunicar',
-  'hay alguien', 'hay una persona',
+  'hay alguien', 'hay una persona', 'me colaboran',
 ];
 
-const MSG_DEDUP_TTL_MS       = 10 * 60 * 1000;
-const HISTORY_SYNC_WINDOW_MS = 24 * 60 * 60 * 1000;
-
-const RECONNECT_DELAYS: Record<number, number> = {
-  408: 5_000,
-  440: 8_000,
-};
-const DEFAULT_RECONNECT_DELAY = 3_000;
-
 // ─── useDBAuthState ───────────────────────────────────────────────────────────
-//
-// Persiste la sesión de Baileys en PostgreSQL en lugar del filesystem.
-// Sobrevive reinicios de Render/Railway sin perder la sesión.
-//
-// CRÍTICO: los Signal keys contienen Buffers. Se serializan con BufferJSON.replacer
-// antes de guardar y se deserializan con BufferJSON.reviver al leer.
-// ─────────────────────────────────────────────────────────────────────────────
 async function useDBAuthState(prisma: PrismaService, storeId: string) {
   const { BufferJSON, initAuthCreds } = await import('@whiskeysockets/baileys');
 
   function serialize(obj: any): any {
     return JSON.parse(JSON.stringify(obj, BufferJSON.replacer));
   }
-
   function deserialize(obj: any): any {
     return JSON.parse(JSON.stringify(obj), BufferJSON.reviver);
   }
 
   async function loadFromDB(): Promise<Record<string, any>> {
-    const row = await prisma.whatsappSession.findUnique({ where: { storeId } });
-    if (!row?.data) return {};
     try {
+      const row = await prisma.whatsappSession.findUnique({ where: { storeId } });
+      if (!row?.data) return {};
       const raw = typeof row.data === 'string' ? row.data : JSON.stringify(row.data);
       return JSON.parse(raw, BufferJSON.reviver);
     } catch {
@@ -117,15 +115,13 @@ async function useDBAuthState(prisma: PrismaService, storeId: string) {
     saveTimer = setTimeout(async () => {
       try {
         const serialized = JSON.stringify(cache, BufferJSON.replacer);
-        const parsed = JSON.parse(serialized);
+        const parsed     = JSON.parse(serialized);
         await prisma.whatsappSession.upsert({
-          where: { storeId },
+          where:  { storeId },
           update: { data: parsed },
           create: { storeId, data: parsed },
         });
-      } catch {
-        // Se reintentará en el próximo cambio de estado
-      }
+      } catch { /* se reintentará en el próximo cambio */ }
       saveTimer = null;
     }, 300);
   }
@@ -174,10 +170,6 @@ async function useDBAuthState(prisma: PrismaService, storeId: string) {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/**
- * Resuelve el JID real de un mensaje.
- * WhatsApp está migrando cuentas nuevas al sistema LID (Linked Identity).
- */
 function resolveJid(key: { remoteJid?: string; remoteJidAlt?: string }): string {
   const rawJid = key.remoteJid ?? '';
   if (rawJid.endsWith('@lid') && key.remoteJidAlt) return key.remoteJidAlt;
@@ -185,13 +177,133 @@ function resolveJid(key: { remoteJid?: string; remoteJidAlt?: string }): string 
 }
 
 function phoneFromJid(jid: string): string | null {
-  if (!jid.endsWith('@s.whatsapp.net')) return null;
+  if (!jid || !jid.endsWith('@s.whatsapp.net')) return null;
   const raw = jid.replace('@s.whatsapp.net', '');
   return raw ? `+${raw}` : null;
 }
 
 function jidFromPhone(phone: string): string {
-  return `${phone.replace('+', '')}@s.whatsapp.net`;
+  return `${phone.replace(/\D/g, '')}@s.whatsapp.net`;
+}
+
+/**
+ * Extrae el texto de un mensaje de WhatsApp cubriendo TODOS los tipos
+ * que Baileys puede entregar, incluyendo botones, listas, templates,
+ * mensajes de vista única, mensajes citados, etc.
+ */
+function extractTextContent(message: any): string | null {
+  if (!message) return null;
+
+  // Texto plano
+  if (message.conversation)                           return message.conversation;
+
+  // Texto extendido (con preview de link, menciones, etc.)
+  if (message.extendedTextMessage?.text)              return message.extendedTextMessage.text;
+
+  // Respuesta a botón interactivo
+  if (message.buttonsResponseMessage?.selectedDisplayText)
+    return message.buttonsResponseMessage.selectedDisplayText;
+  if (message.buttonsResponseMessage?.selectedButtonId)
+    return message.buttonsResponseMessage.selectedButtonId;
+
+  // Respuesta a lista interactiva
+  if (message.listResponseMessage?.title)             return message.listResponseMessage.title;
+  if (message.listResponseMessage?.singleSelectReply?.selectedRowId)
+    return message.listResponseMessage.singleSelectReply.selectedRowId;
+
+  // Template de botón
+  if (message.templateButtonReplyMessage?.selectedDisplayText)
+    return message.templateButtonReplyMessage.selectedDisplayText;
+
+  // Mensaje interactivo (nativeFlowResponseMessage, etc.)
+  if (message.interactiveResponseMessage?.nativeFlowResponseMessage?.paramsJson) {
+    try {
+      const params = JSON.parse(message.interactiveResponseMessage.nativeFlowResponseMessage.paramsJson);
+      if (params?.id || params?.title) return params.title ?? params.id;
+    } catch { /* ignorar */ }
+  }
+
+  // Vista única (viewOnce) — imagen o video con caption
+  const viewOnce = message.viewOnceMessage?.message ?? message.viewOnceMessageV2?.message;
+  if (viewOnce) {
+    const caption =
+      viewOnce.imageMessage?.caption ||
+      viewOnce.videoMessage?.caption;
+    if (caption) return caption;
+  }
+
+  // Imagen/video con caption
+  if (message.imageMessage?.caption)                  return message.imageMessage.caption;
+  if (message.videoMessage?.caption)                  return message.videoMessage.caption;
+
+  // Mensaje de contacto (nombre del contacto compartido)
+  if (message.contactMessage?.displayName)
+    return `[Contacto compartido: ${message.contactMessage.displayName}]`;
+
+  // Mensaje de ubicación
+  if (message.locationMessage != null) {
+    const { degreesLatitude, degreesLongitude, name } = message.locationMessage;
+    const loc = name ? `${name}` : `${degreesLatitude}, ${degreesLongitude}`;
+    return `[Ubicación: ${loc}]`;
+  }
+
+  // Mensaje de producto (order)
+  if (message.orderMessage?.title)
+    return `[Pedido: ${message.orderMessage.title}]`;
+
+  // Mensaje de evento
+  if (message.eventMessage?.name)
+    return `[Evento: ${message.eventMessage.name}]`;
+
+  // Mensaje efímero — puede contener texto
+  const ephemeral = message.ephemeralMessage?.message;
+  if (ephemeral) return extractTextContent(ephemeral);
+
+  // Mensaje de documento con caption
+  if (message.documentMessage?.caption)               return message.documentMessage.caption;
+  if (message.documentMessage?.fileName)
+    return `[Documento: ${message.documentMessage.fileName}]`;
+
+  return null;
+}
+
+/**
+ * Limpia el contenido antes de pasarlo a la IA:
+ * - Elimina URLs largas
+ * - Limita longitud
+ * - Elimina caracteres de control
+ */
+function sanitizeContent(content: string): string {
+  return content
+    .replace(/[\u0000-\u0008\u000B-\u001F\u007F]/g, '') // control chars
+    .replace(/https?:\/\/\S{80,}/g, '[URL]')             // URLs largas
+    .trim()
+    .slice(0, MAX_CONTENT_LENGTH);
+}
+
+/**
+ * Pausa con retry — espera delay ms entre intentos.
+ */
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  attempts: number,
+  delayMs: number,
+  label: string,
+  logger: Logger,
+): Promise<T> {
+  let lastErr: any;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn();
+    } catch (err: any) {
+      lastErr = err;
+      if (i < attempts - 1) {
+        logger.warn(`${label} — intento ${i + 1}/${attempts} falló: ${err.message}. Reintentando en ${delayMs}ms...`);
+        await new Promise(r => setTimeout(r, delayMs));
+      }
+    }
+  }
+  throw lastErr;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -200,28 +312,12 @@ function jidFromPhone(phone: string): string {
 export class WhatsappService implements OnModuleInit {
   private readonly logger = new Logger(WhatsappService.name);
 
-  // Sockets activos por storeId
-  private readonly sockets      = new Map<string, any>();
-  // QR codes pendientes
-  private readonly qrCodes      = new Map<string, string>();
-  // Stores con reconexión en progreso (evita storms)
-  private readonly reconnecting = new Set<string>();
-  // Deduplicación de mensajes por messageId
+  private readonly sockets         = new Map<string, any>();
+  private readonly qrCodes         = new Map<string, string>();
+  private readonly reconnecting    = new Set<string>();
   private readonly processedMsgIds = new Set<string>();
-
-  /**
-   * Cola de procesamiento por cliente (storeId:phone).
-   * Garantiza que los mensajes de un mismo cliente se procesen de forma
-   * estrictamente secuencial aunque lleguen en paralelo.
-   */
-  private readonly messageQueues = new Map<string, Promise<void>>();
-
-  /**
-   * Buffer de debounce por cliente.
-   * Agrupa mensajes enviados en menos de MSG_DEBOUNCE_MS en un solo texto
-   * antes de pasarlos a la IA, eliminando respuestas parciales/duplicadas.
-   */
-  private readonly messageBuffers = new Map<string, {
+  private readonly messageQueues   = new Map<string, Promise<void>>();
+  private readonly messageBuffers  = new Map<string, {
     contents: string[];
     timer: ReturnType<typeof setTimeout>;
   }>();
@@ -239,18 +335,24 @@ export class WhatsappService implements OnModuleInit {
   // ─── Ciclo de vida ──────────────────────────────────────────────────────────
 
   async onModuleInit(): Promise<void> {
-    const sessions = await this.prisma.whatsappSession.findMany({
-      include: { store: { select: { isActive: true, name: true } } },
-    });
+    try {
+      const sessions = await this.prisma.whatsappSession.findMany({
+        include: { store: { select: { isActive: true, name: true } } },
+      });
 
-    const active = sessions.filter(s => s.store.isActive);
-    this.logger.log(`Reconectando ${active.length} store(s) con sesión guardada`);
+      const active = sessions.filter(s => s.store?.isActive);
+      this.logger.log(`Reconectando ${active.length} store(s) con sesión guardada`);
 
-    await Promise.allSettled(
-      active.map(s => this.connectStore(s.storeId).catch(err =>
-        this.logger.error(`Error al reconectar store ${s.storeId}: ${err.message}`)
-      )),
-    );
+      await Promise.allSettled(
+        active.map(s =>
+          this.connectStore(s.storeId).catch(err =>
+            this.logger.error(`Error al reconectar store ${s.storeId}: ${err.message}`)
+          )
+        ),
+      );
+    } catch (err: any) {
+      this.logger.error(`Error en onModuleInit: ${err.message}`);
+    }
   }
 
   // ─── Conexión ───────────────────────────────────────────────────────────────
@@ -261,10 +363,11 @@ export class WhatsappService implements OnModuleInit {
       return;
     }
 
-    const existingSock = this.sockets.get(storeId);
-    if (existingSock) {
+    // Cerrar socket previo limpiamente
+    const existing = this.sockets.get(storeId);
+    if (existing) {
       this.sockets.delete(storeId);
-      try { existingSock.end(undefined); } catch { /* ignorar */ }
+      try { existing.end(undefined); } catch { /* ignorar */ }
     }
 
     const {
@@ -274,20 +377,20 @@ export class WhatsappService implements OnModuleInit {
       makeCacheableSignalKeyStore,
     } = await import('@whiskeysockets/baileys');
 
-    const baileysLogger = P({ level: 'silent' });
-    const { version } = await fetchLatestBaileysVersion();
+    const baileysLogger    = P({ level: 'silent' });
+    const { version }      = await fetchLatestBaileysVersion();
     const { state, saveCreds } = await useDBAuthState(this.prisma, storeId);
 
     const sock = makeWASocket({
       version,
       auth: {
         creds: state.creds,
-        keys: makeCacheableSignalKeyStore(state.keys, baileysLogger),
+        keys:  makeCacheableSignalKeyStore(state.keys, baileysLogger),
       },
-      printQRInTerminal: false,
-      logger: baileysLogger,
+      printQRInTerminal:   false,
+      logger:              baileysLogger,
       keepAliveIntervalMs: 30_000,
-      connectTimeoutMs: 60_000,
+      connectTimeoutMs:    60_000,
       retryRequestDelayMs: 2_000,
       getMessage: async (_key) => ({ conversation: '' }),
     });
@@ -296,13 +399,16 @@ export class WhatsappService implements OnModuleInit {
 
     sock.ev.on('creds.update', saveCreds);
 
-    sock.ev.on('connection.update', async (update) => {
-      await this.handleConnectionUpdate(update, storeId, DisconnectReason);
+    sock.ev.on('connection.update', async (update: any) => {
+      try {
+        await this.handleConnectionUpdate(update, storeId, DisconnectReason);
+      } catch (err: any) {
+        this.logger.error(`[${storeId}] Error en connection.update: ${err.message}`);
+      }
     });
 
-    sock.ev.on('messages.upsert', async ({ messages, type }) => {
+    sock.ev.on('messages.upsert', async ({ messages, type }: any) => {
       if (type !== 'notify' && type !== 'append') return;
-
       const cutoffMs = type === 'append' ? Date.now() - HISTORY_SYNC_WINDOW_MS : 0;
 
       for (const msg of messages) {
@@ -311,7 +417,7 @@ export class WhatsappService implements OnModuleInit {
           if (cutoffMs > 0 && msgTimestampMs < cutoffMs) continue;
           await this.processMessage(msg, storeId, sock);
         } catch (err: any) {
-          this.logger.error(`Error procesando mensaje: ${err.message}`);
+          this.logger.error(`[${storeId}] Error procesando mensaje: ${err.message}`);
         }
       }
     });
@@ -340,7 +446,7 @@ export class WhatsappService implements OnModuleInit {
       this.reconnecting.delete(storeId);
       await this.prisma.store.update({
         where: { storeId },
-        data: { waSessionId: storeId },
+        data:  { waSessionId: storeId },
       }).catch(() => {});
     }
 
@@ -364,12 +470,10 @@ export class WhatsappService implements OnModuleInit {
       this.sockets.delete(storeId);
       this.qrCodes.delete(storeId);
       this.reconnecting.delete(storeId);
-
       await Promise.allSettled([
         this.prisma.whatsappSession.deleteMany({ where: { storeId } }),
         this.prisma.store.update({ where: { storeId }, data: { waSessionId: null } }),
       ]);
-
       this.logger.log(`🗑️ Sesión borrada de BD: ${storeId}`);
       return;
     }
@@ -391,11 +495,12 @@ export class WhatsappService implements OnModuleInit {
   // ─── Procesamiento de mensajes ──────────────────────────────────────────────
 
   private async processMessage(msg: any, storeId: string, sock: any): Promise<void> {
-    if (msg.key.fromMe) return;
-    if (!msg.message) return;
+    // Ignorar mensajes propios
+    if (msg.key?.fromMe) return;
+    if (!msg.message)    return;
 
-    // Deduplicación por messageId
-    const msgId = msg.key.id;
+    // Deduplicación
+    const msgId = msg.key?.id;
     if (msgId) {
       if (this.processedMsgIds.has(msgId)) {
         this.logger.debug(`Mensaje duplicado ignorado: ${msgId}`);
@@ -405,9 +510,15 @@ export class WhatsappService implements OnModuleInit {
       setTimeout(() => this.processedMsgIds.delete(msgId), MSG_DEDUP_TTL_MS);
     }
 
-    const jid   = resolveJid(msg.key);
+    const jid = resolveJid(msg.key);
+    if (!jid) return;
+
     const phone = phoneFromJid(jid);
-    if (!phone) return; // grupos, status, etc.
+    if (!phone) return; // grupos, status broadcasts, etc.
+
+    // Ignorar grupos
+    if (jid.endsWith('@g.us'))   return;
+    if (jid.endsWith('@broadcast')) return;
 
     const messageType = Object.keys(msg.message)[0];
 
@@ -416,26 +527,31 @@ export class WhatsappService implements OnModuleInit {
       return;
     }
 
-    const blocked = await this.blockedService.isBlocked(storeId, phone);
+    // Verificar si está bloqueado
+    const blocked = await this.blockedService.isBlocked(storeId, phone).catch(() => false);
     if (blocked) {
       this.logger.log(`🚫 Número bloqueado ignorado: ${phone}`);
       return;
     }
 
-    const isMedia = MEDIA_TYPES.has(messageType);
-    const content =
-      msg.message?.conversation ||
-      msg.message?.extendedTextMessage?.text ||
-      '';
-
-    if (isMedia) {
+    // Media (audio, imagen, video, doc, sticker)
+    if (MEDIA_TYPES.has(messageType)) {
       await this.handleMediaMessage(storeId, phone, messageType, sock);
       return;
     }
 
+    // Extraer texto con cobertura total de tipos
+    const rawContent = extractTextContent(msg.message);
+    if (!rawContent) return;
+
+    const content = sanitizeContent(rawContent);
     if (!content) return;
 
-    this.logger.log(`📩 Mensaje de ${phone}: ${content}`);
+    // Ignorar mensajes que son solo emojis de reacción o muy cortos sin sentido
+    // (pero sí procesar "si", "ok", "dale", etc. que son confirmaciones válidas)
+    if (content.length === 1 && !/[a-záéíóúñA-ZÁÉÍÓÚÑ0-9]/u.test(content)) return;
+
+    this.logger.log(`📩 Mensaje de ${phone}: ${content.slice(0, 100)}${content.length > 100 ? '...' : ''}`);
 
     this.bufferAndProcess(storeId, phone, content, sock);
   }
@@ -448,7 +564,7 @@ export class WhatsappService implements OnModuleInit {
     content: string,
     sock: any,
   ): void {
-    const key = `${storeId}:${phone}`;
+    const key      = `${storeId}:${phone}`;
     const existing = this.messageBuffers.get(key);
 
     if (existing) {
@@ -479,19 +595,13 @@ export class WhatsappService implements OnModuleInit {
 
   private enqueueMessage(key: string, fn: () => Promise<void>): void {
     const prev = this.messageQueues.get(key) ?? Promise.resolve();
-
     const next = prev
       .then(fn)
-      .catch(err =>
-        this.logger.error(`Error en cola [${key}]: ${err.message}`)
-      );
+      .catch(err => this.logger.error(`Error en cola [${key}]: ${err.message}`));
 
     this.messageQueues.set(key, next);
-
     next.finally(() => {
-      if (this.messageQueues.get(key) === next) {
-        this.messageQueues.delete(key);
-      }
+      if (this.messageQueues.get(key) === next) this.messageQueues.delete(key);
     });
   }
 
@@ -503,42 +613,46 @@ export class WhatsappService implements OnModuleInit {
     messageType: string,
     sock: any,
   ): Promise<void> {
-    const jid          = jidFromPhone(phone);
-    const customer     = await this.customersService.findOrCreate({ storeId, phone });
-    const conversation = await this.conversationsService.findOrCreate(
-      customer.customerId, storeId,
-    );
+    try {
+      const jid          = jidFromPhone(phone);
+      const customer     = await this.customersService.findOrCreate({ storeId, phone });
+      const conversation = await this.conversationsService.findOrCreate(
+        customer.customerId, storeId,
+      );
 
-    if (conversation.status === 'human' || conversation.status === 'closed') return;
+      if (conversation.status === 'human' || conversation.status === 'closed') return;
 
-    const reply = this.getMediaReply(messageType);
+      const reply = this.getMediaReply(messageType);
 
-    await this.prisma.conversation.update({
-      where: { conversationId: conversation.conversationId },
-      data: { status: 'pending_human' },
-    });
+      await this.prisma.conversation.update({
+        where: { conversationId: conversation.conversationId },
+        data:  { status: 'pending_human' },
+      });
 
-    await this.messagesService.create({
-      conversationId: conversation.conversationId,
-      storeId,
-      content: `[${messageType.replace('Message', '')}]`,
-      type: messageType.replace('Message', ''),
-      sender: 'customer',
-      isAiResponse: false,
-    });
+      await this.messagesService.create({
+        conversationId: conversation.conversationId,
+        storeId,
+        content:      `[${messageType.replace('Message', '')}]`,
+        type:         messageType.replace('Message', ''),
+        sender:       'customer',
+        isAiResponse: false,
+      });
 
-    await sock.sendMessage(jid, { text: reply });
+      await this.safeSend(sock, jid, reply, phone);
 
-    await this.messagesService.create({
-      conversationId: conversation.conversationId,
-      storeId,
-      content: reply,
-      type: 'text',
-      sender: 'store',
-      isAiResponse: true,
-    });
+      await this.messagesService.create({
+        conversationId: conversation.conversationId,
+        storeId,
+        content:      reply,
+        type:         'text',
+        sender:       'store',
+        isAiResponse: true,
+      });
 
-    this.logger.log(`🎙️ Media de ${phone} (${messageType}) → transferido a asesor`);
+      this.logger.log(`🎙️ Media de ${phone} (${messageType}) → transferido a asesor`);
+    } catch (err: any) {
+      this.logger.error(`[handleMediaMessage] ${phone}: ${err.message}`);
+    }
   }
 
   private getMediaReply(messageType: string): string {
@@ -547,6 +661,15 @@ export class WhatsappService implements OnModuleInit {
     }
     if (messageType === 'imageMessage') {
       return `¡Gracias por escribirnos! 😊 No puedo ver imágenes por este canal automático, pero un asesor puede ayudarte de inmediato. ¿Te conecto?`;
+    }
+    if (messageType === 'videoMessage') {
+      return `¡Hola! 😊 No puedo ver videos por este canal, pero con gusto te atiendo por texto o te conecto con un asesor. ¿Qué prefieres?`;
+    }
+    if (messageType === 'documentMessage') {
+      return `¡Gracias! 😊 No puedo abrir documentos por este canal automático. Un asesor puede revisarlo de inmediato. ¿Te conecto?`;
+    }
+    if (messageType === 'stickerMessage') {
+      return null as any; // Ignorar stickers completamente
     }
     return `¡Hola! 😊 Recibí tu archivo pero no puedo procesarlo por este canal. ¿Te conecto con un asesor?`;
   }
@@ -559,86 +682,153 @@ export class WhatsappService implements OnModuleInit {
     content: string,
     sock: any,
   ): Promise<void> {
-    const customer     = await this.customersService.findOrCreate({ storeId, phone });
-    const conversation = await this.conversationsService.findOrCreate(
-      customer.customerId, storeId,
-    );
+    const jid = jidFromPhone(phone);
 
-    await this.messagesService.create({
-      conversationId: conversation.conversationId,
-      storeId,
-      content,
-      type: 'text',
-      sender: 'customer',
-      isAiResponse: false,
-    });
+    try {
+      // Obtener/crear cliente y conversación
+      const customer = await this.customersService.findOrCreate({ storeId, phone });
+      const conversation = await this.conversationsService.findOrCreate(
+        customer.customerId, storeId,
+      );
 
-    // Si ya está en manos de un humano o cerrada, el bot no interviene
-    if (conversation.status === 'human' || conversation.status === 'closed') {
-      this.logger.log(`👤 Conv ${conversation.conversationId} en modo humano — bot silenciado`);
-      return;
-    }
-
-    // Comando de override interno para forzar modo humano
-    if (content.trim().toLowerCase() === '!stop') {
-      await this.prisma.conversation.update({
-        where: { conversationId: conversation.conversationId },
-        data: { status: 'human' },
-      });
-      this.logger.log(`🛑 !stop de ${phone} — bot silenciado`);
-      return;
-    }
-
-    const jid          = jidFromPhone(phone);
-    const contentLower = content.toLowerCase();
-
-    // ── Detección de solicitud de asesor humano ──────────────────────────────
-    // Status 'human' directo — el bot queda silenciado de inmediato para
-    // cualquier mensaje siguiente, sin esperar intervención manual.
-    if (HUMAN_KEYWORDS.some(kw => contentLower.includes(kw))) {
-      await this.prisma.conversation.update({
-        where: { conversationId: conversation.conversationId },
-        data: { status: 'human' },
-      });
-
-      const handoffReply =
-        `Entendido, ahora mismo te conecto con un asesor. ` +
-        `Por favor espera un momento, pronto alguien te atenderá. 😊`;
-
-      await sock.sendMessage(jid, { text: handoffReply });
-
+      // Guardar mensaje del cliente
       await this.messagesService.create({
         conversationId: conversation.conversationId,
         storeId,
-        content: handoffReply,
-        type: 'text',
-        sender: 'store',
+        content,
+        type:         'text',
+        sender:       'customer',
         isAiResponse: false,
+      }).catch(err => this.logger.warn(`No se pudo guardar mensaje cliente: ${err.message}`));
+
+      // Si ya está en manos de un humano o cerrada — bot silenciado
+      if (conversation.status === 'human' || conversation.status === 'closed') {
+        this.logger.log(
+          `👤 Conv ${conversation.conversationId} en modo ${conversation.status} — bot silenciado`,
+        );
+        return;
+      }
+
+      // Comando interno para forzar modo humano
+      if (content.trim().toLowerCase() === '!stop') {
+        await this.prisma.conversation.update({
+          where: { conversationId: conversation.conversationId },
+          data:  { status: 'human' },
+        });
+        this.logger.log(`🛑 !stop de ${phone} — bot silenciado`);
+        return;
+      }
+
+      const contentLower = content.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+      // ── Detección de solicitud de asesor humano ────────────────────────────
+      const wantsHuman = HUMAN_KEYWORDS.some(kw => {
+        // Normalizar keyword también
+        const kwNorm = kw.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        return contentLower.includes(kwNorm);
       });
 
-      this.logger.log(
-        `🚨 ${phone} solicitó asesor → conv ${conversation.conversationId} en modo HUMAN`,
-      );
-      return;
+      if (wantsHuman) {
+        await this.prisma.conversation.update({
+          where: { conversationId: conversation.conversationId },
+          data:  { status: 'human' },
+        });
+
+        const handoffReply =
+          `Entendido, ahora mismo te conecto con un asesor. ` +
+          `Por favor espera un momento, pronto alguien te atenderá. 😊`;
+
+        await this.safeSend(sock, jid, handoffReply, phone);
+
+        await this.messagesService.create({
+          conversationId: conversation.conversationId,
+          storeId,
+          content:      handoffReply,
+          type:         'text',
+          sender:       'store',
+          isAiResponse: false,
+        }).catch(() => {});
+
+        this.logger.log(
+          `🚨 ${phone} solicitó asesor → conv ${conversation.conversationId} HUMAN`,
+        );
+        return;
+      }
+
+      // ── Respuesta de la IA ─────────────────────────────────────────────────
+      let aiReply: string | null = null;
+      try {
+        aiReply = await this.aiService.generateReply(
+          storeId, content, conversation.conversationId,
+        );
+      } catch (err: any) {
+        this.logger.error(`[IA] Error generando respuesta: ${err.message}`);
+        // No enviar nada — mejor silencio que error visible al cliente
+        return;
+      }
+
+      if (!aiReply || !aiReply.trim()) return;
+
+      // Guardar respuesta de la IA ANTES de enviar (si el envío falla, queda el registro)
+      await this.messagesService.create({
+        conversationId: conversation.conversationId,
+        storeId,
+        content:      aiReply,
+        type:         'text',
+        sender:       'store',
+        isAiResponse: true,
+      }).catch(err => this.logger.warn(`No se pudo guardar respuesta IA: ${err.message}`));
+
+      // Enviar al cliente con retry
+      await this.safeSend(sock, jid, aiReply, phone);
+      this.logger.log(`🤖 IA respondió a ${phone}`);
+
+    } catch (err: any) {
+      this.logger.error(`[handleIncomingMessage] ${phone}: ${err.message}`);
+      // No propagar — no queremos que un error de un cliente rompa los demás
+    }
+  }
+
+  // ─── Envío seguro con retry ───────────────────────────────────────────────────
+
+  private async safeSend(
+    sock: any,
+    jid: string,
+    text: string,
+    phoneLabel: string,
+  ): Promise<void> {
+    if (!text?.trim()) return;
+
+    // WhatsApp tiene límite de ~65536 caracteres por mensaje
+    // Si es muy largo, partir en chunks
+    const MAX_WA_LENGTH = 4096;
+    const chunks: string[] = [];
+
+    if (text.length > MAX_WA_LENGTH) {
+      let remaining = text;
+      while (remaining.length > 0) {
+        // Intentar cortar en salto de línea para no partir palabras
+        let cut = MAX_WA_LENGTH;
+        if (remaining.length > MAX_WA_LENGTH) {
+          const lastNewline = remaining.lastIndexOf('\n', MAX_WA_LENGTH);
+          if (lastNewline > MAX_WA_LENGTH * 0.7) cut = lastNewline + 1;
+        }
+        chunks.push(remaining.slice(0, cut));
+        remaining = remaining.slice(cut);
+      }
+    } else {
+      chunks.push(text);
     }
 
-    // ── Respuesta de la IA ───────────────────────────────────────────────────
-    const aiReply = await this.aiService.generateReply(
-      storeId, content, conversation.conversationId,
-    );
-    if (!aiReply) return;
-
-    await this.messagesService.create({
-      conversationId: conversation.conversationId,
-      storeId,
-      content: aiReply,
-      type: 'text',
-      sender: 'store',
-      isAiResponse: true,
-    });
-
-    await sock.sendMessage(jid, { text: aiReply });
-    this.logger.log(`🤖 IA respondió a ${phone}`);
+    for (const chunk of chunks) {
+      await withRetry(
+        () => sock.sendMessage(jid, { text: chunk }),
+        SEND_RETRY_ATTEMPTS,
+        SEND_RETRY_DELAY_MS,
+        `sendMessage a ${phoneLabel}`,
+        this.logger,
+      );
+    }
   }
 
   // ─── API pública ─────────────────────────────────────────────────────────────
@@ -673,7 +863,7 @@ export class WhatsappService implements OnModuleInit {
     const sock = this.sockets.get(storeId);
     if (!sock) throw new Error(`No hay socket activo para store: ${storeId}`);
     const jid = jidFromPhone(phone);
-    await sock.sendMessage(jid, { text: content });
+    await this.safeSend(sock, jid, content, phone);
     this.logger.log(`📤 Mensaje enviado a ${phone}`);
   }
 }

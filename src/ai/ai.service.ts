@@ -13,8 +13,225 @@ const MAX_HISTORY_MESSAGES = 20;
 
 const PURCHASE_INTENT_RE = /\b(quiero|deseo|pedir|pido|ordenar|comprar|llevar|encargar|confirm|dale|listo|acepto|perfecto|procede|adelante|claro|exacto|sip|yep|yes|sí|si\b|ok\b|pedido|orden|dirección|entrega|envío|cantidad|unidades?)\b/i;
 const APPOINTMENT_INTENT_RE = /\b(agendar|agenda|cita|visita|visita técnica|técnico|técnica|programar|reservar|reserva|turno|appointment|quiero una cita|necesito una visita|instalar|instalación|mantenimiento|corte|sesión)\b/i;
-const CONFIRMATION_RE = /\b(confirm|sí|si\b|ok\b|dale|listo|acepto|perfecto|procede|adelante|claro|exacto|sip|yep|yes)\b/i;
+
+// Confirmaciones — muy amplio, todas las formas que usan los colombianos
+const CONFIRMATION_RE = /\b(s[ií]|ok|okay|dale|listo|acepto|perfecto|procede|adelante|claro|exacto|sip|yep|yes|confirm|correcto|de acuerdo|está bien|estoy de acuerdo|va|hagale|hádale|marchando|hecho|venga|eso|eso mismo|así es|claro que sí|por supuesto|obvio|chévere|bacano|sale|de una|okey)\b|^(👍|✅|✓)$/i;
+
 const ADDRESS_RE = /\b(calle|carrera|cra|cl\b|av\b|avenida|barrio|#|\d{2,}[-–]\d+|diagonal|transversal|manzana|casa|apto|apartamento)\b/i;
+
+// ─── Meses en español ─────────────────────────────────────────────────────────
+const MESES: Record<string, number> = {
+  enero:1, febrero:2, marzo:3, abril:4, mayo:5, junio:6,
+  julio:7, agosto:8, septiembre:9, octubre:10, noviembre:11, diciembre:12,
+  ene:1, feb:2, mar:3, abr:4, jun:6, jul:7, ago:8, sep:9, oct:10, nov:11, dic:12,
+};
+
+// ─── Días de semana ────────────────────────────────────────────────────────────
+const DIAS_SEMANA: Record<string, number> = {
+  domingo:0, lunes:1, martes:2, miércoles:3, miercoles:3,
+  jueves:4, viernes:5, sábado:6, sabado:6,
+};
+
+// ─── Parser de fecha en español ───────────────────────────────────────────────
+function parseFechaEspanol(text: string): string | null {
+  const t   = text.toLowerCase().trim();
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+
+  // mañana / manana
+  if (/\bma[ñn]ana\b/.test(t)) {
+    const d = new Date(hoy); d.setDate(d.getDate() + 1);
+    return d.toISOString().split('T')[0];
+  }
+  // pasado mañana
+  if (/\bpasado\s+ma[ñn]ana\b/.test(t)) {
+    const d = new Date(hoy); d.setDate(d.getDate() + 2);
+    return d.toISOString().split('T')[0];
+  }
+  // hoy
+  if (/\bhoy\b/.test(t)) {
+    return hoy.toISOString().split('T')[0];
+  }
+
+  // Formatos numéricos: 24/03/2026 | 24-03-2026 | 24/03 | 24-03
+  const numFmt = t.match(/\b(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?\b/);
+  if (numFmt) {
+    let day = parseInt(numFmt[1]);
+    let month = parseInt(numFmt[2]);
+    let year  = numFmt[3] ? parseInt(numFmt[3]) : hoy.getFullYear();
+    if (year < 100) year += 2000;
+    // Si el mes ya pasó este año, usar el próximo año
+    const fecha = new Date(year, month - 1, day);
+    if (fecha < hoy) fecha.setFullYear(fecha.getFullYear() + 1);
+    return fecha.toISOString().split('T')[0];
+  }
+
+  // "el 24 de marzo" | "24 de marzo" | "el 24 de marzo de 2026"
+  const textFmt = t.match(/\b(\d{1,2})\s+de\s+([a-záéíóúñ]+)(?:\s+(?:de\s+)?(\d{4}))?\b/);
+  if (textFmt) {
+    const day   = parseInt(textFmt[1]);
+    const mesNom = textFmt[2].toLowerCase();
+    const month  = MESES[mesNom];
+    if (month) {
+      let year = textFmt[3] ? parseInt(textFmt[3]) : hoy.getFullYear();
+      const fecha = new Date(year, month - 1, day);
+      if (fecha < hoy) fecha.setFullYear(fecha.getFullYear() + 1);
+      return fecha.toISOString().split('T')[0];
+    }
+  }
+
+  // "el lunes" | "el próximo martes" | "este viernes"
+  for (const [nombre, diaSemana] of Object.entries(DIAS_SEMANA)) {
+    const re = new RegExp(`\\b(?:el\\s+)?(?:pr[oó]ximo\\s+|este\\s+|esta\\s+)?${nombre}\\b`);
+    if (re.test(t)) {
+      const d = new Date(hoy);
+      const hoyDia = d.getDay();
+      let diff = diaSemana - hoyDia;
+      if (diff <= 0) diff += 7; // siempre hacia adelante
+      d.setDate(d.getDate() + diff);
+      // "de la otra semana" / "de la próxima semana" = +7 días más
+      if (/otra\s+semana|pr[oó]xima\s+semana|siguiente\s+semana/.test(t)) {
+        d.setDate(d.getDate() + 7);
+      }
+      return d.toISOString().split('T')[0];
+    }
+  }
+
+  return null;
+}
+
+// ─── Parser de hora en español ────────────────────────────────────────────────
+function parseHoraEspanol(text: string): string | null {
+  const t = text.toLowerCase().trim();
+
+  // HH:MM formato 24h o 12h
+  const colonFmt = t.match(/\b(\d{1,2}):(\d{2})\s*(am|pm|a\.m\.|p\.m\.)?\b/);
+  if (colonFmt) {
+    let h = parseInt(colonFmt[1]);
+    const m = colonFmt[2];
+    const period = colonFmt[3];
+    if (period && /pm|p\.m\./.test(period) && h < 12) h += 12;
+    if (period && /am|a\.m\./.test(period) && h === 12) h = 0;
+    return `${String(h).padStart(2,'0')}:${m}`;
+  }
+
+  // "3 pm" | "3pm" | "las 3 pm" | "a las 3 de la tarde"
+  const simpleFmt = t.match(/\b(?:a\s+las?\s+|las?\s+)?(\d{1,2})\s*(?:y\s+media|y\s+cuarto|y\s+tres\s+cuartos?)?\s*(am|pm|a\.m\.|p\.m\.|de\s+la\s+ma[ñn]ana|de\s+la\s+tarde|de\s+la\s+noche)?\b/);
+  if (simpleFmt) {
+    let h = parseInt(simpleFmt[1]);
+    if (h > 23) return null; // no es una hora
+    const minutosTxt = simpleFmt[0].toLowerCase();
+    let m = 0;
+    if (/y\s+media/.test(minutosTxt)) m = 30;
+    if (/y\s+cuarto/.test(minutosTxt)) m = 15;
+    if (/tres\s+cuartos?/.test(minutosTxt)) m = 45;
+    const period = simpleFmt[2] ?? '';
+    // Inferir AM/PM
+    if (/pm|p\.m\.|tarde|noche/.test(period) && h < 12) h += 12;
+    if (/am|a\.m\.|ma[ñn]ana/.test(period) && h === 12) h = 0;
+    // Sin indicador: horas < 7 asumimos PM (nadie agenda a las 3am)
+    if (!period && h > 0 && h < 7) h += 12;
+    return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+  }
+
+  return null;
+}
+
+// ─── Parser de nombre robusto ─────────────────────────────────────────────────
+function parseNombreCliente(text: string, conversationLines: string[] = []): string | null {
+  const allText = [text, ...conversationLines].join('\n');
+  const lines = allText.split(/\n/).map(l => l.trim()).filter(Boolean);
+
+  const isNotName = (line: string): boolean => {
+    // Es dirección
+    if (ADDRESS_RE.test(line)) return true;
+    // Es teléfono (7+ dígitos)
+    if (/^[\d\s+\-()\/.]{7,}$/.test(line)) return true;
+    // Es fecha o contiene fecha
+    if (/\b(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre|lunes|martes|miércoles|jueves|viernes|sábado|domingo)\b/i.test(line)) return true;
+    // Es hora
+    if (/\b\d{1,2}(:\d{2})?\s*(am|pm|a\.m\.|p\.m\.)\b/i.test(line)) return true;
+    // Es confirmación
+    if (CONFIRMATION_RE.test(line)) return true;
+    // Es solo números y símbolos
+    if (/^[\d\W]+$/.test(line)) return true;
+    return false;
+  };
+
+  // Patrones explícitos primero: "me llamo X", "soy X", "mi nombre es X"
+  const explicitPatterns = [
+    /(?:me\s+llamo|soy|mi\s+nombre\s+es|nombre[:\s]+|llámame|llamamé)\s+([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)*)/i,
+    /(?:me\s+llamo|soy|mi\s+nombre\s+es|nombre[:\s]+)\s+([a-záéíóúñ]+(?:\s+[a-záéíóúñ]+)*)/i,
+  ];
+
+  for (const pattern of explicitPatterns) {
+    const match = allText.match(pattern);
+    if (match) {
+      const nombre = match[1].trim();
+      const words = nombre.split(/\s+/);
+      if (words.length >= 2 && words.length <= 6) {
+        return words.map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+      }
+    }
+  }
+
+  // Buscar dos palabras capitalizadas (proper case)
+  for (const line of lines) {
+    if (isNotName(line)) continue;
+    const match = line.match(/^([A-ZÁÉÍÓÚÑ][a-záéíóúñ]{1,}(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]{1,}){1,5})\s*$/);
+    if (match) return match[1].trim();
+  }
+
+  // Buscar en minúsculas: "paula culma"
+  for (const line of lines) {
+    if (isNotName(line)) continue;
+    const match = line.match(/^([a-záéíóúñ]{2,}(?:\s+[a-záéíóúñ]{2,}){1,5})\s*$/i);
+    if (match && match[1].split(' ').length >= 2) {
+      return match[1].trim().split(' ')
+        .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+        .join(' ');
+    }
+  }
+
+  // Buscar en mayúsculas: "PAULA CULMA"
+  for (const line of lines) {
+    if (isNotName(line)) continue;
+    const match = line.match(/^([A-ZÁÉÍÓÚÑ]{2,}(?:\s+[A-ZÁÉÍÓÚÑ]{2,}){1,5})\s*$/);
+    if (match) {
+      return match[1].split(' ')
+        .map((w: string) => w.charAt(0) + w.slice(1).toLowerCase())
+        .join(' ');
+    }
+  }
+
+  return null;
+}
+
+// ─── Merge robusto de datos de cita ──────────────────────────────────────────
+function mergeAppt(
+  base: AppointmentExtractionResult,
+  update: AppointmentExtractionResult,
+): AppointmentExtractionResult {
+  return {
+    ...base,
+    ...update,
+    // Preservar valores no-null del base si el update devolvió null
+    serviceId:        update.serviceId        ?? base.serviceId,
+    serviceVariantId: update.serviceVariantId ?? base.serviceVariantId,
+    type:             update.type             || base.type,
+    scheduledDate:    update.scheduledDate    ?? base.scheduledDate,
+    scheduledTime:    update.scheduledTime    ?? base.scheduledTime,
+    durationMinutes:  update.durationMinutes  ?? base.durationMinutes,
+    agreedPrice:      update.agreedPrice      ?? base.agreedPrice,
+    description:      update.description      ?? base.description,
+    address:          update.address          ?? base.address,
+    notes:            update.notes            ?? base.notes,
+    customerName:     update.customerName     ?? base.customerName,
+    customerCedula:   update.customerCedula   ?? base.customerCedula,
+    complete:         update.complete,
+    reason:           update.reason,
+  };
+}
 
 const PRICE_TYPE_LABELS: Record<string, string> = {
   FIXED:    'Precio fijo',
@@ -441,6 +658,19 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
         if (!jsonMatch) return { created: false };
 
         extracted = JSON.parse(jsonMatch[0]);
+
+        // ── Fallback nombre para órdenes ──────────────────────────────────────
+        if (needsCustomerData && !extracted.customerName) {
+          const historyClientLines = history
+            .filter((m: any) => !m.isAiResponse)
+            .map((m: any) => m.content);
+          const fallback = parseNombreCliente(latestMessage, historyClientLines);
+          if (fallback) {
+            this.logger.log(`[Orden] Fallback nombre TS: "${fallback}"`);
+            extracted.customerName = fallback;
+          }
+        }
+
         this.logger.log(`[Orden] Extracción: complete=${extracted.complete} reason=${extracted.reason}`);
 
         if (extracted.items?.length > 0) {
@@ -623,10 +853,24 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
 
       const customerDataInstruction = needsName
         ? `DATOS DEL CLIENTE REQUERIDOS:
-El cliente no tiene nombre registrado. Extráelo si aparece en la conversación.
-La cita NO puede ser "complete":true si falta el nombre.
-La cédula es OPCIONAL — extráela si el cliente la mencionó, si no déjala null.`
-        : `DATOS DEL CLIENTE: Nombre ya registrado. No es necesario pedirlo.`;
+El cliente no tiene nombre registrado. Extráelo de la conversación.
+
+IMPORTANTE — EXTRACCIÓN DE NOMBRE SIN ETIQUETAS:
+Los clientes frecuentemente envían todos sus datos juntos en un mensaje sin etiquetas, por ejemplo:
+"Paula Culma
+3118265286
+Cra45#20-48
+Para el 24 de marzo a las 3 pm"
+
+En ese caso:
+- La primera línea con dos o más palabras capitalizadas = nombre del cliente → "Paula Culma"
+- Una línea solo con dígitos (10 dígitos) = teléfono, NO es nombre
+- Una línea con Cra/Calle/# = dirección, NO es nombre
+- La frase con fecha/hora = scheduledDate y scheduledTime
+
+La cita NO puede ser "complete":true si no logras identificar el nombre.
+La cédula es OPCIONAL — extráela SOLO si el cliente mencionó explícitamente un número de 6-10 dígitos como cédula. Un teléfono NO es cédula.`
+        : `DATOS DEL CLIENTE: Nombre ya registrado (${customer.name}). No es necesario pedirlo.`;
 
       const servicesCatalog = services.length > 0
         ? `CATÁLOGO DE SERVICIOS DISPONIBLES:
@@ -711,23 +955,65 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
         if (!jsonMatch) return { created: false };
 
         extracted = JSON.parse(jsonMatch[0]);
-        this.logger.log(`[Cita] Extracción: complete=${extracted.complete} date=${extracted.scheduledDate} time=${extracted.scheduledTime} name=${extracted.customerName} reason=${extracted.reason}`);
+
+        // ── Fallbacks TypeScript — aplican cuando el LLM devuelve null ──────────
+
+        // Nombre
+        if (!extracted.customerName && needsName) {
+          const historyClientLines = history
+            .filter((m: any) => !m.isAiResponse)
+            .map((m: any) => m.content);
+          const fallback = parseNombreCliente(latestMessage, historyClientLines);
+          if (fallback) {
+            this.logger.log(`[Cita] Fallback nombre TS: "${fallback}"`);
+            extracted.customerName = fallback;
+          }
+        }
+
+        // Fecha
+        if (!extracted.scheduledDate) {
+          const allText = [
+            ...history.filter((m: any) => !m.isAiResponse).map((m: any) => m.content),
+            latestMessage,
+          ].join(' ');
+          const fallback = parseFechaEspanol(allText);
+          if (fallback) {
+            this.logger.log(`[Cita] Fallback fecha TS: "${fallback}"`);
+            extracted.scheduledDate = fallback;
+          }
+        }
+
+        // Hora
+        if (!extracted.scheduledTime) {
+          const allText = [
+            ...history.filter((m: any) => !m.isAiResponse).map((m: any) => m.content),
+            latestMessage,
+          ].join(' ');
+          const fallback = parseHoraEspanol(allText);
+          if (fallback) {
+            this.logger.log(`[Cita] Fallback hora TS: "${fallback}"`);
+            extracted.scheduledTime = fallback;
+          }
+        }
+
+        // Dirección (si es visita a domicilio y no vino del LLM)
+        if (!extracted.address && ADDRESS_RE.test(latestMessage)) {
+          const lines = latestMessage.split('\n').map(l => l.trim());
+          const addrLine = lines.find(l => ADDRESS_RE.test(l));
+          if (addrLine) {
+            this.logger.log(`[Cita] Fallback dirección TS: "${addrLine}"`);
+            extracted.address = addrLine;
+          }
+        }
+
+        this.logger.log(`[Cita] Post-fallback: complete=${extracted.complete} date=${extracted.scheduledDate} time=${extracted.scheduledTime} name=${extracted.customerName} reason=${extracted.reason}`);
 
         // Guardar en caché incluso si no está completo — acumula datos entre mensajes
         if (extracted.scheduledDate || extracted.description || extracted.serviceId || extracted.customerName) {
-          // Si ya teníamos caché, hacer merge para no perder datos anteriores
-          const merged: AppointmentExtractionResult = cached ? {
-            ...cached,
-            ...extracted,
-            // Preservar campos del caché si el extractor los devolvió null
-            scheduledDate:   extracted.scheduledDate   ?? cached.scheduledDate,
-            scheduledTime:   extracted.scheduledTime   ?? cached.scheduledTime,
-            customerName:    extracted.customerName    ?? cached.customerName,
-            customerCedula:  extracted.customerCedula  ?? cached.customerCedula,
-            address:         extracted.address         ?? cached.address,
-            description:     extracted.description     ?? cached.description,
-            type:            extracted.type            || cached.type,
-          } : extracted;
+          // Merge robusto con caché previo
+          const merged: AppointmentExtractionResult = cached
+            ? mergeAppt(cached, extracted)
+            : extracted;
 
           this.pendingAppointments.set(conversationId, merged);
           setTimeout(() => this.pendingAppointments.delete(conversationId), ORDER_GUARD_TTL_MS);
@@ -739,7 +1025,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
             (!needsCustomerData || merged.customerName) &&
             CONFIRMATION_RE.test(latestMessage.trim())
           ) {
-            this.logger.log(`[Cita] Caso merge — datos completos después de merge para ${conversationId}`);
+            this.logger.log(`[Cita] Merge completo + confirmación para ${conversationId}`);
             extracted = { ...merged, complete: true };
             this.pendingAppointments.delete(conversationId);
           } else {

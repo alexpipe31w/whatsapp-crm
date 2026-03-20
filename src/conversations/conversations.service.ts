@@ -19,28 +19,37 @@ export class ConversationsService {
       include: { customer: true },
     });
     if (!conv) throw new NotFoundException('Conversación no encontrada');
-    // Si se pasa storeId, verificar que la conversación pertenece a esa tienda
     if (storeId && conv.storeId !== storeId) {
       throw new ForbiddenException('No tienes acceso a esta conversación');
     }
     return conv;
   }
 
+  // FIX: race condition — si dos procesos crean la conversación al mismo tiempo,
+  // el P2002 se captura y se devuelve la que ganó la carrera.
   async findOrCreate(customerId: string, storeId: string) {
-    // Upsert manual con transacción para evitar race condition
-    // si dos mensajes llegan al mismo tiempo para el mismo cliente
-    return this.prisma.$transaction(async (tx) => {
-      const existing = await tx.conversation.findFirst({
-        where: { customerId, storeId, status: { not: 'closed' } },
-        include: { customer: true },
-      });
-      if (existing) return existing;
+    const existing = await this.prisma.conversation.findFirst({
+      where: { customerId, storeId, status: { not: 'closed' } },
+      include: { customer: true },
+    });
+    if (existing) return existing;
 
-      return tx.conversation.create({
+    try {
+      return await this.prisma.conversation.create({
         data: { customerId, storeId, status: 'active' },
         include: { customer: true },
       });
-    });
+    } catch (err: any) {
+      // P2002 = unique constraint — otro proceso creó la conversación primero
+      if (err?.code === 'P2002') {
+        const conv = await this.prisma.conversation.findFirst({
+          where: { customerId, storeId, status: { not: 'closed' } },
+          include: { customer: true },
+        });
+        if (conv) return conv;
+      }
+      throw err;
+    }
   }
 
   async takeover(conversationId: string, storeId?: string) {
@@ -73,13 +82,16 @@ export class ConversationsService {
     });
   }
 
+  // FIX: borrado en transacción para evitar conversación huérfana sin mensajes
   async remove(conversationId: string, storeId?: string) {
     const conv = await this.findOne(conversationId, storeId);
     if (conv.status !== 'closed') {
       throw new BadRequestException('Solo se pueden eliminar conversaciones cerradas');
     }
-    await this.prisma.message.deleteMany({ where: { conversationId } });
-    await this.prisma.conversation.delete({ where: { conversationId } });
+    await this.prisma.$transaction([
+      this.prisma.message.deleteMany({ where: { conversationId } }),
+      this.prisma.conversation.delete({ where: { conversationId } }),
+    ]);
     return { deleted: true, conversationId };
   }
 }

@@ -6,7 +6,7 @@ import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { AppointmentStatus, AppointmentSource } from '../generated/prisma/enums';
 
-// ─── Selector reutilizable del cliente ───────────────────────────────────────
+// ─── Selectores reutilizables ─────────────────────────────────────────────────
 
 const CUSTOMER_SELECT = {
   customerId: true,
@@ -16,18 +16,14 @@ const CUSTOMER_SELECT = {
   city:       true,
 } as const;
 
-// ─── Selector reutilizable del servicio ───────────────────────────────────────
-
 const SERVICE_SELECT = {
-  serviceId:       true,
-  name:            true,
-  priceType:       true,
-  basePrice:       true,
-  unitLabel:       true,
+  serviceId:        true,
+  name:             true,
+  priceType:        true,
+  basePrice:        true,
+  unitLabel:        true,
   estimatedMinutes: true,
 } as const;
-
-// ─── Selector reutilizable de variante ───────────────────────────────────────
 
 const SERVICE_VARIANT_SELECT = {
   variantId:        true,
@@ -36,15 +32,13 @@ const SERVICE_VARIANT_SELECT = {
   estimatedMinutes: true,
 } as const;
 
-// ─── Selector completo de cita ───────────────────────────────────────────────
-
 const APPOINTMENT_INCLUDE = {
   customer:       { select: CUSTOMER_SELECT },
   service:        { select: SERVICE_SELECT },
   serviceVariant: { select: SERVICE_VARIANT_SELECT },
   timeline: {
     orderBy: { createdAt: 'asc' as const },
-    where:   { isPublic: true },  // Por defecto solo los públicos
+    where:   { isPublic: true },
   },
 } as const;
 
@@ -56,42 +50,28 @@ export class AppointmentsService {
 
   // ─── Helpers privados ──────────────────────────────────────────────────────
 
-  /**
-   * Verifica que la cita exista y pertenezca a la tienda.
-   * Lanza NotFoundException o ForbiddenException si no.
-   */
   private async findAndVerify(appointmentId: string, storeId: string) {
     const appointment = await this.prisma.appointment.findUnique({
       where: { appointmentId },
     });
-    if (!appointment)              throw new NotFoundException('Cita no encontrada');
+    if (!appointment)                    throw new NotFoundException('Cita no encontrada');
     if (appointment.storeId !== storeId) throw new ForbiddenException();
     return appointment;
   }
 
-  /**
-   * Calcula endsAt a partir de scheduledAt + durationMinutes.
-   * Si se provee endsAt explícito, lo usa directamente.
-   */
   private computeEndsAt(
     scheduledAt: Date,
     durationMinutes?: number,
     endsAt?: string,
   ): Date | null {
-    if (endsAt) return new Date(endsAt);
-    if (durationMinutes) {
-      return new Date(scheduledAt.getTime() + durationMinutes * 60_000);
-    }
+    if (endsAt)          return new Date(endsAt);
+    if (durationMinutes) return new Date(scheduledAt.getTime() + durationMinutes * 60_000);
     return null;
   }
 
-  /**
-   * Registra una entrada en el timeline de la cita.
-   * Se llama dentro de transacciones para mantener consistencia.
-   */
   private buildTimelineEntry(params: {
-    appointmentId:  string;
-    action:         string;
+    appointmentId:   string;
+    action:          string;
     previousStatus?: AppointmentStatus;
     newStatus?:      AppointmentStatus;
     note?:           string;
@@ -126,10 +106,11 @@ export class AppointmentsService {
   ) {
     const where: any = { storeId };
 
-    if (filters?.status)    where.status    = filters.status;
+    // FIX: normalizar a mayúsculas — el enum es PENDING, CONFIRMED, etc.
+    if (filters?.status)    where.status    = filters.status.toUpperCase();
     if (filters?.type)      where.type      = filters.type;
     if (filters?.serviceId) where.serviceId = filters.serviceId;
-    if (filters?.priority)  where.priority  = filters.priority;
+    if (filters?.priority)  where.priority  = filters.priority?.toUpperCase();
 
     if (filters?.from || filters?.to) {
       where.scheduledAt = {};
@@ -152,13 +133,11 @@ export class AppointmentsService {
       include: {
         ...APPOINTMENT_INCLUDE,
         // En detalle se muestra TODO el timeline (públicos + privados)
-        timeline: {
-          orderBy: { createdAt: 'asc' },
-        },
+        timeline: { orderBy: { createdAt: 'asc' } },
       },
     });
 
-    if (!appointment)              throw new NotFoundException('Cita no encontrada');
+    if (!appointment)                    throw new NotFoundException('Cita no encontrada');
     if (appointment.storeId !== storeId) throw new ForbiddenException();
 
     return appointment;
@@ -193,7 +172,6 @@ export class AppointmentsService {
         include: APPOINTMENT_INCLUDE,
       });
 
-      // Entrada inicial en el timeline
       await tx.appointmentTimeline.create({
         data: {
           appointmentId: appointment.appointmentId,
@@ -219,7 +197,6 @@ export class AppointmentsService {
   ) {
     const current = await this.findAndVerify(appointmentId, storeId);
 
-    // Validación: CANCELLED requiere cancelReason
     if (dto.status === AppointmentStatus.CANCELLED && !dto.cancelReason) {
       throw new BadRequestException('Se requiere cancelReason al cancelar una cita');
     }
@@ -231,7 +208,6 @@ export class AppointmentsService {
       dto.endsAt,
     );
 
-    // Timestamps automáticos según el nuevo estado
     const statusTimestamps = this.resolveStatusTimestamps(dto.status, current);
 
     return this.prisma.$transaction(async (tx) => {
@@ -255,7 +231,6 @@ export class AppointmentsService {
         include: APPOINTMENT_INCLUDE,
       });
 
-      // Entrada en el timeline solo si cambió algo relevante
       const action = this.resolveTimelineAction(dto, current.status as AppointmentStatus);
       if (action) {
         await tx.appointmentTimeline.create({
@@ -277,45 +252,44 @@ export class AppointmentsService {
 
   // ─── Eliminar ──────────────────────────────────────────────────────────────
 
+  // FIX: transacción para evitar cita sin timeline si delete falla a medias
   async remove(appointmentId: string, storeId: string) {
     await this.findAndVerify(appointmentId, storeId);
-    return this.prisma.appointment.delete({ where: { appointmentId } });
+    return this.prisma.$transaction([
+      this.prisma.appointmentTimeline.deleteMany({ where: { appointmentId } }),
+      this.prisma.appointment.delete({ where: { appointmentId } }),
+    ]);
   }
 
-  // ─── Timeline público (para vista del cliente) ────────────────────────────
+  // ─── Timeline ──────────────────────────────────────────────────────────────
 
   async getTimeline(appointmentId: string, storeId: string) {
     await this.findAndVerify(appointmentId, storeId);
-
     return this.prisma.appointmentTimeline.findMany({
-      where: { appointmentId },
+      where:   { appointmentId },
       orderBy: { createdAt: 'asc' },
     });
   }
 
-  // ─── Stats para dashboard ─────────────────────────────────────────────────
+  // ─── Stats ─────────────────────────────────────────────────────────────────
 
   async getStats(storeId: string) {
-    const now       = new Date();
+    const now        = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const todayEnd   = new Date(todayStart);
     todayEnd.setDate(todayEnd.getDate() + 1);
 
+    // FIX: semana empieza el lunes (Colombia), no el domingo
     const weekStart = new Date(todayStart);
-    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+    const dayOfWeek = weekStart.getDay(); // domingo=0, lunes=1...
+    const daysToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    weekStart.setDate(weekStart.getDate() + daysToMonday);
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekEnd.getDate() + 7);
 
     const [
-      total,
-      pending,
-      confirmed,
-      todayCount,
-      upcomingWeek,
-      inProgress,
-      completedTotal,
-      cancelledTotal,
-      noShowTotal,
+      total, pending, confirmed, todayCount,
+      upcomingWeek, inProgress, completedTotal, cancelledTotal, noShowTotal,
     ] = await Promise.all([
       this.prisma.appointment.count({ where: { storeId } }),
       this.prisma.appointment.count({ where: { storeId, status: 'PENDING' } }),
@@ -337,88 +311,53 @@ export class AppointmentsService {
     ]);
 
     return {
-      total,
-      pending,
-      confirmed,
-      todayCount,
-      upcomingWeek,
-      inProgress,
-      completedTotal,
-      cancelledTotal,
-      noShowTotal,
+      total, pending, confirmed, todayCount,
+      upcomingWeek, inProgress, completedTotal, cancelledTotal, noShowTotal,
     };
   }
 
-  // ─── Helpers de lógica de negocio ─────────────────────────────────────────
+  // ─── Helpers de lógica ────────────────────────────────────────────────────
 
-  /**
-   * Devuelve los timestamps que deben actualizarse según el nuevo estado.
-   */
   private resolveStatusTimestamps(
     newStatus: AppointmentStatus | undefined,
     current: any,
   ): Record<string, Date | null> {
     const now = new Date();
     switch (newStatus) {
-      case AppointmentStatus.CONFIRMED:
-        return { confirmedAt: now };
-      case AppointmentStatus.IN_PROGRESS:
-        return { startedAt: now };
-      case AppointmentStatus.COMPLETED:
-        return { completedAt: now };
-      case AppointmentStatus.CANCELLED:
-        return { cancelledAt: now };
-      default:
-        return {};
+      case AppointmentStatus.CONFIRMED:   return { confirmedAt:  now };
+      case AppointmentStatus.IN_PROGRESS: return { startedAt:   now };
+      case AppointmentStatus.COMPLETED:   return { completedAt: now };
+      case AppointmentStatus.CANCELLED:   return { cancelledAt: now };
+      default:                            return {};
     }
   }
 
-  /**
-   * Determina la acción del timeline basada en los cambios del DTO.
-   */
   private resolveTimelineAction(
     dto: UpdateAppointmentDto,
     currentStatus: AppointmentStatus,
   ): string | null {
-    if (dto.status && dto.status !== currentStatus) {
-      return dto.status; // "CONFIRMED", "CANCELLED", etc.
-    }
-    if (dto.scheduledAt) return 'RESCHEDULED';
+    if (dto.status && dto.status !== currentStatus) return dto.status;
+    if (dto.scheduledAt)                             return 'RESCHEDULED';
     if (dto.notes !== undefined || dto.description !== undefined) return 'UPDATED';
-    if (dto.internalNotes !== undefined) return 'NOTE_ADDED';
+    if (dto.internalNotes !== undefined)             return 'NOTE_ADDED';
     return null;
   }
 
-  /**
-   * Genera una nota legible para el timeline.
-   */
   private resolveTimelineNote(
     dto: UpdateAppointmentDto,
     currentStatus: AppointmentStatus,
   ): string {
-    if (dto.status === AppointmentStatus.CANCELLED && dto.cancelReason) {
+    if (dto.status === AppointmentStatus.CANCELLED && dto.cancelReason)
       return `Cita cancelada. Motivo: ${dto.cancelReason}`;
-    }
-    if (dto.status === AppointmentStatus.CONFIRMED) {
-      return 'Cita confirmada';
-    }
-    if (dto.status === AppointmentStatus.COMPLETED) {
-      return 'Cita completada exitosamente';
-    }
-    if (dto.status === AppointmentStatus.NO_SHOW) {
-      return 'El cliente no se presentó';
-    }
-    if (dto.scheduledAt) {
+    if (dto.status === AppointmentStatus.CONFIRMED)  return 'Cita confirmada';
+    if (dto.status === AppointmentStatus.COMPLETED)  return 'Cita completada exitosamente';
+    if (dto.status === AppointmentStatus.NO_SHOW)    return 'El cliente no se presentó';
+    if (dto.scheduledAt)
       return `Cita reagendada para ${new Date(dto.scheduledAt).toLocaleString('es-CO', { timeZone: 'America/Bogota' })}`;
-    }
     return 'Cita actualizada';
   }
 
-  /**
-   * Define si una acción del timeline es visible para el cliente.
-   */
   private isPublicAction(action: string): boolean {
-    const privateActions = new Set(['NOTE_ADDED', 'UPDATED']);
-    return !privateActions.has(action);
+    return !new Set(['NOTE_ADDED', 'UPDATED']).has(action);
   }
 }

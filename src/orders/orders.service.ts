@@ -1,8 +1,11 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable, NotFoundException, BadRequestException, ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 
+// FIX: agregar set de estados válidos para bloquear estados inválidos
 const VALID_TRANSITIONS: Record<string, string[]> = {
   pending:   ['confirmed', 'cancelled'],
   confirmed: ['preparing', 'cancelled'],
@@ -11,6 +14,8 @@ const VALID_TRANSITIONS: Record<string, string[]> = {
   delivered: [],
   cancelled: [],
 };
+
+const VALID_ORDER_STATUSES = new Set(Object.keys(VALID_TRANSITIONS));
 
 @Injectable()
 export class OrdersService {
@@ -27,22 +32,45 @@ export class OrdersService {
     if (customer.storeId !== dto.storeId)
       throw new ForbiddenException('El cliente no pertenece a esta tienda');
 
+    // FIX: validar stock antes de crear la orden
+    for (const item of dto.items) {
+      if (item.productId && !item.variantId) {
+        const product = await this.prisma.product.findUnique({
+          where: { productId: item.productId },
+        });
+        if (product && product.stock < item.quantity) {
+          throw new BadRequestException(
+            `Stock insuficiente para "${product.name}" (disponible: ${product.stock})`,
+          );
+        }
+      }
+      if (item.variantId) {
+        const variant = await this.prisma.productVariant.findUnique({
+          where: { variantId: item.variantId },
+        });
+        if (variant && variant.stock < item.quantity) {
+          throw new BadRequestException(
+            `Stock insuficiente para la variante (disponible: ${variant.stock})`,
+          );
+        }
+      }
+    }
+
     const total = dto.items.reduce(
       (sum, item) => sum + item.unitPrice * item.quantity, 0,
     );
 
     return this.prisma.order.create({
       data: {
-        storeId: dto.storeId,
-        customerId: dto.customerId,
-        type: dto.type ?? 'product',
-        notes: dto.notes,
+        storeId:         dto.storeId,
+        customerId:      dto.customerId,
+        type:            dto.type ?? 'product',
+        notes:           dto.notes,
         total,
-        estimatedTime: dto.estimatedTime ?? null,
+        estimatedTime:   dto.estimatedTime   ?? null,
         deliveryAddress: dto.deliveryAddress ?? null,
         orderItems: {
           create: dto.items.map((item) => ({
-            // ✅ Usar connect — Prisma no acepta IDs escalares directos en create anidado
             ...(item.productId
               ? { product: { connect: { productId: item.productId } } }
               : {}),
@@ -53,23 +81,23 @@ export class OrdersService {
               ? { variant: { connect: { variantId: item.variantId } } }
               : {}),
             description: item.description ?? null,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
+            quantity:    item.quantity,
+            unitPrice:   item.unitPrice,
           })),
         },
       },
       include: {
         orderItems: { include: { product: true, service: true } },
-        customer: true,
+        customer:   true,
       },
     });
   }
 
   async findAllByStore(storeId: string) {
     return this.prisma.order.findMany({
-      where: { storeId },
+      where:   { storeId },
       include: {
-        customer: true,
+        customer:   true,
         orderItems: { include: { product: true, service: true } },
       },
       orderBy: { createdAt: 'desc' },
@@ -78,9 +106,9 @@ export class OrdersService {
 
   async findOne(orderId: string, storeId?: string) {
     const order = await this.prisma.order.findUnique({
-      where: { orderId },
+      where:   { orderId },
       include: {
-        customer: true,
+        customer:   true,
         orderItems: { include: { product: true, service: true } },
       },
     });
@@ -94,6 +122,13 @@ export class OrdersService {
     const order = await this.findOne(orderId, storeId);
 
     if (dto.status && dto.status !== order.status) {
+      // FIX: bloquear estados que no existen en órdenes
+      if (!VALID_ORDER_STATUSES.has(dto.status)) {
+        throw new BadRequestException(
+          `Estado "${dto.status}" no válido para órdenes`,
+        );
+      }
+
       const allowed = VALID_TRANSITIONS[order.status] ?? [];
       if (!allowed.includes(dto.status)) {
         throw new BadRequestException(
@@ -103,11 +138,12 @@ export class OrdersService {
       }
     }
 
+    // FIX: solo actualizar status — no pasar el DTO completo a Prisma
     return this.prisma.order.update({
       where: { orderId },
-      data: dto,
+      data:  { status: dto.status },
       include: {
-        customer: true,
+        customer:   true,
         orderItems: { include: { product: true, service: true } },
       },
     });
@@ -124,7 +160,7 @@ export class OrdersService {
       cancelled: 'cancelado',
     };
     const items = order.orderItems.map((i) => {
-      const name = i.product?.name ?? i.service?.name ?? i.description ?? 'ítem';
+      const name = (i.product as any)?.name ?? (i.service as any)?.name ?? i.description ?? 'ítem';
       return `  - ${name} x${i.quantity} @ $${i.unitPrice}`;
     }).join('\n');
 
@@ -135,9 +171,9 @@ export class OrdersService {
       `Tipo: ${order.type}`,
       `Items:\n${items}`,
       `Total: $${order.total}`,
-      order.estimatedTime ? `Tiempo estimado: ${order.estimatedTime} min` : null,
+      (order as any).estimatedTime   ? `Tiempo estimado: ${(order as any).estimatedTime} min` : null,
       order.deliveryAddress ? `Dirección: ${order.deliveryAddress}` : null,
-      order.notes ? `Notas: ${order.notes}` : null,
+      order.notes           ? `Notas: ${order.notes}` : null,
       `Fecha: ${order.createdAt.toLocaleString('es-CO')}`,
     ].filter(Boolean).join('\n');
   }

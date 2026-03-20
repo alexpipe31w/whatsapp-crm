@@ -1,4 +1,6 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable, NotFoundException, ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 
@@ -6,18 +8,31 @@ import { CreateCustomerDto } from './dto/create-customer.dto';
 export class CustomersService {
   constructor(private prisma: PrismaService) {}
 
+  // FIX: race condition — si dos mensajes llegan al mismo tiempo para un cliente
+  // nuevo, el upsert puede fallar con P2002 en versiones antiguas de Prisma.
   async findOrCreate(dto: CreateCustomerDto) {
-    const storeId = dto.storeId!; // siempre inyectado por el controller desde JWT
-    return this.prisma.customer.upsert({
-      where: { storeId_phone: { storeId, phone: dto.phone } },
-      update: {},
-      create: { storeId, phone: dto.phone },
-    });
+    const storeId = dto.storeId!;
+    try {
+      return await this.prisma.customer.upsert({
+        where:  { storeId_phone: { storeId, phone: dto.phone } },
+        update: {},
+        create: { storeId, phone: dto.phone },
+      });
+    } catch (err: any) {
+      // P2002 = unique constraint — otro proceso creó el cliente primero
+      if (err?.code === 'P2002') {
+        const existing = await this.prisma.customer.findUnique({
+          where: { storeId_phone: { storeId, phone: dto.phone } },
+        });
+        if (existing) return existing;
+      }
+      throw err;
+    }
   }
 
   async findAllByStore(storeId: string) {
     return this.prisma.customer.findMany({
-      where: { storeId },
+      where:   { storeId },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -33,7 +48,12 @@ export class CustomersService {
     return customer;
   }
 
-  async update(customerId: string, data: { name?: string; city?: string }, storeId?: string) {
+  // FIX: incluir cedula y phone en los campos actualizables
+  async update(
+    customerId: string,
+    data: { name?: string; city?: string; cedula?: string; phone?: string },
+    storeId?: string,
+  ) {
     await this.findOne(customerId, storeId);
     return this.prisma.customer.update({
       where: { customerId },

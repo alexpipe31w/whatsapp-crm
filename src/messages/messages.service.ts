@@ -1,10 +1,15 @@
-import { Injectable, NotFoundException, ForbiddenException, Inject, forwardRef } from '@nestjs/common';
+import {
+  Injectable, NotFoundException, ForbiddenException,
+  Inject, forwardRef, Logger,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 
 @Injectable()
 export class MessagesService {
+  private readonly logger = new Logger(MessagesService.name);
+
   constructor(
     private prisma: PrismaService,
     @Inject(forwardRef(() => WhatsappService))
@@ -13,35 +18,41 @@ export class MessagesService {
 
   async create(dto: CreateMessageDto) {
     const conv = await this.prisma.conversation.findUnique({
-      where: { conversationId: dto.conversationId },
+      where:   { conversationId: dto.conversationId },
       include: { customer: true },
     });
     if (!conv) throw new NotFoundException('Conversación no encontrada');
 
-    // Verificar que el storeId del mensaje coincide con el de la conversación
     if (conv.storeId !== dto.storeId) {
       throw new ForbiddenException('El mensaje no pertenece a esta tienda');
     }
 
-    // Bug fix: el sender debe venir del dto, con fallback lógico correcto
     const sender = dto.sender ?? (dto.isAiResponse ? 'store' : 'customer');
+
+    // FIX: validar contenido — no guardar mensajes vacíos ni demasiado largos
+    if (!dto.content?.trim()) {
+      throw new Error('El contenido del mensaje no puede estar vacío');
+    }
+    if (dto.content.length > 65_536) {
+      dto.content = dto.content.slice(0, 65_536);
+    }
 
     const message = await this.prisma.message.create({
       data: {
         conversationId: dto.conversationId,
-        storeId: dto.storeId,
-        content: dto.content,
-        type: dto.type ?? 'text',
-        isAiResponse: dto.isAiResponse ?? false,
+        storeId:        dto.storeId,
+        content:        dto.content,
+        type:           dto.type        ?? 'text',
+        isAiResponse:   dto.isAiResponse ?? false,
         sender,
       },
     });
 
-    // Actualizar timestamp de último mensaje
+    // FIX: actualizar lastMessageAt con catch para no romper el flujo si falla
     await this.prisma.conversation.update({
       where: { conversationId: dto.conversationId },
-      data: { lastMessageAt: new Date() },
-    });
+      data:  { lastMessageAt: new Date() },
+    }).catch(() => {});
 
     // Enviar por WhatsApp solo si es mensaje manual del asesor humano (no IA, no entrante)
     if (!dto.isAiResponse && sender === 'store') {
@@ -52,8 +63,10 @@ export class MessagesService {
           dto.content,
         );
       } catch (err: any) {
-        // Log pero no lanzar — el mensaje ya se guardó en BD
-        console.error(`Error enviando por WhatsApp a ${conv.customer.phone}:`, err.message);
+        // FIX: usar Logger de NestJS en lugar de console.error
+        this.logger.warn(
+          `Error enviando por WhatsApp a ${conv.customer.phone}: ${err.message}`,
+        );
       }
     }
 
@@ -61,7 +74,6 @@ export class MessagesService {
   }
 
   async findByConversation(conversationId: string, storeId?: string) {
-    // Validar que la conversación existe y pertenece a la tienda
     if (storeId) {
       const conv = await this.prisma.conversation.findUnique({
         where: { conversationId },
@@ -73,7 +85,7 @@ export class MessagesService {
     }
 
     return this.prisma.message.findMany({
-      where: { conversationId },
+      where:   { conversationId },
       orderBy: { createdAt: 'asc' },
     });
   }
