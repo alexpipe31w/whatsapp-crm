@@ -23,7 +23,7 @@ const config: runtime.GetPrismaClientConfig = {
       "value": "prisma-client"
     },
     "output": {
-      "value": "C:\\Users\\paula\\Desktop\\Novio\\whatsapp-crm\\src\\generated\\prisma",
+      "value": "C:\\Users\\alexp\\Desktop\\proyectos\\whatsapp-crm\\src\\generated\\prisma",
       "fromEnvVar": null
     },
     "config": {
@@ -38,7 +38,7 @@ const config: runtime.GetPrismaClientConfig = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "C:\\Users\\paula\\Desktop\\Novio\\whatsapp-crm\\prisma\\schema.prisma",
+    "sourceFilePath": "C:\\Users\\alexp\\Desktop\\proyectos\\whatsapp-crm\\prisma\\schema.prisma",
     "isCustomOutput": true
   },
   "relativePath": "../../../prisma",
