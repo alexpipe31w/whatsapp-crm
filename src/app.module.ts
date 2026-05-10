@@ -19,6 +19,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { AuthModule } from './auth/auth.module';
 import { BlockedModule } from './blocked/blocked.module';
 import { AppointmentsModule } from './appointments/appointments.module';
+import { SuperAdminModule } from './superadmin/superadmin.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { AppointmentsModule } from './appointments/appointments.module';
     AnalyticsModule,
     AuthModule,
     BlockedModule,
+    SuperAdminModule,
   ],
 })
 export class AppModule {}

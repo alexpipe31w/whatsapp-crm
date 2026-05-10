@@ -151,6 +151,11 @@ export type BlockedContact = Prisma.BlockedContactModel
  */
 export type ArchivedMessage = Prisma.ArchivedMessageModel
 /**
+ * Model AdminAuditLog
+ * 
+ */
+export type AdminAuditLog = Prisma.AdminAuditLogModel
+/**
  * Model WhatsappSession
  * 
  */

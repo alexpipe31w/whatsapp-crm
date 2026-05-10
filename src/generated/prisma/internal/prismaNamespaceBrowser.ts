@@ -67,6 +67,7 @@ export const ModelName = {
   User: 'User',
   BlockedContact: 'BlockedContact',
   ArchivedMessage: 'ArchivedMessage',
+  AdminAuditLog: 'AdminAuditLog',
   WhatsappSession: 'WhatsappSession'
 } as const
 
@@ -389,6 +390,19 @@ export const ArchivedMessageScalarFieldEnum = {
 } as const
 
 export type ArchivedMessageScalarFieldEnum = (typeof ArchivedMessageScalarFieldEnum)[keyof typeof ArchivedMessageScalarFieldEnum]
+
+
+export const AdminAuditLogScalarFieldEnum = {
+  logId: 'logId',
+  adminId: 'adminId',
+  action: 'action',
+  targetType: 'targetType',
+  targetId: 'targetId',
+  details: 'details',
+  createdAt: 'createdAt'
+} as const
+
+export type AdminAuditLogScalarFieldEnum = (typeof AdminAuditLogScalarFieldEnum)[keyof typeof AdminAuditLogScalarFieldEnum]
 
 
 export const WhatsappSessionScalarFieldEnum = {

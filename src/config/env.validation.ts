@@ -9,6 +9,10 @@ export const envSchema = z.object({
   JWT_EXPIRES_IN: z.string().default('7d'),
   GROQ_API_KEY: z.string().min(1),
   WA_SESSION_PATH: z.string().default('./sessions'),
+  SMTP_HOST: z.string().default('smtp.gmail.com'),
+  SMTP_PORT: z.coerce.number().default(587),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;
