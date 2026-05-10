@@ -6,10 +6,29 @@ export class ConversationsService {
   constructor(private prisma: PrismaService) {}
 
   async findAllByStore(storeId: string) {
+    // Excluir archivadas — ya fueron limpiadas, el frontend muestra solo activas
     return this.prisma.conversation.findMany({
-      where: { storeId },
-      include: { customer: true },
+      where: { storeId, status: { not: 'archived' } },
+      select: {
+        conversationId: true,
+        storeId:        true,
+        customerId:     true,
+        status:         true,
+        lastMessageAt:  true,
+        createdAt:      true,
+        customer: {
+          select: {
+            customerId: true, name: true, phone: true, city: true,
+          },
+        },
+        messages: {
+          orderBy: { createdAt: 'desc' },
+          take:    1,
+          select:  { content: true, sender: true, isAiResponse: true, createdAt: true },
+        },
+      },
       orderBy: { lastMessageAt: 'desc' },
+      take: 100, // máximo 100 conversaciones por carga
     });
   }
 
@@ -28,8 +47,10 @@ export class ConversationsService {
   // FIX: race condition — si dos procesos crean la conversación al mismo tiempo,
   // el P2002 se captura y se devuelve la que ganó la carrera.
   async findOrCreate(customerId: string, storeId: string) {
+    // Excluir 'closed' y 'archived' — las archivadas ya no deben recibir mensajes
+    const INACTIVE_STATUSES = ['closed', 'archived'];
     const existing = await this.prisma.conversation.findFirst({
-      where: { customerId, storeId, status: { not: 'closed' } },
+      where: { customerId, storeId, status: { notIn: INACTIVE_STATUSES } },
       include: { customer: true },
     });
     if (existing) return existing;
@@ -40,10 +61,9 @@ export class ConversationsService {
         include: { customer: true },
       });
     } catch (err: any) {
-      // P2002 = unique constraint — otro proceso creó la conversación primero
       if (err?.code === 'P2002') {
         const conv = await this.prisma.conversation.findFirst({
-          where: { customerId, storeId, status: { not: 'closed' } },
+          where: { customerId, storeId, status: { notIn: INACTIVE_STATUSES } },
           include: { customer: true },
         });
         if (conv) return conv;

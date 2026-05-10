@@ -31,6 +31,7 @@ export type CustomerMinAggregateOutputType = {
   name: string | null
   cedula: string | null
   city: string | null
+  lastConversationSummary: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -42,6 +43,7 @@ export type CustomerMaxAggregateOutputType = {
   name: string | null
   cedula: string | null
   city: string | null
+  lastConversationSummary: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -53,6 +55,7 @@ export type CustomerCountAggregateOutputType = {
   name: number
   cedula: number
   city: number
+  lastConversationSummary: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -66,6 +69,7 @@ export type CustomerMinAggregateInputType = {
   name?: true
   cedula?: true
   city?: true
+  lastConversationSummary?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -77,6 +81,7 @@ export type CustomerMaxAggregateInputType = {
   name?: true
   cedula?: true
   city?: true
+  lastConversationSummary?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -88,6 +93,7 @@ export type CustomerCountAggregateInputType = {
   name?: true
   cedula?: true
   city?: true
+  lastConversationSummary?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -172,6 +178,7 @@ export type CustomerGroupByOutputType = {
   name: string | null
   cedula: string | null
   city: string | null
+  lastConversationSummary: string | null
   createdAt: Date
   updatedAt: Date
   _count: CustomerCountAggregateOutputType | null
@@ -204,6 +211,7 @@ export type CustomerWhereInput = {
   name?: Prisma.StringNullableFilter<"Customer"> | string | null
   cedula?: Prisma.StringNullableFilter<"Customer"> | string | null
   city?: Prisma.StringNullableFilter<"Customer"> | string | null
+  lastConversationSummary?: Prisma.StringNullableFilter<"Customer"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Customer"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Customer"> | Date | string
   store?: Prisma.XOR<Prisma.StoreScalarRelationFilter, Prisma.StoreWhereInput>
@@ -219,6 +227,7 @@ export type CustomerOrderByWithRelationInput = {
   name?: Prisma.SortOrderInput | Prisma.SortOrder
   cedula?: Prisma.SortOrderInput | Prisma.SortOrder
   city?: Prisma.SortOrderInput | Prisma.SortOrder
+  lastConversationSummary?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   store?: Prisma.StoreOrderByWithRelationInput
@@ -238,6 +247,7 @@ export type CustomerWhereUniqueInput = Prisma.AtLeast<{
   name?: Prisma.StringNullableFilter<"Customer"> | string | null
   cedula?: Prisma.StringNullableFilter<"Customer"> | string | null
   city?: Prisma.StringNullableFilter<"Customer"> | string | null
+  lastConversationSummary?: Prisma.StringNullableFilter<"Customer"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Customer"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Customer"> | Date | string
   store?: Prisma.XOR<Prisma.StoreScalarRelationFilter, Prisma.StoreWhereInput>
@@ -253,6 +263,7 @@ export type CustomerOrderByWithAggregationInput = {
   name?: Prisma.SortOrderInput | Prisma.SortOrder
   cedula?: Prisma.SortOrderInput | Prisma.SortOrder
   city?: Prisma.SortOrderInput | Prisma.SortOrder
+  lastConversationSummary?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.CustomerCountOrderByAggregateInput
@@ -270,6 +281,7 @@ export type CustomerScalarWhereWithAggregatesInput = {
   name?: Prisma.StringNullableWithAggregatesFilter<"Customer"> | string | null
   cedula?: Prisma.StringNullableWithAggregatesFilter<"Customer"> | string | null
   city?: Prisma.StringNullableWithAggregatesFilter<"Customer"> | string | null
+  lastConversationSummary?: Prisma.StringNullableWithAggregatesFilter<"Customer"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Customer"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Customer"> | Date | string
 }
@@ -280,6 +292,7 @@ export type CustomerCreateInput = {
   name?: string | null
   cedula?: string | null
   city?: string | null
+  lastConversationSummary?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   store: Prisma.StoreCreateNestedOneWithoutCustomersInput
@@ -295,6 +308,7 @@ export type CustomerUncheckedCreateInput = {
   name?: string | null
   cedula?: string | null
   city?: string | null
+  lastConversationSummary?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutCustomerInput
@@ -308,6 +322,7 @@ export type CustomerUpdateInput = {
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cedula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastConversationSummary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   store?: Prisma.StoreUpdateOneRequiredWithoutCustomersNestedInput
@@ -323,6 +338,7 @@ export type CustomerUncheckedUpdateInput = {
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cedula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastConversationSummary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   conversations?: Prisma.ConversationUncheckedUpdateManyWithoutCustomerNestedInput
@@ -337,6 +353,7 @@ export type CustomerCreateManyInput = {
   name?: string | null
   cedula?: string | null
   city?: string | null
+  lastConversationSummary?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -347,6 +364,7 @@ export type CustomerUpdateManyMutationInput = {
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cedula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastConversationSummary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -358,6 +376,7 @@ export type CustomerUncheckedUpdateManyInput = {
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cedula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastConversationSummary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -384,6 +403,7 @@ export type CustomerCountOrderByAggregateInput = {
   name?: Prisma.SortOrder
   cedula?: Prisma.SortOrder
   city?: Prisma.SortOrder
+  lastConversationSummary?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -395,6 +415,7 @@ export type CustomerMaxOrderByAggregateInput = {
   name?: Prisma.SortOrder
   cedula?: Prisma.SortOrder
   city?: Prisma.SortOrder
+  lastConversationSummary?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -406,6 +427,7 @@ export type CustomerMinOrderByAggregateInput = {
   name?: Prisma.SortOrder
   cedula?: Prisma.SortOrder
   city?: Prisma.SortOrder
+  lastConversationSummary?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -505,6 +527,7 @@ export type CustomerCreateWithoutStoreInput = {
   name?: string | null
   cedula?: string | null
   city?: string | null
+  lastConversationSummary?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   conversations?: Prisma.ConversationCreateNestedManyWithoutCustomerInput
@@ -518,6 +541,7 @@ export type CustomerUncheckedCreateWithoutStoreInput = {
   name?: string | null
   cedula?: string | null
   city?: string | null
+  lastConversationSummary?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutCustomerInput
@@ -561,6 +585,7 @@ export type CustomerScalarWhereInput = {
   name?: Prisma.StringNullableFilter<"Customer"> | string | null
   cedula?: Prisma.StringNullableFilter<"Customer"> | string | null
   city?: Prisma.StringNullableFilter<"Customer"> | string | null
+  lastConversationSummary?: Prisma.StringNullableFilter<"Customer"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Customer"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Customer"> | Date | string
 }
@@ -571,6 +596,7 @@ export type CustomerCreateWithoutConversationsInput = {
   name?: string | null
   cedula?: string | null
   city?: string | null
+  lastConversationSummary?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   store: Prisma.StoreCreateNestedOneWithoutCustomersInput
@@ -585,6 +611,7 @@ export type CustomerUncheckedCreateWithoutConversationsInput = {
   name?: string | null
   cedula?: string | null
   city?: string | null
+  lastConversationSummary?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutCustomerInput
@@ -613,6 +640,7 @@ export type CustomerUpdateWithoutConversationsInput = {
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cedula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastConversationSummary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   store?: Prisma.StoreUpdateOneRequiredWithoutCustomersNestedInput
@@ -627,6 +655,7 @@ export type CustomerUncheckedUpdateWithoutConversationsInput = {
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cedula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastConversationSummary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   orders?: Prisma.OrderUncheckedUpdateManyWithoutCustomerNestedInput
@@ -639,6 +668,7 @@ export type CustomerCreateWithoutOrdersInput = {
   name?: string | null
   cedula?: string | null
   city?: string | null
+  lastConversationSummary?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   store: Prisma.StoreCreateNestedOneWithoutCustomersInput
@@ -653,6 +683,7 @@ export type CustomerUncheckedCreateWithoutOrdersInput = {
   name?: string | null
   cedula?: string | null
   city?: string | null
+  lastConversationSummary?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutCustomerInput
@@ -681,6 +712,7 @@ export type CustomerUpdateWithoutOrdersInput = {
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cedula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastConversationSummary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   store?: Prisma.StoreUpdateOneRequiredWithoutCustomersNestedInput
@@ -695,6 +727,7 @@ export type CustomerUncheckedUpdateWithoutOrdersInput = {
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cedula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastConversationSummary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   conversations?: Prisma.ConversationUncheckedUpdateManyWithoutCustomerNestedInput
@@ -707,6 +740,7 @@ export type CustomerCreateWithoutAppointmentsInput = {
   name?: string | null
   cedula?: string | null
   city?: string | null
+  lastConversationSummary?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   store: Prisma.StoreCreateNestedOneWithoutCustomersInput
@@ -721,6 +755,7 @@ export type CustomerUncheckedCreateWithoutAppointmentsInput = {
   name?: string | null
   cedula?: string | null
   city?: string | null
+  lastConversationSummary?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutCustomerInput
@@ -749,6 +784,7 @@ export type CustomerUpdateWithoutAppointmentsInput = {
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cedula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastConversationSummary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   store?: Prisma.StoreUpdateOneRequiredWithoutCustomersNestedInput
@@ -763,6 +799,7 @@ export type CustomerUncheckedUpdateWithoutAppointmentsInput = {
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cedula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastConversationSummary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   conversations?: Prisma.ConversationUncheckedUpdateManyWithoutCustomerNestedInput
@@ -775,6 +812,7 @@ export type CustomerCreateManyStoreInput = {
   name?: string | null
   cedula?: string | null
   city?: string | null
+  lastConversationSummary?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -785,6 +823,7 @@ export type CustomerUpdateWithoutStoreInput = {
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cedula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastConversationSummary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   conversations?: Prisma.ConversationUpdateManyWithoutCustomerNestedInput
@@ -798,6 +837,7 @@ export type CustomerUncheckedUpdateWithoutStoreInput = {
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cedula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastConversationSummary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   conversations?: Prisma.ConversationUncheckedUpdateManyWithoutCustomerNestedInput
@@ -811,6 +851,7 @@ export type CustomerUncheckedUpdateManyWithoutStoreInput = {
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cedula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastConversationSummary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -871,6 +912,7 @@ export type CustomerSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   name?: boolean
   cedula?: boolean
   city?: boolean
+  lastConversationSummary?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   store?: boolean | Prisma.StoreDefaultArgs<ExtArgs>
@@ -887,6 +929,7 @@ export type CustomerSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   name?: boolean
   cedula?: boolean
   city?: boolean
+  lastConversationSummary?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   store?: boolean | Prisma.StoreDefaultArgs<ExtArgs>
@@ -899,6 +942,7 @@ export type CustomerSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   name?: boolean
   cedula?: boolean
   city?: boolean
+  lastConversationSummary?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   store?: boolean | Prisma.StoreDefaultArgs<ExtArgs>
@@ -911,11 +955,12 @@ export type CustomerSelectScalar = {
   name?: boolean
   cedula?: boolean
   city?: boolean
+  lastConversationSummary?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type CustomerOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"customerId" | "storeId" | "phone" | "name" | "cedula" | "city" | "createdAt" | "updatedAt", ExtArgs["result"]["customer"]>
+export type CustomerOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"customerId" | "storeId" | "phone" | "name" | "cedula" | "city" | "lastConversationSummary" | "createdAt" | "updatedAt", ExtArgs["result"]["customer"]>
 export type CustomerInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   store?: boolean | Prisma.StoreDefaultArgs<ExtArgs>
   conversations?: boolean | Prisma.Customer$conversationsArgs<ExtArgs>
@@ -945,6 +990,7 @@ export type $CustomerPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     name: string | null
     cedula: string | null
     city: string | null
+    lastConversationSummary: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["customer"]>
@@ -1380,6 +1426,7 @@ export interface CustomerFieldRefs {
   readonly name: Prisma.FieldRef<"Customer", 'String'>
   readonly cedula: Prisma.FieldRef<"Customer", 'String'>
   readonly city: Prisma.FieldRef<"Customer", 'String'>
+  readonly lastConversationSummary: Prisma.FieldRef<"Customer", 'String'>
   readonly createdAt: Prisma.FieldRef<"Customer", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Customer", 'DateTime'>
 }

@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ConflictException, ForbiddenException } 
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateStoreDto } from './dto/create-store.dto';
 import { UpdateStoreDto } from './dto/update-store.dto';
+import { UpdateThemeDto } from './dto/update-theme.dto';
 
 @Injectable()
 export class StoresService {
@@ -82,6 +83,26 @@ export class StoresService {
     return this.prisma.store.update({
       where: { storeId },
       data: { isActive: false },
+    });
+  }
+
+  async getTheme(storeId: string) {
+    const store = await this.prisma.store.findUnique({
+      where: { storeId },
+      select: { storeId: true, primaryColor: true, secondaryColor: true, accentColor: true },
+    });
+    if (!store) throw new NotFoundException('Tienda no encontrada');
+    return store;
+  }
+
+  async updateTheme(storeId: string, dto: UpdateThemeDto, requestingStoreId: string) {
+    if (requestingStoreId !== storeId) {
+      throw new ForbiddenException('No puedes modificar el tema de otra tienda');
+    }
+    return this.prisma.store.update({
+      where: { storeId },
+      data: dto,
+      select: { storeId: true, primaryColor: true, secondaryColor: true, accentColor: true },
     });
   }
 }

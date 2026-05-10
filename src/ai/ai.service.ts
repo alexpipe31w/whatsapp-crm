@@ -406,7 +406,14 @@ export class AiService {
       const [conversationRow, orders, appointments, history] = await Promise.all([
         this.prisma.conversation.findFirst({
           where:   { conversationId, storeId },
-          include: { customer: true },
+          include: {
+            customer: {
+              select: {
+                customerId: true, name: true, cedula: true, city: true, phone: true,
+                lastConversationSummary: true,
+              },
+            },
+          },
         }),
         this.prisma.order.findMany({
           where: { storeId, customer: { conversations: { some: { conversationId } } } },
@@ -492,6 +499,7 @@ export class AiService {
         config.systemPrompt, customer, orders, appointments,
         products, services, fechaActual, horaActual,
         history, userMessage, addressAlreadyGiven, settings,
+        customer.lastConversationSummary ?? null,
       );
 
       const messages: any[] = [
@@ -1164,6 +1172,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
     latestMessage: string,
     addressAlreadyGiven: boolean,
     settings: StoreSettings,
+    lastConversationSummary: string | null = null,
   ): string {
     const sep           = '\n===================================================\n';
     const nombreCliente = customer.name ?? null;
@@ -1346,10 +1355,15 @@ IMPORTANTE:
 - Si la hora es ambigua (ej: "2"), confirma: "¿A las 2pm o 2am?"
 - Para servicios VARIABLE, avisa que el precio lo confirma un asesor en la visita.`;
 
+    // Contexto de conversaciones anteriores (generado por el cleanup nocturno)
+    const contextoPrevio = lastConversationSummary
+      ? `HISTORIAL DEL CLIENTE (conversación anterior archivada):\n${lastConversationSummary}\n\nUSA ESTE CONTEXTO para dar un servicio más personalizado. No repitas preguntas que ya se respondieron en conversaciones previas.`
+      : `HISTORIAL DEL CLIENTE: Primera interacción o sin historial previo.`;
+
     return [
-      basePrompt, sep, clienteSection, sep, datosSection, sep,
-      ordenesSection, sep, citasSection, sep, catalogoSection, sep,
-      flujoSection, sep, agendamientoSection, sep,
+      basePrompt, sep, clienteSection, sep, contextoPrevio, sep,
+      datosSection, sep, ordenesSection, sep, citasSection, sep,
+      catalogoSection, sep, flujoSection, sep, agendamientoSection, sep,
       `FECHA Y HORA ACTUAL: ${fechaActual}, ${horaActual} (Colombia).`,
     ].join('\n');
   }

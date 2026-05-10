@@ -407,6 +407,7 @@ export const ModelName = {
   Campaign: 'Campaign',
   User: 'User',
   BlockedContact: 'BlockedContact',
+  ArchivedMessage: 'ArchivedMessage',
   WhatsappSession: 'WhatsappSession'
 } as const
 
@@ -423,7 +424,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "store" | "customer" | "conversation" | "message" | "category" | "product" | "productVariant" | "service" | "serviceVariant" | "order" | "orderItem" | "appointment" | "appointmentTimeline" | "aIConfiguration" | "campaign" | "user" | "blockedContact" | "whatsappSession"
+    modelProps: "store" | "customer" | "conversation" | "message" | "category" | "product" | "productVariant" | "service" | "serviceVariant" | "order" | "orderItem" | "appointment" | "appointmentTimeline" | "aIConfiguration" | "campaign" | "user" | "blockedContact" | "archivedMessage" | "whatsappSession"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1685,6 +1686,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    ArchivedMessage: {
+      payload: Prisma.$ArchivedMessagePayload<ExtArgs>
+      fields: Prisma.ArchivedMessageFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ArchivedMessageFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ArchivedMessagePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ArchivedMessageFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ArchivedMessagePayload>
+        }
+        findFirst: {
+          args: Prisma.ArchivedMessageFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ArchivedMessagePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ArchivedMessageFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ArchivedMessagePayload>
+        }
+        findMany: {
+          args: Prisma.ArchivedMessageFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ArchivedMessagePayload>[]
+        }
+        create: {
+          args: Prisma.ArchivedMessageCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ArchivedMessagePayload>
+        }
+        createMany: {
+          args: Prisma.ArchivedMessageCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ArchivedMessageCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ArchivedMessagePayload>[]
+        }
+        delete: {
+          args: Prisma.ArchivedMessageDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ArchivedMessagePayload>
+        }
+        update: {
+          args: Prisma.ArchivedMessageUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ArchivedMessagePayload>
+        }
+        deleteMany: {
+          args: Prisma.ArchivedMessageDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ArchivedMessageUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ArchivedMessageUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ArchivedMessagePayload>[]
+        }
+        upsert: {
+          args: Prisma.ArchivedMessageUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ArchivedMessagePayload>
+        }
+        aggregate: {
+          args: Prisma.ArchivedMessageAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateArchivedMessage>
+        }
+        groupBy: {
+          args: Prisma.ArchivedMessageGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ArchivedMessageGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ArchivedMessageCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ArchivedMessageCountAggregateOutputType> | number
+        }
+      }
+    }
     WhatsappSession: {
       payload: Prisma.$WhatsappSessionPayload<ExtArgs>
       fields: Prisma.WhatsappSessionFieldRefs
@@ -1805,6 +1880,9 @@ export const StoreScalarFieldEnum = {
   ownerName: 'ownerName',
   waSessionId: 'waSessionId',
   isActive: 'isActive',
+  primaryColor: 'primaryColor',
+  secondaryColor: 'secondaryColor',
+  accentColor: 'accentColor',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -1819,6 +1897,7 @@ export const CustomerScalarFieldEnum = {
   name: 'name',
   cedula: 'cedula',
   city: 'city',
+  lastConversationSummary: 'lastConversationSummary',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -1833,7 +1912,8 @@ export const ConversationScalarFieldEnum = {
   status: 'status',
   startedAt: 'startedAt',
   lastMessageAt: 'lastMessageAt',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  archivedAt: 'archivedAt'
 } as const
 
 export type ConversationScalarFieldEnum = (typeof ConversationScalarFieldEnum)[keyof typeof ConversationScalarFieldEnum]
@@ -2081,6 +2161,21 @@ export const BlockedContactScalarFieldEnum = {
 } as const
 
 export type BlockedContactScalarFieldEnum = (typeof BlockedContactScalarFieldEnum)[keyof typeof BlockedContactScalarFieldEnum]
+
+
+export const ArchivedMessageScalarFieldEnum = {
+  messageId: 'messageId',
+  conversationId: 'conversationId',
+  storeId: 'storeId',
+  content: 'content',
+  type: 'type',
+  sender: 'sender',
+  isAiResponse: 'isAiResponse',
+  createdAt: 'createdAt',
+  archivedAt: 'archivedAt'
+} as const
+
+export type ArchivedMessageScalarFieldEnum = (typeof ArchivedMessageScalarFieldEnum)[keyof typeof ArchivedMessageScalarFieldEnum]
 
 
 export const WhatsappSessionScalarFieldEnum = {
@@ -2396,6 +2491,7 @@ export type GlobalOmitConfig = {
   campaign?: Prisma.CampaignOmit
   user?: Prisma.UserOmit
   blockedContact?: Prisma.BlockedContactOmit
+  archivedMessage?: Prisma.ArchivedMessageOmit
   whatsappSession?: Prisma.WhatsappSessionOmit
 }
 

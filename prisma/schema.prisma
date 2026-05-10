@@ -55,6 +55,12 @@ model Store {
   ownerName   String?  @map("owner_name") @db.VarChar(100)
   waSessionId String?  @unique @map("wa_session_id") @db.VarChar(50)
   isActive    Boolean  @default(true) @map("is_active")
+
+  // Paleta de colores personalizable por tienda
+  primaryColor   String? @default("#2563eb") @map("primary_color")   @db.VarChar(7)
+  secondaryColor String? @default("#9333ea") @map("secondary_color") @db.VarChar(7)
+  accentColor    String? @default("#f59e0b") @map("accent_color")    @db.VarChar(7)
+
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
@@ -84,6 +90,10 @@ model Customer {
   name       String?  @db.VarChar(100)
   cedula     String?  @db.VarChar(20)
   city       String?  @db.VarChar(100)
+
+  // Resumen de la última conversación — lo usa la IA como contexto en nuevas charlas
+  lastConversationSummary String? @map("last_conversation_summary") @db.Text
+
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
@@ -108,12 +118,16 @@ model Conversation {
   lastMessageAt  DateTime @default(now()) @map("last_message_at")
   createdAt      DateTime @default(now()) @map("created_at")
 
+  // Fecha en que sus mensajes fueron archivados (cleanup nocturno)
+  archivedAt DateTime? @map("archived_at")
+
   store    Store     @relation(fields: [storeId], references: [storeId])
   customer Customer  @relation(fields: [customerId], references: [customerId])
   messages Message[]
 
   @@index([storeId, status])
   @@index([customerId, status])
+  @@index([storeId, lastMessageAt])
   @@map("conversations")
 }
 
@@ -515,6 +529,26 @@ model BlockedContact {
 
   @@unique([storeId, phone])
   @@map("blocked_contacts")
+}
+
+// ─── ArchivedMessage ──────────────────────────────────────────────────────────
+// Conversaciones cerradas > 6 meses se mueven aquí para mantener messages liviana.
+// El archivado lo hace un cron mensual vía script de migración.
+
+model ArchivedMessage {
+  messageId      String   @id @map("message_id")
+  conversationId String   @map("conversation_id")
+  storeId        String   @map("store_id")
+  content        String
+  type           String
+  sender         String
+  isAiResponse   Boolean  @map("is_ai_response")
+  createdAt      DateTime @map("created_at")
+  archivedAt     DateTime @default(now()) @map("archived_at")
+
+  @@index([storeId, createdAt])
+  @@index([conversationId])
+  @@map("archived_messages")
 }
 
 // ─── WhatsappSession ─────────────────────────────────────────────────────────

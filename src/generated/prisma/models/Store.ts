@@ -31,6 +31,9 @@ export type StoreMinAggregateOutputType = {
   ownerName: string | null
   waSessionId: string | null
   isActive: boolean | null
+  primaryColor: string | null
+  secondaryColor: string | null
+  accentColor: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -42,6 +45,9 @@ export type StoreMaxAggregateOutputType = {
   ownerName: string | null
   waSessionId: string | null
   isActive: boolean | null
+  primaryColor: string | null
+  secondaryColor: string | null
+  accentColor: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -53,6 +59,9 @@ export type StoreCountAggregateOutputType = {
   ownerName: number
   waSessionId: number
   isActive: number
+  primaryColor: number
+  secondaryColor: number
+  accentColor: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -66,6 +75,9 @@ export type StoreMinAggregateInputType = {
   ownerName?: true
   waSessionId?: true
   isActive?: true
+  primaryColor?: true
+  secondaryColor?: true
+  accentColor?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -77,6 +89,9 @@ export type StoreMaxAggregateInputType = {
   ownerName?: true
   waSessionId?: true
   isActive?: true
+  primaryColor?: true
+  secondaryColor?: true
+  accentColor?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -88,6 +103,9 @@ export type StoreCountAggregateInputType = {
   ownerName?: true
   waSessionId?: true
   isActive?: true
+  primaryColor?: true
+  secondaryColor?: true
+  accentColor?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -172,6 +190,9 @@ export type StoreGroupByOutputType = {
   ownerName: string | null
   waSessionId: string | null
   isActive: boolean
+  primaryColor: string | null
+  secondaryColor: string | null
+  accentColor: string | null
   createdAt: Date
   updatedAt: Date
   _count: StoreCountAggregateOutputType | null
@@ -204,6 +225,9 @@ export type StoreWhereInput = {
   ownerName?: Prisma.StringNullableFilter<"Store"> | string | null
   waSessionId?: Prisma.StringNullableFilter<"Store"> | string | null
   isActive?: Prisma.BoolFilter<"Store"> | boolean
+  primaryColor?: Prisma.StringNullableFilter<"Store"> | string | null
+  secondaryColor?: Prisma.StringNullableFilter<"Store"> | string | null
+  accentColor?: Prisma.StringNullableFilter<"Store"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Store"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Store"> | Date | string
   customers?: Prisma.CustomerListRelationFilter
@@ -228,6 +252,9 @@ export type StoreOrderByWithRelationInput = {
   ownerName?: Prisma.SortOrderInput | Prisma.SortOrder
   waSessionId?: Prisma.SortOrderInput | Prisma.SortOrder
   isActive?: Prisma.SortOrder
+  primaryColor?: Prisma.SortOrderInput | Prisma.SortOrder
+  secondaryColor?: Prisma.SortOrderInput | Prisma.SortOrder
+  accentColor?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   customers?: Prisma.CustomerOrderByRelationAggregateInput
@@ -255,6 +282,9 @@ export type StoreWhereUniqueInput = Prisma.AtLeast<{
   name?: Prisma.StringFilter<"Store"> | string
   ownerName?: Prisma.StringNullableFilter<"Store"> | string | null
   isActive?: Prisma.BoolFilter<"Store"> | boolean
+  primaryColor?: Prisma.StringNullableFilter<"Store"> | string | null
+  secondaryColor?: Prisma.StringNullableFilter<"Store"> | string | null
+  accentColor?: Prisma.StringNullableFilter<"Store"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Store"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Store"> | Date | string
   customers?: Prisma.CustomerListRelationFilter
@@ -279,6 +309,9 @@ export type StoreOrderByWithAggregationInput = {
   ownerName?: Prisma.SortOrderInput | Prisma.SortOrder
   waSessionId?: Prisma.SortOrderInput | Prisma.SortOrder
   isActive?: Prisma.SortOrder
+  primaryColor?: Prisma.SortOrderInput | Prisma.SortOrder
+  secondaryColor?: Prisma.SortOrderInput | Prisma.SortOrder
+  accentColor?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.StoreCountOrderByAggregateInput
@@ -296,6 +329,9 @@ export type StoreScalarWhereWithAggregatesInput = {
   ownerName?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
   waSessionId?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
   isActive?: Prisma.BoolWithAggregatesFilter<"Store"> | boolean
+  primaryColor?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
+  secondaryColor?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
+  accentColor?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Store"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Store"> | Date | string
 }
@@ -307,6 +343,9 @@ export type StoreCreateInput = {
   ownerName?: string | null
   waSessionId?: string | null
   isActive?: boolean
+  primaryColor?: string | null
+  secondaryColor?: string | null
+  accentColor?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerCreateNestedManyWithoutStoreInput
@@ -331,6 +370,9 @@ export type StoreUncheckedCreateInput = {
   ownerName?: string | null
   waSessionId?: string | null
   isActive?: boolean
+  primaryColor?: string | null
+  secondaryColor?: string | null
+  accentColor?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerUncheckedCreateNestedManyWithoutStoreInput
@@ -355,6 +397,9 @@ export type StoreUpdateInput = {
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUpdateManyWithoutStoreNestedInput
@@ -379,6 +424,9 @@ export type StoreUncheckedUpdateInput = {
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUncheckedUpdateManyWithoutStoreNestedInput
@@ -403,6 +451,9 @@ export type StoreCreateManyInput = {
   ownerName?: string | null
   waSessionId?: string | null
   isActive?: boolean
+  primaryColor?: string | null
+  secondaryColor?: string | null
+  accentColor?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -414,6 +465,9 @@ export type StoreUpdateManyMutationInput = {
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -425,6 +479,9 @@ export type StoreUncheckedUpdateManyInput = {
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -436,6 +493,9 @@ export type StoreCountOrderByAggregateInput = {
   ownerName?: Prisma.SortOrder
   waSessionId?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
+  primaryColor?: Prisma.SortOrder
+  secondaryColor?: Prisma.SortOrder
+  accentColor?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -447,6 +507,9 @@ export type StoreMaxOrderByAggregateInput = {
   ownerName?: Prisma.SortOrder
   waSessionId?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
+  primaryColor?: Prisma.SortOrder
+  secondaryColor?: Prisma.SortOrder
+  accentColor?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -458,6 +521,9 @@ export type StoreMinOrderByAggregateInput = {
   ownerName?: Prisma.SortOrder
   waSessionId?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
+  primaryColor?: Prisma.SortOrder
+  secondaryColor?: Prisma.SortOrder
+  accentColor?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -679,6 +745,9 @@ export type StoreCreateWithoutCustomersInput = {
   ownerName?: string | null
   waSessionId?: string | null
   isActive?: boolean
+  primaryColor?: string | null
+  secondaryColor?: string | null
+  accentColor?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   conversations?: Prisma.ConversationCreateNestedManyWithoutStoreInput
@@ -702,6 +771,9 @@ export type StoreUncheckedCreateWithoutCustomersInput = {
   ownerName?: string | null
   waSessionId?: string | null
   isActive?: boolean
+  primaryColor?: string | null
+  secondaryColor?: string | null
+  accentColor?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutStoreInput
@@ -741,6 +813,9 @@ export type StoreUpdateWithoutCustomersInput = {
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   conversations?: Prisma.ConversationUpdateManyWithoutStoreNestedInput
@@ -764,6 +839,9 @@ export type StoreUncheckedUpdateWithoutCustomersInput = {
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   conversations?: Prisma.ConversationUncheckedUpdateManyWithoutStoreNestedInput
@@ -787,6 +865,9 @@ export type StoreCreateWithoutConversationsInput = {
   ownerName?: string | null
   waSessionId?: string | null
   isActive?: boolean
+  primaryColor?: string | null
+  secondaryColor?: string | null
+  accentColor?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerCreateNestedManyWithoutStoreInput
@@ -810,6 +891,9 @@ export type StoreUncheckedCreateWithoutConversationsInput = {
   ownerName?: string | null
   waSessionId?: string | null
   isActive?: boolean
+  primaryColor?: string | null
+  secondaryColor?: string | null
+  accentColor?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerUncheckedCreateNestedManyWithoutStoreInput
@@ -849,6 +933,9 @@ export type StoreUpdateWithoutConversationsInput = {
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUpdateManyWithoutStoreNestedInput
@@ -872,6 +959,9 @@ export type StoreUncheckedUpdateWithoutConversationsInput = {
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUncheckedUpdateManyWithoutStoreNestedInput
@@ -895,6 +985,9 @@ export type StoreCreateWithoutMessagesInput = {
   ownerName?: string | null
   waSessionId?: string | null
   isActive?: boolean
+  primaryColor?: string | null
+  secondaryColor?: string | null
+  accentColor?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerCreateNestedManyWithoutStoreInput
@@ -918,6 +1011,9 @@ export type StoreUncheckedCreateWithoutMessagesInput = {
   ownerName?: string | null
   waSessionId?: string | null
   isActive?: boolean
+  primaryColor?: string | null
+  secondaryColor?: string | null
+  accentColor?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerUncheckedCreateNestedManyWithoutStoreInput
@@ -957,6 +1053,9 @@ export type StoreUpdateWithoutMessagesInput = {
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUpdateManyWithoutStoreNestedInput
@@ -980,6 +1079,9 @@ export type StoreUncheckedUpdateWithoutMessagesInput = {
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUncheckedUpdateManyWithoutStoreNestedInput
@@ -1003,6 +1105,9 @@ export type StoreCreateWithoutCategoriesInput = {
   ownerName?: string | null
   waSessionId?: string | null
   isActive?: boolean
+  primaryColor?: string | null
+  secondaryColor?: string | null
+  accentColor?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerCreateNestedManyWithoutStoreInput
@@ -1026,6 +1131,9 @@ export type StoreUncheckedCreateWithoutCategoriesInput = {
   ownerName?: string | null
   waSessionId?: string | null
   isActive?: boolean
+  primaryColor?: string | null
+  secondaryColor?: string | null
+  accentColor?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerUncheckedCreateNestedManyWithoutStoreInput
@@ -1065,6 +1173,9 @@ export type StoreUpdateWithoutCategoriesInput = {
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUpdateManyWithoutStoreNestedInput
@@ -1088,6 +1199,9 @@ export type StoreUncheckedUpdateWithoutCategoriesInput = {
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUncheckedUpdateManyWithoutStoreNestedInput
@@ -1111,6 +1225,9 @@ export type StoreCreateWithoutProductsInput = {
   ownerName?: string | null
   waSessionId?: string | null
   isActive?: boolean
+  primaryColor?: string | null
+  secondaryColor?: string | null
+  accentColor?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerCreateNestedManyWithoutStoreInput
@@ -1134,6 +1251,9 @@ export type StoreUncheckedCreateWithoutProductsInput = {
   ownerName?: string | null
   waSessionId?: string | null
   isActive?: boolean
+  primaryColor?: string | null
+  secondaryColor?: string | null
+  accentColor?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerUncheckedCreateNestedManyWithoutStoreInput
@@ -1173,6 +1293,9 @@ export type StoreUpdateWithoutProductsInput = {
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUpdateManyWithoutStoreNestedInput
@@ -1196,6 +1319,9 @@ export type StoreUncheckedUpdateWithoutProductsInput = {
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUncheckedUpdateManyWithoutStoreNestedInput
@@ -1219,6 +1345,9 @@ export type StoreCreateWithoutServicesInput = {
   ownerName?: string | null
   waSessionId?: string | null
   isActive?: boolean
+  primaryColor?: string | null
+  secondaryColor?: string | null
+  accentColor?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerCreateNestedManyWithoutStoreInput
@@ -1242,6 +1371,9 @@ export type StoreUncheckedCreateWithoutServicesInput = {
   ownerName?: string | null
   waSessionId?: string | null
   isActive?: boolean
+  primaryColor?: string | null
+  secondaryColor?: string | null
+  accentColor?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerUncheckedCreateNestedManyWithoutStoreInput
@@ -1281,6 +1413,9 @@ export type StoreUpdateWithoutServicesInput = {
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUpdateManyWithoutStoreNestedInput
@@ -1304,6 +1439,9 @@ export type StoreUncheckedUpdateWithoutServicesInput = {
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUncheckedUpdateManyWithoutStoreNestedInput
@@ -1327,6 +1465,9 @@ export type StoreCreateWithoutOrdersInput = {
   ownerName?: string | null
   waSessionId?: string | null
   isActive?: boolean
+  primaryColor?: string | null
+  secondaryColor?: string | null
+  accentColor?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerCreateNestedManyWithoutStoreInput
@@ -1350,6 +1491,9 @@ export type StoreUncheckedCreateWithoutOrdersInput = {
   ownerName?: string | null
   waSessionId?: string | null
   isActive?: boolean
+  primaryColor?: string | null
+  secondaryColor?: string | null
+  accentColor?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerUncheckedCreateNestedManyWithoutStoreInput
@@ -1389,6 +1533,9 @@ export type StoreUpdateWithoutOrdersInput = {
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUpdateManyWithoutStoreNestedInput
@@ -1412,6 +1559,9 @@ export type StoreUncheckedUpdateWithoutOrdersInput = {
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUncheckedUpdateManyWithoutStoreNestedInput
@@ -1435,6 +1585,9 @@ export type StoreCreateWithoutAppointmentsInput = {
   ownerName?: string | null
   waSessionId?: string | null
   isActive?: boolean
+  primaryColor?: string | null
+  secondaryColor?: string | null
+  accentColor?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerCreateNestedManyWithoutStoreInput
@@ -1458,6 +1611,9 @@ export type StoreUncheckedCreateWithoutAppointmentsInput = {
   ownerName?: string | null
   waSessionId?: string | null
   isActive?: boolean
+  primaryColor?: string | null
+  secondaryColor?: string | null
+  accentColor?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerUncheckedCreateNestedManyWithoutStoreInput
@@ -1497,6 +1653,9 @@ export type StoreUpdateWithoutAppointmentsInput = {
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUpdateManyWithoutStoreNestedInput
@@ -1520,6 +1679,9 @@ export type StoreUncheckedUpdateWithoutAppointmentsInput = {
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUncheckedUpdateManyWithoutStoreNestedInput
@@ -1543,6 +1705,9 @@ export type StoreCreateWithoutAiConfigInput = {
   ownerName?: string | null
   waSessionId?: string | null
   isActive?: boolean
+  primaryColor?: string | null
+  secondaryColor?: string | null
+  accentColor?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerCreateNestedManyWithoutStoreInput
@@ -1566,6 +1731,9 @@ export type StoreUncheckedCreateWithoutAiConfigInput = {
   ownerName?: string | null
   waSessionId?: string | null
   isActive?: boolean
+  primaryColor?: string | null
+  secondaryColor?: string | null
+  accentColor?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerUncheckedCreateNestedManyWithoutStoreInput
@@ -1605,6 +1773,9 @@ export type StoreUpdateWithoutAiConfigInput = {
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUpdateManyWithoutStoreNestedInput
@@ -1628,6 +1799,9 @@ export type StoreUncheckedUpdateWithoutAiConfigInput = {
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUncheckedUpdateManyWithoutStoreNestedInput
@@ -1651,6 +1825,9 @@ export type StoreCreateWithoutCampaignsInput = {
   ownerName?: string | null
   waSessionId?: string | null
   isActive?: boolean
+  primaryColor?: string | null
+  secondaryColor?: string | null
+  accentColor?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerCreateNestedManyWithoutStoreInput
@@ -1674,6 +1851,9 @@ export type StoreUncheckedCreateWithoutCampaignsInput = {
   ownerName?: string | null
   waSessionId?: string | null
   isActive?: boolean
+  primaryColor?: string | null
+  secondaryColor?: string | null
+  accentColor?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerUncheckedCreateNestedManyWithoutStoreInput
@@ -1713,6 +1893,9 @@ export type StoreUpdateWithoutCampaignsInput = {
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUpdateManyWithoutStoreNestedInput
@@ -1736,6 +1919,9 @@ export type StoreUncheckedUpdateWithoutCampaignsInput = {
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUncheckedUpdateManyWithoutStoreNestedInput
@@ -1759,6 +1945,9 @@ export type StoreCreateWithoutUsersInput = {
   ownerName?: string | null
   waSessionId?: string | null
   isActive?: boolean
+  primaryColor?: string | null
+  secondaryColor?: string | null
+  accentColor?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerCreateNestedManyWithoutStoreInput
@@ -1782,6 +1971,9 @@ export type StoreUncheckedCreateWithoutUsersInput = {
   ownerName?: string | null
   waSessionId?: string | null
   isActive?: boolean
+  primaryColor?: string | null
+  secondaryColor?: string | null
+  accentColor?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerUncheckedCreateNestedManyWithoutStoreInput
@@ -1821,6 +2013,9 @@ export type StoreUpdateWithoutUsersInput = {
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUpdateManyWithoutStoreNestedInput
@@ -1844,6 +2039,9 @@ export type StoreUncheckedUpdateWithoutUsersInput = {
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUncheckedUpdateManyWithoutStoreNestedInput
@@ -1867,6 +2065,9 @@ export type StoreCreateWithoutBlockedContactsInput = {
   ownerName?: string | null
   waSessionId?: string | null
   isActive?: boolean
+  primaryColor?: string | null
+  secondaryColor?: string | null
+  accentColor?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerCreateNestedManyWithoutStoreInput
@@ -1890,6 +2091,9 @@ export type StoreUncheckedCreateWithoutBlockedContactsInput = {
   ownerName?: string | null
   waSessionId?: string | null
   isActive?: boolean
+  primaryColor?: string | null
+  secondaryColor?: string | null
+  accentColor?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerUncheckedCreateNestedManyWithoutStoreInput
@@ -1929,6 +2133,9 @@ export type StoreUpdateWithoutBlockedContactsInput = {
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUpdateManyWithoutStoreNestedInput
@@ -1952,6 +2159,9 @@ export type StoreUncheckedUpdateWithoutBlockedContactsInput = {
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUncheckedUpdateManyWithoutStoreNestedInput
@@ -1975,6 +2185,9 @@ export type StoreCreateWithoutWaSessionInput = {
   ownerName?: string | null
   waSessionId?: string | null
   isActive?: boolean
+  primaryColor?: string | null
+  secondaryColor?: string | null
+  accentColor?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerCreateNestedManyWithoutStoreInput
@@ -1998,6 +2211,9 @@ export type StoreUncheckedCreateWithoutWaSessionInput = {
   ownerName?: string | null
   waSessionId?: string | null
   isActive?: boolean
+  primaryColor?: string | null
+  secondaryColor?: string | null
+  accentColor?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerUncheckedCreateNestedManyWithoutStoreInput
@@ -2037,6 +2253,9 @@ export type StoreUpdateWithoutWaSessionInput = {
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUpdateManyWithoutStoreNestedInput
@@ -2060,6 +2279,9 @@ export type StoreUncheckedUpdateWithoutWaSessionInput = {
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUncheckedUpdateManyWithoutStoreNestedInput
@@ -2204,6 +2426,9 @@ export type StoreSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   ownerName?: boolean
   waSessionId?: boolean
   isActive?: boolean
+  primaryColor?: boolean
+  secondaryColor?: boolean
+  accentColor?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   customers?: boolean | Prisma.Store$customersArgs<ExtArgs>
@@ -2229,6 +2454,9 @@ export type StoreSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   ownerName?: boolean
   waSessionId?: boolean
   isActive?: boolean
+  primaryColor?: boolean
+  secondaryColor?: boolean
+  accentColor?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["store"]>
@@ -2240,6 +2468,9 @@ export type StoreSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   ownerName?: boolean
   waSessionId?: boolean
   isActive?: boolean
+  primaryColor?: boolean
+  secondaryColor?: boolean
+  accentColor?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["store"]>
@@ -2251,11 +2482,14 @@ export type StoreSelectScalar = {
   ownerName?: boolean
   waSessionId?: boolean
   isActive?: boolean
+  primaryColor?: boolean
+  secondaryColor?: boolean
+  accentColor?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type StoreOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"storeId" | "name" | "phone" | "ownerName" | "waSessionId" | "isActive" | "createdAt" | "updatedAt", ExtArgs["result"]["store"]>
+export type StoreOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"storeId" | "name" | "phone" | "ownerName" | "waSessionId" | "isActive" | "primaryColor" | "secondaryColor" | "accentColor" | "createdAt" | "updatedAt", ExtArgs["result"]["store"]>
 export type StoreInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   customers?: boolean | Prisma.Store$customersArgs<ExtArgs>
   conversations?: boolean | Prisma.Store$conversationsArgs<ExtArgs>
@@ -2299,6 +2533,9 @@ export type $StorePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     ownerName: string | null
     waSessionId: string | null
     isActive: boolean
+    primaryColor: string | null
+    secondaryColor: string | null
+    accentColor: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["store"]>
@@ -2743,6 +2980,9 @@ export interface StoreFieldRefs {
   readonly ownerName: Prisma.FieldRef<"Store", 'String'>
   readonly waSessionId: Prisma.FieldRef<"Store", 'String'>
   readonly isActive: Prisma.FieldRef<"Store", 'Boolean'>
+  readonly primaryColor: Prisma.FieldRef<"Store", 'String'>
+  readonly secondaryColor: Prisma.FieldRef<"Store", 'String'>
+  readonly accentColor: Prisma.FieldRef<"Store", 'String'>
   readonly createdAt: Prisma.FieldRef<"Store", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Store", 'DateTime'>
 }

@@ -121,6 +121,11 @@ export type User = Prisma.UserModel
  */
 export type BlockedContact = Prisma.BlockedContactModel
 /**
+ * Model ArchivedMessage
+ * 
+ */
+export type ArchivedMessage = Prisma.ArchivedMessageModel
+/**
  * Model WhatsappSession
  * 
  */

@@ -66,6 +66,7 @@ export const ModelName = {
   Campaign: 'Campaign',
   User: 'User',
   BlockedContact: 'BlockedContact',
+  ArchivedMessage: 'ArchivedMessage',
   WhatsappSession: 'WhatsappSession'
 } as const
 
@@ -92,6 +93,9 @@ export const StoreScalarFieldEnum = {
   ownerName: 'ownerName',
   waSessionId: 'waSessionId',
   isActive: 'isActive',
+  primaryColor: 'primaryColor',
+  secondaryColor: 'secondaryColor',
+  accentColor: 'accentColor',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -106,6 +110,7 @@ export const CustomerScalarFieldEnum = {
   name: 'name',
   cedula: 'cedula',
   city: 'city',
+  lastConversationSummary: 'lastConversationSummary',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -120,7 +125,8 @@ export const ConversationScalarFieldEnum = {
   status: 'status',
   startedAt: 'startedAt',
   lastMessageAt: 'lastMessageAt',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  archivedAt: 'archivedAt'
 } as const
 
 export type ConversationScalarFieldEnum = (typeof ConversationScalarFieldEnum)[keyof typeof ConversationScalarFieldEnum]
@@ -368,6 +374,21 @@ export const BlockedContactScalarFieldEnum = {
 } as const
 
 export type BlockedContactScalarFieldEnum = (typeof BlockedContactScalarFieldEnum)[keyof typeof BlockedContactScalarFieldEnum]
+
+
+export const ArchivedMessageScalarFieldEnum = {
+  messageId: 'messageId',
+  conversationId: 'conversationId',
+  storeId: 'storeId',
+  content: 'content',
+  type: 'type',
+  sender: 'sender',
+  isAiResponse: 'isAiResponse',
+  createdAt: 'createdAt',
+  archivedAt: 'archivedAt'
+} as const
+
+export type ArchivedMessageScalarFieldEnum = (typeof ArchivedMessageScalarFieldEnum)[keyof typeof ArchivedMessageScalarFieldEnum]
 
 
 export const WhatsappSessionScalarFieldEnum = {

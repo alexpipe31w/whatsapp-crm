@@ -2,6 +2,7 @@ import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, Request }
 import { StoresService } from './stores.service';
 import { CreateStoreDto } from './dto/create-store.dto';
 import { UpdateStoreDto } from './dto/update-store.dto';
+import { UpdateThemeDto } from './dto/update-theme.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @UseGuards(JwtAuthGuard)
@@ -35,5 +36,15 @@ export class StoresController {
   @Delete(':id')
   remove(@Param('id') id: string, @Request() req: any) {
     return this.storesService.remove(id, req.user.storeId);
+  }
+
+  @Get(':id/theme')
+  getTheme(@Param('id') id: string) {
+    return this.storesService.getTheme(id);
+  }
+
+  @Patch(':id/theme')
+  updateTheme(@Param('id') id: string, @Body() dto: UpdateThemeDto, @Request() req: any) {
+    return this.storesService.updateTheme(id, dto, req.user.storeId);
   }
 }

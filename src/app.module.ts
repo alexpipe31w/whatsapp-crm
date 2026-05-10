@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { validate } from './config/env.validation';
 import { PrismaModule } from './prisma/prisma.module';
+import { CleanupModule } from './cleanup/cleanup.module';
 import { StoresModule } from './stores/stores.module';
 import { CustomersModule } from './customers/customers.module';
 import { ConversationsModule } from './conversations/conversations.module';
@@ -24,7 +26,9 @@ import { AppointmentsModule } from './appointments/appointments.module';
       isGlobal: true,
       validate,
     }),
+    ScheduleModule.forRoot(),
     PrismaModule,
+    CleanupModule,
     StoresModule,
     CustomersModule,
     ConversationsModule,
