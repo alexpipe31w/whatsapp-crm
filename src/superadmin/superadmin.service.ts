@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
-import { EmailService } from './email.service';
+import { EmailService } from '../email/email.service';
 import { MfaStore, ResetStore } from './mfa.store';
 import * as bcrypt from 'bcrypt';
 
@@ -208,6 +208,32 @@ export class SuperAdminService {
     return this.prisma.adminAuditLog.findMany({
       orderBy: { createdAt: 'desc' },
       take: 200,
+    });
+  }
+
+  // ── Configuración de suscripción ──────────────────────────────────────────
+
+  async getSubscriptionConfig() {
+    const config = await this.prisma.subscriptionConfig.findUnique({ where: { configId: 'singleton' } });
+    return config ?? { configId: 'singleton', priceAmount: 24000, currency: 'COP' };
+  }
+
+  async updateSubscriptionConfig(priceAmount: number, adminEmail: string) {
+    if (priceAmount <= 0) throw new Error('El precio debe ser mayor a 0');
+    return this.prisma.subscriptionConfig.upsert({
+      where: { configId: 'singleton' },
+      create: { configId: 'singleton', priceAmount, updatedBy: adminEmail },
+      update: { priceAmount, updatedBy: adminEmail },
+    });
+  }
+
+  async getSubscriptions() {
+    return this.prisma.subscription.findMany({
+      include: {
+        store: { select: { name: true, phone: true, ownerName: true } },
+        payments: { orderBy: { createdAt: 'desc' }, take: 1 },
+      },
+      orderBy: { updatedAt: 'desc' },
     });
   }
 }

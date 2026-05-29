@@ -68,7 +68,10 @@ export const ModelName = {
   BlockedContact: 'BlockedContact',
   ArchivedMessage: 'ArchivedMessage',
   AdminAuditLog: 'AdminAuditLog',
-  WhatsappSession: 'WhatsappSession'
+  WhatsappSession: 'WhatsappSession',
+  SubscriptionConfig: 'SubscriptionConfig',
+  Subscription: 'Subscription',
+  SubscriptionPayment: 'SubscriptionPayment'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -97,6 +100,9 @@ export const StoreScalarFieldEnum = {
   primaryColor: 'primaryColor',
   secondaryColor: 'secondaryColor',
   accentColor: 'accentColor',
+  subscriptionStatus: 'subscriptionStatus',
+  subscriptionEnd: 'subscriptionEnd',
+  apiBlocked: 'apiBlocked',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -111,6 +117,11 @@ export const CustomerScalarFieldEnum = {
   name: 'name',
   cedula: 'cedula',
   city: 'city',
+  totalOrders: 'totalOrders',
+  totalSpent: 'totalSpent',
+  firstOrderDate: 'firstOrderDate',
+  lastOrderDate: 'lastOrderDate',
+  acceptsMarketing: 'acceptsMarketing',
   lastConversationSummary: 'lastConversationSummary',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -171,6 +182,7 @@ export const ProductScalarFieldEnum = {
   stock: 'stock',
   hasVariants: 'hasVariants',
   imageUrl: 'imageUrl',
+  images: 'images',
   hasShipping: 'hasShipping',
   weight: 'weight',
   shippingStandard: 'shippingStandard',
@@ -252,10 +264,16 @@ export const OrderScalarFieldEnum = {
   customerId: 'customerId',
   type: 'type',
   total: 'total',
+  subtotal: 'subtotal',
+  discountPercent: 'discountPercent',
+  discountAmount: 'discountAmount',
   status: 'status',
   notes: 'notes',
   estimatedTime: 'estimatedTime',
   deliveryAddress: 'deliveryAddress',
+  isManual: 'isManual',
+  manualPaymentMethod: 'manualPaymentMethod',
+  idempotencyKey: 'idempotencyKey',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -412,6 +430,44 @@ export const WhatsappSessionScalarFieldEnum = {
 } as const
 
 export type WhatsappSessionScalarFieldEnum = (typeof WhatsappSessionScalarFieldEnum)[keyof typeof WhatsappSessionScalarFieldEnum]
+
+
+export const SubscriptionConfigScalarFieldEnum = {
+  configId: 'configId',
+  priceAmount: 'priceAmount',
+  currency: 'currency',
+  updatedAt: 'updatedAt',
+  updatedBy: 'updatedBy'
+} as const
+
+export type SubscriptionConfigScalarFieldEnum = (typeof SubscriptionConfigScalarFieldEnum)[keyof typeof SubscriptionConfigScalarFieldEnum]
+
+
+export const SubscriptionScalarFieldEnum = {
+  subscriptionId: 'subscriptionId',
+  storeId: 'storeId',
+  status: 'status',
+  currentPeriodStart: 'currentPeriodStart',
+  currentPeriodEnd: 'currentPeriodEnd',
+  priceAmount: 'priceAmount',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SubscriptionScalarFieldEnum = (typeof SubscriptionScalarFieldEnum)[keyof typeof SubscriptionScalarFieldEnum]
+
+
+export const SubscriptionPaymentScalarFieldEnum = {
+  paymentId: 'paymentId',
+  subscriptionId: 'subscriptionId',
+  mpPaymentId: 'mpPaymentId',
+  amount: 'amount',
+  status: 'status',
+  paidAt: 'paidAt',
+  createdAt: 'createdAt'
+} as const
+
+export type SubscriptionPaymentScalarFieldEnum = (typeof SubscriptionPaymentScalarFieldEnum)[keyof typeof SubscriptionPaymentScalarFieldEnum]
 
 
 export const SortOrder = {

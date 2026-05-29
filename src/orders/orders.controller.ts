@@ -14,9 +14,16 @@ export class OrdersController {
     return this.ordersService.create({ ...dto, storeId: req.user.storeId });
   }
 
+  // Orden manual — misma lógica pero fuerza isManual:true para tracking
+  @Post('manual')
+  createManual(@Body() dto: CreateOrderDto, @Request() req: any) {
+    return this.ordersService.create({ ...dto, storeId: req.user.storeId, isManual: true });
+  }
+
   @Get('store/:storeId')
-  findAllByStore(@Param('storeId') storeId: string) {
-    return this.ordersService.findAllByStore(storeId);
+  findAllByStore(@Param('storeId') storeId: string, @Request() req: any) {
+    const effectiveStoreId = req.user.role === 'superadmin' ? storeId : req.user.storeId;
+    return this.ordersService.findAllByStore(effectiveStoreId);
   }
 
   @Get(':id')

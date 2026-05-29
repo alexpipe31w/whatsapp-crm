@@ -34,6 +34,9 @@ export type StoreMinAggregateOutputType = {
   primaryColor: string | null
   secondaryColor: string | null
   accentColor: string | null
+  subscriptionStatus: string | null
+  subscriptionEnd: Date | null
+  apiBlocked: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -48,6 +51,9 @@ export type StoreMaxAggregateOutputType = {
   primaryColor: string | null
   secondaryColor: string | null
   accentColor: string | null
+  subscriptionStatus: string | null
+  subscriptionEnd: Date | null
+  apiBlocked: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -62,6 +68,9 @@ export type StoreCountAggregateOutputType = {
   primaryColor: number
   secondaryColor: number
   accentColor: number
+  subscriptionStatus: number
+  subscriptionEnd: number
+  apiBlocked: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -78,6 +87,9 @@ export type StoreMinAggregateInputType = {
   primaryColor?: true
   secondaryColor?: true
   accentColor?: true
+  subscriptionStatus?: true
+  subscriptionEnd?: true
+  apiBlocked?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -92,6 +104,9 @@ export type StoreMaxAggregateInputType = {
   primaryColor?: true
   secondaryColor?: true
   accentColor?: true
+  subscriptionStatus?: true
+  subscriptionEnd?: true
+  apiBlocked?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -106,6 +121,9 @@ export type StoreCountAggregateInputType = {
   primaryColor?: true
   secondaryColor?: true
   accentColor?: true
+  subscriptionStatus?: true
+  subscriptionEnd?: true
+  apiBlocked?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -193,6 +211,9 @@ export type StoreGroupByOutputType = {
   primaryColor: string | null
   secondaryColor: string | null
   accentColor: string | null
+  subscriptionStatus: string
+  subscriptionEnd: Date | null
+  apiBlocked: boolean
   createdAt: Date
   updatedAt: Date
   _count: StoreCountAggregateOutputType | null
@@ -228,6 +249,9 @@ export type StoreWhereInput = {
   primaryColor?: Prisma.StringNullableFilter<"Store"> | string | null
   secondaryColor?: Prisma.StringNullableFilter<"Store"> | string | null
   accentColor?: Prisma.StringNullableFilter<"Store"> | string | null
+  subscriptionStatus?: Prisma.StringFilter<"Store"> | string
+  subscriptionEnd?: Prisma.DateTimeNullableFilter<"Store"> | Date | string | null
+  apiBlocked?: Prisma.BoolFilter<"Store"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Store"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Store"> | Date | string
   customers?: Prisma.CustomerListRelationFilter
@@ -243,6 +267,7 @@ export type StoreWhereInput = {
   aiConfig?: Prisma.XOR<Prisma.AIConfigurationNullableScalarRelationFilter, Prisma.AIConfigurationWhereInput> | null
   blockedContacts?: Prisma.BlockedContactListRelationFilter
   waSession?: Prisma.XOR<Prisma.WhatsappSessionNullableScalarRelationFilter, Prisma.WhatsappSessionWhereInput> | null
+  subscription?: Prisma.XOR<Prisma.SubscriptionNullableScalarRelationFilter, Prisma.SubscriptionWhereInput> | null
 }
 
 export type StoreOrderByWithRelationInput = {
@@ -255,6 +280,9 @@ export type StoreOrderByWithRelationInput = {
   primaryColor?: Prisma.SortOrderInput | Prisma.SortOrder
   secondaryColor?: Prisma.SortOrderInput | Prisma.SortOrder
   accentColor?: Prisma.SortOrderInput | Prisma.SortOrder
+  subscriptionStatus?: Prisma.SortOrder
+  subscriptionEnd?: Prisma.SortOrderInput | Prisma.SortOrder
+  apiBlocked?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   customers?: Prisma.CustomerOrderByRelationAggregateInput
@@ -270,6 +298,7 @@ export type StoreOrderByWithRelationInput = {
   aiConfig?: Prisma.AIConfigurationOrderByWithRelationInput
   blockedContacts?: Prisma.BlockedContactOrderByRelationAggregateInput
   waSession?: Prisma.WhatsappSessionOrderByWithRelationInput
+  subscription?: Prisma.SubscriptionOrderByWithRelationInput
 }
 
 export type StoreWhereUniqueInput = Prisma.AtLeast<{
@@ -285,6 +314,9 @@ export type StoreWhereUniqueInput = Prisma.AtLeast<{
   primaryColor?: Prisma.StringNullableFilter<"Store"> | string | null
   secondaryColor?: Prisma.StringNullableFilter<"Store"> | string | null
   accentColor?: Prisma.StringNullableFilter<"Store"> | string | null
+  subscriptionStatus?: Prisma.StringFilter<"Store"> | string
+  subscriptionEnd?: Prisma.DateTimeNullableFilter<"Store"> | Date | string | null
+  apiBlocked?: Prisma.BoolFilter<"Store"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Store"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Store"> | Date | string
   customers?: Prisma.CustomerListRelationFilter
@@ -300,6 +332,7 @@ export type StoreWhereUniqueInput = Prisma.AtLeast<{
   aiConfig?: Prisma.XOR<Prisma.AIConfigurationNullableScalarRelationFilter, Prisma.AIConfigurationWhereInput> | null
   blockedContacts?: Prisma.BlockedContactListRelationFilter
   waSession?: Prisma.XOR<Prisma.WhatsappSessionNullableScalarRelationFilter, Prisma.WhatsappSessionWhereInput> | null
+  subscription?: Prisma.XOR<Prisma.SubscriptionNullableScalarRelationFilter, Prisma.SubscriptionWhereInput> | null
 }, "storeId" | "phone" | "waSessionId">
 
 export type StoreOrderByWithAggregationInput = {
@@ -312,6 +345,9 @@ export type StoreOrderByWithAggregationInput = {
   primaryColor?: Prisma.SortOrderInput | Prisma.SortOrder
   secondaryColor?: Prisma.SortOrderInput | Prisma.SortOrder
   accentColor?: Prisma.SortOrderInput | Prisma.SortOrder
+  subscriptionStatus?: Prisma.SortOrder
+  subscriptionEnd?: Prisma.SortOrderInput | Prisma.SortOrder
+  apiBlocked?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.StoreCountOrderByAggregateInput
@@ -332,6 +368,9 @@ export type StoreScalarWhereWithAggregatesInput = {
   primaryColor?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
   secondaryColor?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
   accentColor?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
+  subscriptionStatus?: Prisma.StringWithAggregatesFilter<"Store"> | string
+  subscriptionEnd?: Prisma.DateTimeNullableWithAggregatesFilter<"Store"> | Date | string | null
+  apiBlocked?: Prisma.BoolWithAggregatesFilter<"Store"> | boolean
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Store"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Store"> | Date | string
 }
@@ -346,6 +385,9 @@ export type StoreCreateInput = {
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
+  subscriptionStatus?: string
+  subscriptionEnd?: Date | string | null
+  apiBlocked?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerCreateNestedManyWithoutStoreInput
@@ -361,6 +403,7 @@ export type StoreCreateInput = {
   aiConfig?: Prisma.AIConfigurationCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
+  subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
 }
 
 export type StoreUncheckedCreateInput = {
@@ -373,6 +416,9 @@ export type StoreUncheckedCreateInput = {
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
+  subscriptionStatus?: string
+  subscriptionEnd?: Date | string | null
+  apiBlocked?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerUncheckedCreateNestedManyWithoutStoreInput
@@ -388,6 +434,7 @@ export type StoreUncheckedCreateInput = {
   aiConfig?: Prisma.AIConfigurationUncheckedCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
+  subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
 }
 
 export type StoreUpdateInput = {
@@ -400,6 +447,9 @@ export type StoreUpdateInput = {
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  apiBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUpdateManyWithoutStoreNestedInput
@@ -415,6 +465,7 @@ export type StoreUpdateInput = {
   aiConfig?: Prisma.AIConfigurationUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
+  subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateInput = {
@@ -427,6 +478,9 @@ export type StoreUncheckedUpdateInput = {
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  apiBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUncheckedUpdateManyWithoutStoreNestedInput
@@ -442,6 +496,7 @@ export type StoreUncheckedUpdateInput = {
   aiConfig?: Prisma.AIConfigurationUncheckedUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
+  subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
 }
 
 export type StoreCreateManyInput = {
@@ -454,6 +509,9 @@ export type StoreCreateManyInput = {
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
+  subscriptionStatus?: string
+  subscriptionEnd?: Date | string | null
+  apiBlocked?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -468,6 +526,9 @@ export type StoreUpdateManyMutationInput = {
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  apiBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -482,6 +543,9 @@ export type StoreUncheckedUpdateManyInput = {
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  apiBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -496,6 +560,9 @@ export type StoreCountOrderByAggregateInput = {
   primaryColor?: Prisma.SortOrder
   secondaryColor?: Prisma.SortOrder
   accentColor?: Prisma.SortOrder
+  subscriptionStatus?: Prisma.SortOrder
+  subscriptionEnd?: Prisma.SortOrder
+  apiBlocked?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -510,6 +577,9 @@ export type StoreMaxOrderByAggregateInput = {
   primaryColor?: Prisma.SortOrder
   secondaryColor?: Prisma.SortOrder
   accentColor?: Prisma.SortOrder
+  subscriptionStatus?: Prisma.SortOrder
+  subscriptionEnd?: Prisma.SortOrder
+  apiBlocked?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -524,6 +594,9 @@ export type StoreMinOrderByAggregateInput = {
   primaryColor?: Prisma.SortOrder
   secondaryColor?: Prisma.SortOrder
   accentColor?: Prisma.SortOrder
+  subscriptionStatus?: Prisma.SortOrder
+  subscriptionEnd?: Prisma.SortOrder
+  apiBlocked?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -548,6 +621,10 @@ export type NullableStringFieldUpdateOperationsInput = {
 
 export type BoolFieldUpdateOperationsInput = {
   set?: boolean
+}
+
+export type NullableDateTimeFieldUpdateOperationsInput = {
+  set?: Date | string | null
 }
 
 export type DateTimeFieldUpdateOperationsInput = {
@@ -738,6 +815,20 @@ export type StoreUpdateOneRequiredWithoutWaSessionNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.StoreUpdateToOneWithWhereWithoutWaSessionInput, Prisma.StoreUpdateWithoutWaSessionInput>, Prisma.StoreUncheckedUpdateWithoutWaSessionInput>
 }
 
+export type StoreCreateNestedOneWithoutSubscriptionInput = {
+  create?: Prisma.XOR<Prisma.StoreCreateWithoutSubscriptionInput, Prisma.StoreUncheckedCreateWithoutSubscriptionInput>
+  connectOrCreate?: Prisma.StoreCreateOrConnectWithoutSubscriptionInput
+  connect?: Prisma.StoreWhereUniqueInput
+}
+
+export type StoreUpdateOneRequiredWithoutSubscriptionNestedInput = {
+  create?: Prisma.XOR<Prisma.StoreCreateWithoutSubscriptionInput, Prisma.StoreUncheckedCreateWithoutSubscriptionInput>
+  connectOrCreate?: Prisma.StoreCreateOrConnectWithoutSubscriptionInput
+  upsert?: Prisma.StoreUpsertWithoutSubscriptionInput
+  connect?: Prisma.StoreWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.StoreUpdateToOneWithWhereWithoutSubscriptionInput, Prisma.StoreUpdateWithoutSubscriptionInput>, Prisma.StoreUncheckedUpdateWithoutSubscriptionInput>
+}
+
 export type StoreCreateWithoutCustomersInput = {
   storeId?: string
   name: string
@@ -748,6 +839,9 @@ export type StoreCreateWithoutCustomersInput = {
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
+  subscriptionStatus?: string
+  subscriptionEnd?: Date | string | null
+  apiBlocked?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   conversations?: Prisma.ConversationCreateNestedManyWithoutStoreInput
@@ -762,6 +856,7 @@ export type StoreCreateWithoutCustomersInput = {
   aiConfig?: Prisma.AIConfigurationCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
+  subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutCustomersInput = {
@@ -774,6 +869,9 @@ export type StoreUncheckedCreateWithoutCustomersInput = {
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
+  subscriptionStatus?: string
+  subscriptionEnd?: Date | string | null
+  apiBlocked?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutStoreInput
@@ -788,6 +886,7 @@ export type StoreUncheckedCreateWithoutCustomersInput = {
   aiConfig?: Prisma.AIConfigurationUncheckedCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
+  subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutCustomersInput = {
@@ -816,6 +915,9 @@ export type StoreUpdateWithoutCustomersInput = {
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  apiBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   conversations?: Prisma.ConversationUpdateManyWithoutStoreNestedInput
@@ -830,6 +932,7 @@ export type StoreUpdateWithoutCustomersInput = {
   aiConfig?: Prisma.AIConfigurationUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
+  subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutCustomersInput = {
@@ -842,6 +945,9 @@ export type StoreUncheckedUpdateWithoutCustomersInput = {
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  apiBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   conversations?: Prisma.ConversationUncheckedUpdateManyWithoutStoreNestedInput
@@ -856,6 +962,7 @@ export type StoreUncheckedUpdateWithoutCustomersInput = {
   aiConfig?: Prisma.AIConfigurationUncheckedUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
+  subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutConversationsInput = {
@@ -868,6 +975,9 @@ export type StoreCreateWithoutConversationsInput = {
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
+  subscriptionStatus?: string
+  subscriptionEnd?: Date | string | null
+  apiBlocked?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerCreateNestedManyWithoutStoreInput
@@ -882,6 +992,7 @@ export type StoreCreateWithoutConversationsInput = {
   aiConfig?: Prisma.AIConfigurationCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
+  subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutConversationsInput = {
@@ -894,6 +1005,9 @@ export type StoreUncheckedCreateWithoutConversationsInput = {
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
+  subscriptionStatus?: string
+  subscriptionEnd?: Date | string | null
+  apiBlocked?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerUncheckedCreateNestedManyWithoutStoreInput
@@ -908,6 +1022,7 @@ export type StoreUncheckedCreateWithoutConversationsInput = {
   aiConfig?: Prisma.AIConfigurationUncheckedCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
+  subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutConversationsInput = {
@@ -936,6 +1051,9 @@ export type StoreUpdateWithoutConversationsInput = {
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  apiBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUpdateManyWithoutStoreNestedInput
@@ -950,6 +1068,7 @@ export type StoreUpdateWithoutConversationsInput = {
   aiConfig?: Prisma.AIConfigurationUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
+  subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutConversationsInput = {
@@ -962,6 +1081,9 @@ export type StoreUncheckedUpdateWithoutConversationsInput = {
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  apiBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUncheckedUpdateManyWithoutStoreNestedInput
@@ -976,6 +1098,7 @@ export type StoreUncheckedUpdateWithoutConversationsInput = {
   aiConfig?: Prisma.AIConfigurationUncheckedUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
+  subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutMessagesInput = {
@@ -988,6 +1111,9 @@ export type StoreCreateWithoutMessagesInput = {
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
+  subscriptionStatus?: string
+  subscriptionEnd?: Date | string | null
+  apiBlocked?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerCreateNestedManyWithoutStoreInput
@@ -1002,6 +1128,7 @@ export type StoreCreateWithoutMessagesInput = {
   aiConfig?: Prisma.AIConfigurationCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
+  subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutMessagesInput = {
@@ -1014,6 +1141,9 @@ export type StoreUncheckedCreateWithoutMessagesInput = {
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
+  subscriptionStatus?: string
+  subscriptionEnd?: Date | string | null
+  apiBlocked?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerUncheckedCreateNestedManyWithoutStoreInput
@@ -1028,6 +1158,7 @@ export type StoreUncheckedCreateWithoutMessagesInput = {
   aiConfig?: Prisma.AIConfigurationUncheckedCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
+  subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutMessagesInput = {
@@ -1056,6 +1187,9 @@ export type StoreUpdateWithoutMessagesInput = {
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  apiBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUpdateManyWithoutStoreNestedInput
@@ -1070,6 +1204,7 @@ export type StoreUpdateWithoutMessagesInput = {
   aiConfig?: Prisma.AIConfigurationUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
+  subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutMessagesInput = {
@@ -1082,6 +1217,9 @@ export type StoreUncheckedUpdateWithoutMessagesInput = {
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  apiBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUncheckedUpdateManyWithoutStoreNestedInput
@@ -1096,6 +1234,7 @@ export type StoreUncheckedUpdateWithoutMessagesInput = {
   aiConfig?: Prisma.AIConfigurationUncheckedUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
+  subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutCategoriesInput = {
@@ -1108,6 +1247,9 @@ export type StoreCreateWithoutCategoriesInput = {
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
+  subscriptionStatus?: string
+  subscriptionEnd?: Date | string | null
+  apiBlocked?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerCreateNestedManyWithoutStoreInput
@@ -1122,6 +1264,7 @@ export type StoreCreateWithoutCategoriesInput = {
   aiConfig?: Prisma.AIConfigurationCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
+  subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutCategoriesInput = {
@@ -1134,6 +1277,9 @@ export type StoreUncheckedCreateWithoutCategoriesInput = {
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
+  subscriptionStatus?: string
+  subscriptionEnd?: Date | string | null
+  apiBlocked?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerUncheckedCreateNestedManyWithoutStoreInput
@@ -1148,6 +1294,7 @@ export type StoreUncheckedCreateWithoutCategoriesInput = {
   aiConfig?: Prisma.AIConfigurationUncheckedCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
+  subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutCategoriesInput = {
@@ -1176,6 +1323,9 @@ export type StoreUpdateWithoutCategoriesInput = {
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  apiBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUpdateManyWithoutStoreNestedInput
@@ -1190,6 +1340,7 @@ export type StoreUpdateWithoutCategoriesInput = {
   aiConfig?: Prisma.AIConfigurationUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
+  subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutCategoriesInput = {
@@ -1202,6 +1353,9 @@ export type StoreUncheckedUpdateWithoutCategoriesInput = {
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  apiBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUncheckedUpdateManyWithoutStoreNestedInput
@@ -1216,6 +1370,7 @@ export type StoreUncheckedUpdateWithoutCategoriesInput = {
   aiConfig?: Prisma.AIConfigurationUncheckedUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
+  subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutProductsInput = {
@@ -1228,6 +1383,9 @@ export type StoreCreateWithoutProductsInput = {
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
+  subscriptionStatus?: string
+  subscriptionEnd?: Date | string | null
+  apiBlocked?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerCreateNestedManyWithoutStoreInput
@@ -1242,6 +1400,7 @@ export type StoreCreateWithoutProductsInput = {
   aiConfig?: Prisma.AIConfigurationCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
+  subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutProductsInput = {
@@ -1254,6 +1413,9 @@ export type StoreUncheckedCreateWithoutProductsInput = {
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
+  subscriptionStatus?: string
+  subscriptionEnd?: Date | string | null
+  apiBlocked?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerUncheckedCreateNestedManyWithoutStoreInput
@@ -1268,6 +1430,7 @@ export type StoreUncheckedCreateWithoutProductsInput = {
   aiConfig?: Prisma.AIConfigurationUncheckedCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
+  subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutProductsInput = {
@@ -1296,6 +1459,9 @@ export type StoreUpdateWithoutProductsInput = {
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  apiBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUpdateManyWithoutStoreNestedInput
@@ -1310,6 +1476,7 @@ export type StoreUpdateWithoutProductsInput = {
   aiConfig?: Prisma.AIConfigurationUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
+  subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutProductsInput = {
@@ -1322,6 +1489,9 @@ export type StoreUncheckedUpdateWithoutProductsInput = {
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  apiBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUncheckedUpdateManyWithoutStoreNestedInput
@@ -1336,6 +1506,7 @@ export type StoreUncheckedUpdateWithoutProductsInput = {
   aiConfig?: Prisma.AIConfigurationUncheckedUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
+  subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutServicesInput = {
@@ -1348,6 +1519,9 @@ export type StoreCreateWithoutServicesInput = {
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
+  subscriptionStatus?: string
+  subscriptionEnd?: Date | string | null
+  apiBlocked?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerCreateNestedManyWithoutStoreInput
@@ -1362,6 +1536,7 @@ export type StoreCreateWithoutServicesInput = {
   aiConfig?: Prisma.AIConfigurationCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
+  subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutServicesInput = {
@@ -1374,6 +1549,9 @@ export type StoreUncheckedCreateWithoutServicesInput = {
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
+  subscriptionStatus?: string
+  subscriptionEnd?: Date | string | null
+  apiBlocked?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerUncheckedCreateNestedManyWithoutStoreInput
@@ -1388,6 +1566,7 @@ export type StoreUncheckedCreateWithoutServicesInput = {
   aiConfig?: Prisma.AIConfigurationUncheckedCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
+  subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutServicesInput = {
@@ -1416,6 +1595,9 @@ export type StoreUpdateWithoutServicesInput = {
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  apiBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUpdateManyWithoutStoreNestedInput
@@ -1430,6 +1612,7 @@ export type StoreUpdateWithoutServicesInput = {
   aiConfig?: Prisma.AIConfigurationUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
+  subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutServicesInput = {
@@ -1442,6 +1625,9 @@ export type StoreUncheckedUpdateWithoutServicesInput = {
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  apiBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUncheckedUpdateManyWithoutStoreNestedInput
@@ -1456,6 +1642,7 @@ export type StoreUncheckedUpdateWithoutServicesInput = {
   aiConfig?: Prisma.AIConfigurationUncheckedUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
+  subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutOrdersInput = {
@@ -1468,6 +1655,9 @@ export type StoreCreateWithoutOrdersInput = {
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
+  subscriptionStatus?: string
+  subscriptionEnd?: Date | string | null
+  apiBlocked?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerCreateNestedManyWithoutStoreInput
@@ -1482,6 +1672,7 @@ export type StoreCreateWithoutOrdersInput = {
   aiConfig?: Prisma.AIConfigurationCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
+  subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutOrdersInput = {
@@ -1494,6 +1685,9 @@ export type StoreUncheckedCreateWithoutOrdersInput = {
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
+  subscriptionStatus?: string
+  subscriptionEnd?: Date | string | null
+  apiBlocked?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerUncheckedCreateNestedManyWithoutStoreInput
@@ -1508,6 +1702,7 @@ export type StoreUncheckedCreateWithoutOrdersInput = {
   aiConfig?: Prisma.AIConfigurationUncheckedCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
+  subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutOrdersInput = {
@@ -1536,6 +1731,9 @@ export type StoreUpdateWithoutOrdersInput = {
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  apiBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUpdateManyWithoutStoreNestedInput
@@ -1550,6 +1748,7 @@ export type StoreUpdateWithoutOrdersInput = {
   aiConfig?: Prisma.AIConfigurationUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
+  subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutOrdersInput = {
@@ -1562,6 +1761,9 @@ export type StoreUncheckedUpdateWithoutOrdersInput = {
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  apiBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUncheckedUpdateManyWithoutStoreNestedInput
@@ -1576,6 +1778,7 @@ export type StoreUncheckedUpdateWithoutOrdersInput = {
   aiConfig?: Prisma.AIConfigurationUncheckedUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
+  subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutAppointmentsInput = {
@@ -1588,6 +1791,9 @@ export type StoreCreateWithoutAppointmentsInput = {
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
+  subscriptionStatus?: string
+  subscriptionEnd?: Date | string | null
+  apiBlocked?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerCreateNestedManyWithoutStoreInput
@@ -1602,6 +1808,7 @@ export type StoreCreateWithoutAppointmentsInput = {
   aiConfig?: Prisma.AIConfigurationCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
+  subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutAppointmentsInput = {
@@ -1614,6 +1821,9 @@ export type StoreUncheckedCreateWithoutAppointmentsInput = {
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
+  subscriptionStatus?: string
+  subscriptionEnd?: Date | string | null
+  apiBlocked?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerUncheckedCreateNestedManyWithoutStoreInput
@@ -1628,6 +1838,7 @@ export type StoreUncheckedCreateWithoutAppointmentsInput = {
   aiConfig?: Prisma.AIConfigurationUncheckedCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
+  subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutAppointmentsInput = {
@@ -1656,6 +1867,9 @@ export type StoreUpdateWithoutAppointmentsInput = {
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  apiBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUpdateManyWithoutStoreNestedInput
@@ -1670,6 +1884,7 @@ export type StoreUpdateWithoutAppointmentsInput = {
   aiConfig?: Prisma.AIConfigurationUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
+  subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutAppointmentsInput = {
@@ -1682,6 +1897,9 @@ export type StoreUncheckedUpdateWithoutAppointmentsInput = {
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  apiBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUncheckedUpdateManyWithoutStoreNestedInput
@@ -1696,6 +1914,7 @@ export type StoreUncheckedUpdateWithoutAppointmentsInput = {
   aiConfig?: Prisma.AIConfigurationUncheckedUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
+  subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutAiConfigInput = {
@@ -1708,6 +1927,9 @@ export type StoreCreateWithoutAiConfigInput = {
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
+  subscriptionStatus?: string
+  subscriptionEnd?: Date | string | null
+  apiBlocked?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerCreateNestedManyWithoutStoreInput
@@ -1722,6 +1944,7 @@ export type StoreCreateWithoutAiConfigInput = {
   campaigns?: Prisma.CampaignCreateNestedManyWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
+  subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutAiConfigInput = {
@@ -1734,6 +1957,9 @@ export type StoreUncheckedCreateWithoutAiConfigInput = {
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
+  subscriptionStatus?: string
+  subscriptionEnd?: Date | string | null
+  apiBlocked?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerUncheckedCreateNestedManyWithoutStoreInput
@@ -1748,6 +1974,7 @@ export type StoreUncheckedCreateWithoutAiConfigInput = {
   campaigns?: Prisma.CampaignUncheckedCreateNestedManyWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
+  subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutAiConfigInput = {
@@ -1776,6 +2003,9 @@ export type StoreUpdateWithoutAiConfigInput = {
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  apiBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUpdateManyWithoutStoreNestedInput
@@ -1790,6 +2020,7 @@ export type StoreUpdateWithoutAiConfigInput = {
   campaigns?: Prisma.CampaignUpdateManyWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
+  subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutAiConfigInput = {
@@ -1802,6 +2033,9 @@ export type StoreUncheckedUpdateWithoutAiConfigInput = {
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  apiBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUncheckedUpdateManyWithoutStoreNestedInput
@@ -1816,6 +2050,7 @@ export type StoreUncheckedUpdateWithoutAiConfigInput = {
   campaigns?: Prisma.CampaignUncheckedUpdateManyWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
+  subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutCampaignsInput = {
@@ -1828,6 +2063,9 @@ export type StoreCreateWithoutCampaignsInput = {
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
+  subscriptionStatus?: string
+  subscriptionEnd?: Date | string | null
+  apiBlocked?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerCreateNestedManyWithoutStoreInput
@@ -1842,6 +2080,7 @@ export type StoreCreateWithoutCampaignsInput = {
   aiConfig?: Prisma.AIConfigurationCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
+  subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutCampaignsInput = {
@@ -1854,6 +2093,9 @@ export type StoreUncheckedCreateWithoutCampaignsInput = {
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
+  subscriptionStatus?: string
+  subscriptionEnd?: Date | string | null
+  apiBlocked?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerUncheckedCreateNestedManyWithoutStoreInput
@@ -1868,6 +2110,7 @@ export type StoreUncheckedCreateWithoutCampaignsInput = {
   aiConfig?: Prisma.AIConfigurationUncheckedCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
+  subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutCampaignsInput = {
@@ -1896,6 +2139,9 @@ export type StoreUpdateWithoutCampaignsInput = {
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  apiBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUpdateManyWithoutStoreNestedInput
@@ -1910,6 +2156,7 @@ export type StoreUpdateWithoutCampaignsInput = {
   aiConfig?: Prisma.AIConfigurationUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
+  subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutCampaignsInput = {
@@ -1922,6 +2169,9 @@ export type StoreUncheckedUpdateWithoutCampaignsInput = {
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  apiBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUncheckedUpdateManyWithoutStoreNestedInput
@@ -1936,6 +2186,7 @@ export type StoreUncheckedUpdateWithoutCampaignsInput = {
   aiConfig?: Prisma.AIConfigurationUncheckedUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
+  subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutUsersInput = {
@@ -1948,6 +2199,9 @@ export type StoreCreateWithoutUsersInput = {
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
+  subscriptionStatus?: string
+  subscriptionEnd?: Date | string | null
+  apiBlocked?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerCreateNestedManyWithoutStoreInput
@@ -1962,6 +2216,7 @@ export type StoreCreateWithoutUsersInput = {
   aiConfig?: Prisma.AIConfigurationCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
+  subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutUsersInput = {
@@ -1974,6 +2229,9 @@ export type StoreUncheckedCreateWithoutUsersInput = {
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
+  subscriptionStatus?: string
+  subscriptionEnd?: Date | string | null
+  apiBlocked?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerUncheckedCreateNestedManyWithoutStoreInput
@@ -1988,6 +2246,7 @@ export type StoreUncheckedCreateWithoutUsersInput = {
   aiConfig?: Prisma.AIConfigurationUncheckedCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
+  subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutUsersInput = {
@@ -2016,6 +2275,9 @@ export type StoreUpdateWithoutUsersInput = {
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  apiBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUpdateManyWithoutStoreNestedInput
@@ -2030,6 +2292,7 @@ export type StoreUpdateWithoutUsersInput = {
   aiConfig?: Prisma.AIConfigurationUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
+  subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutUsersInput = {
@@ -2042,6 +2305,9 @@ export type StoreUncheckedUpdateWithoutUsersInput = {
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  apiBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUncheckedUpdateManyWithoutStoreNestedInput
@@ -2056,6 +2322,7 @@ export type StoreUncheckedUpdateWithoutUsersInput = {
   aiConfig?: Prisma.AIConfigurationUncheckedUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
+  subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutBlockedContactsInput = {
@@ -2068,6 +2335,9 @@ export type StoreCreateWithoutBlockedContactsInput = {
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
+  subscriptionStatus?: string
+  subscriptionEnd?: Date | string | null
+  apiBlocked?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerCreateNestedManyWithoutStoreInput
@@ -2082,6 +2352,7 @@ export type StoreCreateWithoutBlockedContactsInput = {
   campaigns?: Prisma.CampaignCreateNestedManyWithoutStoreInput
   aiConfig?: Prisma.AIConfigurationCreateNestedOneWithoutStoreInput
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
+  subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutBlockedContactsInput = {
@@ -2094,6 +2365,9 @@ export type StoreUncheckedCreateWithoutBlockedContactsInput = {
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
+  subscriptionStatus?: string
+  subscriptionEnd?: Date | string | null
+  apiBlocked?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerUncheckedCreateNestedManyWithoutStoreInput
@@ -2108,6 +2382,7 @@ export type StoreUncheckedCreateWithoutBlockedContactsInput = {
   campaigns?: Prisma.CampaignUncheckedCreateNestedManyWithoutStoreInput
   aiConfig?: Prisma.AIConfigurationUncheckedCreateNestedOneWithoutStoreInput
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
+  subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutBlockedContactsInput = {
@@ -2136,6 +2411,9 @@ export type StoreUpdateWithoutBlockedContactsInput = {
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  apiBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUpdateManyWithoutStoreNestedInput
@@ -2150,6 +2428,7 @@ export type StoreUpdateWithoutBlockedContactsInput = {
   campaigns?: Prisma.CampaignUpdateManyWithoutStoreNestedInput
   aiConfig?: Prisma.AIConfigurationUpdateOneWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
+  subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutBlockedContactsInput = {
@@ -2162,6 +2441,9 @@ export type StoreUncheckedUpdateWithoutBlockedContactsInput = {
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  apiBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUncheckedUpdateManyWithoutStoreNestedInput
@@ -2176,6 +2458,7 @@ export type StoreUncheckedUpdateWithoutBlockedContactsInput = {
   campaigns?: Prisma.CampaignUncheckedUpdateManyWithoutStoreNestedInput
   aiConfig?: Prisma.AIConfigurationUncheckedUpdateOneWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
+  subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutWaSessionInput = {
@@ -2188,6 +2471,9 @@ export type StoreCreateWithoutWaSessionInput = {
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
+  subscriptionStatus?: string
+  subscriptionEnd?: Date | string | null
+  apiBlocked?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerCreateNestedManyWithoutStoreInput
@@ -2202,6 +2488,7 @@ export type StoreCreateWithoutWaSessionInput = {
   campaigns?: Prisma.CampaignCreateNestedManyWithoutStoreInput
   aiConfig?: Prisma.AIConfigurationCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
+  subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutWaSessionInput = {
@@ -2214,6 +2501,9 @@ export type StoreUncheckedCreateWithoutWaSessionInput = {
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
+  subscriptionStatus?: string
+  subscriptionEnd?: Date | string | null
+  apiBlocked?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   customers?: Prisma.CustomerUncheckedCreateNestedManyWithoutStoreInput
@@ -2228,6 +2518,7 @@ export type StoreUncheckedCreateWithoutWaSessionInput = {
   campaigns?: Prisma.CampaignUncheckedCreateNestedManyWithoutStoreInput
   aiConfig?: Prisma.AIConfigurationUncheckedCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
+  subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutWaSessionInput = {
@@ -2256,6 +2547,9 @@ export type StoreUpdateWithoutWaSessionInput = {
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  apiBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUpdateManyWithoutStoreNestedInput
@@ -2270,6 +2564,7 @@ export type StoreUpdateWithoutWaSessionInput = {
   campaigns?: Prisma.CampaignUpdateManyWithoutStoreNestedInput
   aiConfig?: Prisma.AIConfigurationUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
+  subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutWaSessionInput = {
@@ -2282,6 +2577,9 @@ export type StoreUncheckedUpdateWithoutWaSessionInput = {
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  apiBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customers?: Prisma.CustomerUncheckedUpdateManyWithoutStoreNestedInput
@@ -2296,6 +2594,143 @@ export type StoreUncheckedUpdateWithoutWaSessionInput = {
   campaigns?: Prisma.CampaignUncheckedUpdateManyWithoutStoreNestedInput
   aiConfig?: Prisma.AIConfigurationUncheckedUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
+  subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
+}
+
+export type StoreCreateWithoutSubscriptionInput = {
+  storeId?: string
+  name: string
+  phone: string
+  ownerName?: string | null
+  waSessionId?: string | null
+  isActive?: boolean
+  primaryColor?: string | null
+  secondaryColor?: string | null
+  accentColor?: string | null
+  subscriptionStatus?: string
+  subscriptionEnd?: Date | string | null
+  apiBlocked?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  customers?: Prisma.CustomerCreateNestedManyWithoutStoreInput
+  conversations?: Prisma.ConversationCreateNestedManyWithoutStoreInput
+  messages?: Prisma.MessageCreateNestedManyWithoutStoreInput
+  products?: Prisma.ProductCreateNestedManyWithoutStoreInput
+  categories?: Prisma.CategoryCreateNestedManyWithoutStoreInput
+  users?: Prisma.UserCreateNestedManyWithoutStoreInput
+  services?: Prisma.ServiceCreateNestedManyWithoutStoreInput
+  orders?: Prisma.OrderCreateNestedManyWithoutStoreInput
+  appointments?: Prisma.AppointmentCreateNestedManyWithoutStoreInput
+  campaigns?: Prisma.CampaignCreateNestedManyWithoutStoreInput
+  aiConfig?: Prisma.AIConfigurationCreateNestedOneWithoutStoreInput
+  blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
+  waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
+}
+
+export type StoreUncheckedCreateWithoutSubscriptionInput = {
+  storeId?: string
+  name: string
+  phone: string
+  ownerName?: string | null
+  waSessionId?: string | null
+  isActive?: boolean
+  primaryColor?: string | null
+  secondaryColor?: string | null
+  accentColor?: string | null
+  subscriptionStatus?: string
+  subscriptionEnd?: Date | string | null
+  apiBlocked?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  customers?: Prisma.CustomerUncheckedCreateNestedManyWithoutStoreInput
+  conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutStoreInput
+  messages?: Prisma.MessageUncheckedCreateNestedManyWithoutStoreInput
+  products?: Prisma.ProductUncheckedCreateNestedManyWithoutStoreInput
+  categories?: Prisma.CategoryUncheckedCreateNestedManyWithoutStoreInput
+  users?: Prisma.UserUncheckedCreateNestedManyWithoutStoreInput
+  services?: Prisma.ServiceUncheckedCreateNestedManyWithoutStoreInput
+  orders?: Prisma.OrderUncheckedCreateNestedManyWithoutStoreInput
+  appointments?: Prisma.AppointmentUncheckedCreateNestedManyWithoutStoreInput
+  campaigns?: Prisma.CampaignUncheckedCreateNestedManyWithoutStoreInput
+  aiConfig?: Prisma.AIConfigurationUncheckedCreateNestedOneWithoutStoreInput
+  blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
+  waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
+}
+
+export type StoreCreateOrConnectWithoutSubscriptionInput = {
+  where: Prisma.StoreWhereUniqueInput
+  create: Prisma.XOR<Prisma.StoreCreateWithoutSubscriptionInput, Prisma.StoreUncheckedCreateWithoutSubscriptionInput>
+}
+
+export type StoreUpsertWithoutSubscriptionInput = {
+  update: Prisma.XOR<Prisma.StoreUpdateWithoutSubscriptionInput, Prisma.StoreUncheckedUpdateWithoutSubscriptionInput>
+  create: Prisma.XOR<Prisma.StoreCreateWithoutSubscriptionInput, Prisma.StoreUncheckedCreateWithoutSubscriptionInput>
+  where?: Prisma.StoreWhereInput
+}
+
+export type StoreUpdateToOneWithWhereWithoutSubscriptionInput = {
+  where?: Prisma.StoreWhereInput
+  data: Prisma.XOR<Prisma.StoreUpdateWithoutSubscriptionInput, Prisma.StoreUncheckedUpdateWithoutSubscriptionInput>
+}
+
+export type StoreUpdateWithoutSubscriptionInput = {
+  storeId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  apiBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  customers?: Prisma.CustomerUpdateManyWithoutStoreNestedInput
+  conversations?: Prisma.ConversationUpdateManyWithoutStoreNestedInput
+  messages?: Prisma.MessageUpdateManyWithoutStoreNestedInput
+  products?: Prisma.ProductUpdateManyWithoutStoreNestedInput
+  categories?: Prisma.CategoryUpdateManyWithoutStoreNestedInput
+  users?: Prisma.UserUpdateManyWithoutStoreNestedInput
+  services?: Prisma.ServiceUpdateManyWithoutStoreNestedInput
+  orders?: Prisma.OrderUpdateManyWithoutStoreNestedInput
+  appointments?: Prisma.AppointmentUpdateManyWithoutStoreNestedInput
+  campaigns?: Prisma.CampaignUpdateManyWithoutStoreNestedInput
+  aiConfig?: Prisma.AIConfigurationUpdateOneWithoutStoreNestedInput
+  blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
+  waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
+}
+
+export type StoreUncheckedUpdateWithoutSubscriptionInput = {
+  storeId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  apiBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  customers?: Prisma.CustomerUncheckedUpdateManyWithoutStoreNestedInput
+  conversations?: Prisma.ConversationUncheckedUpdateManyWithoutStoreNestedInput
+  messages?: Prisma.MessageUncheckedUpdateManyWithoutStoreNestedInput
+  products?: Prisma.ProductUncheckedUpdateManyWithoutStoreNestedInput
+  categories?: Prisma.CategoryUncheckedUpdateManyWithoutStoreNestedInput
+  users?: Prisma.UserUncheckedUpdateManyWithoutStoreNestedInput
+  services?: Prisma.ServiceUncheckedUpdateManyWithoutStoreNestedInput
+  orders?: Prisma.OrderUncheckedUpdateManyWithoutStoreNestedInput
+  appointments?: Prisma.AppointmentUncheckedUpdateManyWithoutStoreNestedInput
+  campaigns?: Prisma.CampaignUncheckedUpdateManyWithoutStoreNestedInput
+  aiConfig?: Prisma.AIConfigurationUncheckedUpdateOneWithoutStoreNestedInput
+  blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
+  waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
 }
 
 
@@ -2429,6 +2864,9 @@ export type StoreSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   primaryColor?: boolean
   secondaryColor?: boolean
   accentColor?: boolean
+  subscriptionStatus?: boolean
+  subscriptionEnd?: boolean
+  apiBlocked?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   customers?: boolean | Prisma.Store$customersArgs<ExtArgs>
@@ -2444,6 +2882,7 @@ export type StoreSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   aiConfig?: boolean | Prisma.Store$aiConfigArgs<ExtArgs>
   blockedContacts?: boolean | Prisma.Store$blockedContactsArgs<ExtArgs>
   waSession?: boolean | Prisma.Store$waSessionArgs<ExtArgs>
+  subscription?: boolean | Prisma.Store$subscriptionArgs<ExtArgs>
   _count?: boolean | Prisma.StoreCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["store"]>
 
@@ -2457,6 +2896,9 @@ export type StoreSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   primaryColor?: boolean
   secondaryColor?: boolean
   accentColor?: boolean
+  subscriptionStatus?: boolean
+  subscriptionEnd?: boolean
+  apiBlocked?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["store"]>
@@ -2471,6 +2913,9 @@ export type StoreSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   primaryColor?: boolean
   secondaryColor?: boolean
   accentColor?: boolean
+  subscriptionStatus?: boolean
+  subscriptionEnd?: boolean
+  apiBlocked?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["store"]>
@@ -2485,11 +2930,14 @@ export type StoreSelectScalar = {
   primaryColor?: boolean
   secondaryColor?: boolean
   accentColor?: boolean
+  subscriptionStatus?: boolean
+  subscriptionEnd?: boolean
+  apiBlocked?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type StoreOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"storeId" | "name" | "phone" | "ownerName" | "waSessionId" | "isActive" | "primaryColor" | "secondaryColor" | "accentColor" | "createdAt" | "updatedAt", ExtArgs["result"]["store"]>
+export type StoreOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"storeId" | "name" | "phone" | "ownerName" | "waSessionId" | "isActive" | "primaryColor" | "secondaryColor" | "accentColor" | "subscriptionStatus" | "subscriptionEnd" | "apiBlocked" | "createdAt" | "updatedAt", ExtArgs["result"]["store"]>
 export type StoreInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   customers?: boolean | Prisma.Store$customersArgs<ExtArgs>
   conversations?: boolean | Prisma.Store$conversationsArgs<ExtArgs>
@@ -2504,6 +2952,7 @@ export type StoreInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   aiConfig?: boolean | Prisma.Store$aiConfigArgs<ExtArgs>
   blockedContacts?: boolean | Prisma.Store$blockedContactsArgs<ExtArgs>
   waSession?: boolean | Prisma.Store$waSessionArgs<ExtArgs>
+  subscription?: boolean | Prisma.Store$subscriptionArgs<ExtArgs>
   _count?: boolean | Prisma.StoreCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type StoreIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -2525,6 +2974,7 @@ export type $StorePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     aiConfig: Prisma.$AIConfigurationPayload<ExtArgs> | null
     blockedContacts: Prisma.$BlockedContactPayload<ExtArgs>[]
     waSession: Prisma.$WhatsappSessionPayload<ExtArgs> | null
+    subscription: Prisma.$SubscriptionPayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     storeId: string
@@ -2536,6 +2986,9 @@ export type $StorePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     primaryColor: string | null
     secondaryColor: string | null
     accentColor: string | null
+    subscriptionStatus: string
+    subscriptionEnd: Date | null
+    apiBlocked: boolean
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["store"]>
@@ -2945,6 +3398,7 @@ export interface Prisma__StoreClient<T, Null = never, ExtArgs extends runtime.Ty
   aiConfig<T extends Prisma.Store$aiConfigArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Store$aiConfigArgs<ExtArgs>>): Prisma.Prisma__AIConfigurationClient<runtime.Types.Result.GetResult<Prisma.$AIConfigurationPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   blockedContacts<T extends Prisma.Store$blockedContactsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Store$blockedContactsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BlockedContactPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   waSession<T extends Prisma.Store$waSessionArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Store$waSessionArgs<ExtArgs>>): Prisma.Prisma__WhatsappSessionClient<runtime.Types.Result.GetResult<Prisma.$WhatsappSessionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  subscription<T extends Prisma.Store$subscriptionArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Store$subscriptionArgs<ExtArgs>>): Prisma.Prisma__SubscriptionClient<runtime.Types.Result.GetResult<Prisma.$SubscriptionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2983,6 +3437,9 @@ export interface StoreFieldRefs {
   readonly primaryColor: Prisma.FieldRef<"Store", 'String'>
   readonly secondaryColor: Prisma.FieldRef<"Store", 'String'>
   readonly accentColor: Prisma.FieldRef<"Store", 'String'>
+  readonly subscriptionStatus: Prisma.FieldRef<"Store", 'String'>
+  readonly subscriptionEnd: Prisma.FieldRef<"Store", 'DateTime'>
+  readonly apiBlocked: Prisma.FieldRef<"Store", 'Boolean'>
   readonly createdAt: Prisma.FieldRef<"Store", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Store", 'DateTime'>
 }
@@ -3672,6 +4129,25 @@ export type Store$waSessionArgs<ExtArgs extends runtime.Types.Extensions.Interna
    */
   include?: Prisma.WhatsappSessionInclude<ExtArgs> | null
   where?: Prisma.WhatsappSessionWhereInput
+}
+
+/**
+ * Store.subscription
+ */
+export type Store$subscriptionArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Subscription
+   */
+  select?: Prisma.SubscriptionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Subscription
+   */
+  omit?: Prisma.SubscriptionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SubscriptionInclude<ExtArgs> | null
+  where?: Prisma.SubscriptionWhereInput
 }
 
 /**

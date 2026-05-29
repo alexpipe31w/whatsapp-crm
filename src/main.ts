@@ -17,9 +17,22 @@ async function bootstrap() {
   // Compresión gzip — reduce payload hasta 70% en respuestas JSON
   app.use(compression());
 
+  const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+    : ['http://localhost:3000', 'http://localhost:3001'];
+
   app.enableCors({
-    origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : '*',
-    credentials: false,
+    origin: (origin, callback) => {
+      // Permitir requests sin origin (mobile apps, Postman, curl)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.some(o => o === '*' || origin === o)) {
+        return callback(null, true);
+      }
+      callback(new Error(`CORS: origen no permitido: ${origin}`));
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-request-id'],
   });
 
   app.useGlobalPipes(new ValidationPipe({

@@ -28,11 +28,17 @@ export type AggregateOrder = {
 
 export type OrderAvgAggregateOutputType = {
   total: runtime.Decimal | null
+  subtotal: runtime.Decimal | null
+  discountPercent: runtime.Decimal | null
+  discountAmount: runtime.Decimal | null
   estimatedTime: number | null
 }
 
 export type OrderSumAggregateOutputType = {
   total: runtime.Decimal | null
+  subtotal: runtime.Decimal | null
+  discountPercent: runtime.Decimal | null
+  discountAmount: runtime.Decimal | null
   estimatedTime: number | null
 }
 
@@ -42,10 +48,16 @@ export type OrderMinAggregateOutputType = {
   customerId: string | null
   type: string | null
   total: runtime.Decimal | null
+  subtotal: runtime.Decimal | null
+  discountPercent: runtime.Decimal | null
+  discountAmount: runtime.Decimal | null
   status: string | null
   notes: string | null
   estimatedTime: number | null
   deliveryAddress: string | null
+  isManual: boolean | null
+  manualPaymentMethod: string | null
+  idempotencyKey: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -56,10 +68,16 @@ export type OrderMaxAggregateOutputType = {
   customerId: string | null
   type: string | null
   total: runtime.Decimal | null
+  subtotal: runtime.Decimal | null
+  discountPercent: runtime.Decimal | null
+  discountAmount: runtime.Decimal | null
   status: string | null
   notes: string | null
   estimatedTime: number | null
   deliveryAddress: string | null
+  isManual: boolean | null
+  manualPaymentMethod: string | null
+  idempotencyKey: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -70,10 +88,16 @@ export type OrderCountAggregateOutputType = {
   customerId: number
   type: number
   total: number
+  subtotal: number
+  discountPercent: number
+  discountAmount: number
   status: number
   notes: number
   estimatedTime: number
   deliveryAddress: number
+  isManual: number
+  manualPaymentMethod: number
+  idempotencyKey: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -82,11 +106,17 @@ export type OrderCountAggregateOutputType = {
 
 export type OrderAvgAggregateInputType = {
   total?: true
+  subtotal?: true
+  discountPercent?: true
+  discountAmount?: true
   estimatedTime?: true
 }
 
 export type OrderSumAggregateInputType = {
   total?: true
+  subtotal?: true
+  discountPercent?: true
+  discountAmount?: true
   estimatedTime?: true
 }
 
@@ -96,10 +126,16 @@ export type OrderMinAggregateInputType = {
   customerId?: true
   type?: true
   total?: true
+  subtotal?: true
+  discountPercent?: true
+  discountAmount?: true
   status?: true
   notes?: true
   estimatedTime?: true
   deliveryAddress?: true
+  isManual?: true
+  manualPaymentMethod?: true
+  idempotencyKey?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -110,10 +146,16 @@ export type OrderMaxAggregateInputType = {
   customerId?: true
   type?: true
   total?: true
+  subtotal?: true
+  discountPercent?: true
+  discountAmount?: true
   status?: true
   notes?: true
   estimatedTime?: true
   deliveryAddress?: true
+  isManual?: true
+  manualPaymentMethod?: true
+  idempotencyKey?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -124,10 +166,16 @@ export type OrderCountAggregateInputType = {
   customerId?: true
   type?: true
   total?: true
+  subtotal?: true
+  discountPercent?: true
+  discountAmount?: true
   status?: true
   notes?: true
   estimatedTime?: true
   deliveryAddress?: true
+  isManual?: true
+  manualPaymentMethod?: true
+  idempotencyKey?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -225,10 +273,16 @@ export type OrderGroupByOutputType = {
   customerId: string
   type: string
   total: runtime.Decimal
+  subtotal: runtime.Decimal
+  discountPercent: runtime.Decimal | null
+  discountAmount: runtime.Decimal
   status: string
   notes: string | null
   estimatedTime: number | null
   deliveryAddress: string | null
+  isManual: boolean
+  manualPaymentMethod: string | null
+  idempotencyKey: string | null
   createdAt: Date
   updatedAt: Date
   _count: OrderCountAggregateOutputType | null
@@ -262,10 +316,16 @@ export type OrderWhereInput = {
   customerId?: Prisma.StringFilter<"Order"> | string
   type?: Prisma.StringFilter<"Order"> | string
   total?: Prisma.DecimalFilter<"Order"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  subtotal?: Prisma.DecimalFilter<"Order"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  discountPercent?: Prisma.DecimalNullableFilter<"Order"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  discountAmount?: Prisma.DecimalFilter<"Order"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.StringFilter<"Order"> | string
   notes?: Prisma.StringNullableFilter<"Order"> | string | null
   estimatedTime?: Prisma.IntNullableFilter<"Order"> | number | null
   deliveryAddress?: Prisma.StringNullableFilter<"Order"> | string | null
+  isManual?: Prisma.BoolFilter<"Order"> | boolean
+  manualPaymentMethod?: Prisma.StringNullableFilter<"Order"> | string | null
+  idempotencyKey?: Prisma.StringNullableFilter<"Order"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Order"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Order"> | Date | string
   store?: Prisma.XOR<Prisma.StoreScalarRelationFilter, Prisma.StoreWhereInput>
@@ -279,10 +339,16 @@ export type OrderOrderByWithRelationInput = {
   customerId?: Prisma.SortOrder
   type?: Prisma.SortOrder
   total?: Prisma.SortOrder
+  subtotal?: Prisma.SortOrder
+  discountPercent?: Prisma.SortOrderInput | Prisma.SortOrder
+  discountAmount?: Prisma.SortOrder
   status?: Prisma.SortOrder
   notes?: Prisma.SortOrderInput | Prisma.SortOrder
   estimatedTime?: Prisma.SortOrderInput | Prisma.SortOrder
   deliveryAddress?: Prisma.SortOrderInput | Prisma.SortOrder
+  isManual?: Prisma.SortOrder
+  manualPaymentMethod?: Prisma.SortOrderInput | Prisma.SortOrder
+  idempotencyKey?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   store?: Prisma.StoreOrderByWithRelationInput
@@ -292,6 +358,7 @@ export type OrderOrderByWithRelationInput = {
 
 export type OrderWhereUniqueInput = Prisma.AtLeast<{
   orderId?: string
+  idempotencyKey?: string
   AND?: Prisma.OrderWhereInput | Prisma.OrderWhereInput[]
   OR?: Prisma.OrderWhereInput[]
   NOT?: Prisma.OrderWhereInput | Prisma.OrderWhereInput[]
@@ -299,16 +366,21 @@ export type OrderWhereUniqueInput = Prisma.AtLeast<{
   customerId?: Prisma.StringFilter<"Order"> | string
   type?: Prisma.StringFilter<"Order"> | string
   total?: Prisma.DecimalFilter<"Order"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  subtotal?: Prisma.DecimalFilter<"Order"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  discountPercent?: Prisma.DecimalNullableFilter<"Order"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  discountAmount?: Prisma.DecimalFilter<"Order"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.StringFilter<"Order"> | string
   notes?: Prisma.StringNullableFilter<"Order"> | string | null
   estimatedTime?: Prisma.IntNullableFilter<"Order"> | number | null
   deliveryAddress?: Prisma.StringNullableFilter<"Order"> | string | null
+  isManual?: Prisma.BoolFilter<"Order"> | boolean
+  manualPaymentMethod?: Prisma.StringNullableFilter<"Order"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Order"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Order"> | Date | string
   store?: Prisma.XOR<Prisma.StoreScalarRelationFilter, Prisma.StoreWhereInput>
   customer?: Prisma.XOR<Prisma.CustomerScalarRelationFilter, Prisma.CustomerWhereInput>
   orderItems?: Prisma.OrderItemListRelationFilter
-}, "orderId">
+}, "orderId" | "idempotencyKey">
 
 export type OrderOrderByWithAggregationInput = {
   orderId?: Prisma.SortOrder
@@ -316,10 +388,16 @@ export type OrderOrderByWithAggregationInput = {
   customerId?: Prisma.SortOrder
   type?: Prisma.SortOrder
   total?: Prisma.SortOrder
+  subtotal?: Prisma.SortOrder
+  discountPercent?: Prisma.SortOrderInput | Prisma.SortOrder
+  discountAmount?: Prisma.SortOrder
   status?: Prisma.SortOrder
   notes?: Prisma.SortOrderInput | Prisma.SortOrder
   estimatedTime?: Prisma.SortOrderInput | Prisma.SortOrder
   deliveryAddress?: Prisma.SortOrderInput | Prisma.SortOrder
+  isManual?: Prisma.SortOrder
+  manualPaymentMethod?: Prisma.SortOrderInput | Prisma.SortOrder
+  idempotencyKey?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.OrderCountOrderByAggregateInput
@@ -338,10 +416,16 @@ export type OrderScalarWhereWithAggregatesInput = {
   customerId?: Prisma.StringWithAggregatesFilter<"Order"> | string
   type?: Prisma.StringWithAggregatesFilter<"Order"> | string
   total?: Prisma.DecimalWithAggregatesFilter<"Order"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  subtotal?: Prisma.DecimalWithAggregatesFilter<"Order"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  discountPercent?: Prisma.DecimalNullableWithAggregatesFilter<"Order"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  discountAmount?: Prisma.DecimalWithAggregatesFilter<"Order"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.StringWithAggregatesFilter<"Order"> | string
   notes?: Prisma.StringNullableWithAggregatesFilter<"Order"> | string | null
   estimatedTime?: Prisma.IntNullableWithAggregatesFilter<"Order"> | number | null
   deliveryAddress?: Prisma.StringNullableWithAggregatesFilter<"Order"> | string | null
+  isManual?: Prisma.BoolWithAggregatesFilter<"Order"> | boolean
+  manualPaymentMethod?: Prisma.StringNullableWithAggregatesFilter<"Order"> | string | null
+  idempotencyKey?: Prisma.StringNullableWithAggregatesFilter<"Order"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Order"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Order"> | Date | string
 }
@@ -350,10 +434,16 @@ export type OrderCreateInput = {
   orderId?: string
   type?: string
   total?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  subtotal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  discountPercent?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  discountAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: string
   notes?: string | null
   estimatedTime?: number | null
   deliveryAddress?: string | null
+  isManual?: boolean
+  manualPaymentMethod?: string | null
+  idempotencyKey?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   store: Prisma.StoreCreateNestedOneWithoutOrdersInput
@@ -367,10 +457,16 @@ export type OrderUncheckedCreateInput = {
   customerId: string
   type?: string
   total?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  subtotal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  discountPercent?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  discountAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: string
   notes?: string | null
   estimatedTime?: number | null
   deliveryAddress?: string | null
+  isManual?: boolean
+  manualPaymentMethod?: string | null
+  idempotencyKey?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   orderItems?: Prisma.OrderItemUncheckedCreateNestedManyWithoutOrderInput
@@ -380,10 +476,16 @@ export type OrderUpdateInput = {
   orderId?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   total?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  subtotal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  discountPercent?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  discountAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   estimatedTime?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   deliveryAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isManual?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  manualPaymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   store?: Prisma.StoreUpdateOneRequiredWithoutOrdersNestedInput
@@ -397,10 +499,16 @@ export type OrderUncheckedUpdateInput = {
   customerId?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   total?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  subtotal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  discountPercent?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  discountAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   estimatedTime?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   deliveryAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isManual?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  manualPaymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   orderItems?: Prisma.OrderItemUncheckedUpdateManyWithoutOrderNestedInput
@@ -412,10 +520,16 @@ export type OrderCreateManyInput = {
   customerId: string
   type?: string
   total?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  subtotal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  discountPercent?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  discountAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: string
   notes?: string | null
   estimatedTime?: number | null
   deliveryAddress?: string | null
+  isManual?: boolean
+  manualPaymentMethod?: string | null
+  idempotencyKey?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -424,10 +538,16 @@ export type OrderUpdateManyMutationInput = {
   orderId?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   total?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  subtotal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  discountPercent?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  discountAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   estimatedTime?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   deliveryAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isManual?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  manualPaymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -438,10 +558,16 @@ export type OrderUncheckedUpdateManyInput = {
   customerId?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   total?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  subtotal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  discountPercent?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  discountAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   estimatedTime?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   deliveryAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isManual?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  manualPaymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -462,16 +588,25 @@ export type OrderCountOrderByAggregateInput = {
   customerId?: Prisma.SortOrder
   type?: Prisma.SortOrder
   total?: Prisma.SortOrder
+  subtotal?: Prisma.SortOrder
+  discountPercent?: Prisma.SortOrder
+  discountAmount?: Prisma.SortOrder
   status?: Prisma.SortOrder
   notes?: Prisma.SortOrder
   estimatedTime?: Prisma.SortOrder
   deliveryAddress?: Prisma.SortOrder
+  isManual?: Prisma.SortOrder
+  manualPaymentMethod?: Prisma.SortOrder
+  idempotencyKey?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
 
 export type OrderAvgOrderByAggregateInput = {
   total?: Prisma.SortOrder
+  subtotal?: Prisma.SortOrder
+  discountPercent?: Prisma.SortOrder
+  discountAmount?: Prisma.SortOrder
   estimatedTime?: Prisma.SortOrder
 }
 
@@ -481,10 +616,16 @@ export type OrderMaxOrderByAggregateInput = {
   customerId?: Prisma.SortOrder
   type?: Prisma.SortOrder
   total?: Prisma.SortOrder
+  subtotal?: Prisma.SortOrder
+  discountPercent?: Prisma.SortOrder
+  discountAmount?: Prisma.SortOrder
   status?: Prisma.SortOrder
   notes?: Prisma.SortOrder
   estimatedTime?: Prisma.SortOrder
   deliveryAddress?: Prisma.SortOrder
+  isManual?: Prisma.SortOrder
+  manualPaymentMethod?: Prisma.SortOrder
+  idempotencyKey?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -495,16 +636,25 @@ export type OrderMinOrderByAggregateInput = {
   customerId?: Prisma.SortOrder
   type?: Prisma.SortOrder
   total?: Prisma.SortOrder
+  subtotal?: Prisma.SortOrder
+  discountPercent?: Prisma.SortOrder
+  discountAmount?: Prisma.SortOrder
   status?: Prisma.SortOrder
   notes?: Prisma.SortOrder
   estimatedTime?: Prisma.SortOrder
   deliveryAddress?: Prisma.SortOrder
+  isManual?: Prisma.SortOrder
+  manualPaymentMethod?: Prisma.SortOrder
+  idempotencyKey?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
 
 export type OrderSumOrderByAggregateInput = {
   total?: Prisma.SortOrder
+  subtotal?: Prisma.SortOrder
+  discountPercent?: Prisma.SortOrder
+  discountAmount?: Prisma.SortOrder
   estimatedTime?: Prisma.SortOrder
 }
 
@@ -615,10 +765,16 @@ export type OrderCreateWithoutStoreInput = {
   orderId?: string
   type?: string
   total?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  subtotal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  discountPercent?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  discountAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: string
   notes?: string | null
   estimatedTime?: number | null
   deliveryAddress?: string | null
+  isManual?: boolean
+  manualPaymentMethod?: string | null
+  idempotencyKey?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customer: Prisma.CustomerCreateNestedOneWithoutOrdersInput
@@ -630,10 +786,16 @@ export type OrderUncheckedCreateWithoutStoreInput = {
   customerId: string
   type?: string
   total?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  subtotal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  discountPercent?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  discountAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: string
   notes?: string | null
   estimatedTime?: number | null
   deliveryAddress?: string | null
+  isManual?: boolean
+  manualPaymentMethod?: string | null
+  idempotencyKey?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   orderItems?: Prisma.OrderItemUncheckedCreateNestedManyWithoutOrderInput
@@ -674,10 +836,16 @@ export type OrderScalarWhereInput = {
   customerId?: Prisma.StringFilter<"Order"> | string
   type?: Prisma.StringFilter<"Order"> | string
   total?: Prisma.DecimalFilter<"Order"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  subtotal?: Prisma.DecimalFilter<"Order"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  discountPercent?: Prisma.DecimalNullableFilter<"Order"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  discountAmount?: Prisma.DecimalFilter<"Order"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.StringFilter<"Order"> | string
   notes?: Prisma.StringNullableFilter<"Order"> | string | null
   estimatedTime?: Prisma.IntNullableFilter<"Order"> | number | null
   deliveryAddress?: Prisma.StringNullableFilter<"Order"> | string | null
+  isManual?: Prisma.BoolFilter<"Order"> | boolean
+  manualPaymentMethod?: Prisma.StringNullableFilter<"Order"> | string | null
+  idempotencyKey?: Prisma.StringNullableFilter<"Order"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Order"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Order"> | Date | string
 }
@@ -686,10 +854,16 @@ export type OrderCreateWithoutCustomerInput = {
   orderId?: string
   type?: string
   total?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  subtotal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  discountPercent?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  discountAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: string
   notes?: string | null
   estimatedTime?: number | null
   deliveryAddress?: string | null
+  isManual?: boolean
+  manualPaymentMethod?: string | null
+  idempotencyKey?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   store: Prisma.StoreCreateNestedOneWithoutOrdersInput
@@ -701,10 +875,16 @@ export type OrderUncheckedCreateWithoutCustomerInput = {
   storeId: string
   type?: string
   total?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  subtotal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  discountPercent?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  discountAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: string
   notes?: string | null
   estimatedTime?: number | null
   deliveryAddress?: string | null
+  isManual?: boolean
+  manualPaymentMethod?: string | null
+  idempotencyKey?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   orderItems?: Prisma.OrderItemUncheckedCreateNestedManyWithoutOrderInput
@@ -740,10 +920,16 @@ export type OrderCreateWithoutOrderItemsInput = {
   orderId?: string
   type?: string
   total?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  subtotal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  discountPercent?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  discountAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: string
   notes?: string | null
   estimatedTime?: number | null
   deliveryAddress?: string | null
+  isManual?: boolean
+  manualPaymentMethod?: string | null
+  idempotencyKey?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   store: Prisma.StoreCreateNestedOneWithoutOrdersInput
@@ -756,10 +942,16 @@ export type OrderUncheckedCreateWithoutOrderItemsInput = {
   customerId: string
   type?: string
   total?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  subtotal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  discountPercent?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  discountAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: string
   notes?: string | null
   estimatedTime?: number | null
   deliveryAddress?: string | null
+  isManual?: boolean
+  manualPaymentMethod?: string | null
+  idempotencyKey?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -784,10 +976,16 @@ export type OrderUpdateWithoutOrderItemsInput = {
   orderId?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   total?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  subtotal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  discountPercent?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  discountAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   estimatedTime?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   deliveryAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isManual?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  manualPaymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   store?: Prisma.StoreUpdateOneRequiredWithoutOrdersNestedInput
@@ -800,10 +998,16 @@ export type OrderUncheckedUpdateWithoutOrderItemsInput = {
   customerId?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   total?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  subtotal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  discountPercent?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  discountAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   estimatedTime?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   deliveryAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isManual?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  manualPaymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -813,10 +1017,16 @@ export type OrderCreateManyStoreInput = {
   customerId: string
   type?: string
   total?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  subtotal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  discountPercent?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  discountAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: string
   notes?: string | null
   estimatedTime?: number | null
   deliveryAddress?: string | null
+  isManual?: boolean
+  manualPaymentMethod?: string | null
+  idempotencyKey?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -825,10 +1035,16 @@ export type OrderUpdateWithoutStoreInput = {
   orderId?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   total?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  subtotal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  discountPercent?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  discountAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   estimatedTime?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   deliveryAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isManual?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  manualPaymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customer?: Prisma.CustomerUpdateOneRequiredWithoutOrdersNestedInput
@@ -840,10 +1056,16 @@ export type OrderUncheckedUpdateWithoutStoreInput = {
   customerId?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   total?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  subtotal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  discountPercent?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  discountAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   estimatedTime?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   deliveryAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isManual?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  manualPaymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   orderItems?: Prisma.OrderItemUncheckedUpdateManyWithoutOrderNestedInput
@@ -854,10 +1076,16 @@ export type OrderUncheckedUpdateManyWithoutStoreInput = {
   customerId?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   total?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  subtotal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  discountPercent?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  discountAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   estimatedTime?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   deliveryAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isManual?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  manualPaymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -867,10 +1095,16 @@ export type OrderCreateManyCustomerInput = {
   storeId: string
   type?: string
   total?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  subtotal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  discountPercent?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  discountAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: string
   notes?: string | null
   estimatedTime?: number | null
   deliveryAddress?: string | null
+  isManual?: boolean
+  manualPaymentMethod?: string | null
+  idempotencyKey?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -879,10 +1113,16 @@ export type OrderUpdateWithoutCustomerInput = {
   orderId?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   total?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  subtotal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  discountPercent?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  discountAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   estimatedTime?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   deliveryAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isManual?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  manualPaymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   store?: Prisma.StoreUpdateOneRequiredWithoutOrdersNestedInput
@@ -894,10 +1134,16 @@ export type OrderUncheckedUpdateWithoutCustomerInput = {
   storeId?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   total?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  subtotal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  discountPercent?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  discountAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   estimatedTime?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   deliveryAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isManual?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  manualPaymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   orderItems?: Prisma.OrderItemUncheckedUpdateManyWithoutOrderNestedInput
@@ -908,10 +1154,16 @@ export type OrderUncheckedUpdateManyWithoutCustomerInput = {
   storeId?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.StringFieldUpdateOperationsInput | string
   total?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  subtotal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  discountPercent?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  discountAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   estimatedTime?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   deliveryAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isManual?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  manualPaymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -953,10 +1205,16 @@ export type OrderSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   customerId?: boolean
   type?: boolean
   total?: boolean
+  subtotal?: boolean
+  discountPercent?: boolean
+  discountAmount?: boolean
   status?: boolean
   notes?: boolean
   estimatedTime?: boolean
   deliveryAddress?: boolean
+  isManual?: boolean
+  manualPaymentMethod?: boolean
+  idempotencyKey?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   store?: boolean | Prisma.StoreDefaultArgs<ExtArgs>
@@ -971,10 +1229,16 @@ export type OrderSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   customerId?: boolean
   type?: boolean
   total?: boolean
+  subtotal?: boolean
+  discountPercent?: boolean
+  discountAmount?: boolean
   status?: boolean
   notes?: boolean
   estimatedTime?: boolean
   deliveryAddress?: boolean
+  isManual?: boolean
+  manualPaymentMethod?: boolean
+  idempotencyKey?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   store?: boolean | Prisma.StoreDefaultArgs<ExtArgs>
@@ -987,10 +1251,16 @@ export type OrderSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   customerId?: boolean
   type?: boolean
   total?: boolean
+  subtotal?: boolean
+  discountPercent?: boolean
+  discountAmount?: boolean
   status?: boolean
   notes?: boolean
   estimatedTime?: boolean
   deliveryAddress?: boolean
+  isManual?: boolean
+  manualPaymentMethod?: boolean
+  idempotencyKey?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   store?: boolean | Prisma.StoreDefaultArgs<ExtArgs>
@@ -1003,15 +1273,21 @@ export type OrderSelectScalar = {
   customerId?: boolean
   type?: boolean
   total?: boolean
+  subtotal?: boolean
+  discountPercent?: boolean
+  discountAmount?: boolean
   status?: boolean
   notes?: boolean
   estimatedTime?: boolean
   deliveryAddress?: boolean
+  isManual?: boolean
+  manualPaymentMethod?: boolean
+  idempotencyKey?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type OrderOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"orderId" | "storeId" | "customerId" | "type" | "total" | "status" | "notes" | "estimatedTime" | "deliveryAddress" | "createdAt" | "updatedAt", ExtArgs["result"]["order"]>
+export type OrderOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"orderId" | "storeId" | "customerId" | "type" | "total" | "subtotal" | "discountPercent" | "discountAmount" | "status" | "notes" | "estimatedTime" | "deliveryAddress" | "isManual" | "manualPaymentMethod" | "idempotencyKey" | "createdAt" | "updatedAt", ExtArgs["result"]["order"]>
 export type OrderInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   store?: boolean | Prisma.StoreDefaultArgs<ExtArgs>
   customer?: boolean | Prisma.CustomerDefaultArgs<ExtArgs>
@@ -1040,10 +1316,16 @@ export type $OrderPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     customerId: string
     type: string
     total: runtime.Decimal
+    subtotal: runtime.Decimal
+    discountPercent: runtime.Decimal | null
+    discountAmount: runtime.Decimal
     status: string
     notes: string | null
     estimatedTime: number | null
     deliveryAddress: string | null
+    isManual: boolean
+    manualPaymentMethod: string | null
+    idempotencyKey: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["order"]>
@@ -1477,10 +1759,16 @@ export interface OrderFieldRefs {
   readonly customerId: Prisma.FieldRef<"Order", 'String'>
   readonly type: Prisma.FieldRef<"Order", 'String'>
   readonly total: Prisma.FieldRef<"Order", 'Decimal'>
+  readonly subtotal: Prisma.FieldRef<"Order", 'Decimal'>
+  readonly discountPercent: Prisma.FieldRef<"Order", 'Decimal'>
+  readonly discountAmount: Prisma.FieldRef<"Order", 'Decimal'>
   readonly status: Prisma.FieldRef<"Order", 'String'>
   readonly notes: Prisma.FieldRef<"Order", 'String'>
   readonly estimatedTime: Prisma.FieldRef<"Order", 'Int'>
   readonly deliveryAddress: Prisma.FieldRef<"Order", 'String'>
+  readonly isManual: Prisma.FieldRef<"Order", 'Boolean'>
+  readonly manualPaymentMethod: Prisma.FieldRef<"Order", 'String'>
+  readonly idempotencyKey: Prisma.FieldRef<"Order", 'String'>
   readonly createdAt: Prisma.FieldRef<"Order", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Order", 'DateTime'>
 }

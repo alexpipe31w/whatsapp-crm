@@ -90,4 +90,24 @@ export class SuperAdminController {
   getAuditLogs() {
     return this.superAdminService.getAuditLogs();
   }
+
+  // ── Suscripciones ─────────────────────────────────────────────────────────
+
+  @Get('subscription-config')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  getSubscriptionConfig() {
+    return this.superAdminService.getSubscriptionConfig();
+  }
+
+  @Patch('subscription-config')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  updateSubscriptionConfig(@Body() body: { priceAmount: number }, @Request() req: any) {
+    return this.superAdminService.updateSubscriptionConfig(body.priceAmount, req.user.email);
+  }
+
+  @Get('subscriptions')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  getSubscriptions() {
+    return this.superAdminService.getSubscriptions();
+  }
 }

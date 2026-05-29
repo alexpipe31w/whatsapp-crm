@@ -32,65 +32,83 @@ export class OrdersService {
     if (customer.storeId !== dto.storeId)
       throw new ForbiddenException('El cliente no pertenece a esta tienda');
 
-    // FIX: validar stock antes de crear la orden
+    // Idempotencia: si ya existe una orden con esta clave, devolver la existente
+    if (dto.idempotencyKey) {
+      const existing = await this.prisma.order.findUnique({
+        where:   { idempotencyKey: dto.idempotencyKey },
+        include: { orderItems: { include: { product: true, service: true } }, customer: true },
+      });
+      if (existing) return existing;
+    }
+
+    // Validar stock antes de crear
     for (const item of dto.items) {
       if (item.productId && !item.variantId) {
-        const product = await this.prisma.product.findUnique({
-          where: { productId: item.productId },
-        });
-        if (product && product.stock < item.quantity) {
-          throw new BadRequestException(
-            `Stock insuficiente para "${product.name}" (disponible: ${product.stock})`,
-          );
-        }
+        const product = await this.prisma.product.findUnique({ where: { productId: item.productId } });
+        if (product && product.stock < item.quantity)
+          throw new BadRequestException(`Stock insuficiente para "${product.name}" (disponible: ${product.stock})`);
       }
       if (item.variantId) {
-        const variant = await this.prisma.productVariant.findUnique({
-          where: { variantId: item.variantId },
-        });
-        if (variant && variant.stock < item.quantity) {
-          throw new BadRequestException(
-            `Stock insuficiente para la variante (disponible: ${variant.stock})`,
-          );
-        }
+        const variant = await this.prisma.productVariant.findUnique({ where: { variantId: item.variantId } });
+        if (variant && variant.stock < item.quantity)
+          throw new BadRequestException(`Stock insuficiente para la variante (disponible: ${variant.stock})`);
       }
     }
 
-    const total = dto.items.reduce(
-      (sum, item) => sum + item.unitPrice * item.quantity, 0,
-    );
+    const subtotal = dto.items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
+    const discountAmount = dto.discountPercent ? Math.round(subtotal * (dto.discountPercent / 100) * 100) / 100 : 0;
+    const total = subtotal - discountAmount;
 
-    return this.prisma.order.create({
-      data: {
-        storeId:         dto.storeId,
-        customerId:      dto.customerId,
-        type:            dto.type ?? 'product',
-        notes:           dto.notes,
-        total,
-        estimatedTime:   dto.estimatedTime   ?? null,
-        deliveryAddress: dto.deliveryAddress ?? null,
-        orderItems: {
-          create: dto.items.map((item) => ({
-            ...(item.productId
-              ? { product: { connect: { productId: item.productId } } }
-              : {}),
-            ...(item.serviceId
-              ? { service: { connect: { serviceId: item.serviceId } } }
-              : {}),
-            ...(item.variantId
-              ? { variant: { connect: { variantId: item.variantId } } }
-              : {}),
-            description: item.description ?? null,
-            quantity:    item.quantity,
-            unitPrice:   item.unitPrice,
-          })),
+    const orderItemsData = dto.items.map((item) => ({
+      ...(item.productId ? { product: { connect: { productId: item.productId } } } : {}),
+      ...(item.serviceId ? { service: { connect: { serviceId: item.serviceId } } } : {}),
+      ...(item.variantId ? { variant: { connect: { variantId: item.variantId } } } : {}),
+      description: item.description ?? null,
+      quantity:    item.quantity,
+      unitPrice:   item.unitPrice,
+    }));
+
+    // Transacción atómica: crear orden + actualizar métricas del cliente
+    const order = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.order.create({
+        data: {
+          storeId:              dto.storeId!,
+          customerId:           dto.customerId,
+          type:                 dto.type ?? 'product',
+          notes:                dto.notes,
+          subtotal,
+          discountPercent:      dto.discountPercent ?? null,
+          discountAmount,
+          total,
+          estimatedTime:        dto.estimatedTime ?? null,
+          deliveryAddress:      dto.deliveryAddress ?? null,
+          isManual:             dto.isManual ?? false,
+          manualPaymentMethod:  dto.manualPaymentMethod ?? null,
+          idempotencyKey:       dto.idempotencyKey ?? null,
+          orderItems: { create: orderItemsData },
         },
-      },
-      include: {
-        orderItems: { include: { product: true, service: true } },
-        customer:   true,
-      },
+        include: {
+          orderItems: { include: { product: true, service: true } },
+          customer:   true,
+        },
+      });
+
+      // Actualizar métricas del cliente
+      const now = new Date();
+      await tx.customer.update({
+        where: { customerId: dto.customerId },
+        data: {
+          totalOrders:    { increment: 1 },
+          totalSpent:     { increment: total },
+          lastOrderDate:  now,
+          firstOrderDate: customer.firstOrderDate ?? now,
+        },
+      });
+
+      return created;
     });
+
+    return order;
   }
 
   async findAllByStore(storeId: string) {

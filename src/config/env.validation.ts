@@ -13,6 +13,9 @@ export const envSchema = z.object({
   SMTP_PORT: z.coerce.number().default(587),
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
+  MP_ACCESS_TOKEN: z.string().optional(),
+  APP_URL: z.string().default('http://localhost:3000'),
+  FRONTEND_URL: z.string().default('http://localhost:5173'),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

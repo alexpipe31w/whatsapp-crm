@@ -21,8 +21,9 @@ export class CustomersController {
   }
 
   @Get('store/:storeId')
-  findAll(@Param('storeId') storeId: string) {
-    return this.customersService.findAllByStore(storeId);
+  findAll(@Param('storeId') storeId: string, @Request() req: any) {
+    const effectiveStoreId = req.user.role === 'superadmin' ? storeId : req.user.storeId;
+    return this.customersService.findAllByStore(effectiveStoreId);
   }
 
   @Get(':id')

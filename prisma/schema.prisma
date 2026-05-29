@@ -61,6 +61,10 @@ model Store {
   secondaryColor String? @default("#9333ea") @map("secondary_color") @db.VarChar(7)
   accentColor    String? @default("#f59e0b") @map("accent_color")    @db.VarChar(7)
 
+  subscriptionStatus String    @default("none") @map("subscription_status") @db.VarChar(20)
+  subscriptionEnd    DateTime? @map("subscription_end")
+  apiBlocked         Boolean   @default(false) @map("api_blocked")
+
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
@@ -77,6 +81,7 @@ model Store {
   aiConfig        AIConfiguration?
   blockedContacts BlockedContact[]
   waSession       WhatsappSession?
+  subscription    Subscription?
 
   @@map("stores")
 }
@@ -91,6 +96,15 @@ model Customer {
   cedula     String?  @db.VarChar(20)
   city       String?  @db.VarChar(100)
 
+  // Métricas de compra
+  totalOrders    Int      @default(0) @map("total_orders")
+  totalSpent     Decimal  @default(0) @map("total_spent") @db.Decimal(10, 2)
+  firstOrderDate DateTime? @map("first_order_date")
+  lastOrderDate  DateTime? @map("last_order_date")
+
+  // Segmentación para campañas
+  acceptsMarketing Boolean @default(true) @map("accepts_marketing")
+
   // Resumen de la última conversación — lo usa la IA como contexto en nuevas charlas
   lastConversationSummary String? @map("last_conversation_summary") @db.Text
 
@@ -104,6 +118,7 @@ model Customer {
 
   @@unique([storeId, phone])
   @@index([storeId, createdAt])
+  @@index([storeId, totalSpent])
   @@map("customers")
 }
 
@@ -187,6 +202,7 @@ model Product {
   hasVariants Boolean @default(false) @map("has_variants")
 
   imageUrl         String?  @map("image_url") @db.VarChar(500)
+  images           String[] @default([])                          // múltiples imágenes
   hasShipping      Boolean  @default(false) @map("has_shipping")
   weight           Decimal? @db.Decimal(8, 3)
   shippingStandard Decimal? @default(0) @map("shipping_standard") @db.Decimal(10, 2)
@@ -311,12 +327,23 @@ model Order {
   customerId      String   @map("customer_id")
   type            String   @default("product")
   total           Decimal  @default(0) @db.Decimal(10, 2)
+  subtotal        Decimal  @default(0) @db.Decimal(10, 2)         // total antes de descuento
+  discountPercent Decimal? @map("discount_percent") @db.Decimal(5, 2)
+  discountAmount  Decimal  @default(0) @map("discount_amount") @db.Decimal(10, 2)
   status          String   @default("pending")
   notes           String?  @db.Text
   estimatedTime   Int?     @map("estimated_time")
   deliveryAddress String?  @map("delivery_address")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt      @map("updated_at")
+
+  // Venta manual registrada por el admin
+  isManual            Boolean @default(false) @map("is_manual")
+  manualPaymentMethod String? @map("manual_payment_method") @db.VarChar(50) // CASH | TRANSFER | CARD | OTHER
+
+  // Idempotencia — evita órdenes duplicadas
+  idempotencyKey String? @unique @map("idempotency_key") @db.VarChar(100)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
 
   store      Store       @relation(fields: [storeId], references: [storeId])
   customer   Customer    @relation(fields: [customerId], references: [customerId])
@@ -577,4 +604,48 @@ model WhatsappSession {
   store Store @relation(fields: [storeId], references: [storeId], onDelete: Cascade)
 
   @@map("whatsapp_sessions")
+}
+
+// ─── SubscriptionConfig ────────────────────────────────────────────────────────
+model SubscriptionConfig {
+  configId    String   @id @default("singleton")
+  priceAmount Decimal  @map("price_amount") @db.Decimal(10, 2)
+  currency    String   @default("COP") @db.VarChar(10)
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  updatedBy   String?  @map("updated_by") @db.VarChar(100)
+
+  @@map("subscription_config")
+}
+
+// ─── Subscription ──────────────────────────────────────────────────────────────
+model Subscription {
+  subscriptionId     String    @id @default(uuid()) @map("subscription_id")
+  storeId            String    @unique @map("store_id")
+  status             String    @default("pending") @db.VarChar(20)
+  currentPeriodStart DateTime? @map("current_period_start")
+  currentPeriodEnd   DateTime? @map("current_period_end")
+  priceAmount        Decimal   @map("price_amount") @db.Decimal(10, 2)
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  store    Store                 @relation(fields: [storeId], references: [storeId], onDelete: Cascade)
+  payments SubscriptionPayment[]
+
+  @@map("subscriptions")
+}
+
+// ─── SubscriptionPayment ───────────────────────────────────────────────────────
+model SubscriptionPayment {
+  paymentId      String    @id @default(uuid()) @map("payment_id")
+  subscriptionId String    @map("subscription_id")
+  mpPaymentId    String?   @unique @map("mp_payment_id") @db.VarChar(100)
+  amount         Decimal   @db.Decimal(10, 2)
+  status         String    @db.VarChar(20)
+  paidAt         DateTime? @map("paid_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [subscriptionId], onDelete: Cascade)
+
+  @@index([subscriptionId])
+  @@map("subscription_payments")
 }

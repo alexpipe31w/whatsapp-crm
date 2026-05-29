@@ -11,7 +11,7 @@ const GROQ_TIMEOUT_EXT_MS  = 20_000;
 const ORDER_GUARD_TTL_MS   = 10 * 60 * 1000;
 const MAX_HISTORY_MESSAGES = 20;
 
-const PURCHASE_INTENT_RE = /\b(quiero|deseo|pedir|pido|ordenar|comprar|llevar|encargar|confirm|dale|listo|acepto|perfecto|procede|adelante|claro|exacto|sip|yep|yes|sí|si\b|ok\b|pedido|orden|dirección|entrega|envío|cantidad|unidades?)\b/i;
+const PURCHASE_INTENT_RE = /\b(quiero|deseo|pedir|pido|ordenar|comprar|llevar|encargar|confirm|dale|listo|acepto|perfecto|procede|adelante|claro|exacto|sip|yep|yes|sí|si\b|ok\b|pedido|orden|dirección|entrega|envío|cantidad|unidades?)\b|\[Pedido del catálogo:/i;
 const APPOINTMENT_INTENT_RE = /\b(agendar|agenda|cita|visita|visita técnica|técnico|técnica|programar|reservar|reserva|turno|appointment|quiero una cita|necesito una visita|instalar|instalación|mantenimiento|corte|sesión)\b/i;
 
 // Confirmaciones — muy amplio, todas las formas que usan los colombianos
@@ -155,6 +155,10 @@ function parseNombreCliente(text: string, conversationLines: string[] = []): str
     if (CONFIRMATION_RE.test(line)) return true;
     // Es solo números y símbolos
     if (/^[\d\W]+$/.test(line)) return true;
+    // Empieza con verbo o frase de intención — no es un nombre
+    if (/^(quiero|deseo|hola|buenos|buenas|gracias|necesito|quisiera|tengo|puedo|solo|también|tampoco|me\b|mi\b|mis\b|por\b|para\b|favor|sí|no\b|ok\b)/i.test(line)) return true;
+    // Más de 5 palabras → probablemente una frase, no un nombre
+    if (line.trim().split(/\s+/).length > 5) return true;
     return false;
   };
 
@@ -339,11 +343,11 @@ export class AiService {
   private buildPaymentBlock(settings: StoreSettings): string | null {
     const methods = settings.paymentMethods;
     if (!methods?.length) return null;
-    const lines = methods.map(m => `• *${m.label}:* ${m.value}`).join('\n');
+    const lines = methods.map(m => `• ${m.label}: ${m.value}`).join('\n');
     const note   = settings.paymentNote
       ? `\n\n${settings.paymentNote}`
       : '\n\nCuando realices el pago, compártenos el comprobante por aquí.';
-    return `💳 *Información de pago:*\n${lines}${note}`;
+    return `💳 Información de pago:\n${lines}${note}`;
   }
 
   private resolveServicePrice(service: any, variant?: any): number {
@@ -560,8 +564,8 @@ export class AiService {
     const cached            = this.pendingExtractions.get(conversationId);
     let extracted: ExtractionResult;
 
-    // Para órdenes sí se requiere nombre Y cédula (entrega, legal)
-    const needsCustomerData = !customer.name || !customer.cedula;
+    // Para órdenes solo se requiere nombre (cédula es opcional)
+    const needsCustomerData = !customer.name;
 
     // ── Caso 1: extracción completa cacheada + cliente confirma ───────────────
     if (
@@ -574,8 +578,15 @@ export class AiService {
       extracted = cached;
       this.pendingExtractions.delete(conversationId);
 
-    // ── Caso 2: había items pero faltaba dirección, y ahora llega ────────────
-    } else if (cached?.items?.length && !cached.deliveryAddress && ADDRESS_RE.test(latestMessage)) {
+    // ── Caso 2: había items, faltaba dirección, llega dirección Y ya tenemos nombre ──
+    // Solo shortcutea si el cliente ya tiene nombre — si aún falta, dejar al LLM
+    // separar correctamente "nombre y dirección" en el mismo mensaje.
+    } else if (
+      cached?.items?.length &&
+      !cached.deliveryAddress &&
+      ADDRESS_RE.test(latestMessage) &&
+      !needsCustomerData
+    ) {
       this.logger.log(`[Orden] Completando con dirección para ${conversationId}`);
       extracted = { ...cached, deliveryAddress: latestMessage.trim(), complete: true };
       this.pendingExtractions.delete(conversationId);
@@ -610,8 +621,9 @@ export class AiService {
 
       const customerDataInstruction = needsCustomerData
         ? `DATOS DEL CLIENTE REQUERIDOS:
-El cliente aún no tiene nombre o cédula registrados. Extráelos si fueron mencionados.
-Si no aparecen → null. La orden NO puede ser "complete":true si faltan nombre o cédula.`
+El cliente aún no tiene nombre registrado. Extráelo si fue mencionado.
+La cédula es opcional — extráela si el cliente la menciona, pero NO es obligatoria.
+Si el nombre no aparece → null. La orden NO puede ser "complete":true si falta el nombre.`
         : `DATOS DEL CLIENTE: Ya registrados. No es necesario extraerlos.`;
 
       const extractorPrompt = `Eres un extractor de datos de órdenes de compra. Tu única tarea es leer la conversación y extraer los datos del pedido en JSON.
@@ -624,12 +636,19 @@ ${conversationText}
 
 ${customerDataInstruction}
 
+NOTA ESPECIAL — CATÁLOGO WA: Si ves un mensaje con formato [Pedido del catálogo: {nombre} | cantidad: {n} | precio: {p}], el cliente seleccionó ese producto directamente desde el catálogo de WhatsApp. Úsalo para identificar el item.
+
+NOTA ESPECIAL — NOMBRE Y DIRECCIÓN EN MISMO MENSAJE: Si el cliente da su nombre y dirección en el mismo mensaje (ej: "Juan Pérez y carrera 45 #20-30, Bogotá" o "María López, Calle 10 #5-20 barrio Centro"), sepáralos correctamente:
+- customerName → solo el nombre completo (ej: "Juan Pérez")
+- deliveryAddress → solo la dirección (ej: "carrera 45 #20-30, Bogotá")
+No incluyas el nombre en deliveryAddress ni la dirección en customerName.
+
 REGLAS ESTRICTAS:
 1. "complete":true SOLO si se cumplen TODAS las condiciones simultáneamente:
    a) Al menos un producto/servicio del catálogo con cantidad
    b) Dirección con calle, carrera, barrio o similar (solo ciudad NO es suficiente)
    c) Confirmación explícita del cliente (sí, confirmo, listo, dale, ok, etc.)
-   d) Si se requieren datos del cliente: nombre Y cédula presentes
+   d) Si se requieren datos del cliente: nombre presente
 2. Si falta CUALQUIER condición → "complete":false.
 3. Para productos CON variantes: variantId es OBLIGATORIO, serviceVariantId debe ser null.
 4. Para servicios CON variantes: serviceVariantId es OBLIGATORIO, variantId debe ser null.
@@ -695,7 +714,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
     if (!extracted?.complete)       return { created: false };
     if (!extracted.items?.length)   return { created: false };
     if (!extracted.deliveryAddress) return { created: false };
-    if (needsCustomerData && (!extracted.customerName || !extracted.customerCedula)) {
+    if (needsCustomerData && !extracted.customerName) {
       return { created: false };
     }
     if (this.orderInProgress.has(conversationId)) {
@@ -805,9 +824,9 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
         created: true,
         message:
           `¡Pedido registrado${nombreCliente}! 🎉\n\n` +
-          `📦 *Resumen:*\n${orderItemsSummary.join('\n')}` +
-          `\n\n💰 *Total: $${total.toLocaleString('es-CO')}*\n` +
-          `📍 *Dirección de entrega:* ${extracted.deliveryAddress}` +
+          `📦 Resumen:\n${orderItemsSummary.join('\n')}` +
+          `\n\n💰 Total: $${total.toLocaleString('es-CO')}\n` +
+          `📍 Dirección de entrega: ${extracted.deliveryAddress}` +
           paymentSection +
           (closingMessage ? `\n\n${closingMessage}` : ''),
       };
@@ -1316,10 +1335,10 @@ REGLAS:
 Para crear un pedido necesito:
   a) Productos o servicios con cantidad
   b) Dirección de entrega completa
-  c) ${!customer.name || !customer.cedula ? 'Nombre completo y número de cédula del cliente' : '(datos del cliente ya registrados)'}
+  c) ${!customer.name ? 'Nombre completo del cliente' : '(nombre ya registrado)'}
   d) Confirmación explícita
 
-${!customer.name || !customer.cedula ? `IMPORTANTE: Cuando el cliente muestre intención de compra PIDE todos de una:\n"Para registrar tu pedido necesito: tu nombre completo, número de cédula y dirección de entrega."` : ''}
+${!customer.name ? `IMPORTANTE: Cuando el cliente muestre intención de compra PIDE todo de una:\n"Para registrar tu pedido necesito tu nombre completo y dirección de entrega."` : ''}
 
 ANTI-LOOP:
 - Si un dato ya está en DATOS YA RECOPILADOS, NO lo vuelvas a pedir.
@@ -1360,10 +1379,39 @@ IMPORTANTE:
       ? `HISTORIAL DEL CLIENTE (conversación anterior archivada):\n${lastConversationSummary}\n\nUSA ESTE CONTEXTO para dar un servicio más personalizado. No repitas preguntas que ya se respondieron en conversaciones previas.`
       : `HISTORIAL DEL CLIENTE: Primera interacción o sin historial previo.`;
 
+    const audioSection = `CAPACIDAD DE AUDIO:
+- Puedes entender mensajes de voz. Cuando el cliente te manda un audio, el sistema lo transcribe automáticamente y tú recibes el texto.
+- Responde de forma natural sin mencionar que hubo un audio, a menos que el contexto lo requiera.
+- Si el cliente pregunta si puedes escuchar audios, dile que sí.`;
+
+    const antiBucleSection = `REGLA ANTI-BUCLE EN CONVERSACIÓN (OBLIGATORIA):
+- Si ya hiciste una pregunta al cliente y él respondió con algo (aunque no sea la respuesta exacta que esperabas), NO repitas la misma pregunta.
+- Avanza la conversación con lo que el cliente sí dijo. Adapta tu respuesta a su mensaje.
+- Si el cliente hace una nueva pregunta en lugar de responder la tuya, responde su pregunta directamente.
+- Nunca hagas la misma pregunta dos veces seguidas al mismo cliente.
+- Si el cliente envió varios mensajes juntos (separados por salto de línea), léelos como un solo mensaje continuo y responde considerando todo el contexto.`;
+
+    const formatoSection = `FORMATO DE MENSAJES (MUY IMPORTANTE):
+- NUNCA uses asteriscos (*) para negritas ni para ningún otro propósito.
+- NUNCA uses guiones seguidos (---) como separadores.
+- NUNCA uses viñetas con guion (- item). En su lugar usa emojis o texto plano.
+- Para mostrar el catálogo al cliente usa este estilo limpio:
+    Tenemos disponible:
+
+    [emoji] Nombre del producto
+    Precio: $XX.000 | X unidades disponibles
+
+    [emoji] Otro producto
+    Precio: $XX.000
+- Emojis sugeridos: 📦 para productos, 🔧 para servicios, 🛍️ para catálogo general.
+- Usa saltos de línea para separar productos, no guiones ni líneas decorativas.
+- El texto debe verse limpio en WhatsApp sin ningún símbolo de formato visible.`;
+
     return [
       basePrompt, sep, clienteSection, sep, contextoPrevio, sep,
       datosSection, sep, ordenesSection, sep, citasSection, sep,
       catalogoSection, sep, flujoSection, sep, agendamientoSection, sep,
+      audioSection, sep, antiBucleSection, sep, formatoSection, sep,
       `FECHA Y HORA ACTUAL: ${fechaActual}, ${horaActual} (Colombia).`,
     ].join('\n');
   }

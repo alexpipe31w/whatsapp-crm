@@ -2,8 +2,8 @@ import {
   Injectable, Logger, OnModuleInit, Inject, forwardRef,
 } from '@nestjs/common';
 import { Boom } from '@hapi/boom';
-import * as qrcode from 'qrcode-terminal';
 import P from 'pino';
+import { downloadMediaMessage } from '@whiskeysockets/baileys';
 import { AiService } from '../ai/ai.service';
 import { ConversationsService } from '../conversations/conversations.service';
 import { MessagesService } from '../messages/messages.service';
@@ -11,9 +11,16 @@ import { CustomersService } from '../customers/customers.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { BlockedService } from '../blocked/blocked.service';
 
+const WHISPER_TIMEOUT_MS    = 25_000;
+const WHISPER_MODEL         = 'whisper-large-v3-turbo';
+const AUDIO_MAX_SECONDS     = 180;           // audios > 3 min se rechazan sin descargar
+const AUDIO_MAX_BYTES       = 10_485_760;    // 10 MB tope de descarga
+const AUDIO_RATE_WINDOW_MS  = 60_000;        // ventana de 1 minuto
+const AUDIO_RATE_MAX        = 5;             // máx 5 audios por minuto por número
+
 // ─── Constantes ──────────────────────────────────────────────────────────────
 
-const MSG_DEBOUNCE_MS        = 1_500;
+const MSG_DEBOUNCE_MS        = 3_000;
 const MSG_DEDUP_TTL_MS       = 10 * 60 * 1000;
 const HISTORY_SYNC_WINDOW_MS = 24 * 60 * 60 * 1000;
 const MAX_CONTENT_LENGTH     = 4_000; // caracteres máximos que se pasan a la IA
@@ -25,6 +32,8 @@ const RECONNECT_DELAYS: Record<number, number> = {
   440: 8_000,
 };
 const DEFAULT_RECONNECT_DELAY = 3_000;
+// Código 408 = QR timeout (nadie escaneó). Tras MAX_QR_ATTEMPTS el loop se detiene.
+const MAX_QR_ATTEMPTS = 3;
 
 // ─── Tipos de mensajes que se ignoran silenciosamente ────────────────────────
 const IGNORED_TYPES = new Set([
@@ -247,9 +256,16 @@ function extractTextContent(message: any): string | null {
     return `[Ubicación: ${loc}]`;
   }
 
-  // Mensaje de producto (order)
-  if (message.orderMessage?.title)
-    return `[Pedido: ${message.orderMessage.title}]`;
+  // Mensaje de producto (order) — cliente seleccionó del catálogo de WhatsApp
+  if (message.orderMessage?.title) {
+    const titulo  = message.orderMessage.title;
+    const qty     = message.orderMessage.itemCount ?? 1;
+    const precioRaw = message.orderMessage.priceAmount1000 ?? message.orderMessage.totalAmount1000;
+    const precio  = precioRaw ? `$${Math.round(precioRaw / 1000).toLocaleString('es-CO')}` : null;
+    const partes  = [`[Pedido del catálogo: ${titulo}`, `cantidad: ${qty}`];
+    if (precio) partes.push(`precio: ${precio}`);
+    return partes.join(' | ') + ']';
+  }
 
   // Mensaje de evento
   if (message.eventMessage?.name)
@@ -315,8 +331,10 @@ export class WhatsappService implements OnModuleInit {
   private readonly sockets         = new Map<string, any>();
   private readonly qrCodes         = new Map<string, string>();
   private readonly reconnecting    = new Set<string>();
-  private readonly processedMsgIds = new Set<string>();
-  private readonly messageQueues   = new Map<string, Promise<void>>();
+  private readonly qrAttempts      = new Map<string, number>();
+  private readonly processedMsgIds  = new Set<string>();
+  private readonly messageQueues    = new Map<string, Promise<void>>();
+  private readonly audioRateLimiter = new Map<string, { count: number; resetAt: number }>();
   private readonly messageBuffers  = new Map<string, {
     contents: string[];
     timer: ReturnType<typeof setTimeout>;
@@ -435,8 +453,7 @@ export class WhatsappService implements OnModuleInit {
     const { connection, lastDisconnect, qr } = update;
 
     if (qr) {
-      this.logger.log(`QR generado para store: ${storeId}`);
-      qrcode.generate(qr, { small: true });
+      this.logger.debug(`QR generado para store: ${storeId}`);
       this.qrCodes.set(storeId, qr);
     }
 
@@ -444,6 +461,7 @@ export class WhatsappService implements OnModuleInit {
       this.logger.log(`✅ WhatsApp conectado: ${storeId}`);
       this.qrCodes.delete(storeId);
       this.reconnecting.delete(storeId);
+      this.qrAttempts.delete(storeId);
       await this.prisma.store.update({
         where: { storeId },
         data:  { waSessionId: storeId },
@@ -470,6 +488,7 @@ export class WhatsappService implements OnModuleInit {
       this.sockets.delete(storeId);
       this.qrCodes.delete(storeId);
       this.reconnecting.delete(storeId);
+      this.qrAttempts.delete(storeId);
       await Promise.allSettled([
         this.prisma.whatsappSession.deleteMany({ where: { storeId } }),
         this.prisma.store.update({ where: { storeId }, data: { waSessionId: null } }),
@@ -480,9 +499,22 @@ export class WhatsappService implements OnModuleInit {
 
     if (this.reconnecting.has(storeId)) return;
 
+    // Código 408 = QR expiró sin ser escaneado. Limitar intentos para no hacer loop eterno.
+    if (statusCode === 408) {
+      const attempts = (this.qrAttempts.get(storeId) ?? 0) + 1;
+      this.qrAttempts.set(storeId, attempts);
+      if (attempts >= MAX_QR_ATTEMPTS) {
+        this.logger.warn(`Store ${storeId}: QR ignorado ${attempts} veces — deteniendo reconexión automática. Usa /connect para reintentar.`);
+        this.qrAttempts.delete(storeId);
+        this.sockets.delete(storeId);
+        this.qrCodes.delete(storeId);
+        return;
+      }
+    }
+
     this.reconnecting.add(storeId);
     const delay = RECONNECT_DELAYS[statusCode] ?? DEFAULT_RECONNECT_DELAY;
-    this.logger.log(`Reconectando ${storeId} en ${delay}ms...`);
+    this.logger.log(`Reconectando ${storeId} en ${delay}ms... (intento QR: ${this.qrAttempts.get(storeId) ?? 1}/${MAX_QR_ATTEMPTS})`);
 
     setTimeout(() => {
       this.reconnecting.delete(storeId);
@@ -534,7 +566,13 @@ export class WhatsappService implements OnModuleInit {
       return;
     }
 
-    // Media (audio, imagen, video, doc, sticker)
+    // Audio/PTT → intentar transcribir con Groq Whisper antes de caer al handler genérico
+    if (messageType === 'audioMessage') {
+      await this.handleAudioMessage(storeId, phone, sock, msg);
+      return;
+    }
+
+    // Resto de media (imagen, video, doc, sticker)
     if (MEDIA_TYPES.has(messageType)) {
       await this.handleMediaMessage(storeId, phone, messageType, sock);
       return;
@@ -603,6 +641,156 @@ export class WhatsappService implements OnModuleInit {
     next.finally(() => {
       if (this.messageQueues.get(key) === next) this.messageQueues.delete(key);
     });
+  }
+
+  // ─── Audio → Texto (Groq Whisper) ───────────────────────────────────────────
+
+  private checkAudioRateLimit(phone: string): boolean {
+    const now   = Date.now();
+    const entry = this.audioRateLimiter.get(phone);
+    if (!entry || entry.resetAt < now) {
+      this.audioRateLimiter.set(phone, { count: 1, resetAt: now + AUDIO_RATE_WINDOW_MS });
+      return true;
+    }
+    if (entry.count >= AUDIO_RATE_MAX) return false;
+    entry.count++;
+    return true;
+  }
+
+  private async handleAudioMessage(
+    storeId: string,
+    phone:   string,
+    sock:    any,
+    msg:     any,
+  ): Promise<void> {
+    const fallback = () => this.handleMediaMessage(storeId, phone, 'audioMessage', sock);
+
+    try {
+      // ── 1. Rate limit — máx AUDIO_RATE_MAX audios/min por número ──────────
+      if (!this.checkAudioRateLimit(phone)) {
+        this.logger.warn(`[Audio] Rate limit alcanzado para ${phone} — descartado silenciosamente`);
+        return; // no respondemos para no recompensar el spam
+      }
+
+      // ── 2. Verificar que la tienda tiene API key de Groq ──────────────────
+      const aiConfig = await this.prisma.aIConfiguration.findUnique({ where: { storeId } });
+      if (!aiConfig?.groqApiKey) {
+        this.logger.debug(`[Audio] ${phone}: sin API key Groq → fallback`);
+        return fallback();
+      }
+
+      const audioMsg  = msg.message?.audioMessage;
+      const isPtt     = audioMsg?.ptt ?? false;
+      const durationS = audioMsg?.seconds ?? 0;
+      const fileBytes = Number(audioMsg?.fileLength ?? 0);
+
+      // ── 3. Validar duración y tamaño ANTES de descargar ───────────────────
+      if (durationS > AUDIO_MAX_SECONDS) {
+        this.logger.warn(`[Audio] ${phone}: audio de ${durationS}s excede límite de ${AUDIO_MAX_SECONDS}s`);
+        const jid = jidFromPhone(phone);
+        await this.safeSend(
+          sock, jid,
+          `El audio es demasiado largo (máximo ${Math.floor(AUDIO_MAX_SECONDS / 60)} min). ¿Puedes contarme en texto qué necesitas?`,
+          phone,
+        );
+        return;
+      }
+      if (fileBytes > AUDIO_MAX_BYTES) {
+        this.logger.warn(`[Audio] ${phone}: archivo de ${fileBytes} bytes excede límite de ${AUDIO_MAX_BYTES}`);
+        return fallback();
+      }
+
+      const mimeType = audioMsg?.mimetype ?? 'audio/ogg; codecs=opus';
+      const ext      = (mimeType.includes('mp4') || mimeType.includes('m4a')) ? 'm4a' : 'ogg';
+
+      this.logger.log(`🎙️ Audio de ${phone} (${isPtt ? 'nota de voz' : 'archivo'}, ${durationS}s) — transcribiendo...`);
+
+      // ── 4. Descargar buffer en memoria (nunca se persiste en BD) ──────────
+      const buffer = await downloadMediaMessage(
+        msg, 'buffer', {},
+        { logger: P({ level: 'silent' }), reuploadRequest: sock.updateMediaMessage },
+      ) as Buffer;
+
+      if (!buffer?.length) {
+        this.logger.warn(`[Audio] ${phone}: buffer vacío → fallback`);
+        return fallback();
+      }
+
+      // Doble check de tamaño real tras descarga
+      if (buffer.length > AUDIO_MAX_BYTES) {
+        this.logger.warn(`[Audio] ${phone}: buffer real ${buffer.length} bytes > límite → fallback`);
+        return fallback();
+      }
+
+      // ── 5. Transcribir con Groq Whisper ───────────────────────────────────
+      const raw = await this.transcribeAudio(buffer, ext, aiConfig.groqApiKey);
+
+      // Sanitizar transcripción igual que cualquier mensaje de texto
+      const transcription = raw ? sanitizeContent(raw) : null;
+
+      if (!transcription) {
+        this.logger.warn(`[Audio] ${phone}: transcripción vacía → fallback`);
+        return fallback();
+      }
+
+      this.logger.log(`✅ [Audio] ${phone}: "${transcription.slice(0, 100)}${transcription.length > 100 ? '...' : ''}"`);
+
+      // ── 6. Procesar la transcripción como mensaje de texto normal ─────────
+      // El buffer ya no se referencia aquí — puede ser GC'd inmediatamente
+      this.bufferAndProcess(storeId, phone, transcription, sock);
+
+    } catch (err: any) {
+      this.logger.error(`[Audio] Error procesando audio de ${phone}: ${err.message}`);
+      return fallback();
+    }
+  }
+
+  private async transcribeAudio(
+    buffer:     Buffer,
+    ext:        string,
+    groqApiKey: string,
+  ): Promise<string | null> {
+    try {
+      const mimeMap: Record<string, string> = {
+        ogg: 'audio/ogg',
+        m4a: 'audio/mp4',
+        mp3: 'audio/mpeg',
+        wav: 'audio/wav',
+      };
+
+      const formData  = new FormData();
+      // Convertir Buffer a ArrayBuffer para compatibilidad con Blob en Node 18+
+      const arrayBuf  = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength) as ArrayBuffer;
+      const blob      = new Blob([arrayBuf], { type: mimeMap[ext] ?? 'audio/ogg' });
+      formData.append('file',            blob, `audio.${ext}`);
+      formData.append('model',           WHISPER_MODEL);
+      formData.append('language',        'es');
+      formData.append('response_format', 'text');
+
+      const res = await Promise.race([
+        fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+          method:  'POST',
+          headers: { Authorization: `Bearer ${groqApiKey}` },
+          body:    formData,
+        }),
+        new Promise<never>((_, rej) =>
+          setTimeout(() => rej(new Error('Whisper timeout')), WHISPER_TIMEOUT_MS),
+        ),
+      ]);
+
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        this.logger.warn(`[Whisper] HTTP ${res.status}: ${JSON.stringify(errBody)}`);
+        return null;
+      }
+
+      const text = (await res.text()).trim();
+      return text || null;
+
+    } catch (err: any) {
+      this.logger.error(`[Whisper] ${err.message}`);
+      return null;
+    }
   }
 
   // ─── Mensajes de media ──────────────────────────────────────────────────────

@@ -33,31 +33,59 @@ export class CustomersService {
   async findAllByStore(storeId: string) {
     return this.prisma.customer.findMany({
       where:   { storeId },
-      orderBy: { createdAt: 'desc' },
+      include: {
+        _count: { select: { orders: true, conversations: true } },
+      },
+      orderBy: { totalSpent: 'desc' },
     });
   }
 
   async findOne(customerId: string, storeId?: string) {
     const customer = await this.prisma.customer.findUnique({
-      where: { customerId },
+      where:   { customerId },
+      include: {
+        orders: {
+          orderBy: { createdAt: 'desc' },
+          take:    5,
+          include: { orderItems: { include: { product: true, service: true } } },
+        },
+        _count: { select: { orders: true, conversations: true } },
+      },
     });
     if (!customer) throw new NotFoundException('Cliente no encontrado');
-    if (storeId && customer.storeId !== storeId) {
+    if (storeId && customer.storeId !== storeId)
       throw new ForbiddenException('No tienes acceso a este cliente');
-    }
     return customer;
   }
 
-  // FIX: incluir cedula y phone en los campos actualizables
   async update(
     customerId: string,
-    data: { name?: string; city?: string; cedula?: string; phone?: string },
+    data: { name?: string; city?: string; cedula?: string; phone?: string; acceptsMarketing?: boolean },
     storeId?: string,
   ) {
     await this.findOne(customerId, storeId);
+    return this.prisma.customer.update({ where: { customerId }, data });
+  }
+
+  // Recalcula métricas desde las órdenes — útil para sincronizar datos históricos
+  async recalcMetrics(customerId: string, storeId?: string) {
+    const customer = await this.findOne(customerId, storeId);
+    const orders = await this.prisma.order.findMany({
+      where:   { customerId, storeId: customer.storeId, status: { not: 'cancelled' } },
+      orderBy: { createdAt: 'asc' },
+      select:  { total: true, createdAt: true },
+    });
+    const totalSpent  = orders.reduce((s, o) => s + Number(o.total), 0);
+    const firstOrder  = orders[0]?.createdAt ?? null;
+    const lastOrder   = orders[orders.length - 1]?.createdAt ?? null;
     return this.prisma.customer.update({
       where: { customerId },
-      data,
+      data: {
+        totalOrders:    orders.length,
+        totalSpent,
+        firstOrderDate: firstOrder,
+        lastOrderDate:  lastOrder,
+      },
     });
   }
 }

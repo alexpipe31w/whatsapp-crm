@@ -274,6 +274,13 @@ export class AppointmentsService {
   // ─── Stats ─────────────────────────────────────────────────────────────────
 
   async getStats(storeId: string) {
+    if (!storeId) {
+      return {
+        total: 0, pending: 0, confirmed: 0, todayCount: 0,
+        upcomingWeek: 0, inProgress: 0, completedTotal: 0,
+        cancelledTotal: 0, noShowTotal: 0,
+      };
+    }
     const now        = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const todayEnd   = new Date(todayStart);

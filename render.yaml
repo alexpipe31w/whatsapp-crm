@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: whatsapp-crm
+    env: node
+    plan: starter
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: npm run start:prod
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Las siguientes variables se configuran manualmente en el dashboard de Render:
+      # DATABASE_URL, JWT_SECRET, GROQ_API_KEY
+      # MP_ACCESS_TOKEN, MP_WEBHOOK_SECRET, MP_SANDBOX
+      # APP_URL, FRONTEND_URL, ALLOWED_ORIGINS
+      # SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS
+      # CRON_SECRET

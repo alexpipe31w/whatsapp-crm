@@ -20,8 +20,20 @@ export type CustomerModel = runtime.Types.Result.DefaultSelection<Prisma.$Custom
 
 export type AggregateCustomer = {
   _count: CustomerCountAggregateOutputType | null
+  _avg: CustomerAvgAggregateOutputType | null
+  _sum: CustomerSumAggregateOutputType | null
   _min: CustomerMinAggregateOutputType | null
   _max: CustomerMaxAggregateOutputType | null
+}
+
+export type CustomerAvgAggregateOutputType = {
+  totalOrders: number | null
+  totalSpent: runtime.Decimal | null
+}
+
+export type CustomerSumAggregateOutputType = {
+  totalOrders: number | null
+  totalSpent: runtime.Decimal | null
 }
 
 export type CustomerMinAggregateOutputType = {
@@ -31,6 +43,11 @@ export type CustomerMinAggregateOutputType = {
   name: string | null
   cedula: string | null
   city: string | null
+  totalOrders: number | null
+  totalSpent: runtime.Decimal | null
+  firstOrderDate: Date | null
+  lastOrderDate: Date | null
+  acceptsMarketing: boolean | null
   lastConversationSummary: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -43,6 +60,11 @@ export type CustomerMaxAggregateOutputType = {
   name: string | null
   cedula: string | null
   city: string | null
+  totalOrders: number | null
+  totalSpent: runtime.Decimal | null
+  firstOrderDate: Date | null
+  lastOrderDate: Date | null
+  acceptsMarketing: boolean | null
   lastConversationSummary: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -55,12 +77,27 @@ export type CustomerCountAggregateOutputType = {
   name: number
   cedula: number
   city: number
+  totalOrders: number
+  totalSpent: number
+  firstOrderDate: number
+  lastOrderDate: number
+  acceptsMarketing: number
   lastConversationSummary: number
   createdAt: number
   updatedAt: number
   _all: number
 }
 
+
+export type CustomerAvgAggregateInputType = {
+  totalOrders?: true
+  totalSpent?: true
+}
+
+export type CustomerSumAggregateInputType = {
+  totalOrders?: true
+  totalSpent?: true
+}
 
 export type CustomerMinAggregateInputType = {
   customerId?: true
@@ -69,6 +106,11 @@ export type CustomerMinAggregateInputType = {
   name?: true
   cedula?: true
   city?: true
+  totalOrders?: true
+  totalSpent?: true
+  firstOrderDate?: true
+  lastOrderDate?: true
+  acceptsMarketing?: true
   lastConversationSummary?: true
   createdAt?: true
   updatedAt?: true
@@ -81,6 +123,11 @@ export type CustomerMaxAggregateInputType = {
   name?: true
   cedula?: true
   city?: true
+  totalOrders?: true
+  totalSpent?: true
+  firstOrderDate?: true
+  lastOrderDate?: true
+  acceptsMarketing?: true
   lastConversationSummary?: true
   createdAt?: true
   updatedAt?: true
@@ -93,6 +140,11 @@ export type CustomerCountAggregateInputType = {
   name?: true
   cedula?: true
   city?: true
+  totalOrders?: true
+  totalSpent?: true
+  firstOrderDate?: true
+  lastOrderDate?: true
+  acceptsMarketing?: true
   lastConversationSummary?: true
   createdAt?: true
   updatedAt?: true
@@ -137,6 +189,18 @@ export type CustomerAggregateArgs<ExtArgs extends runtime.Types.Extensions.Inter
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
+   * Select which fields to average
+  **/
+  _avg?: CustomerAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: CustomerSumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
    * Select which fields to find the minimum value
   **/
   _min?: CustomerMinAggregateInputType
@@ -167,6 +231,8 @@ export type CustomerGroupByArgs<ExtArgs extends runtime.Types.Extensions.Interna
   take?: number
   skip?: number
   _count?: CustomerCountAggregateInputType | true
+  _avg?: CustomerAvgAggregateInputType
+  _sum?: CustomerSumAggregateInputType
   _min?: CustomerMinAggregateInputType
   _max?: CustomerMaxAggregateInputType
 }
@@ -178,10 +244,17 @@ export type CustomerGroupByOutputType = {
   name: string | null
   cedula: string | null
   city: string | null
+  totalOrders: number
+  totalSpent: runtime.Decimal
+  firstOrderDate: Date | null
+  lastOrderDate: Date | null
+  acceptsMarketing: boolean
   lastConversationSummary: string | null
   createdAt: Date
   updatedAt: Date
   _count: CustomerCountAggregateOutputType | null
+  _avg: CustomerAvgAggregateOutputType | null
+  _sum: CustomerSumAggregateOutputType | null
   _min: CustomerMinAggregateOutputType | null
   _max: CustomerMaxAggregateOutputType | null
 }
@@ -211,6 +284,11 @@ export type CustomerWhereInput = {
   name?: Prisma.StringNullableFilter<"Customer"> | string | null
   cedula?: Prisma.StringNullableFilter<"Customer"> | string | null
   city?: Prisma.StringNullableFilter<"Customer"> | string | null
+  totalOrders?: Prisma.IntFilter<"Customer"> | number
+  totalSpent?: Prisma.DecimalFilter<"Customer"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  firstOrderDate?: Prisma.DateTimeNullableFilter<"Customer"> | Date | string | null
+  lastOrderDate?: Prisma.DateTimeNullableFilter<"Customer"> | Date | string | null
+  acceptsMarketing?: Prisma.BoolFilter<"Customer"> | boolean
   lastConversationSummary?: Prisma.StringNullableFilter<"Customer"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Customer"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Customer"> | Date | string
@@ -227,6 +305,11 @@ export type CustomerOrderByWithRelationInput = {
   name?: Prisma.SortOrderInput | Prisma.SortOrder
   cedula?: Prisma.SortOrderInput | Prisma.SortOrder
   city?: Prisma.SortOrderInput | Prisma.SortOrder
+  totalOrders?: Prisma.SortOrder
+  totalSpent?: Prisma.SortOrder
+  firstOrderDate?: Prisma.SortOrderInput | Prisma.SortOrder
+  lastOrderDate?: Prisma.SortOrderInput | Prisma.SortOrder
+  acceptsMarketing?: Prisma.SortOrder
   lastConversationSummary?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -247,6 +330,11 @@ export type CustomerWhereUniqueInput = Prisma.AtLeast<{
   name?: Prisma.StringNullableFilter<"Customer"> | string | null
   cedula?: Prisma.StringNullableFilter<"Customer"> | string | null
   city?: Prisma.StringNullableFilter<"Customer"> | string | null
+  totalOrders?: Prisma.IntFilter<"Customer"> | number
+  totalSpent?: Prisma.DecimalFilter<"Customer"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  firstOrderDate?: Prisma.DateTimeNullableFilter<"Customer"> | Date | string | null
+  lastOrderDate?: Prisma.DateTimeNullableFilter<"Customer"> | Date | string | null
+  acceptsMarketing?: Prisma.BoolFilter<"Customer"> | boolean
   lastConversationSummary?: Prisma.StringNullableFilter<"Customer"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Customer"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Customer"> | Date | string
@@ -263,12 +351,19 @@ export type CustomerOrderByWithAggregationInput = {
   name?: Prisma.SortOrderInput | Prisma.SortOrder
   cedula?: Prisma.SortOrderInput | Prisma.SortOrder
   city?: Prisma.SortOrderInput | Prisma.SortOrder
+  totalOrders?: Prisma.SortOrder
+  totalSpent?: Prisma.SortOrder
+  firstOrderDate?: Prisma.SortOrderInput | Prisma.SortOrder
+  lastOrderDate?: Prisma.SortOrderInput | Prisma.SortOrder
+  acceptsMarketing?: Prisma.SortOrder
   lastConversationSummary?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.CustomerCountOrderByAggregateInput
+  _avg?: Prisma.CustomerAvgOrderByAggregateInput
   _max?: Prisma.CustomerMaxOrderByAggregateInput
   _min?: Prisma.CustomerMinOrderByAggregateInput
+  _sum?: Prisma.CustomerSumOrderByAggregateInput
 }
 
 export type CustomerScalarWhereWithAggregatesInput = {
@@ -281,6 +376,11 @@ export type CustomerScalarWhereWithAggregatesInput = {
   name?: Prisma.StringNullableWithAggregatesFilter<"Customer"> | string | null
   cedula?: Prisma.StringNullableWithAggregatesFilter<"Customer"> | string | null
   city?: Prisma.StringNullableWithAggregatesFilter<"Customer"> | string | null
+  totalOrders?: Prisma.IntWithAggregatesFilter<"Customer"> | number
+  totalSpent?: Prisma.DecimalWithAggregatesFilter<"Customer"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  firstOrderDate?: Prisma.DateTimeNullableWithAggregatesFilter<"Customer"> | Date | string | null
+  lastOrderDate?: Prisma.DateTimeNullableWithAggregatesFilter<"Customer"> | Date | string | null
+  acceptsMarketing?: Prisma.BoolWithAggregatesFilter<"Customer"> | boolean
   lastConversationSummary?: Prisma.StringNullableWithAggregatesFilter<"Customer"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Customer"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Customer"> | Date | string
@@ -292,6 +392,11 @@ export type CustomerCreateInput = {
   name?: string | null
   cedula?: string | null
   city?: string | null
+  totalOrders?: number
+  totalSpent?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  firstOrderDate?: Date | string | null
+  lastOrderDate?: Date | string | null
+  acceptsMarketing?: boolean
   lastConversationSummary?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -308,6 +413,11 @@ export type CustomerUncheckedCreateInput = {
   name?: string | null
   cedula?: string | null
   city?: string | null
+  totalOrders?: number
+  totalSpent?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  firstOrderDate?: Date | string | null
+  lastOrderDate?: Date | string | null
+  acceptsMarketing?: boolean
   lastConversationSummary?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -322,6 +432,11 @@ export type CustomerUpdateInput = {
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cedula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  totalOrders?: Prisma.IntFieldUpdateOperationsInput | number
+  totalSpent?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  firstOrderDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastOrderDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  acceptsMarketing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastConversationSummary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -338,6 +453,11 @@ export type CustomerUncheckedUpdateInput = {
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cedula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  totalOrders?: Prisma.IntFieldUpdateOperationsInput | number
+  totalSpent?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  firstOrderDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastOrderDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  acceptsMarketing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastConversationSummary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -353,6 +473,11 @@ export type CustomerCreateManyInput = {
   name?: string | null
   cedula?: string | null
   city?: string | null
+  totalOrders?: number
+  totalSpent?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  firstOrderDate?: Date | string | null
+  lastOrderDate?: Date | string | null
+  acceptsMarketing?: boolean
   lastConversationSummary?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -364,6 +489,11 @@ export type CustomerUpdateManyMutationInput = {
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cedula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  totalOrders?: Prisma.IntFieldUpdateOperationsInput | number
+  totalSpent?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  firstOrderDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastOrderDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  acceptsMarketing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastConversationSummary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -376,6 +506,11 @@ export type CustomerUncheckedUpdateManyInput = {
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cedula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  totalOrders?: Prisma.IntFieldUpdateOperationsInput | number
+  totalSpent?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  firstOrderDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastOrderDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  acceptsMarketing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastConversationSummary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -403,9 +538,19 @@ export type CustomerCountOrderByAggregateInput = {
   name?: Prisma.SortOrder
   cedula?: Prisma.SortOrder
   city?: Prisma.SortOrder
+  totalOrders?: Prisma.SortOrder
+  totalSpent?: Prisma.SortOrder
+  firstOrderDate?: Prisma.SortOrder
+  lastOrderDate?: Prisma.SortOrder
+  acceptsMarketing?: Prisma.SortOrder
   lastConversationSummary?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+}
+
+export type CustomerAvgOrderByAggregateInput = {
+  totalOrders?: Prisma.SortOrder
+  totalSpent?: Prisma.SortOrder
 }
 
 export type CustomerMaxOrderByAggregateInput = {
@@ -415,6 +560,11 @@ export type CustomerMaxOrderByAggregateInput = {
   name?: Prisma.SortOrder
   cedula?: Prisma.SortOrder
   city?: Prisma.SortOrder
+  totalOrders?: Prisma.SortOrder
+  totalSpent?: Prisma.SortOrder
+  firstOrderDate?: Prisma.SortOrder
+  lastOrderDate?: Prisma.SortOrder
+  acceptsMarketing?: Prisma.SortOrder
   lastConversationSummary?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -427,9 +577,19 @@ export type CustomerMinOrderByAggregateInput = {
   name?: Prisma.SortOrder
   cedula?: Prisma.SortOrder
   city?: Prisma.SortOrder
+  totalOrders?: Prisma.SortOrder
+  totalSpent?: Prisma.SortOrder
+  firstOrderDate?: Prisma.SortOrder
+  lastOrderDate?: Prisma.SortOrder
+  acceptsMarketing?: Prisma.SortOrder
   lastConversationSummary?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+}
+
+export type CustomerSumOrderByAggregateInput = {
+  totalOrders?: Prisma.SortOrder
+  totalSpent?: Prisma.SortOrder
 }
 
 export type CustomerScalarRelationFilter = {
@@ -477,6 +637,22 @@ export type CustomerUncheckedUpdateManyWithoutStoreNestedInput = {
   update?: Prisma.CustomerUpdateWithWhereUniqueWithoutStoreInput | Prisma.CustomerUpdateWithWhereUniqueWithoutStoreInput[]
   updateMany?: Prisma.CustomerUpdateManyWithWhereWithoutStoreInput | Prisma.CustomerUpdateManyWithWhereWithoutStoreInput[]
   deleteMany?: Prisma.CustomerScalarWhereInput | Prisma.CustomerScalarWhereInput[]
+}
+
+export type IntFieldUpdateOperationsInput = {
+  set?: number
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
+}
+
+export type DecimalFieldUpdateOperationsInput = {
+  set?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  increment?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  decrement?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  multiply?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  divide?: runtime.Decimal | runtime.DecimalJsLike | number | string
 }
 
 export type CustomerCreateNestedOneWithoutConversationsInput = {
@@ -527,6 +703,11 @@ export type CustomerCreateWithoutStoreInput = {
   name?: string | null
   cedula?: string | null
   city?: string | null
+  totalOrders?: number
+  totalSpent?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  firstOrderDate?: Date | string | null
+  lastOrderDate?: Date | string | null
+  acceptsMarketing?: boolean
   lastConversationSummary?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -541,6 +722,11 @@ export type CustomerUncheckedCreateWithoutStoreInput = {
   name?: string | null
   cedula?: string | null
   city?: string | null
+  totalOrders?: number
+  totalSpent?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  firstOrderDate?: Date | string | null
+  lastOrderDate?: Date | string | null
+  acceptsMarketing?: boolean
   lastConversationSummary?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -585,6 +771,11 @@ export type CustomerScalarWhereInput = {
   name?: Prisma.StringNullableFilter<"Customer"> | string | null
   cedula?: Prisma.StringNullableFilter<"Customer"> | string | null
   city?: Prisma.StringNullableFilter<"Customer"> | string | null
+  totalOrders?: Prisma.IntFilter<"Customer"> | number
+  totalSpent?: Prisma.DecimalFilter<"Customer"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  firstOrderDate?: Prisma.DateTimeNullableFilter<"Customer"> | Date | string | null
+  lastOrderDate?: Prisma.DateTimeNullableFilter<"Customer"> | Date | string | null
+  acceptsMarketing?: Prisma.BoolFilter<"Customer"> | boolean
   lastConversationSummary?: Prisma.StringNullableFilter<"Customer"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Customer"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Customer"> | Date | string
@@ -596,6 +787,11 @@ export type CustomerCreateWithoutConversationsInput = {
   name?: string | null
   cedula?: string | null
   city?: string | null
+  totalOrders?: number
+  totalSpent?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  firstOrderDate?: Date | string | null
+  lastOrderDate?: Date | string | null
+  acceptsMarketing?: boolean
   lastConversationSummary?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -611,6 +807,11 @@ export type CustomerUncheckedCreateWithoutConversationsInput = {
   name?: string | null
   cedula?: string | null
   city?: string | null
+  totalOrders?: number
+  totalSpent?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  firstOrderDate?: Date | string | null
+  lastOrderDate?: Date | string | null
+  acceptsMarketing?: boolean
   lastConversationSummary?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -640,6 +841,11 @@ export type CustomerUpdateWithoutConversationsInput = {
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cedula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  totalOrders?: Prisma.IntFieldUpdateOperationsInput | number
+  totalSpent?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  firstOrderDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastOrderDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  acceptsMarketing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastConversationSummary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -655,6 +861,11 @@ export type CustomerUncheckedUpdateWithoutConversationsInput = {
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cedula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  totalOrders?: Prisma.IntFieldUpdateOperationsInput | number
+  totalSpent?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  firstOrderDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastOrderDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  acceptsMarketing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastConversationSummary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -668,6 +879,11 @@ export type CustomerCreateWithoutOrdersInput = {
   name?: string | null
   cedula?: string | null
   city?: string | null
+  totalOrders?: number
+  totalSpent?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  firstOrderDate?: Date | string | null
+  lastOrderDate?: Date | string | null
+  acceptsMarketing?: boolean
   lastConversationSummary?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -683,6 +899,11 @@ export type CustomerUncheckedCreateWithoutOrdersInput = {
   name?: string | null
   cedula?: string | null
   city?: string | null
+  totalOrders?: number
+  totalSpent?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  firstOrderDate?: Date | string | null
+  lastOrderDate?: Date | string | null
+  acceptsMarketing?: boolean
   lastConversationSummary?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -712,6 +933,11 @@ export type CustomerUpdateWithoutOrdersInput = {
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cedula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  totalOrders?: Prisma.IntFieldUpdateOperationsInput | number
+  totalSpent?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  firstOrderDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastOrderDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  acceptsMarketing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastConversationSummary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -727,6 +953,11 @@ export type CustomerUncheckedUpdateWithoutOrdersInput = {
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cedula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  totalOrders?: Prisma.IntFieldUpdateOperationsInput | number
+  totalSpent?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  firstOrderDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastOrderDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  acceptsMarketing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastConversationSummary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -740,6 +971,11 @@ export type CustomerCreateWithoutAppointmentsInput = {
   name?: string | null
   cedula?: string | null
   city?: string | null
+  totalOrders?: number
+  totalSpent?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  firstOrderDate?: Date | string | null
+  lastOrderDate?: Date | string | null
+  acceptsMarketing?: boolean
   lastConversationSummary?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -755,6 +991,11 @@ export type CustomerUncheckedCreateWithoutAppointmentsInput = {
   name?: string | null
   cedula?: string | null
   city?: string | null
+  totalOrders?: number
+  totalSpent?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  firstOrderDate?: Date | string | null
+  lastOrderDate?: Date | string | null
+  acceptsMarketing?: boolean
   lastConversationSummary?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -784,6 +1025,11 @@ export type CustomerUpdateWithoutAppointmentsInput = {
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cedula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  totalOrders?: Prisma.IntFieldUpdateOperationsInput | number
+  totalSpent?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  firstOrderDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastOrderDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  acceptsMarketing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastConversationSummary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -799,6 +1045,11 @@ export type CustomerUncheckedUpdateWithoutAppointmentsInput = {
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cedula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  totalOrders?: Prisma.IntFieldUpdateOperationsInput | number
+  totalSpent?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  firstOrderDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastOrderDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  acceptsMarketing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastConversationSummary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -812,6 +1063,11 @@ export type CustomerCreateManyStoreInput = {
   name?: string | null
   cedula?: string | null
   city?: string | null
+  totalOrders?: number
+  totalSpent?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  firstOrderDate?: Date | string | null
+  lastOrderDate?: Date | string | null
+  acceptsMarketing?: boolean
   lastConversationSummary?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -823,6 +1079,11 @@ export type CustomerUpdateWithoutStoreInput = {
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cedula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  totalOrders?: Prisma.IntFieldUpdateOperationsInput | number
+  totalSpent?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  firstOrderDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastOrderDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  acceptsMarketing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastConversationSummary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -837,6 +1098,11 @@ export type CustomerUncheckedUpdateWithoutStoreInput = {
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cedula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  totalOrders?: Prisma.IntFieldUpdateOperationsInput | number
+  totalSpent?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  firstOrderDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastOrderDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  acceptsMarketing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastConversationSummary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -851,6 +1117,11 @@ export type CustomerUncheckedUpdateManyWithoutStoreInput = {
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cedula?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  totalOrders?: Prisma.IntFieldUpdateOperationsInput | number
+  totalSpent?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  firstOrderDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastOrderDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  acceptsMarketing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastConversationSummary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -912,6 +1183,11 @@ export type CustomerSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   name?: boolean
   cedula?: boolean
   city?: boolean
+  totalOrders?: boolean
+  totalSpent?: boolean
+  firstOrderDate?: boolean
+  lastOrderDate?: boolean
+  acceptsMarketing?: boolean
   lastConversationSummary?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -929,6 +1205,11 @@ export type CustomerSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   name?: boolean
   cedula?: boolean
   city?: boolean
+  totalOrders?: boolean
+  totalSpent?: boolean
+  firstOrderDate?: boolean
+  lastOrderDate?: boolean
+  acceptsMarketing?: boolean
   lastConversationSummary?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -942,6 +1223,11 @@ export type CustomerSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   name?: boolean
   cedula?: boolean
   city?: boolean
+  totalOrders?: boolean
+  totalSpent?: boolean
+  firstOrderDate?: boolean
+  lastOrderDate?: boolean
+  acceptsMarketing?: boolean
   lastConversationSummary?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -955,12 +1241,17 @@ export type CustomerSelectScalar = {
   name?: boolean
   cedula?: boolean
   city?: boolean
+  totalOrders?: boolean
+  totalSpent?: boolean
+  firstOrderDate?: boolean
+  lastOrderDate?: boolean
+  acceptsMarketing?: boolean
   lastConversationSummary?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type CustomerOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"customerId" | "storeId" | "phone" | "name" | "cedula" | "city" | "lastConversationSummary" | "createdAt" | "updatedAt", ExtArgs["result"]["customer"]>
+export type CustomerOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"customerId" | "storeId" | "phone" | "name" | "cedula" | "city" | "totalOrders" | "totalSpent" | "firstOrderDate" | "lastOrderDate" | "acceptsMarketing" | "lastConversationSummary" | "createdAt" | "updatedAt", ExtArgs["result"]["customer"]>
 export type CustomerInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   store?: boolean | Prisma.StoreDefaultArgs<ExtArgs>
   conversations?: boolean | Prisma.Customer$conversationsArgs<ExtArgs>
@@ -990,6 +1281,11 @@ export type $CustomerPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     name: string | null
     cedula: string | null
     city: string | null
+    totalOrders: number
+    totalSpent: runtime.Decimal
+    firstOrderDate: Date | null
+    lastOrderDate: Date | null
+    acceptsMarketing: boolean
     lastConversationSummary: string | null
     createdAt: Date
     updatedAt: Date
@@ -1426,6 +1722,11 @@ export interface CustomerFieldRefs {
   readonly name: Prisma.FieldRef<"Customer", 'String'>
   readonly cedula: Prisma.FieldRef<"Customer", 'String'>
   readonly city: Prisma.FieldRef<"Customer", 'String'>
+  readonly totalOrders: Prisma.FieldRef<"Customer", 'Int'>
+  readonly totalSpent: Prisma.FieldRef<"Customer", 'Decimal'>
+  readonly firstOrderDate: Prisma.FieldRef<"Customer", 'DateTime'>
+  readonly lastOrderDate: Prisma.FieldRef<"Customer", 'DateTime'>
+  readonly acceptsMarketing: Prisma.FieldRef<"Customer", 'Boolean'>
   readonly lastConversationSummary: Prisma.FieldRef<"Customer", 'String'>
   readonly createdAt: Prisma.FieldRef<"Customer", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Customer", 'DateTime'>

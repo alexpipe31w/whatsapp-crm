@@ -64,11 +64,34 @@ export class CreateOrderDto {
   @IsInt()
   @IsOptional()
   @Min(0)
-  @Max(1440) // máximo 24 horas en minutos
+  @Max(1440)
   estimatedTime?: number;
 
   @IsString()
   @IsOptional()
   @MaxLength(300)
   deliveryAddress?: string;
+
+  // Descuento manual (solo admin)
+  @Type(() => Number)
+  @IsNumber()
+  @IsOptional()
+  @Min(0)
+  @Max(100)
+  discountPercent?: number;
+
+  // Venta manual registrada por el admin
+  @IsOptional()
+  isManual?: boolean;
+
+  @IsString()
+  @IsOptional()
+  @IsIn(['CASH', 'TRANSFER', 'CARD', 'OTHER'])
+  manualPaymentMethod?: string;
+
+  // Clave de idempotencia para evitar duplicados desde el frontend
+  @IsString()
+  @IsOptional()
+  @MaxLength(100)
+  idempotencyKey?: string;
 }

@@ -135,3 +135,18 @@ export type AdminAuditLog = Prisma.AdminAuditLogModel
  * 
  */
 export type WhatsappSession = Prisma.WhatsappSessionModel
+/**
+ * Model SubscriptionConfig
+ * 
+ */
+export type SubscriptionConfig = Prisma.SubscriptionConfigModel
+/**
+ * Model Subscription
+ * 
+ */
+export type Subscription = Prisma.SubscriptionModel
+/**
+ * Model SubscriptionPayment
+ * 
+ */
+export type SubscriptionPayment = Prisma.SubscriptionPaymentModel

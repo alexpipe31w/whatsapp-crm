@@ -8,8 +8,10 @@ export class ConversationsController {
   constructor(private readonly conversationsService: ConversationsService) {}
 
   @Get('store/:storeId')
-  findAll(@Param('storeId') storeId: string) {
-    return this.conversationsService.findAllByStore(storeId);
+  findAll(@Param('storeId') storeId: string, @Request() req: any) {
+    // Multi-tenant: solo puede ver su propia tienda (superadmin ve todas)
+    const effectiveStoreId = req.user.role === 'superadmin' ? storeId : req.user.storeId;
+    return this.conversationsService.findAllByStore(effectiveStoreId);
   }
 
   @Get(':id')

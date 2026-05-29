@@ -20,6 +20,7 @@ import { AuthModule } from './auth/auth.module';
 import { BlockedModule } from './blocked/blocked.module';
 import { AppointmentsModule } from './appointments/appointments.module';
 import { SuperAdminModule } from './superadmin/superadmin.module';
+import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { SuperAdminModule } from './superadmin/superadmin.module';
     AuthModule,
     BlockedModule,
     SuperAdminModule,
+    SubscriptionsModule,
   ],
 })
 export class AppModule {}

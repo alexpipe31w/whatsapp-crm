@@ -14,8 +14,9 @@ export class CampaignsController {
   }
 
   @Get('store/:storeId')
-  findAllByStore(@Param('storeId') storeId: string) {
-    return this.campaignsService.findAllByStore(storeId);
+  findAllByStore(@Param('storeId') storeId: string, @Request() req: any) {
+    const effectiveStoreId = req.user.role === 'superadmin' ? storeId : req.user.storeId;
+    return this.campaignsService.findAllByStore(effectiveStoreId);
   }
 
   @Get(':id')

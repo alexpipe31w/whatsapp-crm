@@ -57,3 +57,8 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 /generated/prisma
 sessions/
+
+# Prisma engine binaries (platform-specific, regenerated on build)
+src/generated/prisma/query_engine-*.node
+src/generated/prisma/query_engine-*.node.tmp*
+src/generated/prisma/libquery_engine-*
