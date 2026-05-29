@@ -20,7 +20,7 @@ export class EmailService {
         secure: false,
         auth: { user, pass },
         family: 4, // Render Free no soporta IPv6 outbound
-      });
+      } as any);
     } else {
       this.logger.warn('SMTP no configurado — los emails se mostrarán en los logs');
     }
