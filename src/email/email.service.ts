@@ -19,6 +19,7 @@ export class EmailService {
         port: config.get<number>('SMTP_PORT') ?? 587,
         secure: false,
         auth: { user, pass },
+        family: 4, // Render Free no soporta IPv6 outbound
       });
     } else {
       this.logger.warn('SMTP no configurado — los emails se mostrarán en los logs');
