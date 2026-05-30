@@ -1,21 +1,23 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Resend } from 'resend';
+import { BrevoClient } from '@getbrevo/brevo';
 
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
-  private resend: Resend | null = null;
-  private fromEmail = '';
+  private brevo: BrevoClient | null = null;
+  private senderEmail = '';
+  private adminEmail = '';
 
   constructor(private config: ConfigService) {
-    const apiKey = config.get<string>('RESEND_API_KEY');
-    this.fromEmail = config.get<string>('RESEND_FROM') ?? 'Stockup Messages <onboarding@resend.dev>';
+    const apiKey = config.get<string>('BREVO_API_KEY');
+    this.senderEmail = config.get<string>('BREVO_SENDER_EMAIL') ?? '';
+    this.adminEmail  = config.get<string>('SMTP_USER') ?? this.senderEmail;
 
-    if (apiKey) {
-      this.resend = new Resend(apiKey);
+    if (apiKey && this.senderEmail) {
+      this.brevo = new BrevoClient({ apiKey });
     } else {
-      this.logger.warn('RESEND_API_KEY no configurado — los emails se mostrarán en los logs');
+      this.logger.warn('BREVO_API_KEY o BREVO_SENDER_EMAIL no configurados — emails en logs');
     }
   }
 
@@ -104,20 +106,18 @@ export class EmailService {
     const stepsHtml = steps.map(s => `
       <tr>
         <td style="padding:12px 0;border-bottom:1px solid #f1f5f9;vertical-align:top">
-          <table cellpadding="0" cellspacing="0" width="100%">
-            <tr>
-              <td width="36" style="vertical-align:top;padding-top:2px">
-                <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#2563eb,#9333ea);display:flex;align-items:center;justify-content:center;text-align:center;line-height:28px">
-                  <span style="color:white;font-weight:700;font-size:13px">${s.num}</span>
-                </div>
-              </td>
-              <td style="padding-left:12px">
-                <p style="margin:0 0 2px;font-weight:600;color:#1e293b;font-size:14px">${s.title}</p>
-                <p style="margin:0 0 8px;color:#64748b;font-size:13px">${s.desc}</p>
-                <a href="${s.url}" style="display:inline-block;padding:6px 14px;background:#f1f5f9;border-radius:8px;color:#2563eb;font-size:12px;font-weight:600;text-decoration:none">${s.btn} →</a>
-              </td>
-            </tr>
-          </table>
+          <table cellpadding="0" cellspacing="0" width="100%"><tr>
+            <td width="36" style="vertical-align:top;padding-top:2px">
+              <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#2563eb,#9333ea);text-align:center;line-height:28px">
+                <span style="color:white;font-weight:700;font-size:13px">${s.num}</span>
+              </div>
+            </td>
+            <td style="padding-left:12px">
+              <p style="margin:0 0 2px;font-weight:600;color:#1e293b;font-size:14px">${s.title}</p>
+              <p style="margin:0 0 8px;color:#64748b;font-size:13px">${s.desc}</p>
+              <a href="${s.url}" style="display:inline-block;padding:6px 14px;background:#f1f5f9;border-radius:8px;color:#2563eb;font-size:12px;font-weight:600;text-decoration:none">${s.btn} →</a>
+            </td>
+          </tr></table>
         </td>
       </tr>`).join('');
 
@@ -128,29 +128,21 @@ export class EmailService {
           <h1 style="color:white;margin:0;font-size:26px;font-weight:800">Stockup Messages</h1>
           <p style="color:rgba(255,255,255,.8);margin:6px 0 0;font-size:14px">CRM inteligente para WhatsApp</p>
         </div>
-
         <p style="color:#1e293b;font-size:15px;margin:0 0 6px"><strong>Hola ${ownerName},</strong></p>
         <p style="color:#475569;font-size:14px;line-height:1.6;margin:0 0 24px">
           Tu negocio <strong>${storeName}</strong> ya está registrado en Stockup Messages.
           Sigue estos pasos para empezar a automatizar tus ventas con IA en WhatsApp:
         </p>
-
         <div style="background:white;border-radius:12px;padding:16px 20px;margin-bottom:24px;border:1px solid #e2e8f0">
-          <table cellpadding="0" cellspacing="0" width="100%">
-            ${stepsHtml}
-          </table>
+          <table cellpadding="0" cellspacing="0" width="100%">${stepsHtml}</table>
         </div>
-
         <div style="background:#eff6ff;border-radius:12px;padding:16px;margin-bottom:24px;border-left:4px solid #2563eb">
           <p style="margin:0;color:#1e40af;font-size:13px;line-height:1.5">
             Una vez configures la IA con tu catálogo, ella responderá a tus clientes
             automáticamente 24/7, creará órdenes y agendará citas sin que tengas que intervenir.
           </p>
         </div>
-
-        <p style="color:#94a3b8;font-size:12px;text-align:center;margin:0">
-          © 2026 Stockup Messages
-        </p>
+        <p style="color:#94a3b8;font-size:12px;text-align:center;margin:0">© 2026 Stockup Messages</p>
       </div>`;
 
     await this.send(to, `¡Bienvenido a Stockup Messages, ${ownerName}!`, html);
@@ -159,8 +151,7 @@ export class EmailService {
   // ── Notificación al admin de nuevo registro ───────────────────────────────
 
   async sendNewAccountAlert(ownerName: string, ownerEmail: string, storeName: string, storePhone: string): Promise<void> {
-    const adminEmail = this.config.get<string>('SMTP_USER') ?? '';
-    if (!adminEmail) return;
+    if (!this.adminEmail) return;
 
     const now = new Date().toLocaleString('es-CO', {
       timeZone: 'America/Bogota',
@@ -168,27 +159,25 @@ export class EmailService {
       hour: '2-digit', minute: '2-digit',
     });
 
+    const rows = [
+      ['Negocio', storeName],
+      ['Teléfono', storePhone],
+      ['Propietario', ownerName],
+      ['Email', ownerEmail],
+      ['Fecha', now],
+    ].map(([k, v]) => `
+      <div style="display:flex;padding:12px 16px;border-bottom:1px solid #f1f5f9">
+        <span style="color:#94a3b8;font-size:13px;width:110px;flex-shrink:0">${k}</span>
+        <span style="color:#1e293b;font-size:13px;font-weight:500">${v}</span>
+      </div>`).join('');
+
     const html = `
       <div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#f8fafc;padding:28px;border-radius:16px">
         <div style="background:linear-gradient(135deg,#0f172a,#1e293b);border-radius:12px;padding:20px 24px;margin-bottom:24px">
           <p style="color:#94a3b8;margin:0 0 4px;font-size:12px;text-transform:uppercase;letter-spacing:.5px">Stockup Messages</p>
           <h2 style="color:white;margin:0;font-size:18px">Nuevo registro de cuenta</h2>
         </div>
-
-        <div style="background:white;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;margin-bottom:20px">
-          ${[
-            ['Negocio', storeName],
-            ['Teléfono', storePhone],
-            ['Propietario', ownerName],
-            ['Email', ownerEmail],
-            ['Fecha', now],
-          ].map(([k, v]) => `
-            <div style="display:flex;padding:12px 16px;border-bottom:1px solid #f1f5f9">
-              <span style="color:#94a3b8;font-size:13px;width:110px;flex-shrink:0">${k}</span>
-              <span style="color:#1e293b;font-size:13px;font-weight:500">${v}</span>
-            </div>`).join('')}
-        </div>
-
+        <div style="background:white;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;margin-bottom:20px">${rows}</div>
         <div style="background:#fef3c7;border-radius:10px;padding:12px 16px;border-left:4px solid #f59e0b">
           <p style="margin:0;color:#92400e;font-size:13px">
             Esta cuenta tiene <strong>24 horas</strong> para completar el pago, de lo contrario se eliminará automáticamente.
@@ -196,27 +185,28 @@ export class EmailService {
         </div>
       </div>`;
 
-    await this.send(adminEmail, `Nueva cuenta: ${storeName} — Stockup Messages`, html);
+    await this.send(this.adminEmail, `Nueva cuenta: ${storeName} — Stockup Messages`, html);
   }
 
   // ── Core ──────────────────────────────────────────────────────────────────
 
   async send(to: string, subject: string, html: string): Promise<void> {
-    if (!this.resend) {
+    if (!this.brevo) {
       this.logger.log(`[EMAIL SIMULADO] Para: ${to} | Asunto: ${subject}`);
       this.logger.log(html.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim().slice(0, 300));
       return;
     }
-    const { error } = await this.resend.emails.send({
-      from: this.fromEmail,
-      to,
-      subject,
-      html,
-    });
-    if (error) {
-      this.logger.error(`Error enviando email a ${to}: ${JSON.stringify(error)}`);
-      throw new Error(error.message);
+    try {
+      await this.brevo.transactionalEmails.sendTransacEmail({
+        sender:      { name: 'Stockup Messages', email: this.senderEmail },
+        to:          [{ email: to }],
+        subject,
+        htmlContent: html,
+      });
+      this.logger.log(`✉️  Email enviado a ${to}`);
+    } catch (err: any) {
+      this.logger.error(`Error enviando email a ${to}: ${err?.message ?? err}`);
+      throw err;
     }
-    this.logger.log(`✉️  Email enviado a ${to}`);
   }
 }
