@@ -16,10 +16,10 @@ export class EmailService {
     if (user && pass) {
       this.transporter = nodemailer.createTransport({
         host: config.get<string>('SMTP_HOST') ?? 'smtp.gmail.com',
-        port: config.get<number>('SMTP_PORT') ?? 587,
-        secure: false,
+        port: 465,
+        secure: true,
         auth: { user, pass },
-        family: 4, // Render Free no soporta IPv6 outbound
+        family: 4,
       } as any);
     } else {
       this.logger.warn('SMTP no configurado — los emails se mostrarán en los logs');
