@@ -1,30 +1,21 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as nodemailer from 'nodemailer';
-import * as dns from 'dns';
+import { Resend } from 'resend';
 
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
-  private transporter: nodemailer.Transporter | null = null;
+  private resend: Resend | null = null;
   private fromEmail = '';
 
   constructor(private config: ConfigService) {
-    const user = config.get<string>('SMTP_USER');
-    const pass = config.get<string>('SMTP_PASS');
-    this.fromEmail = user ?? '';
+    const apiKey = config.get<string>('RESEND_API_KEY');
+    this.fromEmail = config.get<string>('RESEND_FROM') ?? 'Stockup Messages <onboarding@resend.dev>';
 
-    if (user && pass) {
-      this.transporter = nodemailer.createTransport({
-        host: config.get<string>('SMTP_HOST') ?? 'smtp.gmail.com',
-        port: 465,
-        secure: true,
-        auth: { user, pass },
-        dnsLookup: (host: string, _opts: unknown, cb: (err: Error | null, addr: string, fam: number) => void) =>
-          dns.lookup(host, { family: 4 }, cb as any),
-      } as any);
+    if (apiKey) {
+      this.resend = new Resend(apiKey);
     } else {
-      this.logger.warn('SMTP no configurado — los emails se mostrarán en los logs');
+      this.logger.warn('RESEND_API_KEY no configurado — los emails se mostrarán en los logs');
     }
   }
 
@@ -152,24 +143,23 @@ export class EmailService {
 
         <div style="background:#eff6ff;border-radius:12px;padding:16px;margin-bottom:24px;border-left:4px solid #2563eb">
           <p style="margin:0;color:#1e40af;font-size:13px;line-height:1.5">
-            💡 <strong>Tip:</strong> Una vez configures la IA con tu catálogo, ella responderá a tus clientes
+            Una vez configures la IA con tu catálogo, ella responderá a tus clientes
             automáticamente 24/7, creará órdenes y agendará citas sin que tengas que intervenir.
           </p>
         </div>
 
         <p style="color:#94a3b8;font-size:12px;text-align:center;margin:0">
-          ¿Tienes dudas? Escríbenos por WhatsApp o responde este correo.<br/>
           © 2026 Stockup Messages
         </p>
       </div>`;
 
-    await this.send(to, `¡Bienvenido a Stockup Messages, ${ownerName}! 🚀`, html);
+    await this.send(to, `¡Bienvenido a Stockup Messages, ${ownerName}!`, html);
   }
 
   // ── Notificación al admin de nuevo registro ───────────────────────────────
 
   async sendNewAccountAlert(ownerName: string, ownerEmail: string, storeName: string, storePhone: string): Promise<void> {
-    const adminEmail = this.fromEmail;
+    const adminEmail = this.config.get<string>('SMTP_USER') ?? '';
     if (!adminEmail) return;
 
     const now = new Date().toLocaleString('es-CO', {
@@ -201,33 +191,32 @@ export class EmailService {
 
         <div style="background:#fef3c7;border-radius:10px;padding:12px 16px;border-left:4px solid #f59e0b">
           <p style="margin:0;color:#92400e;font-size:13px">
-            ⏳ Esta cuenta tiene <strong>24 horas</strong> para completar el pago, de lo contrario se eliminará automáticamente.
+            Esta cuenta tiene <strong>24 horas</strong> para completar el pago, de lo contrario se eliminará automáticamente.
           </p>
         </div>
       </div>`;
 
-    await this.send(adminEmail, `🆕 Nueva cuenta: ${storeName} — Stockup Messages`, html);
+    await this.send(adminEmail, `Nueva cuenta: ${storeName} — Stockup Messages`, html);
   }
 
   // ── Core ──────────────────────────────────────────────────────────────────
 
   async send(to: string, subject: string, html: string): Promise<void> {
-    if (!this.transporter) {
+    if (!this.resend) {
       this.logger.log(`[EMAIL SIMULADO] Para: ${to} | Asunto: ${subject}`);
       this.logger.log(html.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim().slice(0, 300));
       return;
     }
-    try {
-      await this.transporter.sendMail({
-        from: `"Stockup Messages" <${this.fromEmail}>`,
-        to,
-        subject,
-        html,
-      });
-      this.logger.log(`✉️  Email enviado a ${to}`);
-    } catch (err) {
-      this.logger.error(`Error enviando email a ${to}: ${err}`);
-      throw err;
+    const { error } = await this.resend.emails.send({
+      from: this.fromEmail,
+      to,
+      subject,
+      html,
+    });
+    if (error) {
+      this.logger.error(`Error enviando email a ${to}: ${JSON.stringify(error)}`);
+      throw new Error(error.message);
     }
+    this.logger.log(`✉️  Email enviado a ${to}`);
   }
 }
