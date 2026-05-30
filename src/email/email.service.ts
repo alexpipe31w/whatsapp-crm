@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
+import * as dns from 'dns';
 
 @Injectable()
 export class EmailService {
@@ -19,7 +20,8 @@ export class EmailService {
         port: 465,
         secure: true,
         auth: { user, pass },
-        family: 4,
+        dnsLookup: (host: string, _opts: unknown, cb: (err: Error | null, addr: string, fam: number) => void) =>
+          dns.lookup(host, { family: 4 }, cb as any),
       } as any);
     } else {
       this.logger.warn('SMTP no configurado — los emails se mostrarán en los logs');
