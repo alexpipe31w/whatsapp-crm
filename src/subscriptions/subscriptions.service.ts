@@ -168,7 +168,7 @@ export class SubscriptionsService {
     const v1 = xSignature.split(',').find(p => p.startsWith('v1='))?.slice(3);
     if (!ts || !v1) return false;
 
-    const dataId   = query['data.id'] ?? query['id'] ?? String(query);
+    const dataId   = query['data.id'] ?? (query as any)?.data?.id ?? query['id'] ?? '';
     const manifest = `id:${dataId};request-id:${xRequestId ?? ''};ts:${ts}`;
 
     const expected = crypto
@@ -186,6 +186,7 @@ export class SubscriptionsService {
       body?.data?.id,
       body?.id,
       query?.['data.id'],
+      (query as any)?.data?.id,
       query?.id,
     ];
     for (const c of candidates) {
