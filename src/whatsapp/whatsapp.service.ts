@@ -674,8 +674,8 @@ export class WhatsappService implements OnModuleInit {
 
       // ── 2. Verificar que la tienda tiene API key de Groq ──────────────────
       const aiConfig = await this.prisma.aIConfiguration.findUnique({ where: { storeId } });
-      if (!aiConfig?.groqApiKey) {
-        this.logger.debug(`[Audio] ${phone}: sin API key Groq → fallback`);
+      if (!aiConfig?.apiKey) {
+        this.logger.debug(`[Audio] ${phone}: sin API key → fallback`);
         return fallback();
       }
 
@@ -722,8 +722,8 @@ export class WhatsappService implements OnModuleInit {
         return fallback();
       }
 
-      // ── 5. Transcribir con Groq Whisper ───────────────────────────────────
-      const raw = await this.transcribeAudio(buffer, ext, aiConfig.groqApiKey);
+      // ── 5. Transcribir con Whisper ───────────────────────────────────────
+      const raw = await this.transcribeAudio(buffer, ext, aiConfig.apiKey, aiConfig.aiProvider ?? 'groq');
 
       // Sanitizar transcripción igual que cualquier mensaje de texto
       const transcription = raw ? sanitizeContent(raw) : null;
@@ -746,10 +746,19 @@ export class WhatsappService implements OnModuleInit {
   }
 
   private async transcribeAudio(
-    buffer:     Buffer,
-    ext:        string,
-    groqApiKey: string,
+    buffer:   Buffer,
+    ext:      string,
+    apiKey:   string,
+    provider: string,
   ): Promise<string | null> {
+    // Whisper solo disponible en Groq y OpenAI
+    const whisperBaseURL = provider === 'openai'
+      ? 'https://api.openai.com/v1'
+      : 'https://api.groq.com/openai/v1';
+    if (provider !== 'groq' && provider !== 'openai') {
+      this.logger.debug(`[Audio] Provider "${provider}" no soporta Whisper → fallback`);
+      return null;
+    }
     try {
       const mimeMap: Record<string, string> = {
         ogg: 'audio/ogg',
@@ -768,9 +777,9 @@ export class WhatsappService implements OnModuleInit {
       formData.append('response_format', 'text');
 
       const res = await Promise.race([
-        fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+        fetch(`${whisperBaseURL}/audio/transcriptions`, {
           method:  'POST',
-          headers: { Authorization: `Bearer ${groqApiKey}` },
+          headers: { Authorization: `Bearer ${apiKey}` },
           body:    formData,
         }),
         new Promise<never>((_, rej) =>

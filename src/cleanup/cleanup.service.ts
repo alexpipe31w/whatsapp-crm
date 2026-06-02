@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
-import Groq from 'groq-sdk';
+import { createCompletion, PROVIDER_CONFIG, AIProvider } from '../ai/providers';
 import { PrismaService } from '../prisma/prisma.service';
 
 // Conversaciones que llevan +24h sin actividad y no están en manos de un asesor
@@ -9,24 +9,14 @@ const ARCHIVE_AFTER_HOURS   = 24;
 const PURGE_ARCHIVED_DAYS   = 90;
 // Tamaño de lote para no saturar la BD
 const BATCH_SIZE            = 20;
-// Groq model rápido y barato para resúmenes
-const SUMMARY_MODEL         = 'llama-3.1-8b-instant';
-const SUMMARY_MAX_TOKENS    = 200;
+const SUMMARY_MAX_TOKENS = 200;
 const SUMMARY_TIMEOUT_MS    = 15_000;
 
 @Injectable()
 export class CleanupService {
   private readonly logger = new Logger(CleanupService.name);
-  private readonly groqClients = new Map<string, Groq>();
 
   constructor(private readonly prisma: PrismaService) {}
-
-  private getGroq(apiKey: string): Groq {
-    if (!this.groqClients.has(apiKey)) {
-      this.groqClients.set(apiKey, new Groq({ apiKey }));
-    }
-    return this.groqClients.get(apiKey)!;
-  }
 
   // ─── Cron: medianoche Colombia (UTC-5 = 05:00 UTC) ──────────────────────────
   // "0 5 * * *" = las 5:00 AM UTC = medianoche hora Colombia
@@ -39,9 +29,11 @@ export class CleanupService {
 
     // Cargar todas las configuraciones de IA (para generar resúmenes)
     const aiConfigs = await this.prisma.aIConfiguration.findMany({
-      select: { storeId: true, groqApiKey: true },
+      select: { storeId: true, aiProvider: true, apiKey: true },
     });
-    const aiConfigMap = new Map(aiConfigs.map(c => [c.storeId, c.groqApiKey]));
+    const aiConfigMap = new Map(
+      aiConfigs.map(c => [c.storeId, { provider: c.aiProvider as AIProvider, apiKey: c.apiKey }])
+    );
 
     let totalArchived = 0;
     let offset = 0;
@@ -115,15 +107,15 @@ export class CleanupService {
         sender: string; isAiResponse: boolean; createdAt: Date;
       }>;
     },
-    aiConfigMap: Map<string, string>,
+    aiConfigMap: Map<string, { provider: AIProvider; apiKey: string }>,
   ): Promise<void> {
     const { conversationId, storeId, customerId, messages } = conv;
 
     // 1. Generar resumen del cliente si hay API key disponible
-    const groqApiKey = aiConfigMap.get(storeId);
-    if (groqApiKey && messages.length >= 2) {
+    const aiInfo = aiConfigMap.get(storeId);
+    if (aiInfo && messages.length >= 2) {
       try {
-        const summary = await this.generateSummary(groqApiKey, messages);
+        const summary = await this.generateSummary(aiInfo.provider, aiInfo.apiKey, messages);
         if (summary) {
           await this.prisma.customer.update({
             where: { customerId },
@@ -170,7 +162,8 @@ export class CleanupService {
   }
 
   private async generateSummary(
-    groqApiKey: string,
+    provider: AIProvider,
+    apiKey: string,
     messages: Array<{ content: string; isAiResponse: boolean; sender: string }>,
   ): Promise<string | null> {
     const conversationText = messages
@@ -196,18 +189,14 @@ Genera un resumen BREVE y útil (máximo 80 palabras) en español que incluya:
 Responde SOLO con el resumen, sin encabezados ni puntos.`;
 
     try {
-      const response: any = await Promise.race([
-        this.getGroq(groqApiKey).chat.completions.create({
-          model:       SUMMARY_MODEL,
-          messages:    [{ role: 'user', content: prompt }],
-          temperature: 0.3,
-          max_tokens:  SUMMARY_MAX_TOKENS,
-        }),
-        new Promise((_, reject) =>
+      const text = await Promise.race([
+        createCompletion(provider, apiKey, PROVIDER_CONFIG[provider].defaultFastModel,
+          [{ role: 'user', content: prompt }], 0.3, SUMMARY_MAX_TOKENS),
+        new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error('Summary timeout')), SUMMARY_TIMEOUT_MS)
         ),
       ]);
-      return response.choices[0]?.message?.content?.trim() ?? null;
+      return text.trim() || null;
     } catch {
       return null;
     }

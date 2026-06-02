@@ -1,17 +1,22 @@
-import { IsString, IsOptional, IsNumber, IsInt, Min, Max, MaxLength, MinLength } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsInt, Min, Max, MaxLength, MinLength, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
 
+const AI_PROVIDERS = ['groq', 'openai', 'together', 'mistral', 'anthropic'] as const;
+
 export class CreateAiConfigDto {
-  // storeId se ignora en el controller — viene del JWT
-  // Se mantiene opcional aquí para no romper clientes existentes
   @IsString()
   @IsOptional()
   storeId?: string;
 
   @IsString()
+  @IsIn(AI_PROVIDERS)
+  @IsOptional()
+  aiProvider?: string;
+
+  @IsString()
   @MinLength(20)
-  @MaxLength(200)
-  groqApiKey: string;
+  @MaxLength(500)
+  apiKey: string;
 
   @IsString()
   @MinLength(10, { message: 'El system prompt debe tener al menos 10 caracteres' })
@@ -20,7 +25,7 @@ export class CreateAiConfigDto {
 
   @IsString()
   @IsOptional()
-  @MaxLength(100)
+  @MaxLength(200)
   model?: string;
 
   @Type(() => Number)

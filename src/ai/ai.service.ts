@@ -1,13 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
-import Groq from 'groq-sdk';
+import { createCompletion, PROVIDER_CONFIG, AIProvider } from './providers';
 import { PrismaService } from '../prisma/prisma.service';
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
 const CONFIG_CACHE_TTL_MS  = 60_000;
 const CATALOG_CACHE_TTL_MS = 120_000;
-const GROQ_TIMEOUT_MAIN_MS = 30_000;
-const GROQ_TIMEOUT_EXT_MS  = 20_000;
+const AI_TIMEOUT_MAIN_MS = 30_000;
+const AI_TIMEOUT_EXT_MS  = 20_000;
 const ORDER_GUARD_TTL_MS   = 10 * 60 * 1000;
 const MAX_HISTORY_MESSAGES = 20;
 
@@ -297,7 +297,6 @@ interface StoreSettings {
 export class AiService {
   private readonly logger = new Logger(AiService.name);
 
-  private readonly groqClients           = new Map<string, Groq>();
   private readonly configCache           = new Map<string, CacheEntry<any>>();
   private readonly catalogCache          = new Map<string, CacheEntry<{ products: any[]; services: any[] }>>();
   private readonly orderInProgress       = new Set<string>();
@@ -306,13 +305,6 @@ export class AiService {
   private readonly pendingAppointments   = new Map<string, AppointmentExtractionResult>();
 
   constructor(private readonly prisma: PrismaService) {}
-
-  private getGroqClient(apiKey: string): Groq {
-    if (!this.groqClients.has(apiKey)) {
-      this.groqClients.set(apiKey, new Groq({ apiKey }));
-    }
-    return this.groqClients.get(apiKey)!;
-  }
 
   private getCached<T>(cache: Map<string, CacheEntry<T>>, key: string): T | null {
     const entry = cache.get(key);
@@ -446,9 +438,10 @@ export class AiService {
         return null;
       }
 
-      const customer = conversationRow.customer;
-      const groq     = this.getGroqClient(config.groqApiKey);
-      const settings = this.parseSettings(config.settings);
+      const customer  = conversationRow.customer;
+      const provider  = (config.aiProvider ?? 'groq') as AIProvider;
+      const apiKey    = config.apiKey;
+      const settings  = this.parseSettings(config.settings);
 
       const hasCatalog           = products.length > 0 || services.length > 0;
       const hasPurchaseIntent    = PURCHASE_INTENT_RE.test(userMessage);
@@ -462,7 +455,7 @@ export class AiService {
         !this.appointmentInProgress.has(conversationId)
       ) {
         const apptResult = await this.tryExtractAndCreateAppointment(
-          groq, config.model, history, userMessage,
+          provider, apiKey, config.model, history, userMessage,
           customer, storeId, conversationId, services,
         );
         if (apptResult.created) return apptResult.message!;
@@ -477,7 +470,7 @@ export class AiService {
 
       if (shouldTryOrder) {
         const orderResult = await this.tryExtractAndCreateOrder(
-          groq, config.model, history, userMessage,
+          provider, apiKey, config.model, history, userMessage,
           products, services, customer, storeId, conversationId, settings,
         );
         if (orderResult.created) return orderResult.message!;
@@ -515,30 +508,23 @@ export class AiService {
         { role: 'user', content: userMessage },
       ];
 
-      let response: any;
+      let reply: string;
       try {
-        response = await Promise.race([
-          groq.chat.completions.create({
-            model:       config.model,
-            messages,
-            temperature: Number(config.temperature),
-            max_tokens:  config.maxTokens,
-          } as any),
-          new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Groq timeout')), GROQ_TIMEOUT_MAIN_MS)
+        reply = await Promise.race([
+          createCompletion(provider, apiKey, config.model, messages, Number(config.temperature), config.maxTokens),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('AI timeout')), AI_TIMEOUT_MAIN_MS)
           ),
-        ]) as any;
+        ]);
       } catch (modelErr: any) {
         this.logger.warn(`Modelo ${config.model} falló, fallback: ${modelErr.message?.slice(0, 80)}`);
-        response = await groq.chat.completions.create({
-          model:       'llama-3.3-70b-versatile',
-          messages,
-          temperature: Number(config.temperature),
-          max_tokens:  config.maxTokens,
-        });
+        reply = await createCompletion(
+          provider, apiKey, PROVIDER_CONFIG[provider].defaultModel,
+          messages, Number(config.temperature), config.maxTokens,
+        );
       }
 
-      return response.choices[0]?.message?.content ?? null;
+      return reply ?? null;
 
     } catch (err: any) {
       this.logger.error(`Error generando respuesta IA: ${err.message}`);
@@ -549,7 +535,8 @@ export class AiService {
   // ─── Extracción y creación de orden ──────────────────────────────────────────
 
   private async tryExtractAndCreateOrder(
-    groq: Groq,
+    provider: AIProvider,
+    apiKey: string,
     model: string,
     history: any[],
     latestMessage: string,
@@ -668,19 +655,13 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
 }`;
 
       try {
-        const extractResponse = await Promise.race([
-          groq.chat.completions.create({
-            model:       'llama-3.1-8b-instant',
-            messages:    [{ role: 'user', content: extractorPrompt }],
-            temperature: 0,
-            max_tokens:  900,
-          }),
-          new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Extractor timeout')), GROQ_TIMEOUT_EXT_MS)
+        const raw = await Promise.race([
+          createCompletion(provider, apiKey, PROVIDER_CONFIG[provider].defaultFastModel,
+            [{ role: 'user', content: extractorPrompt }], 0, 900),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('Extractor timeout')), AI_TIMEOUT_EXT_MS)
           ),
-        ]) as any;
-
-        const raw       = extractResponse.choices[0]?.message?.content ?? '';
+        ]);
         const jsonMatch = raw.match(/\{[\s\S]*\}/);
         if (!jsonMatch) return { created: false };
 
@@ -839,7 +820,8 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
   // ─── Extracción y creación de cita ───────────────────────────────────────────
 
   private async tryExtractAndCreateAppointment(
-    groq: Groq,
+    provider: AIProvider,
+    apiKey: string,
     model: string,
     history: any[],
     latestMessage: string,
@@ -965,19 +947,13 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
 }`;
 
       try {
-        const extractResponse = await Promise.race([
-          groq.chat.completions.create({
-            model:       'llama-3.1-8b-instant',
-            messages:    [{ role: 'user', content: appointmentPrompt }],
-            temperature: 0,
-            max_tokens:  700,
-          }),
-          new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Appointment extractor timeout')), GROQ_TIMEOUT_EXT_MS)
+        const raw = await Promise.race([
+          createCompletion(provider, apiKey, PROVIDER_CONFIG[provider].defaultFastModel,
+            [{ role: 'user', content: appointmentPrompt }], 0, 700),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('Appointment extractor timeout')), AI_TIMEOUT_EXT_MS)
           ),
-        ]) as any;
-
-        const raw       = extractResponse.choices[0]?.message?.content ?? '';
+        ]);
         const jsonMatch = raw.match(/\{[\s\S]*\}/);
         if (!jsonMatch) return { created: false };
 

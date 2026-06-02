@@ -497,7 +497,8 @@ model AppointmentTimeline {
 model AIConfiguration {
   configId     String  @id @default(uuid()) @map("config_id")
   storeId      String  @unique @map("store_id")
-  groqApiKey   String  @map("groq_api_key")
+  aiProvider   String  @default("groq") @map("ai_provider")
+  apiKey       String  @map("groq_api_key")
   systemPrompt String  @map("system_prompt")
   model        String  @default("llama-3.3-70b-versatile")
   temperature  Decimal @default(0.70) @db.Decimal(3, 2)

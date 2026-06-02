@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { createCompletion, AIProvider } from '../ai/providers';
 
 @Injectable()
 export class AnalyticsService {
@@ -13,29 +14,20 @@ export class AnalyticsService {
     const aiConfig = await this.prisma.aIConfiguration.findUnique({ where: { storeId } });
     if (!aiConfig)
       throw new NotFoundException('No hay configuración de IA. Ve a "Configuración" → pestaña "Asistente IA".');
-    if (!aiConfig.groqApiKey)
-      throw new BadRequestException('Falta la API key de Groq. Ve a "Configuración" → pestaña "Asistente IA".');
+    if (!aiConfig.apiKey)
+      throw new BadRequestException('Falta la API key. Ve a "Configuración" → pestaña "Asistente IA".');
     return aiConfig;
   }
 
-  private async callGroq(
-    apiKey:     string,
-    model:      string,
+  private async callAI(
+    provider:    AIProvider,
+    apiKey:      string,
+    model:       string,
     messages:   { role: string; content: string }[],
-    maxTokens = 1024,
+    maxTokens  = 1024,
     temperature = 0.7,
   ): Promise<string> {
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-      body:    JSON.stringify({ model, temperature, max_tokens: maxTokens, messages }),
-    });
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new BadRequestException(err?.error?.message ?? `Error Groq: ${response.status}`);
-    }
-    const data = await response.json();
-    return data.choices?.[0]?.message?.content ?? '';
+    return createCompletion(provider, apiKey, model, messages as any, temperature, maxTokens);
   }
 
   // ─── AI Advisor ───────────────────────────────────────────────────────────────
@@ -55,8 +47,8 @@ NO uses asteriscos para negritas.
 
 ${context}`;
 
-    const reply = await this.callGroq(
-      aiConfig.groqApiKey,
+    const reply = await this.callAI((aiConfig.aiProvider ?? 'groq') as AIProvider,
+      aiConfig.apiKey,
       aiConfig.model ?? 'llama-3.3-70b-versatile',
       [{ role: 'system', content: systemPrompt }, ...messages],
       1024,
@@ -128,8 +120,8 @@ Analiza el sentimiento general y los patrones. Devuelve ÚNICAMENTE este JSON (s
 }`;
 
     try {
-      const raw = await this.callGroq(
-        aiConfig.groqApiKey,
+      const raw = await this.callAI((aiConfig.aiProvider ?? 'groq') as AIProvider,
+        aiConfig.apiKey,
         'llama-3.3-70b-versatile',
         [{ role: 'user', content: prompt }],
         512,
