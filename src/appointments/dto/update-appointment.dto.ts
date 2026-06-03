@@ -1,13 +1,16 @@
 import {
   IsString, IsOptional, IsEnum, IsDateString,
-  IsInt, IsNumber, Min, Max, MaxLength, IsPositive,
+  IsInt, IsNumber, Min, Max, MaxLength, IsPositive, IsIn,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { AppointmentStatus, AppointmentPriority } from '../../generated/prisma/enums';
 
+const PAYMENT_STATUSES   = ['PENDING', 'PAID', 'PARTIAL', 'REFUNDED'] as const;
+const PAYMENT_METHODS    = ['efectivo', 'transferencia', 'tarjeta', 'nequi', 'daviplata', 'otro'] as const;
+const ACTION_RESOLUTIONS = ['approved', 'rejected'] as const;
+
 export class UpdateAppointmentDto {
 
-  // ── Estado ────────────────────────────────────────────────────────────────
   @IsEnum(AppointmentStatus)
   @IsOptional()
   status?: AppointmentStatus;
@@ -16,7 +19,6 @@ export class UpdateAppointmentDto {
   @IsOptional()
   priority?: AppointmentPriority;
 
-  // ── Tiempo ────────────────────────────────────────────────────────────────
   @IsDateString()
   @IsOptional()
   scheduledAt?: string;
@@ -32,13 +34,11 @@ export class UpdateAppointmentDto {
   @Type(() => Number)
   durationMinutes?: number;
 
-  // ── Clasificación ─────────────────────────────────────────────────────────
   @IsString()
   @IsOptional()
   @MaxLength(100)
   type?: string;
 
-  // ── Contenido ─────────────────────────────────────────────────────────────
   @IsString()
   @IsOptional()
   description?: string;
@@ -55,17 +55,47 @@ export class UpdateAppointmentDto {
   @IsOptional()
   internalNotes?: string;
 
-  // ── Precio ────────────────────────────────────────────────────────────────
   @IsNumber()
   @IsOptional()
   @IsPositive()
   @Type(() => Number)
   agreedPrice?: number;
 
-  // ── Cancelación ───────────────────────────────────────────────────────────
-  // Solo requerido cuando status = CANCELLED
   @IsString()
   @IsOptional()
   @MaxLength(500)
   cancelReason?: string;
+
+  // ── Pagos ─────────────────────────────────────────────────────────────────
+  @IsIn(PAYMENT_STATUSES)
+  @IsOptional()
+  paymentStatus?: typeof PAYMENT_STATUSES[number];
+
+  @IsIn(PAYMENT_METHODS)
+  @IsOptional()
+  paymentMethod?: typeof PAYMENT_METHODS[number];
+
+  @IsNumber()
+  @IsOptional()
+  @IsPositive()
+  @Type(() => Number)
+  paymentAmount?: number;
+
+  @IsString()
+  @IsOptional()
+  paymentNotes?: string;
+
+  @IsString()
+  @IsOptional()
+  paymentProofUrl?: string;
+
+  // ── Resolución de acción pendiente ─────────────────────────────────────────
+  @IsIn(ACTION_RESOLUTIONS)
+  @IsOptional()
+  pendingActionResolution?: typeof ACTION_RESOLUTIONS[number];
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(500)
+  rejectionReason?: string;
 }
