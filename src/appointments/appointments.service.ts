@@ -2,6 +2,7 @@ import {
   Injectable, NotFoundException, ForbiddenException, BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '../generated/prisma/client';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { AppointmentStatus, AppointmentSource } from '../generated/prisma/enums';
@@ -96,12 +97,13 @@ export class AppointmentsService {
   async findAll(
     storeId: string,
     filters?: {
-      status?:    string;
-      type?:      string;
-      from?:      string;
-      to?:        string;
-      serviceId?: string;
-      priority?:  string;
+      status?:           string;
+      type?:             string;
+      from?:             string;
+      to?:               string;
+      serviceId?:        string;
+      priority?:         string;
+      hasPendingAction?: string;
     },
   ) {
     const where: any = { storeId };
@@ -111,6 +113,7 @@ export class AppointmentsService {
     if (filters?.type)      where.type      = filters.type;
     if (filters?.serviceId) where.serviceId = filters.serviceId;
     if (filters?.priority)  where.priority  = filters.priority?.toUpperCase();
+    if (filters?.hasPendingAction === 'true') where.pendingAction = { not: null };
 
     if (filters?.from || filters?.to) {
       where.scheduledAt = {};
@@ -194,52 +197,96 @@ export class AppointmentsService {
     storeId: string,
     dto: UpdateAppointmentDto,
     performedById?: string,
-  ) {
+  ): Promise<{ appointment: any; notificationTrigger?: string }> {
     const current = await this.findAndVerify(appointmentId, storeId);
 
-    if (dto.status === AppointmentStatus.CANCELLED && !dto.cancelReason) {
+    if (dto.status === AppointmentStatus.CANCELLED && !dto.cancelReason && !current.pendingAction) {
       throw new BadRequestException('Se requiere cancelReason al cancelar una cita');
     }
 
-    const scheduledAt = dto.scheduledAt ? new Date(dto.scheduledAt) : current.scheduledAt;
-    const endsAt      = this.computeEndsAt(
-      scheduledAt,
+    let resolvedStatus: AppointmentStatus | undefined = dto.status;
+    let newScheduledAt = dto.scheduledAt ? new Date(dto.scheduledAt) : current.scheduledAt;
+    let notificationTrigger: string | undefined;
+
+    if (dto.pendingActionResolution === 'approved') {
+      if (current.pendingAction === 'CANCEL_REQUESTED') {
+        resolvedStatus = AppointmentStatus.CANCELLED;
+        notificationTrigger = 'action_approved_cancel';
+      } else if (current.pendingAction === 'RESCHEDULE_REQUESTED') {
+        const data = current.pendingActionData as any;
+        if (data?.newDate) {
+          const [year, month, day] = data.newDate.split('-').map(Number);
+          const d = new Date(year, month - 1, day);
+          if (data.newTime) {
+            const [h, m] = data.newTime.split(':').map(Number);
+            d.setHours(h, m, 0, 0);
+          }
+          newScheduledAt = d;
+        }
+        notificationTrigger = 'action_approved_reschedule';
+      }
+    } else if (dto.pendingActionResolution === 'rejected') {
+      notificationTrigger = 'action_rejected';
+    }
+
+    if (!notificationTrigger && dto.status === AppointmentStatus.CONFIRMED) {
+      notificationTrigger = 'confirmed';
+    }
+
+    if (dto.paymentStatus === 'PAID' && current.paymentStatus !== 'PAID') {
+      notificationTrigger = notificationTrigger ?? 'payment_confirmed';
+    }
+
+    const endsAt = this.computeEndsAt(
+      newScheduledAt,
       dto.durationMinutes ?? current.durationMinutes ?? undefined,
       dto.endsAt,
     );
+    const statusTimestamps = this.resolveStatusTimestamps(resolvedStatus, current);
 
-    const statusTimestamps = this.resolveStatusTimestamps(dto.status, current);
-
-    return this.prisma.$transaction(async (tx) => {
+    const appointment = await this.prisma.$transaction(async (tx) => {
       const updated = await tx.appointment.update({
         where: { appointmentId },
         data: {
-          ...(dto.status          !== undefined && { status:          dto.status }),
-          ...(dto.priority        !== undefined && { priority:        dto.priority }),
-          ...(dto.type            !== undefined && { type:            dto.type }),
-          ...(dto.scheduledAt     !== undefined && { scheduledAt }),
-          ...(dto.durationMinutes !== undefined && { durationMinutes: dto.durationMinutes }),
+          ...(resolvedStatus      !== undefined && { status:         resolvedStatus }),
+          ...(dto.priority        !== undefined && { priority:       dto.priority }),
+          ...(dto.type            !== undefined && { type:           dto.type }),
+          scheduledAt: newScheduledAt,
           endsAt,
-          ...(dto.description   !== undefined && { description:   dto.description }),
-          ...(dto.address       !== undefined && { address:       dto.address }),
-          ...(dto.notes         !== undefined && { notes:         dto.notes }),
-          ...(dto.internalNotes !== undefined && { internalNotes: dto.internalNotes }),
-          ...(dto.agreedPrice   !== undefined && { agreedPrice:   dto.agreedPrice }),
-          ...(dto.cancelReason  !== undefined && { cancelReason:  dto.cancelReason }),
+          ...(dto.durationMinutes !== undefined && { durationMinutes: dto.durationMinutes }),
+          ...(dto.description     !== undefined && { description:    dto.description }),
+          ...(dto.address         !== undefined && { address:        dto.address }),
+          ...(dto.notes           !== undefined && { notes:          dto.notes }),
+          ...(dto.internalNotes   !== undefined && { internalNotes:  dto.internalNotes }),
+          ...(dto.agreedPrice     !== undefined && { agreedPrice:    dto.agreedPrice }),
+          ...(dto.cancelReason    !== undefined && { cancelReason:   dto.cancelReason }),
+          ...(dto.paymentStatus   !== undefined && { paymentStatus:  dto.paymentStatus }),
+          ...(dto.paymentMethod   !== undefined && { paymentMethod:  dto.paymentMethod }),
+          ...(dto.paymentAmount   !== undefined && { paymentAmount:  dto.paymentAmount }),
+          ...(dto.paymentNotes    !== undefined && { paymentNotes:   dto.paymentNotes }),
+          ...(dto.paymentProofUrl !== undefined && { paymentProofUrl: dto.paymentProofUrl }),
+          ...(dto.paymentStatus === 'PAID' && { paymentConfirmedAt: new Date() }),
+          ...(dto.pendingActionResolution !== undefined && {
+            pendingAction:       null,
+            pendingActionAt:     null,
+            pendingActionData:   Prisma.JsonNull,
+            pendingActionReason: null,
+          }),
           ...statusTimestamps,
         },
         include: APPOINTMENT_INCLUDE,
       });
 
-      const action = this.resolveTimelineAction(dto, current.status as AppointmentStatus);
+      const dtoForTimeline = { ...dto, status: resolvedStatus };
+      const action = this.resolveTimelineAction(dtoForTimeline as any, current.status as AppointmentStatus);
       if (action) {
         await tx.appointmentTimeline.create({
           data: {
             appointmentId,
             action,
-            previousStatus: dto.status ? (current.status as AppointmentStatus) : undefined,
-            newStatus:      dto.status as AppointmentStatus | undefined,
-            note:           this.resolveTimelineNote(dto, current.status as AppointmentStatus),
+            previousStatus: resolvedStatus ? (current.status as AppointmentStatus) : undefined,
+            newStatus:      resolvedStatus as AppointmentStatus | undefined,
+            note:           this.resolveTimelineNote(dtoForTimeline as any, current.status as AppointmentStatus),
             isPublic:       this.isPublicAction(action),
             performedById:  performedById ?? null,
           },
@@ -248,6 +295,8 @@ export class AppointmentsService {
 
       return updated;
     });
+
+    return { appointment, notificationTrigger };
   }
 
   // ─── Eliminar ──────────────────────────────────────────────────────────────

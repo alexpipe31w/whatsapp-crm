@@ -4,6 +4,7 @@ import {
   HttpCode, HttpStatus,
 } from '@nestjs/common';
 import { AppointmentsService } from './appointments.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -11,74 +12,85 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 @Controller('appointments')
 @UseGuards(JwtAuthGuard)
 export class AppointmentsController {
-  constructor(private readonly appointmentsService: AppointmentsService) {}
-
-  // ─── Stats — antes de :id para que no colisione ───────────────────────────
+  constructor(
+    private readonly appointmentsService: AppointmentsService,
+    private readonly notifications:       NotificationsService,
+  ) {}
 
   @Get('stats')
   getStats(@Request() req: any) {
     return this.appointmentsService.getStats(req.user.storeId);
   }
 
-  // ─── Listar ───────────────────────────────────────────────────────────────
-
   @Get()
   findAll(
     @Request() req: any,
-    @Query('status')    status?:    string,
-    @Query('type')      type?:      string,
-    @Query('from')      from?:      string,
-    @Query('to')        to?:        string,
-    @Query('serviceId') serviceId?: string,
-    @Query('priority')  priority?:  string,
+    @Query('status')           status?:           string,
+    @Query('type')             type?:             string,
+    @Query('from')             from?:             string,
+    @Query('to')               to?:               string,
+    @Query('serviceId')        serviceId?:        string,
+    @Query('priority')         priority?:         string,
+    @Query('hasPendingAction') hasPendingAction?: string,
   ) {
     return this.appointmentsService.findAll(req.user.storeId, {
-      status, type, from, to, serviceId, priority,
+      status, type, from, to, serviceId, priority, hasPendingAction,
     });
   }
-
-  // ─── Detalle ──────────────────────────────────────────────────────────────
 
   @Get(':id')
   findOne(@Param('id') id: string, @Request() req: any) {
     return this.appointmentsService.findOne(id, req.user.storeId);
   }
 
-  // ─── Timeline de una cita ─────────────────────────────────────────────────
-
   @Get(':id/timeline')
   getTimeline(@Param('id') id: string, @Request() req: any) {
     return this.appointmentsService.getTimeline(id, req.user.storeId);
   }
 
-  // ─── Crear ────────────────────────────────────────────────────────────────
-
   @Post()
   create(@Body() dto: CreateAppointmentDto, @Request() req: any) {
-    return this.appointmentsService.create(
-      req.user.storeId,
-      dto,
-      req.user.userId,
-    );
+    return this.appointmentsService.create(req.user.storeId, dto, req.user.userId);
   }
 
-  // ─── Actualizar ───────────────────────────────────────────────────────────
-
   @Patch(':id')
-  update(
+  async update(
     @Param('id') id: string,
     @Body() dto: UpdateAppointmentDto,
     @Request() req: any,
   ) {
-    return this.appointmentsService.update(
-      id,
-      req.user.storeId,
-      dto,
-      req.user.userId,
-    );
-  }
+    const { appointment, notificationTrigger } =
+      await this.appointmentsService.update(id, req.user.storeId, dto, req.user.userId);
 
-  // ─── Eliminar ─────────────────────────────────────────────────────────────
+    if (notificationTrigger) {
+      setImmediate(async () => {
+        try {
+          if (notificationTrigger === 'confirmed') {
+            await this.notifications.notifyAppointmentConfirmed(appointment);
+          } else if (
+            notificationTrigger === 'action_approved_cancel' ||
+            notificationTrigger === 'action_approved_reschedule'
+          ) {
+            const pendingActionForMsg = dto.pendingActionResolution === 'approved'
+              ? (appointment.pendingAction ?? 'CANCEL_REQUESTED')
+              : null;
+            await this.notifications.notifyActionResolved(
+              { ...appointment, pendingAction: pendingActionForMsg },
+              true,
+            );
+          } else if (notificationTrigger === 'action_rejected') {
+            await this.notifications.notifyActionResolved(
+              appointment, false, dto.rejectionReason,
+            );
+          }
+        } catch {
+          // Errors already logged inside NotificationsService
+        }
+      });
+    }
+
+    return appointment;
+  }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
