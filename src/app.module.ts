@@ -21,6 +21,9 @@ import { BlockedModule } from './blocked/blocked.module';
 import { AppointmentsModule } from './appointments/appointments.module';
 import { SuperAdminModule } from './superadmin/superadmin.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { RemindersModule } from './reminders/reminders.module';
+import { ReportsModule } from './reports/reports.module';
 
 @Module({
   imports: [
@@ -48,6 +51,9 @@ import { SubscriptionsModule } from './subscriptions/subscriptions.module';
     BlockedModule,
     SuperAdminModule,
     SubscriptionsModule,
+    NotificationsModule,
+    RemindersModule,
+    ReportsModule,
   ],
 })
 export class AppModule {}
