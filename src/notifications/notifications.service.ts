@@ -83,6 +83,10 @@ export class NotificationsService {
     }
   }
 
+  private escapeHtml(s: string): string {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
   private async withRetry<T>(fn: () => Promise<T>, attempts = 2): Promise<T | null> {
     for (let i = 0; i < attempts; i++) {
       try { return await fn(); } catch (err: any) {
@@ -219,7 +223,7 @@ export class NotificationsService {
       `Verifica y confirma el pago en el panel.`;
 
     const htmlEmail = `<p><b>${cliente}</b> indica que realizó el pago de su cita del <b>${fecha}</b>.</p>
-      <p><b>Texto del cliente:</b> ${proofExcerpt}</p>
+      <p><b>Texto del cliente:</b> ${this.escapeHtml(proofExcerpt.slice(0, 200))}</p>
       <p>Verifica el comprobante y confirma el pago desde el panel.</p>`;
 
     const [adminEmail, adminPhone] = await Promise.all([
