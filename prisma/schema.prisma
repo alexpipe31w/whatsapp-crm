@@ -53,6 +53,7 @@ model Store {
   name        String   @db.VarChar(100)
   phone       String   @unique @db.VarChar(20)
   ownerName   String?  @map("owner_name") @db.VarChar(100)
+  adminPhone  String?  @map("admin_phone") @db.VarChar(20)
   waSessionId String?  @unique @map("wa_session_id") @db.VarChar(50)
   isActive    Boolean  @default(true) @map("is_active")
 
@@ -82,6 +83,7 @@ model Store {
   blockedContacts BlockedContact[]
   waSession       WhatsappSession?
   subscription    Subscription?
+  dailyReports    DailyReport[]
 
   @@map("stores")
 }
@@ -437,8 +439,25 @@ model Appointment {
   cancelledAt  DateTime? @map("cancelled_at")
   cancelReason String?   @db.VarChar(500) @map("cancel_reason")
 
-  // ── Recordatorio ──────────────────────────────────────────────────────────
-  reminderSentAt DateTime? @map("reminder_sent_at")
+  // ── Recordatorios granulares ──────────────────────────────────────────────
+  reminderSentAt   DateTime? @map("reminder_sent_at")   // legacy — keep for compat
+  reminder8hSentAt DateTime? @map("reminder_8h_sent_at")
+  reminder2hSentAt DateTime? @map("reminder_2h_sent_at")
+  reminder1hSentAt DateTime? @map("reminder_1h_sent_at")
+
+  // ── Pagos ─────────────────────────────────────────────────────────────────
+  paymentStatus      String    @default("PENDING") @map("payment_status") @db.VarChar(20)
+  paymentMethod      String?   @map("payment_method")  @db.VarChar(50)
+  paymentAmount      Decimal?  @map("payment_amount")  @db.Decimal(10, 2)
+  paymentProofUrl    String?   @map("payment_proof_url") @db.Text
+  paymentNotes       String?   @map("payment_notes")   @db.Text
+  paymentConfirmedAt DateTime? @map("payment_confirmed_at")
+
+  // ── Acciones pendientes (cancelar/reprogramar esperando aprobación) ────────
+  pendingAction       String?   @map("pending_action")        @db.VarChar(50)
+  pendingActionAt     DateTime? @map("pending_action_at")
+  pendingActionData   Json?     @map("pending_action_data")
+  pendingActionReason String?   @map("pending_action_reason") @db.Text
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt      @map("updated_at")
@@ -490,6 +509,24 @@ model AppointmentTimeline {
   @@index([appointmentId])
   @@index([appointmentId, createdAt])
   @@map("appointment_timelines")
+}
+
+// ─── DailyReport ─────────────────────────────────────────────────────────────
+
+model DailyReport {
+  reportId         String   @id @default(uuid()) @map("report_id")
+  storeId          String   @map("store_id")
+  date             DateTime @map("date")
+  appointmentsData Json     @map("appointments_data")
+  paymentsData     Json     @map("payments_data")
+  clientsData      Json     @map("clients_data")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  store Store @relation(fields: [storeId], references: [storeId])
+
+  @@unique([storeId, date])
+  @@index([storeId, date])
+  @@map("daily_reports")
 }
 
 // ─── AIConfiguration ─────────────────────────────────────────────────────────
