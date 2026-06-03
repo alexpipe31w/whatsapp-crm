@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsPhoneNumber } from 'class-validator';
+import { IsString, IsOptional } from 'class-validator';
 
 export class CreateStoreDto {
   @IsString()
@@ -10,4 +10,8 @@ export class CreateStoreDto {
   @IsString()
   @IsOptional()
   ownerName?: string;
+
+  @IsString()
+  @IsOptional()
+  adminPhone?: string;
 }
