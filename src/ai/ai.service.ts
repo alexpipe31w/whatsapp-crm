@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { createCompletion, PROVIDER_CONFIG, AIProvider } from './providers';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
@@ -18,6 +19,10 @@ const APPOINTMENT_INTENT_RE = /\b(agendar|agenda|cita|visita|visita técnica|té
 const CONFIRMATION_RE = /\b(s[ií]|ok|okay|dale|listo|acepto|perfecto|procede|adelante|claro|exacto|sip|yep|yes|confirm|correcto|de acuerdo|está bien|estoy de acuerdo|va|hagale|hádale|marchando|hecho|venga|eso|eso mismo|así es|claro que sí|por supuesto|obvio|chévere|bacano|sale|de una|okey)\b|^(👍|✅|✓)$/i;
 
 const ADDRESS_RE = /\b(calle|carrera|cra|cl\b|av\b|avenida|barrio|#|\d{2,}[-–]\d+|diagonal|transversal|manzana|casa|apto|apartamento)\b/i;
+
+const PAYMENT_PROOF_RE     = /\b(pagu[eé]|transfer[ií]|te mand[eé]|comprobante|transacci[oó]n|consign[eé]|listo el pago|ya pagu[eé]|hice el pago)\b/i;
+const CANCEL_RESCHEDULE_RE = /\b(cancelar|no puedo ir|no puedo asistir|cambiar la cita|reprogramar|mover la cita|otro d[ií]a|otra hora|posponer|aplazar)\b/i;
+const MIN_ADVANCE_RE       = /m[ií]nimo\s+(\d+)\s*(hora|horas|h\b)/i;
 
 // ─── Meses en español ─────────────────────────────────────────────────────────
 const MESES: Record<string, number> = {
@@ -304,7 +309,10 @@ export class AiService {
   private readonly appointmentInProgress = new Set<string>();
   private readonly pendingAppointments   = new Map<string, AppointmentExtractionResult>();
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma:        PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   private getCached<T>(cache: Map<string, CacheEntry<T>>, key: string): T | null {
     const entry = cache.get(key);
@@ -362,6 +370,105 @@ export class AiService {
     const unidad = service.unitLabel ? `/${service.unitLabel}` : '';
     const label  = PRICE_TYPE_LABELS[service.priceType] ?? '';
     return `$${Number(service.basePrice).toLocaleString('es-CO')}${unidad}${label !== 'Precio fijo' ? ` (${label})` : ''}`;
+  }
+
+  private extractMinAdvanceHours(systemPrompt: string): number {
+    const match = MIN_ADVANCE_RE.exec(systemPrompt);
+    if (match) return parseInt(match[1]);
+    return 2;
+  }
+
+  private async tryDetectPaymentProof(
+    storeId: string,
+    customerId: string,
+    userMessage: string,
+  ): Promise<string | null> {
+    if (!PAYMENT_PROOF_RE.test(userMessage)) return null;
+
+    const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000);
+    const appt = await this.prisma.appointment.findFirst({
+      where: {
+        storeId,
+        customerId,
+        status:    { in: ['CONFIRMED', 'PENDING'] },
+        createdAt: { gte: cutoff },
+      },
+      orderBy: { scheduledAt: 'asc' },
+      include: {
+        customer:       { select: { name: true, phone: true } },
+        service:        { select: { name: true } },
+        serviceVariant: { select: { name: true } },
+      },
+    });
+    if (!appt) return null;
+
+    const excerpt = userMessage.slice(0, 200);
+    await this.prisma.appointment.update({
+      where: { appointmentId: appt.appointmentId },
+      data:  { paymentProofUrl: excerpt },
+    });
+
+    this.notifications.notifyPaymentProofDetected(appt as any, excerpt).catch(() => {});
+    return 'Recibido ✅ Tu comprobante fue enviado al admin para verificación. Te confirmaremos en breve.';
+  }
+
+  private async tryHandleCancelOrReschedule(
+    storeId: string,
+    customerId: string,
+    userMessage: string,
+    systemPrompt: string,
+  ): Promise<string | null> {
+    if (!CANCEL_RESCHEDULE_RE.test(userMessage)) return null;
+
+    const appt = await this.prisma.appointment.findFirst({
+      where: {
+        storeId,
+        customerId,
+        status:        { in: ['PENDING', 'CONFIRMED'] },
+        pendingAction: null,
+      },
+      orderBy: { scheduledAt: 'asc' },
+      include: {
+        customer:       { select: { name: true, phone: true } },
+        service:        { select: { name: true } },
+        serviceVariant: { select: { name: true } },
+      },
+    });
+    if (!appt) return null;
+
+    const minHours   = this.extractMinAdvanceHours(systemPrompt);
+    const hoursUntil = (appt.scheduledAt.getTime() - Date.now()) / (1000 * 60 * 60);
+    if (hoursUntil < minHours) {
+      return `Lo sentimos, solo podemos procesar cambios con al menos ${minHours} horas de anticipación. Contacta directamente a la barbería para más información.`;
+    }
+
+    const isReschedule = /reprogramar|cambiar|mover|otro d[ií]a|otra hora|posponer/i.test(userMessage);
+    const action = isReschedule ? 'RESCHEDULE_REQUESTED' : 'CANCEL_REQUESTED';
+
+    let pendingActionData: any = null;
+    if (isReschedule) {
+      const newDate  = parseFechaEspanol(userMessage);
+      const timeMatch = userMessage.match(/\b(\d{1,2}):(\d{2})\s*(am|pm)?\b/i);
+      const newTime  = timeMatch ? timeMatch[0] : null;
+      pendingActionData = { newDate, newTime };
+    }
+
+    await this.prisma.appointment.update({
+      where: { appointmentId: appt.appointmentId },
+      data: {
+        pendingAction:       action,
+        pendingActionAt:     new Date(),
+        pendingActionData:   pendingActionData,
+        pendingActionReason: userMessage.slice(0, 500),
+      },
+    });
+
+    const actionType: 'cancel' | 'reschedule' = isReschedule ? 'reschedule' : 'cancel';
+    this.notifications.notifyPendingAction(appt as any, actionType).catch(() => {});
+
+    return isReschedule
+      ? 'Tu solicitud de reprogramación fue enviada al admin. Te confirmaremos la nueva fecha en breve ✅'
+      : 'Tu solicitud de cancelación fue enviada al admin. Te confirmaremos en breve ✅';
   }
 
   async generateReply(
@@ -442,6 +549,16 @@ export class AiService {
       const provider  = (config.aiProvider ?? 'groq') as AIProvider;
       const apiKey    = config.apiKey;
       const settings  = this.parseSettings(config.settings);
+
+      // ── Pago detectado ──────────────────────────────────────────────────────
+      const paymentReply = await this.tryDetectPaymentProof(storeId, customer.customerId, userMessage);
+      if (paymentReply) return paymentReply;
+
+      // ── Cancelar / Reprogramar ──────────────────────────────────────────────
+      const cancelRescheduleReply = await this.tryHandleCancelOrReschedule(
+        storeId, customer.customerId, userMessage, config.systemPrompt,
+      );
+      if (cancelRescheduleReply) return cancelRescheduleReply;
 
       const hasCatalog           = products.length > 0 || services.length > 0;
       const hasPurchaseIntent    = PURCHASE_INTENT_RE.test(userMessage);
@@ -1123,6 +1240,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
       await this.prisma.conversation.update({ where: { conversationId }, data: { status: 'pending_human' } });
       this.pendingAppointments.delete(conversationId);
       this.logger.log(`✅ [Cita] ${appointment.appointmentId} — ${extracted.scheduledDate} ${extracted.scheduledTime}`);
+      this.notifications.notifyAppointmentCreated(appointment as any).catch(() => {});
 
       const nombreMostrar   = extracted.customerName ? extracted.customerName.split(' ')[0] : customer.name ? customer.name.split(' ')[0] : null;
       const nombreCliente   = nombreMostrar ? `, ${nombreMostrar}` : '';
