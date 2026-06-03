@@ -516,7 +516,7 @@ model AppointmentTimeline {
 model DailyReport {
   reportId         String   @id @default(uuid()) @map("report_id")
   storeId          String   @map("store_id")
-  date             DateTime @map("date")
+  date             DateTime @db.Date @map("date")
   appointmentsData Json     @map("appointments_data")
   paymentsData     Json     @map("payments_data")
   clientsData      Json     @map("clients_data")
@@ -525,7 +525,6 @@ model DailyReport {
   store Store @relation(fields: [storeId], references: [storeId])
 
   @@unique([storeId, date])
-  @@index([storeId, date])
   @@map("daily_reports")
 }
 
