@@ -26,7 +26,7 @@ export class ReportsController {
     return this.prisma.dailyReport.findMany({
       where:   { storeId: req.user.storeId },
       orderBy: { date: 'desc' },
-      take:    parseInt(limit ?? '30'),
+      take:    Math.max(1, parseInt(limit ?? '30') || 30),
     });
   }
 }

@@ -47,7 +47,7 @@ export class ReportsService {
 
       const [appointments, newCustomers, store] = await Promise.all([
         this.prisma.appointment.findMany({
-          where:  { storeId, createdAt: { gte: todayStart, lt: todayEnd } },
+          where:  { storeId, scheduledAt: { gte: todayStart, lt: todayEnd } },
           select: { status: true, paymentStatus: true, paymentMethod: true, paymentAmount: true },
         }),
         this.prisma.customer.findMany({
