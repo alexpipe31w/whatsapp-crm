@@ -1251,38 +1251,87 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
       const durationMinutes = extracted.durationMinutes ?? null;
       const endsAt          = durationMinutes ? new Date(scheduledAt.getTime() + durationMinutes * 60_000) : null;
 
-      const appointment = await this.prisma.$transaction(async (tx) => {
-        const appt = await tx.appointment.create({
-          data: {
-            storeId,
-            customerId:       customer.customerId,
-            serviceId:        extracted.serviceId        ?? null,
-            serviceVariantId: extracted.serviceVariantId ?? null,
-            type:             extracted.type             ?? 'cita',
-            status:           'PENDING',
-            priority:         'NORMAL',
-            source:           'AI',
-            scheduledAt,
-            endsAt,
-            durationMinutes,
-            description:  extracted.description ?? null,
-            address:      extracted.address     ?? null,
-            notes:        extracted.notes       ?? null,
-            agreedPrice:  extracted.agreedPrice ?? null,
-          },
-        });
-        await tx.appointmentTimeline.create({
-          data: {
-            appointmentId: appt.appointmentId,
-            action:        'CREATED',
-            newStatus:     'PENDING',
-            note:          'Cita creada automáticamente por el asistente de WhatsApp',
-            isPublic:      true,
-            performedById: null,
-          },
-        });
-        return appt;
+      // Buscar cita existente de IA para reagendar en vez de crear duplicado.
+      // Si el cliente ya tiene una cita PENDING/CONFIRMED creada por IA en las últimas 48h,
+      // actualizamos esa cita en vez de crear una nueva.
+      const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000);
+      const existingAppt = await this.prisma.appointment.findFirst({
+        where: {
+          storeId,
+          customerId: customer.customerId,
+          status:     { in: ['PENDING', 'CONFIRMED'] },
+          source:     'AI',
+          createdAt:  { gte: cutoff },
+        },
+        orderBy: { createdAt: 'desc' },
       });
+
+      let appointment: any;
+
+      if (existingAppt) {
+        this.logger.log(`[Cita] Reagendando cita existente ${existingAppt.appointmentId} → ${extracted.scheduledDate} ${extracted.scheduledTime}`);
+        appointment = await this.prisma.$transaction(async (tx) => {
+          const appt = await tx.appointment.update({
+            where: { appointmentId: existingAppt.appointmentId },
+            data: {
+              scheduledAt,
+              endsAt,
+              durationMinutes,
+              ...(extracted.address     && { address:      extracted.address }),
+              ...(extracted.description && { description:  extracted.description }),
+              ...(extracted.agreedPrice && { agreedPrice:  extracted.agreedPrice }),
+              status: 'PENDING',
+              pendingAction:     null,
+              pendingActionAt:   null,
+              pendingActionData: null,
+            },
+          });
+          await tx.appointmentTimeline.create({
+            data: {
+              appointmentId: appt.appointmentId,
+              action:        'RESCHEDULED',
+              newStatus:     'PENDING',
+              note:          `Cita reagendada automáticamente por el asistente de WhatsApp a ${extracted.scheduledDate} ${extracted.scheduledTime}`,
+              isPublic:      true,
+              performedById: null,
+            },
+          });
+          return appt;
+        });
+      } else {
+        appointment = await this.prisma.$transaction(async (tx) => {
+          const appt = await tx.appointment.create({
+            data: {
+              storeId,
+              customerId:       customer.customerId,
+              serviceId:        extracted.serviceId        ?? null,
+              serviceVariantId: extracted.serviceVariantId ?? null,
+              type:             extracted.type             ?? 'cita',
+              status:           'PENDING',
+              priority:         'NORMAL',
+              source:           'AI',
+              scheduledAt,
+              endsAt,
+              durationMinutes,
+              description:  extracted.description ?? null,
+              address:      extracted.address     ?? null,
+              notes:        extracted.notes       ?? null,
+              agreedPrice:  extracted.agreedPrice ?? null,
+            },
+          });
+          await tx.appointmentTimeline.create({
+            data: {
+              appointmentId: appt.appointmentId,
+              action:        'CREATED',
+              newStatus:     'PENDING',
+              note:          'Cita creada automáticamente por el asistente de WhatsApp',
+              isPublic:      true,
+              performedById: null,
+            },
+          });
+          return appt;
+        });
+      }
 
       await this.prisma.conversation.update({ where: { conversationId }, data: { status: 'pending_human' } });
       this.pendingAppointments.delete(conversationId);
