@@ -166,12 +166,23 @@ export class AdminAssistantService {
         ).join('\n')
       : '  (ninguna)';
 
-    const recentOrderLines = todayOrders.length
-      ? todayOrders.slice(0, 5).map(o => {
+    const productOrdersToday  = todayOrders.filter(o => o.type !== 'service');
+    const serviceOrdersToday  = todayOrders.filter(o => o.type === 'service');
+
+    const productOrderLines = productOrdersToday.length
+      ? productOrdersToday.slice(0, 5).map(o => {
           const items = o.orderItems.map(i => i.product?.name ?? i.service?.name ?? 'Item').join(', ');
           return `  • ${o.customer?.name ?? o.customer?.phone ?? '?'} | ${items} | ${fmtMoney(Number(o.total))} | ${o.status}`;
         }).join('\n')
-      : '  (sin ventas hoy)';
+      : '  (ninguna)';
+
+    const serviceOrderLines = serviceOrdersToday.length
+      ? serviceOrdersToday.slice(0, 5).map(o => {
+          const svc = o.orderItems[0]?.service?.name ?? o.notes ?? 'Servicio';
+          const method = o.manualPaymentMethod ?? 'efectivo';
+          return `  • ${o.customer?.name ?? o.customer?.phone ?? '?'} | ${svc} | ${fmtMoney(Number(o.total))} | ${method}`;
+        }).join('\n')
+      : '  (ninguna)';
 
     const serviceLines = services.map(s => {
       const price = s.basePrice ? fmtMoney(Number(s.basePrice)) : 'variable';
@@ -186,6 +197,9 @@ export class AdminAssistantService {
       weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
     });
 
+    const serviceRevToday  = serviceOrdersToday.reduce((s, o) => s + Number(o.total), 0);
+    const productRevToday  = productOrdersToday.filter(o => o.status !== 'cancelled').reduce((s, o) => s + Number(o.total), 0);
+
     return `TIENDA: ${store?.name ?? storeId}
 FECHA Y HORA ACTUAL: ${today} — ${fmtTime(now)}
 
@@ -195,14 +209,22 @@ ${apptTodayLines}
 ━━ PRÓXIMAS CITAS ━━
 ${apptUpcomingLines}
 
-━━ VENTAS DE HOY ━━
-${recentOrderLines}
-Revenue hoy: ${fmtMoney(todayRevenue)}
+━━ VENTAS DE PRODUCTOS HOY (${productOrdersToday.length}) ━━
+${productOrderLines}
+Subtotal productos: ${fmtMoney(productRevToday)}
+
+━━ VENTAS DE SERVICIOS HOY (${serviceOrdersToday.length}) ━━
+(Generadas automáticamente al confirmar pago de citas)
+${serviceOrderLines}
+Subtotal servicios: ${fmtMoney(serviceRevToday)}
+
+━━ REVENUE TOTAL HOY ━━
+${fmtMoney(todayRevenue)}
 
 ━━ FINANZAS DEL MES ━━
 Revenue mes: ${fmtMoney(monthRevenue)} | ${monthOrders.length} pedidos
 
-━━ SERVICIOS ACTIVOS ━━
+━━ CATÁLOGO DE SERVICIOS ACTIVOS ━━
 ${serviceLines}
 
 ━━ TOP CLIENTES ━━
