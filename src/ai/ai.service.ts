@@ -675,16 +675,27 @@ export class AiService {
     if (
       cached?.complete &&
       cached.deliveryAddress &&
-      (!needsCustomerData || (cached.customerName && cached.customerCedula)) &&
+      (!needsCustomerData || cached.customerName) &&
       CONFIRMATION_RE.test(latestMessage.trim())
     ) {
       this.logger.log(`[Orden] Usando caché completo para ${conversationId}`);
       extracted = cached;
       this.pendingExtractions.delete(conversationId);
 
+    // ── Caso 1.5: caché tiene items + dirección + nombre (si aplica) + confirmación actual ──
+    // El LLM extractor devuelve complete=false porque la confirmación llega en mensaje separado.
+    // Este shortcut crea la orden directamente sin re-correr el extractor.
+    } else if (
+      cached?.items?.length &&
+      cached.deliveryAddress &&
+      (!needsCustomerData || cached.customerName) &&
+      CONFIRMATION_RE.test(latestMessage.trim())
+    ) {
+      this.logger.log(`[Orden] Caso 1.5 — shortcut confirmación para ${conversationId}`);
+      extracted = { ...cached, complete: true };
+      this.pendingExtractions.delete(conversationId);
+
     // ── Caso 2: había items, faltaba dirección, llega dirección Y ya tenemos nombre ──
-    // Solo shortcutea si el cliente ya tiene nombre — si aún falta, dejar al LLM
-    // separar correctamente "nombre y dirección" en el mismo mensaje.
     } else if (
       cached?.items?.length &&
       !cached.deliveryAddress &&
@@ -797,6 +808,20 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
         }
 
         this.logger.log(`[Orden] Extracción: complete=${extracted.complete} reason=${extracted.reason}`);
+
+        // Guardar nombre del cliente proactivamente aunque la orden aún no esté completa
+        if (needsCustomerData && extracted.customerName && !extracted.complete) {
+          this.prisma.customer.update({
+            where: { customerId: customer.customerId },
+            data: {
+              name: extracted.customerName.replace(/\b\w/g, l => l.toUpperCase()),
+              ...(extracted.customerCedula && { cedula: extracted.customerCedula }),
+            },
+          }).then(() => {
+            this.logger.log(`[Orden] Nombre guardado proactivamente: ${extracted.customerName}`);
+            customer.name = extracted.customerName;
+          }).catch(() => {});
+        }
 
         if (extracted.items?.length > 0) {
           this.pendingExtractions.set(conversationId, extracted);
@@ -1090,7 +1115,15 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
           }
         }
 
-        // Fecha
+        // Fecha — validar rango razonable (hoy → +2 años). El LLM a veces alucina 2028+.
+        if (extracted.scheduledDate) {
+          const parsedDate = new Date(extracted.scheduledDate);
+          const twoYearsFromNow = new Date(); twoYearsFromNow.setFullYear(twoYearsFromNow.getFullYear() + 2);
+          if (isNaN(parsedDate.getTime()) || parsedDate > twoYearsFromNow || parsedDate < new Date(Date.now() - 86400_000)) {
+            this.logger.warn(`[Cita] Fecha fuera de rango del LLM: ${extracted.scheduledDate} — usando fallback TS`);
+            extracted.scheduledDate = null;
+          }
+        }
         if (!extracted.scheduledDate) {
           const allText = [
             ...history.filter((m: any) => !m.isAiResponse).map((m: any) => m.content),
@@ -1127,6 +1160,20 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
         }
 
         this.logger.log(`[Cita] Post-fallback: complete=${extracted.complete} date=${extracted.scheduledDate} time=${extracted.scheduledTime} name=${extracted.customerName} reason=${extracted.reason}`);
+
+        // Guardar nombre proactivamente aunque la cita aún no esté completa
+        if (needsName && extracted.customerName && !extracted.complete) {
+          this.prisma.customer.update({
+            where: { customerId: customer.customerId },
+            data: {
+              name: extracted.customerName.replace(/\b\w/g, l => l.toUpperCase()),
+              ...(extracted.customerCedula && needsCedula && { cedula: extracted.customerCedula }),
+            },
+          }).then(() => {
+            this.logger.log(`[Cita] Nombre guardado proactivamente: ${extracted.customerName}`);
+            customer.name = extracted.customerName;
+          }).catch(() => {});
+        }
 
         // Guardar en caché incluso si no está completo — acumula datos entre mensajes
         if (extracted.scheduledDate || extracted.description || extracted.serviceId || extracted.customerName) {
