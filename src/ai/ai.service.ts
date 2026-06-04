@@ -168,6 +168,14 @@ function parseNombreCliente(text: string, conversationLines: string[] = []): str
     return false;
   };
 
+  // Nombre de una sola palabra capitalizada (ej: "Nicolas", "Carmen") — aceptar si el
+  // mensaje actual es SOLO esa palabra (el cliente respondió únicamente su nombre)
+  const singleWordMsg = text.trim();
+  const singleWordMatch = singleWordMsg.match(/^([A-ZÁÉÍÓÚÑ][a-záéíóúñ]{1,})\s*$/);
+  if (singleWordMatch && !isNotName(singleWordMsg)) {
+    return singleWordMatch[1].charAt(0).toUpperCase() + singleWordMatch[1].slice(1).toLowerCase();
+  }
+
   // Patrones explícitos primero: "me llamo X", "soy X", "mi nombre es X"
   const explicitPatterns = [
     /(?:me\s+llamo|soy|mi\s+nombre\s+es|nombre[:\s]+|llámame|llamamé)\s+([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)*)/i,
@@ -1207,6 +1215,14 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
       }
     }
 
+    // Guard: el LLM puede devolver complete=true mirando el historial aunque el mensaje
+    // actual no sea una confirmación. Solo se honra complete=true del LLM si el mensaje
+    // actual es una confirmación explícita.
+    if (extracted?.complete && !CONFIRMATION_RE.test(latestMessage.trim())) {
+      this.logger.warn(`[Cita] LLM complete=true sin confirmación actual — forzando false`);
+      extracted = { ...extracted, complete: false };
+    }
+
     // ── Validación final ───────────────────────────────────────────────────────
     if (!extracted?.complete)     return { created: false };
     if (!extracted.scheduledDate) return { created: false };
@@ -1269,7 +1285,12 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
 
       let appointment: any;
 
-      if (existingAppt) {
+      if (existingAppt && existingAppt.scheduledAt.getTime() === scheduledAt.getTime()) {
+        // Mismo horario exacto → ya existe esta cita, evitar duplicado (idempotente)
+        this.logger.log(`[Cita] Cita idéntica ya existe ${existingAppt.appointmentId} — sin duplicar`);
+        appointment = existingAppt;
+      } else if (existingAppt) {
+        // Horario diferente → reagendar la cita existente al nuevo horario
         this.logger.log(`[Cita] Reagendando cita existente ${existingAppt.appointmentId} → ${extracted.scheduledDate} ${extracted.scheduledTime}`);
         appointment = await this.prisma.$transaction(async (tx) => {
           const appt = await tx.appointment.update({
