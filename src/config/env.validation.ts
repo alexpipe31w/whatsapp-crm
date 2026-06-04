@@ -14,9 +14,15 @@ export const envSchema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   MP_ACCESS_TOKEN: z.string().optional(),
+  MP_SANDBOX: z.string().optional(),
+  MP_WEBHOOK_SECRET: z.string().optional(),
   APP_URL: z.string().default('http://localhost:3000'),
   FRONTEND_URL: z.string().default('http://localhost:5173'),
-});
+  ALLOWED_ORIGINS: z.string().optional(),
+  BREVO_API_KEY: z.string().optional(),
+  BREVO_SENDER_EMAIL: z.string().optional(),
+  CRON_SECRET: z.string().optional(),
+}).passthrough();
 
 export type EnvConfig = z.infer<typeof envSchema>;
 
