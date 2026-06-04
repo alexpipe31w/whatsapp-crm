@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { Prisma } from '../generated/prisma';
 import { createCompletion, PROVIDER_CONFIG, AIProvider } from './providers';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -1283,7 +1284,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
               status: 'PENDING',
               pendingAction:     null,
               pendingActionAt:   null,
-              pendingActionData: null,
+              pendingActionData: Prisma.JsonNull,
             },
           });
           await tx.appointmentTimeline.create({
