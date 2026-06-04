@@ -10,6 +10,7 @@ import { MessagesService } from '../messages/messages.service';
 import { CustomersService } from '../customers/customers.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { BlockedService } from '../blocked/blocked.service';
+import { AdminAssistantService } from '../admin-assistant/admin-assistant.service';
 
 const WHISPER_TIMEOUT_MS    = 25_000;
 const WHISPER_MODEL         = 'whisper-large-v3-turbo';
@@ -348,6 +349,7 @@ export class WhatsappService implements OnModuleInit {
     private readonly messagesService: MessagesService,
     private readonly customersService: CustomersService,
     private readonly blockedService: BlockedService,
+    private readonly adminAssistant: AdminAssistantService,
   ) {}
 
   // ─── Ciclo de vida ──────────────────────────────────────────────────────────
@@ -882,6 +884,15 @@ export class WhatsappService implements OnModuleInit {
     const jid = jidFromPhone(phone);
 
     try {
+      // ── Admin Personal Assistant ───────────────────────────────────────────
+      const isAdmin = await this.adminAssistant.isAdminPhone(storeId, phone);
+      if (isAdmin) {
+        this.logger.log(`🔑 Mensaje del admin (${phone}) → Admin Assistant`);
+        const reply = await this.adminAssistant.handle(storeId, phone, content);
+        await this.safeSend(sock, jid, reply, phone);
+        return;
+      }
+
       // Obtener/crear cliente y conversación
       const customer = await this.customersService.findOrCreate({ storeId, phone });
       const conversation = await this.conversationsService.findOrCreate(

@@ -7,6 +7,7 @@ import { ConversationsModule } from '../conversations/conversations.module';
 import { MessagesModule } from '../messages/messages.module';
 import { CustomersModule } from '../customers/customers.module';
 import { BlockedModule } from '../blocked/blocked.module';
+import { AdminAssistantModule } from '../admin-assistant/admin-assistant.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { BlockedModule } from '../blocked/blocked.module';
     forwardRef(() => MessagesModule),
     CustomersModule,
     BlockedModule,
+    AdminAssistantModule,
   ],
   controllers: [WhatsappController],
   providers: [WhatsappService],
