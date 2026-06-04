@@ -12,10 +12,8 @@ export class AnalyticsService {
 
   private async getAiConfig(storeId: string) {
     const aiConfig = await this.prisma.aIConfiguration.findUnique({ where: { storeId } });
-    if (!aiConfig)
-      throw new NotFoundException('No hay configuración de IA. Ve a "Configuración" → pestaña "Asistente IA".');
-    if (!aiConfig.apiKey)
-      throw new BadRequestException('Falta la API key. Ve a "Configuración" → pestaña "Asistente IA".');
+    if (!aiConfig || !aiConfig.apiKey)
+      throw new BadRequestException('No hay configuración de IA. Ve a Configuración → pestaña Asistente IA y guarda tu API key.');
     return aiConfig;
   }
 
