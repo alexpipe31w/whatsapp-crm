@@ -21,10 +21,14 @@ async function bootstrap() {
     ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
     : ['http://localhost:3000', 'http://localhost:3001'];
 
+  // Orígenes de Capacitor (Android usa https://localhost por androidScheme:'https', iOS usa capacitor://localhost)
+  const capacitorOrigins = ['https://localhost', 'capacitor://localhost', 'ionic://localhost'];
+
   app.enableCors({
     origin: (origin, callback) => {
-      // Permitir requests sin origin (mobile apps, Postman, curl)
+      // Permitir requests sin origin (Postman, curl) o desde app nativa Capacitor
       if (!origin) return callback(null, true);
+      if (capacitorOrigins.includes(origin)) return callback(null, true);
       if (allowedOrigins.some(o => o === '*' || origin === o)) {
         return callback(null, true);
       }
