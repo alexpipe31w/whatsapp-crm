@@ -1154,7 +1154,14 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
           }
         }
 
-        // Hora
+        // Hora — si el LLM extrajo una hora, validar contra el mensaje actual.
+        // Si el mensaje actual contiene una hora distinta, preferir el parser TS
+        // (el LLM tiende a confundirse cuando hay múltiples horas en el historial).
+        const tsHoraActual = parseHoraEspanol(latestMessage);
+        if (tsHoraActual && extracted.scheduledTime && tsHoraActual !== extracted.scheduledTime) {
+          this.logger.log(`[Cita] Hora LLM (${extracted.scheduledTime}) != TS del mensaje actual (${tsHoraActual}) → usando TS`);
+          extracted.scheduledTime = tsHoraActual;
+        }
         if (!extracted.scheduledTime) {
           const allText = [
             ...history.filter((m: any) => !m.isAiResponse).map((m: any) => m.content),
@@ -1277,20 +1284,22 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
       const durationMinutes = extracted.durationMinutes ?? null;
       const endsAt          = durationMinutes ? new Date(scheduledAt.getTime() + durationMinutes * 60_000) : null;
 
-      // Buscar cita existente de IA para reagendar en vez de crear duplicado.
-      // Si el cliente ya tiene una cita PENDING/CONFIRMED creada por IA en las últimas 48h,
-      // actualizamos esa cita en vez de crear una nueva.
+      // Reagendar solo si NO se ha creado ninguna cita en esta conversación aún.
+      // Si ya hay citas creadas (múltiples citas en una misma conversación), siempre crear nueva.
+      const alreadyCreatedInSession = (this.conversationCreatedAppts.get(conversationId) ?? []).length;
       const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000);
-      const existingAppt = await this.prisma.appointment.findFirst({
-        where: {
-          storeId,
-          customerId: customer.customerId,
-          status:     { in: ['PENDING', 'CONFIRMED'] },
-          source:     'AI',
-          createdAt:  { gte: cutoff },
-        },
-        orderBy: { createdAt: 'desc' },
-      });
+      const existingAppt = alreadyCreatedInSession === 0
+        ? await this.prisma.appointment.findFirst({
+            where: {
+              storeId,
+              customerId: customer.customerId,
+              status:     { in: ['PENDING', 'CONFIRMED'] },
+              source:     'AI',
+              createdAt:  { gte: cutoff },
+            },
+            orderBy: { createdAt: 'desc' },
+          })
+        : null;
 
       let appointment: any;
 
