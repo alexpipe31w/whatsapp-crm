@@ -2,11 +2,13 @@ import { Controller, Get, Post, Patch, Param, Body, UseGuards, Request } from '@
 import { CustomersService } from './customers.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { IsString, IsOptional } from 'class-validator';
+import { IsString, IsOptional, IsBoolean } from 'class-validator';
 
 class UpdateCustomerDto {
-  @IsString() @IsOptional() name?: string;
-  @IsString() @IsOptional() city?: string;
+  @IsString()  @IsOptional() name?:             string;
+  @IsString()  @IsOptional() city?:             string;
+  @IsString()  @IsOptional() cedula?:           string;
+  @IsBoolean() @IsOptional() acceptsMarketing?: boolean;
 }
 
 @UseGuards(JwtAuthGuard)
