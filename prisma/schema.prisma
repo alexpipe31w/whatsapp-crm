@@ -344,6 +344,9 @@ model Order {
   // Idempotencia — evita órdenes duplicadas
   idempotencyKey String? @unique @map("idempotency_key") @db.VarChar(100)
 
+  // Vínculo opcional a cita (para órdenes de servicio generadas automáticamente)
+  appointmentId String? @unique @map("appointment_id") @db.VarChar(36)
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt      @map("updated_at")
 
@@ -352,6 +355,7 @@ model Order {
   orderItems OrderItem[]
 
   @@index([storeId, status])
+  @@index([storeId, type])
   @@index([storeId, createdAt])
   @@map("orders")
 }

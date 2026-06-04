@@ -293,6 +293,52 @@ export class AppointmentsService {
         });
       }
 
+      // ── Auto-crear orden de servicio al confirmar pago ──────────────────────
+      if (dto.paymentStatus === 'PAID' && current.paymentStatus !== 'PAID') {
+        const existingOrder = await tx.order.findUnique({
+          where: { appointmentId: updated.appointmentId },
+        });
+
+        if (!existingOrder) {
+          const amount   = Number(dto.paymentAmount ?? updated.paymentAmount ?? updated.agreedPrice ?? 0);
+          const service  = updated.service;
+          const itemDesc = service?.name ?? updated.description ?? updated.type ?? 'Servicio';
+
+          await tx.order.create({
+            data: {
+              storeId:             updated.storeId,
+              customerId:          updated.customerId,
+              type:                'service',
+              status:              'delivered',
+              isManual:            true,
+              appointmentId:       updated.appointmentId,
+              manualPaymentMethod: updated.paymentMethod ?? dto.paymentMethod ?? 'efectivo',
+              notes:               `Pago de cita #${updated.appointmentId.slice(-8).toUpperCase()} — ${itemDesc}`,
+              subtotal:            amount,
+              total:               amount,
+              orderItems: {
+                create: [{
+                  description: itemDesc,
+                  quantity:    1,
+                  unitPrice:   amount,
+                  ...(updated.serviceId ? { service: { connect: { serviceId: updated.serviceId } } } : {}),
+                }],
+              },
+            },
+          });
+
+          // Actualizar métricas del cliente
+          await tx.customer.update({
+            where: { customerId: updated.customerId },
+            data: {
+              totalOrders: { increment: 1 },
+              totalSpent:  { increment: amount },
+              lastOrderDate: new Date(),
+            },
+          });
+        }
+      }
+
       return updated;
     });
 

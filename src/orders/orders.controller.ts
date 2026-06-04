@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Body, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
@@ -21,9 +21,13 @@ export class OrdersController {
   }
 
   @Get('store/:storeId')
-  findAllByStore(@Param('storeId') storeId: string, @Request() req: any) {
+  findAllByStore(
+    @Param('storeId') storeId: string,
+    @Request() req: any,
+    @Query('type') type?: string,
+  ) {
     const effectiveStoreId = req.user.role === 'superadmin' ? storeId : req.user.storeId;
-    return this.ordersService.findAllByStore(effectiveStoreId);
+    return this.ordersService.findAllByStore(effectiveStoreId, type);
   }
 
   @Get(':id')

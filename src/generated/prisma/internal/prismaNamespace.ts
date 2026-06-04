@@ -403,6 +403,7 @@ export const ModelName = {
   OrderItem: 'OrderItem',
   Appointment: 'Appointment',
   AppointmentTimeline: 'AppointmentTimeline',
+  DailyReport: 'DailyReport',
   AIConfiguration: 'AIConfiguration',
   Campaign: 'Campaign',
   User: 'User',
@@ -428,7 +429,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "store" | "customer" | "conversation" | "message" | "category" | "product" | "productVariant" | "service" | "serviceVariant" | "order" | "orderItem" | "appointment" | "appointmentTimeline" | "aIConfiguration" | "campaign" | "user" | "blockedContact" | "archivedMessage" | "adminAuditLog" | "whatsappSession" | "subscriptionConfig" | "subscription" | "subscriptionPayment"
+    modelProps: "store" | "customer" | "conversation" | "message" | "category" | "product" | "productVariant" | "service" | "serviceVariant" | "order" | "orderItem" | "appointment" | "appointmentTimeline" | "dailyReport" | "aIConfiguration" | "campaign" | "user" | "blockedContact" | "archivedMessage" | "adminAuditLog" | "whatsappSession" | "subscriptionConfig" | "subscription" | "subscriptionPayment"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1394,6 +1395,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    DailyReport: {
+      payload: Prisma.$DailyReportPayload<ExtArgs>
+      fields: Prisma.DailyReportFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.DailyReportFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DailyReportPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.DailyReportFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DailyReportPayload>
+        }
+        findFirst: {
+          args: Prisma.DailyReportFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DailyReportPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.DailyReportFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DailyReportPayload>
+        }
+        findMany: {
+          args: Prisma.DailyReportFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DailyReportPayload>[]
+        }
+        create: {
+          args: Prisma.DailyReportCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DailyReportPayload>
+        }
+        createMany: {
+          args: Prisma.DailyReportCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.DailyReportCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DailyReportPayload>[]
+        }
+        delete: {
+          args: Prisma.DailyReportDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DailyReportPayload>
+        }
+        update: {
+          args: Prisma.DailyReportUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DailyReportPayload>
+        }
+        deleteMany: {
+          args: Prisma.DailyReportDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.DailyReportUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.DailyReportUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DailyReportPayload>[]
+        }
+        upsert: {
+          args: Prisma.DailyReportUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DailyReportPayload>
+        }
+        aggregate: {
+          args: Prisma.DailyReportAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateDailyReport>
+        }
+        groupBy: {
+          args: Prisma.DailyReportGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.DailyReportGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.DailyReportCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.DailyReportCountAggregateOutputType> | number
+        }
+      }
+    }
     AIConfiguration: {
       payload: Prisma.$AIConfigurationPayload<ExtArgs>
       fields: Prisma.AIConfigurationFieldRefs
@@ -2178,6 +2253,7 @@ export const StoreScalarFieldEnum = {
   name: 'name',
   phone: 'phone',
   ownerName: 'ownerName',
+  adminPhone: 'adminPhone',
   waSessionId: 'waSessionId',
   isActive: 'isActive',
   primaryColor: 'primaryColor',
@@ -2357,6 +2433,7 @@ export const OrderScalarFieldEnum = {
   isManual: 'isManual',
   manualPaymentMethod: 'manualPaymentMethod',
   idempotencyKey: 'idempotencyKey',
+  appointmentId: 'appointmentId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -2403,6 +2480,19 @@ export const AppointmentScalarFieldEnum = {
   cancelledAt: 'cancelledAt',
   cancelReason: 'cancelReason',
   reminderSentAt: 'reminderSentAt',
+  reminder8hSentAt: 'reminder8hSentAt',
+  reminder2hSentAt: 'reminder2hSentAt',
+  reminder1hSentAt: 'reminder1hSentAt',
+  paymentStatus: 'paymentStatus',
+  paymentMethod: 'paymentMethod',
+  paymentAmount: 'paymentAmount',
+  paymentProofUrl: 'paymentProofUrl',
+  paymentNotes: 'paymentNotes',
+  paymentConfirmedAt: 'paymentConfirmedAt',
+  pendingAction: 'pendingAction',
+  pendingActionAt: 'pendingActionAt',
+  pendingActionData: 'pendingActionData',
+  pendingActionReason: 'pendingActionReason',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -2425,10 +2515,24 @@ export const AppointmentTimelineScalarFieldEnum = {
 export type AppointmentTimelineScalarFieldEnum = (typeof AppointmentTimelineScalarFieldEnum)[keyof typeof AppointmentTimelineScalarFieldEnum]
 
 
+export const DailyReportScalarFieldEnum = {
+  reportId: 'reportId',
+  storeId: 'storeId',
+  date: 'date',
+  appointmentsData: 'appointmentsData',
+  paymentsData: 'paymentsData',
+  clientsData: 'clientsData',
+  createdAt: 'createdAt'
+} as const
+
+export type DailyReportScalarFieldEnum = (typeof DailyReportScalarFieldEnum)[keyof typeof DailyReportScalarFieldEnum]
+
+
 export const AIConfigurationScalarFieldEnum = {
   configId: 'configId',
   storeId: 'storeId',
-  groqApiKey: 'groqApiKey',
+  aiProvider: 'aiProvider',
+  apiKey: 'apiKey',
   systemPrompt: 'systemPrompt',
   model: 'model',
   temperature: 'temperature',
@@ -2853,6 +2957,7 @@ export type GlobalOmitConfig = {
   orderItem?: Prisma.OrderItemOmit
   appointment?: Prisma.AppointmentOmit
   appointmentTimeline?: Prisma.AppointmentTimelineOmit
+  dailyReport?: Prisma.DailyReportOmit
   aIConfiguration?: Prisma.AIConfigurationOmit
   campaign?: Prisma.CampaignOmit
   user?: Prisma.UserOmit

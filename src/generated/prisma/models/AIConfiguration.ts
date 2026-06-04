@@ -39,7 +39,8 @@ export type AIConfigurationSumAggregateOutputType = {
 export type AIConfigurationMinAggregateOutputType = {
   configId: string | null
   storeId: string | null
-  groqApiKey: string | null
+  aiProvider: string | null
+  apiKey: string | null
   systemPrompt: string | null
   model: string | null
   temperature: runtime.Decimal | null
@@ -49,7 +50,8 @@ export type AIConfigurationMinAggregateOutputType = {
 export type AIConfigurationMaxAggregateOutputType = {
   configId: string | null
   storeId: string | null
-  groqApiKey: string | null
+  aiProvider: string | null
+  apiKey: string | null
   systemPrompt: string | null
   model: string | null
   temperature: runtime.Decimal | null
@@ -59,7 +61,8 @@ export type AIConfigurationMaxAggregateOutputType = {
 export type AIConfigurationCountAggregateOutputType = {
   configId: number
   storeId: number
-  groqApiKey: number
+  aiProvider: number
+  apiKey: number
   systemPrompt: number
   model: number
   temperature: number
@@ -82,7 +85,8 @@ export type AIConfigurationSumAggregateInputType = {
 export type AIConfigurationMinAggregateInputType = {
   configId?: true
   storeId?: true
-  groqApiKey?: true
+  aiProvider?: true
+  apiKey?: true
   systemPrompt?: true
   model?: true
   temperature?: true
@@ -92,7 +96,8 @@ export type AIConfigurationMinAggregateInputType = {
 export type AIConfigurationMaxAggregateInputType = {
   configId?: true
   storeId?: true
-  groqApiKey?: true
+  aiProvider?: true
+  apiKey?: true
   systemPrompt?: true
   model?: true
   temperature?: true
@@ -102,7 +107,8 @@ export type AIConfigurationMaxAggregateInputType = {
 export type AIConfigurationCountAggregateInputType = {
   configId?: true
   storeId?: true
-  groqApiKey?: true
+  aiProvider?: true
+  apiKey?: true
   systemPrompt?: true
   model?: true
   temperature?: true
@@ -200,7 +206,8 @@ export type AIConfigurationGroupByArgs<ExtArgs extends runtime.Types.Extensions.
 export type AIConfigurationGroupByOutputType = {
   configId: string
   storeId: string
-  groqApiKey: string
+  aiProvider: string
+  apiKey: string
   systemPrompt: string
   model: string
   temperature: runtime.Decimal
@@ -234,7 +241,8 @@ export type AIConfigurationWhereInput = {
   NOT?: Prisma.AIConfigurationWhereInput | Prisma.AIConfigurationWhereInput[]
   configId?: Prisma.StringFilter<"AIConfiguration"> | string
   storeId?: Prisma.StringFilter<"AIConfiguration"> | string
-  groqApiKey?: Prisma.StringFilter<"AIConfiguration"> | string
+  aiProvider?: Prisma.StringFilter<"AIConfiguration"> | string
+  apiKey?: Prisma.StringFilter<"AIConfiguration"> | string
   systemPrompt?: Prisma.StringFilter<"AIConfiguration"> | string
   model?: Prisma.StringFilter<"AIConfiguration"> | string
   temperature?: Prisma.DecimalFilter<"AIConfiguration"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -246,7 +254,8 @@ export type AIConfigurationWhereInput = {
 export type AIConfigurationOrderByWithRelationInput = {
   configId?: Prisma.SortOrder
   storeId?: Prisma.SortOrder
-  groqApiKey?: Prisma.SortOrder
+  aiProvider?: Prisma.SortOrder
+  apiKey?: Prisma.SortOrder
   systemPrompt?: Prisma.SortOrder
   model?: Prisma.SortOrder
   temperature?: Prisma.SortOrder
@@ -261,7 +270,8 @@ export type AIConfigurationWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.AIConfigurationWhereInput | Prisma.AIConfigurationWhereInput[]
   OR?: Prisma.AIConfigurationWhereInput[]
   NOT?: Prisma.AIConfigurationWhereInput | Prisma.AIConfigurationWhereInput[]
-  groqApiKey?: Prisma.StringFilter<"AIConfiguration"> | string
+  aiProvider?: Prisma.StringFilter<"AIConfiguration"> | string
+  apiKey?: Prisma.StringFilter<"AIConfiguration"> | string
   systemPrompt?: Prisma.StringFilter<"AIConfiguration"> | string
   model?: Prisma.StringFilter<"AIConfiguration"> | string
   temperature?: Prisma.DecimalFilter<"AIConfiguration"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -273,7 +283,8 @@ export type AIConfigurationWhereUniqueInput = Prisma.AtLeast<{
 export type AIConfigurationOrderByWithAggregationInput = {
   configId?: Prisma.SortOrder
   storeId?: Prisma.SortOrder
-  groqApiKey?: Prisma.SortOrder
+  aiProvider?: Prisma.SortOrder
+  apiKey?: Prisma.SortOrder
   systemPrompt?: Prisma.SortOrder
   model?: Prisma.SortOrder
   temperature?: Prisma.SortOrder
@@ -292,7 +303,8 @@ export type AIConfigurationScalarWhereWithAggregatesInput = {
   NOT?: Prisma.AIConfigurationScalarWhereWithAggregatesInput | Prisma.AIConfigurationScalarWhereWithAggregatesInput[]
   configId?: Prisma.StringWithAggregatesFilter<"AIConfiguration"> | string
   storeId?: Prisma.StringWithAggregatesFilter<"AIConfiguration"> | string
-  groqApiKey?: Prisma.StringWithAggregatesFilter<"AIConfiguration"> | string
+  aiProvider?: Prisma.StringWithAggregatesFilter<"AIConfiguration"> | string
+  apiKey?: Prisma.StringWithAggregatesFilter<"AIConfiguration"> | string
   systemPrompt?: Prisma.StringWithAggregatesFilter<"AIConfiguration"> | string
   model?: Prisma.StringWithAggregatesFilter<"AIConfiguration"> | string
   temperature?: Prisma.DecimalWithAggregatesFilter<"AIConfiguration"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -302,7 +314,8 @@ export type AIConfigurationScalarWhereWithAggregatesInput = {
 
 export type AIConfigurationCreateInput = {
   configId?: string
-  groqApiKey: string
+  aiProvider?: string
+  apiKey: string
   systemPrompt: string
   model?: string
   temperature?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -314,7 +327,8 @@ export type AIConfigurationCreateInput = {
 export type AIConfigurationUncheckedCreateInput = {
   configId?: string
   storeId: string
-  groqApiKey: string
+  aiProvider?: string
+  apiKey: string
   systemPrompt: string
   model?: string
   temperature?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -324,7 +338,8 @@ export type AIConfigurationUncheckedCreateInput = {
 
 export type AIConfigurationUpdateInput = {
   configId?: Prisma.StringFieldUpdateOperationsInput | string
-  groqApiKey?: Prisma.StringFieldUpdateOperationsInput | string
+  aiProvider?: Prisma.StringFieldUpdateOperationsInput | string
+  apiKey?: Prisma.StringFieldUpdateOperationsInput | string
   systemPrompt?: Prisma.StringFieldUpdateOperationsInput | string
   model?: Prisma.StringFieldUpdateOperationsInput | string
   temperature?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -336,7 +351,8 @@ export type AIConfigurationUpdateInput = {
 export type AIConfigurationUncheckedUpdateInput = {
   configId?: Prisma.StringFieldUpdateOperationsInput | string
   storeId?: Prisma.StringFieldUpdateOperationsInput | string
-  groqApiKey?: Prisma.StringFieldUpdateOperationsInput | string
+  aiProvider?: Prisma.StringFieldUpdateOperationsInput | string
+  apiKey?: Prisma.StringFieldUpdateOperationsInput | string
   systemPrompt?: Prisma.StringFieldUpdateOperationsInput | string
   model?: Prisma.StringFieldUpdateOperationsInput | string
   temperature?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -347,7 +363,8 @@ export type AIConfigurationUncheckedUpdateInput = {
 export type AIConfigurationCreateManyInput = {
   configId?: string
   storeId: string
-  groqApiKey: string
+  aiProvider?: string
+  apiKey: string
   systemPrompt: string
   model?: string
   temperature?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -357,7 +374,8 @@ export type AIConfigurationCreateManyInput = {
 
 export type AIConfigurationUpdateManyMutationInput = {
   configId?: Prisma.StringFieldUpdateOperationsInput | string
-  groqApiKey?: Prisma.StringFieldUpdateOperationsInput | string
+  aiProvider?: Prisma.StringFieldUpdateOperationsInput | string
+  apiKey?: Prisma.StringFieldUpdateOperationsInput | string
   systemPrompt?: Prisma.StringFieldUpdateOperationsInput | string
   model?: Prisma.StringFieldUpdateOperationsInput | string
   temperature?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -368,7 +386,8 @@ export type AIConfigurationUpdateManyMutationInput = {
 export type AIConfigurationUncheckedUpdateManyInput = {
   configId?: Prisma.StringFieldUpdateOperationsInput | string
   storeId?: Prisma.StringFieldUpdateOperationsInput | string
-  groqApiKey?: Prisma.StringFieldUpdateOperationsInput | string
+  aiProvider?: Prisma.StringFieldUpdateOperationsInput | string
+  apiKey?: Prisma.StringFieldUpdateOperationsInput | string
   systemPrompt?: Prisma.StringFieldUpdateOperationsInput | string
   model?: Prisma.StringFieldUpdateOperationsInput | string
   temperature?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -384,7 +403,8 @@ export type AIConfigurationNullableScalarRelationFilter = {
 export type AIConfigurationCountOrderByAggregateInput = {
   configId?: Prisma.SortOrder
   storeId?: Prisma.SortOrder
-  groqApiKey?: Prisma.SortOrder
+  aiProvider?: Prisma.SortOrder
+  apiKey?: Prisma.SortOrder
   systemPrompt?: Prisma.SortOrder
   model?: Prisma.SortOrder
   temperature?: Prisma.SortOrder
@@ -400,7 +420,8 @@ export type AIConfigurationAvgOrderByAggregateInput = {
 export type AIConfigurationMaxOrderByAggregateInput = {
   configId?: Prisma.SortOrder
   storeId?: Prisma.SortOrder
-  groqApiKey?: Prisma.SortOrder
+  aiProvider?: Prisma.SortOrder
+  apiKey?: Prisma.SortOrder
   systemPrompt?: Prisma.SortOrder
   model?: Prisma.SortOrder
   temperature?: Prisma.SortOrder
@@ -410,7 +431,8 @@ export type AIConfigurationMaxOrderByAggregateInput = {
 export type AIConfigurationMinOrderByAggregateInput = {
   configId?: Prisma.SortOrder
   storeId?: Prisma.SortOrder
-  groqApiKey?: Prisma.SortOrder
+  aiProvider?: Prisma.SortOrder
+  apiKey?: Prisma.SortOrder
   systemPrompt?: Prisma.SortOrder
   model?: Prisma.SortOrder
   temperature?: Prisma.SortOrder
@@ -456,7 +478,8 @@ export type AIConfigurationUncheckedUpdateOneWithoutStoreNestedInput = {
 
 export type AIConfigurationCreateWithoutStoreInput = {
   configId?: string
-  groqApiKey: string
+  aiProvider?: string
+  apiKey: string
   systemPrompt: string
   model?: string
   temperature?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -466,7 +489,8 @@ export type AIConfigurationCreateWithoutStoreInput = {
 
 export type AIConfigurationUncheckedCreateWithoutStoreInput = {
   configId?: string
-  groqApiKey: string
+  aiProvider?: string
+  apiKey: string
   systemPrompt: string
   model?: string
   temperature?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -492,7 +516,8 @@ export type AIConfigurationUpdateToOneWithWhereWithoutStoreInput = {
 
 export type AIConfigurationUpdateWithoutStoreInput = {
   configId?: Prisma.StringFieldUpdateOperationsInput | string
-  groqApiKey?: Prisma.StringFieldUpdateOperationsInput | string
+  aiProvider?: Prisma.StringFieldUpdateOperationsInput | string
+  apiKey?: Prisma.StringFieldUpdateOperationsInput | string
   systemPrompt?: Prisma.StringFieldUpdateOperationsInput | string
   model?: Prisma.StringFieldUpdateOperationsInput | string
   temperature?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -502,7 +527,8 @@ export type AIConfigurationUpdateWithoutStoreInput = {
 
 export type AIConfigurationUncheckedUpdateWithoutStoreInput = {
   configId?: Prisma.StringFieldUpdateOperationsInput | string
-  groqApiKey?: Prisma.StringFieldUpdateOperationsInput | string
+  aiProvider?: Prisma.StringFieldUpdateOperationsInput | string
+  apiKey?: Prisma.StringFieldUpdateOperationsInput | string
   systemPrompt?: Prisma.StringFieldUpdateOperationsInput | string
   model?: Prisma.StringFieldUpdateOperationsInput | string
   temperature?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -515,7 +541,8 @@ export type AIConfigurationUncheckedUpdateWithoutStoreInput = {
 export type AIConfigurationSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   configId?: boolean
   storeId?: boolean
-  groqApiKey?: boolean
+  aiProvider?: boolean
+  apiKey?: boolean
   systemPrompt?: boolean
   model?: boolean
   temperature?: boolean
@@ -527,7 +554,8 @@ export type AIConfigurationSelect<ExtArgs extends runtime.Types.Extensions.Inter
 export type AIConfigurationSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   configId?: boolean
   storeId?: boolean
-  groqApiKey?: boolean
+  aiProvider?: boolean
+  apiKey?: boolean
   systemPrompt?: boolean
   model?: boolean
   temperature?: boolean
@@ -539,7 +567,8 @@ export type AIConfigurationSelectCreateManyAndReturn<ExtArgs extends runtime.Typ
 export type AIConfigurationSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   configId?: boolean
   storeId?: boolean
-  groqApiKey?: boolean
+  aiProvider?: boolean
+  apiKey?: boolean
   systemPrompt?: boolean
   model?: boolean
   temperature?: boolean
@@ -551,7 +580,8 @@ export type AIConfigurationSelectUpdateManyAndReturn<ExtArgs extends runtime.Typ
 export type AIConfigurationSelectScalar = {
   configId?: boolean
   storeId?: boolean
-  groqApiKey?: boolean
+  aiProvider?: boolean
+  apiKey?: boolean
   systemPrompt?: boolean
   model?: boolean
   temperature?: boolean
@@ -559,7 +589,7 @@ export type AIConfigurationSelectScalar = {
   settings?: boolean
 }
 
-export type AIConfigurationOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"configId" | "storeId" | "groqApiKey" | "systemPrompt" | "model" | "temperature" | "maxTokens" | "settings", ExtArgs["result"]["aIConfiguration"]>
+export type AIConfigurationOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"configId" | "storeId" | "aiProvider" | "apiKey" | "systemPrompt" | "model" | "temperature" | "maxTokens" | "settings", ExtArgs["result"]["aIConfiguration"]>
 export type AIConfigurationInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   store?: boolean | Prisma.StoreDefaultArgs<ExtArgs>
 }
@@ -578,7 +608,8 @@ export type $AIConfigurationPayload<ExtArgs extends runtime.Types.Extensions.Int
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     configId: string
     storeId: string
-    groqApiKey: string
+    aiProvider: string
+    apiKey: string
     systemPrompt: string
     model: string
     temperature: runtime.Decimal
@@ -1010,7 +1041,8 @@ export interface Prisma__AIConfigurationClient<T, Null = never, ExtArgs extends 
 export interface AIConfigurationFieldRefs {
   readonly configId: Prisma.FieldRef<"AIConfiguration", 'String'>
   readonly storeId: Prisma.FieldRef<"AIConfiguration", 'String'>
-  readonly groqApiKey: Prisma.FieldRef<"AIConfiguration", 'String'>
+  readonly aiProvider: Prisma.FieldRef<"AIConfiguration", 'String'>
+  readonly apiKey: Prisma.FieldRef<"AIConfiguration", 'String'>
   readonly systemPrompt: Prisma.FieldRef<"AIConfiguration", 'String'>
   readonly model: Prisma.FieldRef<"AIConfiguration", 'String'>
   readonly temperature: Prisma.FieldRef<"AIConfiguration", 'Decimal'>

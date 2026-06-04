@@ -44,11 +44,13 @@ export type AggregateAppointment = {
 export type AppointmentAvgAggregateOutputType = {
   durationMinutes: number | null
   agreedPrice: runtime.Decimal | null
+  paymentAmount: runtime.Decimal | null
 }
 
 export type AppointmentSumAggregateOutputType = {
   durationMinutes: number | null
   agreedPrice: runtime.Decimal | null
+  paymentAmount: runtime.Decimal | null
 }
 
 export type AppointmentMinAggregateOutputType = {
@@ -75,6 +77,18 @@ export type AppointmentMinAggregateOutputType = {
   cancelledAt: Date | null
   cancelReason: string | null
   reminderSentAt: Date | null
+  reminder8hSentAt: Date | null
+  reminder2hSentAt: Date | null
+  reminder1hSentAt: Date | null
+  paymentStatus: string | null
+  paymentMethod: string | null
+  paymentAmount: runtime.Decimal | null
+  paymentProofUrl: string | null
+  paymentNotes: string | null
+  paymentConfirmedAt: Date | null
+  pendingAction: string | null
+  pendingActionAt: Date | null
+  pendingActionReason: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -103,6 +117,18 @@ export type AppointmentMaxAggregateOutputType = {
   cancelledAt: Date | null
   cancelReason: string | null
   reminderSentAt: Date | null
+  reminder8hSentAt: Date | null
+  reminder2hSentAt: Date | null
+  reminder1hSentAt: Date | null
+  paymentStatus: string | null
+  paymentMethod: string | null
+  paymentAmount: runtime.Decimal | null
+  paymentProofUrl: string | null
+  paymentNotes: string | null
+  paymentConfirmedAt: Date | null
+  pendingAction: string | null
+  pendingActionAt: Date | null
+  pendingActionReason: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -131,6 +157,19 @@ export type AppointmentCountAggregateOutputType = {
   cancelledAt: number
   cancelReason: number
   reminderSentAt: number
+  reminder8hSentAt: number
+  reminder2hSentAt: number
+  reminder1hSentAt: number
+  paymentStatus: number
+  paymentMethod: number
+  paymentAmount: number
+  paymentProofUrl: number
+  paymentNotes: number
+  paymentConfirmedAt: number
+  pendingAction: number
+  pendingActionAt: number
+  pendingActionData: number
+  pendingActionReason: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -140,11 +179,13 @@ export type AppointmentCountAggregateOutputType = {
 export type AppointmentAvgAggregateInputType = {
   durationMinutes?: true
   agreedPrice?: true
+  paymentAmount?: true
 }
 
 export type AppointmentSumAggregateInputType = {
   durationMinutes?: true
   agreedPrice?: true
+  paymentAmount?: true
 }
 
 export type AppointmentMinAggregateInputType = {
@@ -171,6 +212,18 @@ export type AppointmentMinAggregateInputType = {
   cancelledAt?: true
   cancelReason?: true
   reminderSentAt?: true
+  reminder8hSentAt?: true
+  reminder2hSentAt?: true
+  reminder1hSentAt?: true
+  paymentStatus?: true
+  paymentMethod?: true
+  paymentAmount?: true
+  paymentProofUrl?: true
+  paymentNotes?: true
+  paymentConfirmedAt?: true
+  pendingAction?: true
+  pendingActionAt?: true
+  pendingActionReason?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -199,6 +252,18 @@ export type AppointmentMaxAggregateInputType = {
   cancelledAt?: true
   cancelReason?: true
   reminderSentAt?: true
+  reminder8hSentAt?: true
+  reminder2hSentAt?: true
+  reminder1hSentAt?: true
+  paymentStatus?: true
+  paymentMethod?: true
+  paymentAmount?: true
+  paymentProofUrl?: true
+  paymentNotes?: true
+  paymentConfirmedAt?: true
+  pendingAction?: true
+  pendingActionAt?: true
+  pendingActionReason?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -227,6 +292,19 @@ export type AppointmentCountAggregateInputType = {
   cancelledAt?: true
   cancelReason?: true
   reminderSentAt?: true
+  reminder8hSentAt?: true
+  reminder2hSentAt?: true
+  reminder1hSentAt?: true
+  paymentStatus?: true
+  paymentMethod?: true
+  paymentAmount?: true
+  paymentProofUrl?: true
+  paymentNotes?: true
+  paymentConfirmedAt?: true
+  pendingAction?: true
+  pendingActionAt?: true
+  pendingActionData?: true
+  pendingActionReason?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -342,6 +420,19 @@ export type AppointmentGroupByOutputType = {
   cancelledAt: Date | null
   cancelReason: string | null
   reminderSentAt: Date | null
+  reminder8hSentAt: Date | null
+  reminder2hSentAt: Date | null
+  reminder1hSentAt: Date | null
+  paymentStatus: string
+  paymentMethod: string | null
+  paymentAmount: runtime.Decimal | null
+  paymentProofUrl: string | null
+  paymentNotes: string | null
+  paymentConfirmedAt: Date | null
+  pendingAction: string | null
+  pendingActionAt: Date | null
+  pendingActionData: runtime.JsonValue | null
+  pendingActionReason: string | null
   createdAt: Date
   updatedAt: Date
   _count: AppointmentCountAggregateOutputType | null
@@ -393,6 +484,19 @@ export type AppointmentWhereInput = {
   cancelledAt?: Prisma.DateTimeNullableFilter<"Appointment"> | Date | string | null
   cancelReason?: Prisma.StringNullableFilter<"Appointment"> | string | null
   reminderSentAt?: Prisma.DateTimeNullableFilter<"Appointment"> | Date | string | null
+  reminder8hSentAt?: Prisma.DateTimeNullableFilter<"Appointment"> | Date | string | null
+  reminder2hSentAt?: Prisma.DateTimeNullableFilter<"Appointment"> | Date | string | null
+  reminder1hSentAt?: Prisma.DateTimeNullableFilter<"Appointment"> | Date | string | null
+  paymentStatus?: Prisma.StringFilter<"Appointment"> | string
+  paymentMethod?: Prisma.StringNullableFilter<"Appointment"> | string | null
+  paymentAmount?: Prisma.DecimalNullableFilter<"Appointment"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  paymentProofUrl?: Prisma.StringNullableFilter<"Appointment"> | string | null
+  paymentNotes?: Prisma.StringNullableFilter<"Appointment"> | string | null
+  paymentConfirmedAt?: Prisma.DateTimeNullableFilter<"Appointment"> | Date | string | null
+  pendingAction?: Prisma.StringNullableFilter<"Appointment"> | string | null
+  pendingActionAt?: Prisma.DateTimeNullableFilter<"Appointment"> | Date | string | null
+  pendingActionData?: Prisma.JsonNullableFilter<"Appointment">
+  pendingActionReason?: Prisma.StringNullableFilter<"Appointment"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Appointment"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Appointment"> | Date | string
   store?: Prisma.XOR<Prisma.StoreScalarRelationFilter, Prisma.StoreWhereInput>
@@ -426,6 +530,19 @@ export type AppointmentOrderByWithRelationInput = {
   cancelledAt?: Prisma.SortOrderInput | Prisma.SortOrder
   cancelReason?: Prisma.SortOrderInput | Prisma.SortOrder
   reminderSentAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  reminder8hSentAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  reminder2hSentAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  reminder1hSentAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  paymentStatus?: Prisma.SortOrder
+  paymentMethod?: Prisma.SortOrderInput | Prisma.SortOrder
+  paymentAmount?: Prisma.SortOrderInput | Prisma.SortOrder
+  paymentProofUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  paymentNotes?: Prisma.SortOrderInput | Prisma.SortOrder
+  paymentConfirmedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  pendingAction?: Prisma.SortOrderInput | Prisma.SortOrder
+  pendingActionAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  pendingActionData?: Prisma.SortOrderInput | Prisma.SortOrder
+  pendingActionReason?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   store?: Prisma.StoreOrderByWithRelationInput
@@ -462,6 +579,19 @@ export type AppointmentWhereUniqueInput = Prisma.AtLeast<{
   cancelledAt?: Prisma.DateTimeNullableFilter<"Appointment"> | Date | string | null
   cancelReason?: Prisma.StringNullableFilter<"Appointment"> | string | null
   reminderSentAt?: Prisma.DateTimeNullableFilter<"Appointment"> | Date | string | null
+  reminder8hSentAt?: Prisma.DateTimeNullableFilter<"Appointment"> | Date | string | null
+  reminder2hSentAt?: Prisma.DateTimeNullableFilter<"Appointment"> | Date | string | null
+  reminder1hSentAt?: Prisma.DateTimeNullableFilter<"Appointment"> | Date | string | null
+  paymentStatus?: Prisma.StringFilter<"Appointment"> | string
+  paymentMethod?: Prisma.StringNullableFilter<"Appointment"> | string | null
+  paymentAmount?: Prisma.DecimalNullableFilter<"Appointment"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  paymentProofUrl?: Prisma.StringNullableFilter<"Appointment"> | string | null
+  paymentNotes?: Prisma.StringNullableFilter<"Appointment"> | string | null
+  paymentConfirmedAt?: Prisma.DateTimeNullableFilter<"Appointment"> | Date | string | null
+  pendingAction?: Prisma.StringNullableFilter<"Appointment"> | string | null
+  pendingActionAt?: Prisma.DateTimeNullableFilter<"Appointment"> | Date | string | null
+  pendingActionData?: Prisma.JsonNullableFilter<"Appointment">
+  pendingActionReason?: Prisma.StringNullableFilter<"Appointment"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Appointment"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Appointment"> | Date | string
   store?: Prisma.XOR<Prisma.StoreScalarRelationFilter, Prisma.StoreWhereInput>
@@ -495,6 +625,19 @@ export type AppointmentOrderByWithAggregationInput = {
   cancelledAt?: Prisma.SortOrderInput | Prisma.SortOrder
   cancelReason?: Prisma.SortOrderInput | Prisma.SortOrder
   reminderSentAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  reminder8hSentAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  reminder2hSentAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  reminder1hSentAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  paymentStatus?: Prisma.SortOrder
+  paymentMethod?: Prisma.SortOrderInput | Prisma.SortOrder
+  paymentAmount?: Prisma.SortOrderInput | Prisma.SortOrder
+  paymentProofUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  paymentNotes?: Prisma.SortOrderInput | Prisma.SortOrder
+  paymentConfirmedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  pendingAction?: Prisma.SortOrderInput | Prisma.SortOrder
+  pendingActionAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  pendingActionData?: Prisma.SortOrderInput | Prisma.SortOrder
+  pendingActionReason?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.AppointmentCountOrderByAggregateInput
@@ -531,6 +674,19 @@ export type AppointmentScalarWhereWithAggregatesInput = {
   cancelledAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Appointment"> | Date | string | null
   cancelReason?: Prisma.StringNullableWithAggregatesFilter<"Appointment"> | string | null
   reminderSentAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Appointment"> | Date | string | null
+  reminder8hSentAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Appointment"> | Date | string | null
+  reminder2hSentAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Appointment"> | Date | string | null
+  reminder1hSentAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Appointment"> | Date | string | null
+  paymentStatus?: Prisma.StringWithAggregatesFilter<"Appointment"> | string
+  paymentMethod?: Prisma.StringNullableWithAggregatesFilter<"Appointment"> | string | null
+  paymentAmount?: Prisma.DecimalNullableWithAggregatesFilter<"Appointment"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  paymentProofUrl?: Prisma.StringNullableWithAggregatesFilter<"Appointment"> | string | null
+  paymentNotes?: Prisma.StringNullableWithAggregatesFilter<"Appointment"> | string | null
+  paymentConfirmedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Appointment"> | Date | string | null
+  pendingAction?: Prisma.StringNullableWithAggregatesFilter<"Appointment"> | string | null
+  pendingActionAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Appointment"> | Date | string | null
+  pendingActionData?: Prisma.JsonNullableWithAggregatesFilter<"Appointment">
+  pendingActionReason?: Prisma.StringNullableWithAggregatesFilter<"Appointment"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Appointment"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Appointment"> | Date | string
 }
@@ -555,6 +711,19 @@ export type AppointmentCreateInput = {
   cancelledAt?: Date | string | null
   cancelReason?: string | null
   reminderSentAt?: Date | string | null
+  reminder8hSentAt?: Date | string | null
+  reminder2hSentAt?: Date | string | null
+  reminder1hSentAt?: Date | string | null
+  paymentStatus?: string
+  paymentMethod?: string | null
+  paymentAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  paymentProofUrl?: string | null
+  paymentNotes?: string | null
+  paymentConfirmedAt?: Date | string | null
+  pendingAction?: string | null
+  pendingActionAt?: Date | string | null
+  pendingActionData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  pendingActionReason?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   store: Prisma.StoreCreateNestedOneWithoutAppointmentsInput
@@ -588,6 +757,19 @@ export type AppointmentUncheckedCreateInput = {
   cancelledAt?: Date | string | null
   cancelReason?: string | null
   reminderSentAt?: Date | string | null
+  reminder8hSentAt?: Date | string | null
+  reminder2hSentAt?: Date | string | null
+  reminder1hSentAt?: Date | string | null
+  paymentStatus?: string
+  paymentMethod?: string | null
+  paymentAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  paymentProofUrl?: string | null
+  paymentNotes?: string | null
+  paymentConfirmedAt?: Date | string | null
+  pendingAction?: string | null
+  pendingActionAt?: Date | string | null
+  pendingActionData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  pendingActionReason?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   timeline?: Prisma.AppointmentTimelineUncheckedCreateNestedManyWithoutAppointmentInput
@@ -613,6 +795,19 @@ export type AppointmentUpdateInput = {
   cancelledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   cancelReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reminderSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder8hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder2hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder1hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  paymentStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  paymentProofUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  pendingAction?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pendingActionAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  pendingActionData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  pendingActionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   store?: Prisma.StoreUpdateOneRequiredWithoutAppointmentsNestedInput
@@ -646,6 +841,19 @@ export type AppointmentUncheckedUpdateInput = {
   cancelledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   cancelReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reminderSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder8hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder2hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder1hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  paymentStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  paymentProofUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  pendingAction?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pendingActionAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  pendingActionData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  pendingActionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   timeline?: Prisma.AppointmentTimelineUncheckedUpdateManyWithoutAppointmentNestedInput
@@ -675,6 +883,19 @@ export type AppointmentCreateManyInput = {
   cancelledAt?: Date | string | null
   cancelReason?: string | null
   reminderSentAt?: Date | string | null
+  reminder8hSentAt?: Date | string | null
+  reminder2hSentAt?: Date | string | null
+  reminder1hSentAt?: Date | string | null
+  paymentStatus?: string
+  paymentMethod?: string | null
+  paymentAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  paymentProofUrl?: string | null
+  paymentNotes?: string | null
+  paymentConfirmedAt?: Date | string | null
+  pendingAction?: string | null
+  pendingActionAt?: Date | string | null
+  pendingActionData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  pendingActionReason?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -699,6 +920,19 @@ export type AppointmentUpdateManyMutationInput = {
   cancelledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   cancelReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reminderSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder8hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder2hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder1hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  paymentStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  paymentProofUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  pendingAction?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pendingActionAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  pendingActionData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  pendingActionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -727,6 +961,19 @@ export type AppointmentUncheckedUpdateManyInput = {
   cancelledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   cancelReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reminderSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder8hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder2hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder1hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  paymentStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  paymentProofUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  pendingAction?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pendingActionAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  pendingActionData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  pendingActionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -765,6 +1012,19 @@ export type AppointmentCountOrderByAggregateInput = {
   cancelledAt?: Prisma.SortOrder
   cancelReason?: Prisma.SortOrder
   reminderSentAt?: Prisma.SortOrder
+  reminder8hSentAt?: Prisma.SortOrder
+  reminder2hSentAt?: Prisma.SortOrder
+  reminder1hSentAt?: Prisma.SortOrder
+  paymentStatus?: Prisma.SortOrder
+  paymentMethod?: Prisma.SortOrder
+  paymentAmount?: Prisma.SortOrder
+  paymentProofUrl?: Prisma.SortOrder
+  paymentNotes?: Prisma.SortOrder
+  paymentConfirmedAt?: Prisma.SortOrder
+  pendingAction?: Prisma.SortOrder
+  pendingActionAt?: Prisma.SortOrder
+  pendingActionData?: Prisma.SortOrder
+  pendingActionReason?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -772,6 +1032,7 @@ export type AppointmentCountOrderByAggregateInput = {
 export type AppointmentAvgOrderByAggregateInput = {
   durationMinutes?: Prisma.SortOrder
   agreedPrice?: Prisma.SortOrder
+  paymentAmount?: Prisma.SortOrder
 }
 
 export type AppointmentMaxOrderByAggregateInput = {
@@ -798,6 +1059,18 @@ export type AppointmentMaxOrderByAggregateInput = {
   cancelledAt?: Prisma.SortOrder
   cancelReason?: Prisma.SortOrder
   reminderSentAt?: Prisma.SortOrder
+  reminder8hSentAt?: Prisma.SortOrder
+  reminder2hSentAt?: Prisma.SortOrder
+  reminder1hSentAt?: Prisma.SortOrder
+  paymentStatus?: Prisma.SortOrder
+  paymentMethod?: Prisma.SortOrder
+  paymentAmount?: Prisma.SortOrder
+  paymentProofUrl?: Prisma.SortOrder
+  paymentNotes?: Prisma.SortOrder
+  paymentConfirmedAt?: Prisma.SortOrder
+  pendingAction?: Prisma.SortOrder
+  pendingActionAt?: Prisma.SortOrder
+  pendingActionReason?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -826,6 +1099,18 @@ export type AppointmentMinOrderByAggregateInput = {
   cancelledAt?: Prisma.SortOrder
   cancelReason?: Prisma.SortOrder
   reminderSentAt?: Prisma.SortOrder
+  reminder8hSentAt?: Prisma.SortOrder
+  reminder2hSentAt?: Prisma.SortOrder
+  reminder1hSentAt?: Prisma.SortOrder
+  paymentStatus?: Prisma.SortOrder
+  paymentMethod?: Prisma.SortOrder
+  paymentAmount?: Prisma.SortOrder
+  paymentProofUrl?: Prisma.SortOrder
+  paymentNotes?: Prisma.SortOrder
+  paymentConfirmedAt?: Prisma.SortOrder
+  pendingAction?: Prisma.SortOrder
+  pendingActionAt?: Prisma.SortOrder
+  pendingActionReason?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -833,6 +1118,7 @@ export type AppointmentMinOrderByAggregateInput = {
 export type AppointmentSumOrderByAggregateInput = {
   durationMinutes?: Prisma.SortOrder
   agreedPrice?: Prisma.SortOrder
+  paymentAmount?: Prisma.SortOrder
 }
 
 export type AppointmentScalarRelationFilter = {
@@ -1054,6 +1340,19 @@ export type AppointmentCreateWithoutStoreInput = {
   cancelledAt?: Date | string | null
   cancelReason?: string | null
   reminderSentAt?: Date | string | null
+  reminder8hSentAt?: Date | string | null
+  reminder2hSentAt?: Date | string | null
+  reminder1hSentAt?: Date | string | null
+  paymentStatus?: string
+  paymentMethod?: string | null
+  paymentAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  paymentProofUrl?: string | null
+  paymentNotes?: string | null
+  paymentConfirmedAt?: Date | string | null
+  pendingAction?: string | null
+  pendingActionAt?: Date | string | null
+  pendingActionData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  pendingActionReason?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customer: Prisma.CustomerCreateNestedOneWithoutAppointmentsInput
@@ -1085,6 +1384,19 @@ export type AppointmentUncheckedCreateWithoutStoreInput = {
   cancelledAt?: Date | string | null
   cancelReason?: string | null
   reminderSentAt?: Date | string | null
+  reminder8hSentAt?: Date | string | null
+  reminder2hSentAt?: Date | string | null
+  reminder1hSentAt?: Date | string | null
+  paymentStatus?: string
+  paymentMethod?: string | null
+  paymentAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  paymentProofUrl?: string | null
+  paymentNotes?: string | null
+  paymentConfirmedAt?: Date | string | null
+  pendingAction?: string | null
+  pendingActionAt?: Date | string | null
+  pendingActionData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  pendingActionReason?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   timeline?: Prisma.AppointmentTimelineUncheckedCreateNestedManyWithoutAppointmentInput
@@ -1143,6 +1455,19 @@ export type AppointmentScalarWhereInput = {
   cancelledAt?: Prisma.DateTimeNullableFilter<"Appointment"> | Date | string | null
   cancelReason?: Prisma.StringNullableFilter<"Appointment"> | string | null
   reminderSentAt?: Prisma.DateTimeNullableFilter<"Appointment"> | Date | string | null
+  reminder8hSentAt?: Prisma.DateTimeNullableFilter<"Appointment"> | Date | string | null
+  reminder2hSentAt?: Prisma.DateTimeNullableFilter<"Appointment"> | Date | string | null
+  reminder1hSentAt?: Prisma.DateTimeNullableFilter<"Appointment"> | Date | string | null
+  paymentStatus?: Prisma.StringFilter<"Appointment"> | string
+  paymentMethod?: Prisma.StringNullableFilter<"Appointment"> | string | null
+  paymentAmount?: Prisma.DecimalNullableFilter<"Appointment"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  paymentProofUrl?: Prisma.StringNullableFilter<"Appointment"> | string | null
+  paymentNotes?: Prisma.StringNullableFilter<"Appointment"> | string | null
+  paymentConfirmedAt?: Prisma.DateTimeNullableFilter<"Appointment"> | Date | string | null
+  pendingAction?: Prisma.StringNullableFilter<"Appointment"> | string | null
+  pendingActionAt?: Prisma.DateTimeNullableFilter<"Appointment"> | Date | string | null
+  pendingActionData?: Prisma.JsonNullableFilter<"Appointment">
+  pendingActionReason?: Prisma.StringNullableFilter<"Appointment"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Appointment"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Appointment"> | Date | string
 }
@@ -1167,6 +1492,19 @@ export type AppointmentCreateWithoutCustomerInput = {
   cancelledAt?: Date | string | null
   cancelReason?: string | null
   reminderSentAt?: Date | string | null
+  reminder8hSentAt?: Date | string | null
+  reminder2hSentAt?: Date | string | null
+  reminder1hSentAt?: Date | string | null
+  paymentStatus?: string
+  paymentMethod?: string | null
+  paymentAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  paymentProofUrl?: string | null
+  paymentNotes?: string | null
+  paymentConfirmedAt?: Date | string | null
+  pendingAction?: string | null
+  pendingActionAt?: Date | string | null
+  pendingActionData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  pendingActionReason?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   store: Prisma.StoreCreateNestedOneWithoutAppointmentsInput
@@ -1198,6 +1536,19 @@ export type AppointmentUncheckedCreateWithoutCustomerInput = {
   cancelledAt?: Date | string | null
   cancelReason?: string | null
   reminderSentAt?: Date | string | null
+  reminder8hSentAt?: Date | string | null
+  reminder2hSentAt?: Date | string | null
+  reminder1hSentAt?: Date | string | null
+  paymentStatus?: string
+  paymentMethod?: string | null
+  paymentAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  paymentProofUrl?: string | null
+  paymentNotes?: string | null
+  paymentConfirmedAt?: Date | string | null
+  pendingAction?: string | null
+  pendingActionAt?: Date | string | null
+  pendingActionData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  pendingActionReason?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   timeline?: Prisma.AppointmentTimelineUncheckedCreateNestedManyWithoutAppointmentInput
@@ -1249,6 +1600,19 @@ export type AppointmentCreateWithoutServiceInput = {
   cancelledAt?: Date | string | null
   cancelReason?: string | null
   reminderSentAt?: Date | string | null
+  reminder8hSentAt?: Date | string | null
+  reminder2hSentAt?: Date | string | null
+  reminder1hSentAt?: Date | string | null
+  paymentStatus?: string
+  paymentMethod?: string | null
+  paymentAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  paymentProofUrl?: string | null
+  paymentNotes?: string | null
+  paymentConfirmedAt?: Date | string | null
+  pendingAction?: string | null
+  pendingActionAt?: Date | string | null
+  pendingActionData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  pendingActionReason?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   store: Prisma.StoreCreateNestedOneWithoutAppointmentsInput
@@ -1280,6 +1644,19 @@ export type AppointmentUncheckedCreateWithoutServiceInput = {
   cancelledAt?: Date | string | null
   cancelReason?: string | null
   reminderSentAt?: Date | string | null
+  reminder8hSentAt?: Date | string | null
+  reminder2hSentAt?: Date | string | null
+  reminder1hSentAt?: Date | string | null
+  paymentStatus?: string
+  paymentMethod?: string | null
+  paymentAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  paymentProofUrl?: string | null
+  paymentNotes?: string | null
+  paymentConfirmedAt?: Date | string | null
+  pendingAction?: string | null
+  pendingActionAt?: Date | string | null
+  pendingActionData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  pendingActionReason?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   timeline?: Prisma.AppointmentTimelineUncheckedCreateNestedManyWithoutAppointmentInput
@@ -1331,6 +1708,19 @@ export type AppointmentCreateWithoutServiceVariantInput = {
   cancelledAt?: Date | string | null
   cancelReason?: string | null
   reminderSentAt?: Date | string | null
+  reminder8hSentAt?: Date | string | null
+  reminder2hSentAt?: Date | string | null
+  reminder1hSentAt?: Date | string | null
+  paymentStatus?: string
+  paymentMethod?: string | null
+  paymentAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  paymentProofUrl?: string | null
+  paymentNotes?: string | null
+  paymentConfirmedAt?: Date | string | null
+  pendingAction?: string | null
+  pendingActionAt?: Date | string | null
+  pendingActionData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  pendingActionReason?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   store: Prisma.StoreCreateNestedOneWithoutAppointmentsInput
@@ -1362,6 +1752,19 @@ export type AppointmentUncheckedCreateWithoutServiceVariantInput = {
   cancelledAt?: Date | string | null
   cancelReason?: string | null
   reminderSentAt?: Date | string | null
+  reminder8hSentAt?: Date | string | null
+  reminder2hSentAt?: Date | string | null
+  reminder1hSentAt?: Date | string | null
+  paymentStatus?: string
+  paymentMethod?: string | null
+  paymentAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  paymentProofUrl?: string | null
+  paymentNotes?: string | null
+  paymentConfirmedAt?: Date | string | null
+  pendingAction?: string | null
+  pendingActionAt?: Date | string | null
+  pendingActionData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  pendingActionReason?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   timeline?: Prisma.AppointmentTimelineUncheckedCreateNestedManyWithoutAppointmentInput
@@ -1413,6 +1816,19 @@ export type AppointmentCreateWithoutTimelineInput = {
   cancelledAt?: Date | string | null
   cancelReason?: string | null
   reminderSentAt?: Date | string | null
+  reminder8hSentAt?: Date | string | null
+  reminder2hSentAt?: Date | string | null
+  reminder1hSentAt?: Date | string | null
+  paymentStatus?: string
+  paymentMethod?: string | null
+  paymentAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  paymentProofUrl?: string | null
+  paymentNotes?: string | null
+  paymentConfirmedAt?: Date | string | null
+  pendingAction?: string | null
+  pendingActionAt?: Date | string | null
+  pendingActionData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  pendingActionReason?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   store: Prisma.StoreCreateNestedOneWithoutAppointmentsInput
@@ -1445,6 +1861,19 @@ export type AppointmentUncheckedCreateWithoutTimelineInput = {
   cancelledAt?: Date | string | null
   cancelReason?: string | null
   reminderSentAt?: Date | string | null
+  reminder8hSentAt?: Date | string | null
+  reminder2hSentAt?: Date | string | null
+  reminder1hSentAt?: Date | string | null
+  paymentStatus?: string
+  paymentMethod?: string | null
+  paymentAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  paymentProofUrl?: string | null
+  paymentNotes?: string | null
+  paymentConfirmedAt?: Date | string | null
+  pendingAction?: string | null
+  pendingActionAt?: Date | string | null
+  pendingActionData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  pendingActionReason?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -1485,6 +1914,19 @@ export type AppointmentUpdateWithoutTimelineInput = {
   cancelledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   cancelReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reminderSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder8hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder2hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder1hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  paymentStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  paymentProofUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  pendingAction?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pendingActionAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  pendingActionData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  pendingActionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   store?: Prisma.StoreUpdateOneRequiredWithoutAppointmentsNestedInput
@@ -1517,6 +1959,19 @@ export type AppointmentUncheckedUpdateWithoutTimelineInput = {
   cancelledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   cancelReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reminderSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder8hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder2hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder1hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  paymentStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  paymentProofUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  pendingAction?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pendingActionAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  pendingActionData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  pendingActionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -1544,6 +1999,19 @@ export type AppointmentCreateManyStoreInput = {
   cancelledAt?: Date | string | null
   cancelReason?: string | null
   reminderSentAt?: Date | string | null
+  reminder8hSentAt?: Date | string | null
+  reminder2hSentAt?: Date | string | null
+  reminder1hSentAt?: Date | string | null
+  paymentStatus?: string
+  paymentMethod?: string | null
+  paymentAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  paymentProofUrl?: string | null
+  paymentNotes?: string | null
+  paymentConfirmedAt?: Date | string | null
+  pendingAction?: string | null
+  pendingActionAt?: Date | string | null
+  pendingActionData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  pendingActionReason?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -1568,6 +2036,19 @@ export type AppointmentUpdateWithoutStoreInput = {
   cancelledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   cancelReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reminderSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder8hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder2hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder1hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  paymentStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  paymentProofUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  pendingAction?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pendingActionAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  pendingActionData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  pendingActionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customer?: Prisma.CustomerUpdateOneRequiredWithoutAppointmentsNestedInput
@@ -1599,6 +2080,19 @@ export type AppointmentUncheckedUpdateWithoutStoreInput = {
   cancelledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   cancelReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reminderSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder8hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder2hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder1hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  paymentStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  paymentProofUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  pendingAction?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pendingActionAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  pendingActionData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  pendingActionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   timeline?: Prisma.AppointmentTimelineUncheckedUpdateManyWithoutAppointmentNestedInput
@@ -1627,6 +2121,19 @@ export type AppointmentUncheckedUpdateManyWithoutStoreInput = {
   cancelledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   cancelReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reminderSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder8hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder2hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder1hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  paymentStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  paymentProofUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  pendingAction?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pendingActionAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  pendingActionData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  pendingActionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -1654,6 +2161,19 @@ export type AppointmentCreateManyCustomerInput = {
   cancelledAt?: Date | string | null
   cancelReason?: string | null
   reminderSentAt?: Date | string | null
+  reminder8hSentAt?: Date | string | null
+  reminder2hSentAt?: Date | string | null
+  reminder1hSentAt?: Date | string | null
+  paymentStatus?: string
+  paymentMethod?: string | null
+  paymentAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  paymentProofUrl?: string | null
+  paymentNotes?: string | null
+  paymentConfirmedAt?: Date | string | null
+  pendingAction?: string | null
+  pendingActionAt?: Date | string | null
+  pendingActionData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  pendingActionReason?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -1678,6 +2198,19 @@ export type AppointmentUpdateWithoutCustomerInput = {
   cancelledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   cancelReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reminderSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder8hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder2hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder1hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  paymentStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  paymentProofUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  pendingAction?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pendingActionAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  pendingActionData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  pendingActionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   store?: Prisma.StoreUpdateOneRequiredWithoutAppointmentsNestedInput
@@ -1709,6 +2242,19 @@ export type AppointmentUncheckedUpdateWithoutCustomerInput = {
   cancelledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   cancelReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reminderSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder8hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder2hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder1hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  paymentStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  paymentProofUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  pendingAction?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pendingActionAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  pendingActionData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  pendingActionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   timeline?: Prisma.AppointmentTimelineUncheckedUpdateManyWithoutAppointmentNestedInput
@@ -1737,6 +2283,19 @@ export type AppointmentUncheckedUpdateManyWithoutCustomerInput = {
   cancelledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   cancelReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reminderSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder8hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder2hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder1hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  paymentStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  paymentProofUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  pendingAction?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pendingActionAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  pendingActionData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  pendingActionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -1764,6 +2323,19 @@ export type AppointmentCreateManyServiceInput = {
   cancelledAt?: Date | string | null
   cancelReason?: string | null
   reminderSentAt?: Date | string | null
+  reminder8hSentAt?: Date | string | null
+  reminder2hSentAt?: Date | string | null
+  reminder1hSentAt?: Date | string | null
+  paymentStatus?: string
+  paymentMethod?: string | null
+  paymentAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  paymentProofUrl?: string | null
+  paymentNotes?: string | null
+  paymentConfirmedAt?: Date | string | null
+  pendingAction?: string | null
+  pendingActionAt?: Date | string | null
+  pendingActionData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  pendingActionReason?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -1788,6 +2360,19 @@ export type AppointmentUpdateWithoutServiceInput = {
   cancelledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   cancelReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reminderSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder8hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder2hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder1hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  paymentStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  paymentProofUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  pendingAction?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pendingActionAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  pendingActionData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  pendingActionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   store?: Prisma.StoreUpdateOneRequiredWithoutAppointmentsNestedInput
@@ -1819,6 +2404,19 @@ export type AppointmentUncheckedUpdateWithoutServiceInput = {
   cancelledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   cancelReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reminderSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder8hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder2hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder1hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  paymentStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  paymentProofUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  pendingAction?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pendingActionAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  pendingActionData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  pendingActionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   timeline?: Prisma.AppointmentTimelineUncheckedUpdateManyWithoutAppointmentNestedInput
@@ -1847,6 +2445,19 @@ export type AppointmentUncheckedUpdateManyWithoutServiceInput = {
   cancelledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   cancelReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reminderSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder8hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder2hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder1hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  paymentStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  paymentProofUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  pendingAction?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pendingActionAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  pendingActionData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  pendingActionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -1874,6 +2485,19 @@ export type AppointmentCreateManyServiceVariantInput = {
   cancelledAt?: Date | string | null
   cancelReason?: string | null
   reminderSentAt?: Date | string | null
+  reminder8hSentAt?: Date | string | null
+  reminder2hSentAt?: Date | string | null
+  reminder1hSentAt?: Date | string | null
+  paymentStatus?: string
+  paymentMethod?: string | null
+  paymentAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  paymentProofUrl?: string | null
+  paymentNotes?: string | null
+  paymentConfirmedAt?: Date | string | null
+  pendingAction?: string | null
+  pendingActionAt?: Date | string | null
+  pendingActionData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  pendingActionReason?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -1898,6 +2522,19 @@ export type AppointmentUpdateWithoutServiceVariantInput = {
   cancelledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   cancelReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reminderSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder8hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder2hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder1hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  paymentStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  paymentProofUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  pendingAction?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pendingActionAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  pendingActionData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  pendingActionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   store?: Prisma.StoreUpdateOneRequiredWithoutAppointmentsNestedInput
@@ -1929,6 +2566,19 @@ export type AppointmentUncheckedUpdateWithoutServiceVariantInput = {
   cancelledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   cancelReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reminderSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder8hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder2hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder1hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  paymentStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  paymentProofUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  pendingAction?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pendingActionAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  pendingActionData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  pendingActionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   timeline?: Prisma.AppointmentTimelineUncheckedUpdateManyWithoutAppointmentNestedInput
@@ -1957,6 +2607,19 @@ export type AppointmentUncheckedUpdateManyWithoutServiceVariantInput = {
   cancelledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   cancelReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reminderSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder8hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder2hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  reminder1hSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  paymentStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  paymentProofUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  pendingAction?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pendingActionAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  pendingActionData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  pendingActionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -2016,6 +2679,19 @@ export type AppointmentSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   cancelledAt?: boolean
   cancelReason?: boolean
   reminderSentAt?: boolean
+  reminder8hSentAt?: boolean
+  reminder2hSentAt?: boolean
+  reminder1hSentAt?: boolean
+  paymentStatus?: boolean
+  paymentMethod?: boolean
+  paymentAmount?: boolean
+  paymentProofUrl?: boolean
+  paymentNotes?: boolean
+  paymentConfirmedAt?: boolean
+  pendingAction?: boolean
+  pendingActionAt?: boolean
+  pendingActionData?: boolean
+  pendingActionReason?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   store?: boolean | Prisma.StoreDefaultArgs<ExtArgs>
@@ -2050,6 +2726,19 @@ export type AppointmentSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   cancelledAt?: boolean
   cancelReason?: boolean
   reminderSentAt?: boolean
+  reminder8hSentAt?: boolean
+  reminder2hSentAt?: boolean
+  reminder1hSentAt?: boolean
+  paymentStatus?: boolean
+  paymentMethod?: boolean
+  paymentAmount?: boolean
+  paymentProofUrl?: boolean
+  paymentNotes?: boolean
+  paymentConfirmedAt?: boolean
+  pendingAction?: boolean
+  pendingActionAt?: boolean
+  pendingActionData?: boolean
+  pendingActionReason?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   store?: boolean | Prisma.StoreDefaultArgs<ExtArgs>
@@ -2082,6 +2771,19 @@ export type AppointmentSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   cancelledAt?: boolean
   cancelReason?: boolean
   reminderSentAt?: boolean
+  reminder8hSentAt?: boolean
+  reminder2hSentAt?: boolean
+  reminder1hSentAt?: boolean
+  paymentStatus?: boolean
+  paymentMethod?: boolean
+  paymentAmount?: boolean
+  paymentProofUrl?: boolean
+  paymentNotes?: boolean
+  paymentConfirmedAt?: boolean
+  pendingAction?: boolean
+  pendingActionAt?: boolean
+  pendingActionData?: boolean
+  pendingActionReason?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   store?: boolean | Prisma.StoreDefaultArgs<ExtArgs>
@@ -2114,11 +2816,24 @@ export type AppointmentSelectScalar = {
   cancelledAt?: boolean
   cancelReason?: boolean
   reminderSentAt?: boolean
+  reminder8hSentAt?: boolean
+  reminder2hSentAt?: boolean
+  reminder1hSentAt?: boolean
+  paymentStatus?: boolean
+  paymentMethod?: boolean
+  paymentAmount?: boolean
+  paymentProofUrl?: boolean
+  paymentNotes?: boolean
+  paymentConfirmedAt?: boolean
+  pendingAction?: boolean
+  pendingActionAt?: boolean
+  pendingActionData?: boolean
+  pendingActionReason?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type AppointmentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"appointmentId" | "storeId" | "customerId" | "serviceId" | "serviceVariantId" | "type" | "status" | "priority" | "source" | "scheduledAt" | "endsAt" | "durationMinutes" | "description" | "address" | "notes" | "internalNotes" | "agreedPrice" | "confirmedAt" | "startedAt" | "completedAt" | "cancelledAt" | "cancelReason" | "reminderSentAt" | "createdAt" | "updatedAt", ExtArgs["result"]["appointment"]>
+export type AppointmentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"appointmentId" | "storeId" | "customerId" | "serviceId" | "serviceVariantId" | "type" | "status" | "priority" | "source" | "scheduledAt" | "endsAt" | "durationMinutes" | "description" | "address" | "notes" | "internalNotes" | "agreedPrice" | "confirmedAt" | "startedAt" | "completedAt" | "cancelledAt" | "cancelReason" | "reminderSentAt" | "reminder8hSentAt" | "reminder2hSentAt" | "reminder1hSentAt" | "paymentStatus" | "paymentMethod" | "paymentAmount" | "paymentProofUrl" | "paymentNotes" | "paymentConfirmedAt" | "pendingAction" | "pendingActionAt" | "pendingActionData" | "pendingActionReason" | "createdAt" | "updatedAt", ExtArgs["result"]["appointment"]>
 export type AppointmentInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   store?: boolean | Prisma.StoreDefaultArgs<ExtArgs>
   customer?: boolean | Prisma.CustomerDefaultArgs<ExtArgs>
@@ -2173,6 +2888,19 @@ export type $AppointmentPayload<ExtArgs extends runtime.Types.Extensions.Interna
     cancelledAt: Date | null
     cancelReason: string | null
     reminderSentAt: Date | null
+    reminder8hSentAt: Date | null
+    reminder2hSentAt: Date | null
+    reminder1hSentAt: Date | null
+    paymentStatus: string
+    paymentMethod: string | null
+    paymentAmount: runtime.Decimal | null
+    paymentProofUrl: string | null
+    paymentNotes: string | null
+    paymentConfirmedAt: Date | null
+    pendingAction: string | null
+    pendingActionAt: Date | null
+    pendingActionData: runtime.JsonValue | null
+    pendingActionReason: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["appointment"]>
@@ -2626,6 +3354,19 @@ export interface AppointmentFieldRefs {
   readonly cancelledAt: Prisma.FieldRef<"Appointment", 'DateTime'>
   readonly cancelReason: Prisma.FieldRef<"Appointment", 'String'>
   readonly reminderSentAt: Prisma.FieldRef<"Appointment", 'DateTime'>
+  readonly reminder8hSentAt: Prisma.FieldRef<"Appointment", 'DateTime'>
+  readonly reminder2hSentAt: Prisma.FieldRef<"Appointment", 'DateTime'>
+  readonly reminder1hSentAt: Prisma.FieldRef<"Appointment", 'DateTime'>
+  readonly paymentStatus: Prisma.FieldRef<"Appointment", 'String'>
+  readonly paymentMethod: Prisma.FieldRef<"Appointment", 'String'>
+  readonly paymentAmount: Prisma.FieldRef<"Appointment", 'Decimal'>
+  readonly paymentProofUrl: Prisma.FieldRef<"Appointment", 'String'>
+  readonly paymentNotes: Prisma.FieldRef<"Appointment", 'String'>
+  readonly paymentConfirmedAt: Prisma.FieldRef<"Appointment", 'DateTime'>
+  readonly pendingAction: Prisma.FieldRef<"Appointment", 'String'>
+  readonly pendingActionAt: Prisma.FieldRef<"Appointment", 'DateTime'>
+  readonly pendingActionData: Prisma.FieldRef<"Appointment", 'Json'>
+  readonly pendingActionReason: Prisma.FieldRef<"Appointment", 'String'>
   readonly createdAt: Prisma.FieldRef<"Appointment", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Appointment", 'DateTime'>
 }

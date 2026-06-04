@@ -111,9 +111,9 @@ export class OrdersService {
     return order;
   }
 
-  async findAllByStore(storeId: string) {
+  async findAllByStore(storeId: string, type?: string) {
     return this.prisma.order.findMany({
-      where:   { storeId },
+      where:   { storeId, ...(type ? { type } : {}) },
       include: {
         customer:   true,
         orderItems: { include: { product: true, service: true } },

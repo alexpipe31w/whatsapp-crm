@@ -29,6 +29,7 @@ export type StoreMinAggregateOutputType = {
   name: string | null
   phone: string | null
   ownerName: string | null
+  adminPhone: string | null
   waSessionId: string | null
   isActive: boolean | null
   primaryColor: string | null
@@ -46,6 +47,7 @@ export type StoreMaxAggregateOutputType = {
   name: string | null
   phone: string | null
   ownerName: string | null
+  adminPhone: string | null
   waSessionId: string | null
   isActive: boolean | null
   primaryColor: string | null
@@ -63,6 +65,7 @@ export type StoreCountAggregateOutputType = {
   name: number
   phone: number
   ownerName: number
+  adminPhone: number
   waSessionId: number
   isActive: number
   primaryColor: number
@@ -82,6 +85,7 @@ export type StoreMinAggregateInputType = {
   name?: true
   phone?: true
   ownerName?: true
+  adminPhone?: true
   waSessionId?: true
   isActive?: true
   primaryColor?: true
@@ -99,6 +103,7 @@ export type StoreMaxAggregateInputType = {
   name?: true
   phone?: true
   ownerName?: true
+  adminPhone?: true
   waSessionId?: true
   isActive?: true
   primaryColor?: true
@@ -116,6 +121,7 @@ export type StoreCountAggregateInputType = {
   name?: true
   phone?: true
   ownerName?: true
+  adminPhone?: true
   waSessionId?: true
   isActive?: true
   primaryColor?: true
@@ -206,6 +212,7 @@ export type StoreGroupByOutputType = {
   name: string
   phone: string
   ownerName: string | null
+  adminPhone: string | null
   waSessionId: string | null
   isActive: boolean
   primaryColor: string | null
@@ -244,6 +251,7 @@ export type StoreWhereInput = {
   name?: Prisma.StringFilter<"Store"> | string
   phone?: Prisma.StringFilter<"Store"> | string
   ownerName?: Prisma.StringNullableFilter<"Store"> | string | null
+  adminPhone?: Prisma.StringNullableFilter<"Store"> | string | null
   waSessionId?: Prisma.StringNullableFilter<"Store"> | string | null
   isActive?: Prisma.BoolFilter<"Store"> | boolean
   primaryColor?: Prisma.StringNullableFilter<"Store"> | string | null
@@ -268,6 +276,7 @@ export type StoreWhereInput = {
   blockedContacts?: Prisma.BlockedContactListRelationFilter
   waSession?: Prisma.XOR<Prisma.WhatsappSessionNullableScalarRelationFilter, Prisma.WhatsappSessionWhereInput> | null
   subscription?: Prisma.XOR<Prisma.SubscriptionNullableScalarRelationFilter, Prisma.SubscriptionWhereInput> | null
+  dailyReports?: Prisma.DailyReportListRelationFilter
 }
 
 export type StoreOrderByWithRelationInput = {
@@ -275,6 +284,7 @@ export type StoreOrderByWithRelationInput = {
   name?: Prisma.SortOrder
   phone?: Prisma.SortOrder
   ownerName?: Prisma.SortOrderInput | Prisma.SortOrder
+  adminPhone?: Prisma.SortOrderInput | Prisma.SortOrder
   waSessionId?: Prisma.SortOrderInput | Prisma.SortOrder
   isActive?: Prisma.SortOrder
   primaryColor?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -299,6 +309,7 @@ export type StoreOrderByWithRelationInput = {
   blockedContacts?: Prisma.BlockedContactOrderByRelationAggregateInput
   waSession?: Prisma.WhatsappSessionOrderByWithRelationInput
   subscription?: Prisma.SubscriptionOrderByWithRelationInput
+  dailyReports?: Prisma.DailyReportOrderByRelationAggregateInput
 }
 
 export type StoreWhereUniqueInput = Prisma.AtLeast<{
@@ -310,6 +321,7 @@ export type StoreWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.StoreWhereInput | Prisma.StoreWhereInput[]
   name?: Prisma.StringFilter<"Store"> | string
   ownerName?: Prisma.StringNullableFilter<"Store"> | string | null
+  adminPhone?: Prisma.StringNullableFilter<"Store"> | string | null
   isActive?: Prisma.BoolFilter<"Store"> | boolean
   primaryColor?: Prisma.StringNullableFilter<"Store"> | string | null
   secondaryColor?: Prisma.StringNullableFilter<"Store"> | string | null
@@ -333,6 +345,7 @@ export type StoreWhereUniqueInput = Prisma.AtLeast<{
   blockedContacts?: Prisma.BlockedContactListRelationFilter
   waSession?: Prisma.XOR<Prisma.WhatsappSessionNullableScalarRelationFilter, Prisma.WhatsappSessionWhereInput> | null
   subscription?: Prisma.XOR<Prisma.SubscriptionNullableScalarRelationFilter, Prisma.SubscriptionWhereInput> | null
+  dailyReports?: Prisma.DailyReportListRelationFilter
 }, "storeId" | "phone" | "waSessionId">
 
 export type StoreOrderByWithAggregationInput = {
@@ -340,6 +353,7 @@ export type StoreOrderByWithAggregationInput = {
   name?: Prisma.SortOrder
   phone?: Prisma.SortOrder
   ownerName?: Prisma.SortOrderInput | Prisma.SortOrder
+  adminPhone?: Prisma.SortOrderInput | Prisma.SortOrder
   waSessionId?: Prisma.SortOrderInput | Prisma.SortOrder
   isActive?: Prisma.SortOrder
   primaryColor?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -363,6 +377,7 @@ export type StoreScalarWhereWithAggregatesInput = {
   name?: Prisma.StringWithAggregatesFilter<"Store"> | string
   phone?: Prisma.StringWithAggregatesFilter<"Store"> | string
   ownerName?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
+  adminPhone?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
   waSessionId?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
   isActive?: Prisma.BoolWithAggregatesFilter<"Store"> | boolean
   primaryColor?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
@@ -380,6 +395,7 @@ export type StoreCreateInput = {
   name: string
   phone: string
   ownerName?: string | null
+  adminPhone?: string | null
   waSessionId?: string | null
   isActive?: boolean
   primaryColor?: string | null
@@ -404,6 +420,7 @@ export type StoreCreateInput = {
   blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
+  dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateInput = {
@@ -411,6 +428,7 @@ export type StoreUncheckedCreateInput = {
   name: string
   phone: string
   ownerName?: string | null
+  adminPhone?: string | null
   waSessionId?: string | null
   isActive?: boolean
   primaryColor?: string | null
@@ -435,6 +453,7 @@ export type StoreUncheckedCreateInput = {
   blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
+  dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUpdateInput = {
@@ -442,6 +461,7 @@ export type StoreUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -466,6 +486,7 @@ export type StoreUpdateInput = {
   blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
+  dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateInput = {
@@ -473,6 +494,7 @@ export type StoreUncheckedUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -497,6 +519,7 @@ export type StoreUncheckedUpdateInput = {
   blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
+  dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateManyInput = {
@@ -504,6 +527,7 @@ export type StoreCreateManyInput = {
   name: string
   phone: string
   ownerName?: string | null
+  adminPhone?: string | null
   waSessionId?: string | null
   isActive?: boolean
   primaryColor?: string | null
@@ -521,6 +545,7 @@ export type StoreUpdateManyMutationInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -538,6 +563,7 @@ export type StoreUncheckedUpdateManyInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -555,6 +581,7 @@ export type StoreCountOrderByAggregateInput = {
   name?: Prisma.SortOrder
   phone?: Prisma.SortOrder
   ownerName?: Prisma.SortOrder
+  adminPhone?: Prisma.SortOrder
   waSessionId?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   primaryColor?: Prisma.SortOrder
@@ -572,6 +599,7 @@ export type StoreMaxOrderByAggregateInput = {
   name?: Prisma.SortOrder
   phone?: Prisma.SortOrder
   ownerName?: Prisma.SortOrder
+  adminPhone?: Prisma.SortOrder
   waSessionId?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   primaryColor?: Prisma.SortOrder
@@ -589,6 +617,7 @@ export type StoreMinOrderByAggregateInput = {
   name?: Prisma.SortOrder
   phone?: Prisma.SortOrder
   ownerName?: Prisma.SortOrder
+  adminPhone?: Prisma.SortOrder
   waSessionId?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   primaryColor?: Prisma.SortOrder
@@ -743,6 +772,20 @@ export type StoreUpdateOneRequiredWithoutAppointmentsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.StoreUpdateToOneWithWhereWithoutAppointmentsInput, Prisma.StoreUpdateWithoutAppointmentsInput>, Prisma.StoreUncheckedUpdateWithoutAppointmentsInput>
 }
 
+export type StoreCreateNestedOneWithoutDailyReportsInput = {
+  create?: Prisma.XOR<Prisma.StoreCreateWithoutDailyReportsInput, Prisma.StoreUncheckedCreateWithoutDailyReportsInput>
+  connectOrCreate?: Prisma.StoreCreateOrConnectWithoutDailyReportsInput
+  connect?: Prisma.StoreWhereUniqueInput
+}
+
+export type StoreUpdateOneRequiredWithoutDailyReportsNestedInput = {
+  create?: Prisma.XOR<Prisma.StoreCreateWithoutDailyReportsInput, Prisma.StoreUncheckedCreateWithoutDailyReportsInput>
+  connectOrCreate?: Prisma.StoreCreateOrConnectWithoutDailyReportsInput
+  upsert?: Prisma.StoreUpsertWithoutDailyReportsInput
+  connect?: Prisma.StoreWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.StoreUpdateToOneWithWhereWithoutDailyReportsInput, Prisma.StoreUpdateWithoutDailyReportsInput>, Prisma.StoreUncheckedUpdateWithoutDailyReportsInput>
+}
+
 export type StoreCreateNestedOneWithoutAiConfigInput = {
   create?: Prisma.XOR<Prisma.StoreCreateWithoutAiConfigInput, Prisma.StoreUncheckedCreateWithoutAiConfigInput>
   connectOrCreate?: Prisma.StoreCreateOrConnectWithoutAiConfigInput
@@ -834,6 +877,7 @@ export type StoreCreateWithoutCustomersInput = {
   name: string
   phone: string
   ownerName?: string | null
+  adminPhone?: string | null
   waSessionId?: string | null
   isActive?: boolean
   primaryColor?: string | null
@@ -857,6 +901,7 @@ export type StoreCreateWithoutCustomersInput = {
   blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
+  dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutCustomersInput = {
@@ -864,6 +909,7 @@ export type StoreUncheckedCreateWithoutCustomersInput = {
   name: string
   phone: string
   ownerName?: string | null
+  adminPhone?: string | null
   waSessionId?: string | null
   isActive?: boolean
   primaryColor?: string | null
@@ -887,6 +933,7 @@ export type StoreUncheckedCreateWithoutCustomersInput = {
   blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
+  dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutCustomersInput = {
@@ -910,6 +957,7 @@ export type StoreUpdateWithoutCustomersInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -933,6 +981,7 @@ export type StoreUpdateWithoutCustomersInput = {
   blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
+  dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutCustomersInput = {
@@ -940,6 +989,7 @@ export type StoreUncheckedUpdateWithoutCustomersInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -963,6 +1013,7 @@ export type StoreUncheckedUpdateWithoutCustomersInput = {
   blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
+  dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutConversationsInput = {
@@ -970,6 +1021,7 @@ export type StoreCreateWithoutConversationsInput = {
   name: string
   phone: string
   ownerName?: string | null
+  adminPhone?: string | null
   waSessionId?: string | null
   isActive?: boolean
   primaryColor?: string | null
@@ -993,6 +1045,7 @@ export type StoreCreateWithoutConversationsInput = {
   blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
+  dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutConversationsInput = {
@@ -1000,6 +1053,7 @@ export type StoreUncheckedCreateWithoutConversationsInput = {
   name: string
   phone: string
   ownerName?: string | null
+  adminPhone?: string | null
   waSessionId?: string | null
   isActive?: boolean
   primaryColor?: string | null
@@ -1023,6 +1077,7 @@ export type StoreUncheckedCreateWithoutConversationsInput = {
   blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
+  dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutConversationsInput = {
@@ -1046,6 +1101,7 @@ export type StoreUpdateWithoutConversationsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1069,6 +1125,7 @@ export type StoreUpdateWithoutConversationsInput = {
   blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
+  dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutConversationsInput = {
@@ -1076,6 +1133,7 @@ export type StoreUncheckedUpdateWithoutConversationsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1099,6 +1157,7 @@ export type StoreUncheckedUpdateWithoutConversationsInput = {
   blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
+  dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutMessagesInput = {
@@ -1106,6 +1165,7 @@ export type StoreCreateWithoutMessagesInput = {
   name: string
   phone: string
   ownerName?: string | null
+  adminPhone?: string | null
   waSessionId?: string | null
   isActive?: boolean
   primaryColor?: string | null
@@ -1129,6 +1189,7 @@ export type StoreCreateWithoutMessagesInput = {
   blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
+  dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutMessagesInput = {
@@ -1136,6 +1197,7 @@ export type StoreUncheckedCreateWithoutMessagesInput = {
   name: string
   phone: string
   ownerName?: string | null
+  adminPhone?: string | null
   waSessionId?: string | null
   isActive?: boolean
   primaryColor?: string | null
@@ -1159,6 +1221,7 @@ export type StoreUncheckedCreateWithoutMessagesInput = {
   blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
+  dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutMessagesInput = {
@@ -1182,6 +1245,7 @@ export type StoreUpdateWithoutMessagesInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1205,6 +1269,7 @@ export type StoreUpdateWithoutMessagesInput = {
   blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
+  dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutMessagesInput = {
@@ -1212,6 +1277,7 @@ export type StoreUncheckedUpdateWithoutMessagesInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1235,6 +1301,7 @@ export type StoreUncheckedUpdateWithoutMessagesInput = {
   blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
+  dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutCategoriesInput = {
@@ -1242,6 +1309,7 @@ export type StoreCreateWithoutCategoriesInput = {
   name: string
   phone: string
   ownerName?: string | null
+  adminPhone?: string | null
   waSessionId?: string | null
   isActive?: boolean
   primaryColor?: string | null
@@ -1265,6 +1333,7 @@ export type StoreCreateWithoutCategoriesInput = {
   blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
+  dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutCategoriesInput = {
@@ -1272,6 +1341,7 @@ export type StoreUncheckedCreateWithoutCategoriesInput = {
   name: string
   phone: string
   ownerName?: string | null
+  adminPhone?: string | null
   waSessionId?: string | null
   isActive?: boolean
   primaryColor?: string | null
@@ -1295,6 +1365,7 @@ export type StoreUncheckedCreateWithoutCategoriesInput = {
   blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
+  dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutCategoriesInput = {
@@ -1318,6 +1389,7 @@ export type StoreUpdateWithoutCategoriesInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1341,6 +1413,7 @@ export type StoreUpdateWithoutCategoriesInput = {
   blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
+  dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutCategoriesInput = {
@@ -1348,6 +1421,7 @@ export type StoreUncheckedUpdateWithoutCategoriesInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1371,6 +1445,7 @@ export type StoreUncheckedUpdateWithoutCategoriesInput = {
   blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
+  dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutProductsInput = {
@@ -1378,6 +1453,7 @@ export type StoreCreateWithoutProductsInput = {
   name: string
   phone: string
   ownerName?: string | null
+  adminPhone?: string | null
   waSessionId?: string | null
   isActive?: boolean
   primaryColor?: string | null
@@ -1401,6 +1477,7 @@ export type StoreCreateWithoutProductsInput = {
   blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
+  dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutProductsInput = {
@@ -1408,6 +1485,7 @@ export type StoreUncheckedCreateWithoutProductsInput = {
   name: string
   phone: string
   ownerName?: string | null
+  adminPhone?: string | null
   waSessionId?: string | null
   isActive?: boolean
   primaryColor?: string | null
@@ -1431,6 +1509,7 @@ export type StoreUncheckedCreateWithoutProductsInput = {
   blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
+  dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutProductsInput = {
@@ -1454,6 +1533,7 @@ export type StoreUpdateWithoutProductsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1477,6 +1557,7 @@ export type StoreUpdateWithoutProductsInput = {
   blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
+  dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutProductsInput = {
@@ -1484,6 +1565,7 @@ export type StoreUncheckedUpdateWithoutProductsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1507,6 +1589,7 @@ export type StoreUncheckedUpdateWithoutProductsInput = {
   blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
+  dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutServicesInput = {
@@ -1514,6 +1597,7 @@ export type StoreCreateWithoutServicesInput = {
   name: string
   phone: string
   ownerName?: string | null
+  adminPhone?: string | null
   waSessionId?: string | null
   isActive?: boolean
   primaryColor?: string | null
@@ -1537,6 +1621,7 @@ export type StoreCreateWithoutServicesInput = {
   blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
+  dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutServicesInput = {
@@ -1544,6 +1629,7 @@ export type StoreUncheckedCreateWithoutServicesInput = {
   name: string
   phone: string
   ownerName?: string | null
+  adminPhone?: string | null
   waSessionId?: string | null
   isActive?: boolean
   primaryColor?: string | null
@@ -1567,6 +1653,7 @@ export type StoreUncheckedCreateWithoutServicesInput = {
   blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
+  dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutServicesInput = {
@@ -1590,6 +1677,7 @@ export type StoreUpdateWithoutServicesInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1613,6 +1701,7 @@ export type StoreUpdateWithoutServicesInput = {
   blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
+  dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutServicesInput = {
@@ -1620,6 +1709,7 @@ export type StoreUncheckedUpdateWithoutServicesInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1643,6 +1733,7 @@ export type StoreUncheckedUpdateWithoutServicesInput = {
   blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
+  dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutOrdersInput = {
@@ -1650,6 +1741,7 @@ export type StoreCreateWithoutOrdersInput = {
   name: string
   phone: string
   ownerName?: string | null
+  adminPhone?: string | null
   waSessionId?: string | null
   isActive?: boolean
   primaryColor?: string | null
@@ -1673,6 +1765,7 @@ export type StoreCreateWithoutOrdersInput = {
   blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
+  dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutOrdersInput = {
@@ -1680,6 +1773,7 @@ export type StoreUncheckedCreateWithoutOrdersInput = {
   name: string
   phone: string
   ownerName?: string | null
+  adminPhone?: string | null
   waSessionId?: string | null
   isActive?: boolean
   primaryColor?: string | null
@@ -1703,6 +1797,7 @@ export type StoreUncheckedCreateWithoutOrdersInput = {
   blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
+  dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutOrdersInput = {
@@ -1726,6 +1821,7 @@ export type StoreUpdateWithoutOrdersInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1749,6 +1845,7 @@ export type StoreUpdateWithoutOrdersInput = {
   blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
+  dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutOrdersInput = {
@@ -1756,6 +1853,7 @@ export type StoreUncheckedUpdateWithoutOrdersInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1779,6 +1877,7 @@ export type StoreUncheckedUpdateWithoutOrdersInput = {
   blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
+  dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutAppointmentsInput = {
@@ -1786,6 +1885,7 @@ export type StoreCreateWithoutAppointmentsInput = {
   name: string
   phone: string
   ownerName?: string | null
+  adminPhone?: string | null
   waSessionId?: string | null
   isActive?: boolean
   primaryColor?: string | null
@@ -1809,6 +1909,7 @@ export type StoreCreateWithoutAppointmentsInput = {
   blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
+  dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutAppointmentsInput = {
@@ -1816,6 +1917,7 @@ export type StoreUncheckedCreateWithoutAppointmentsInput = {
   name: string
   phone: string
   ownerName?: string | null
+  adminPhone?: string | null
   waSessionId?: string | null
   isActive?: boolean
   primaryColor?: string | null
@@ -1839,6 +1941,7 @@ export type StoreUncheckedCreateWithoutAppointmentsInput = {
   blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
+  dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutAppointmentsInput = {
@@ -1862,6 +1965,7 @@ export type StoreUpdateWithoutAppointmentsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1885,6 +1989,7 @@ export type StoreUpdateWithoutAppointmentsInput = {
   blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
+  dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutAppointmentsInput = {
@@ -1892,6 +1997,7 @@ export type StoreUncheckedUpdateWithoutAppointmentsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1915,6 +2021,151 @@ export type StoreUncheckedUpdateWithoutAppointmentsInput = {
   blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
+  dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
+}
+
+export type StoreCreateWithoutDailyReportsInput = {
+  storeId?: string
+  name: string
+  phone: string
+  ownerName?: string | null
+  adminPhone?: string | null
+  waSessionId?: string | null
+  isActive?: boolean
+  primaryColor?: string | null
+  secondaryColor?: string | null
+  accentColor?: string | null
+  subscriptionStatus?: string
+  subscriptionEnd?: Date | string | null
+  apiBlocked?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  customers?: Prisma.CustomerCreateNestedManyWithoutStoreInput
+  conversations?: Prisma.ConversationCreateNestedManyWithoutStoreInput
+  messages?: Prisma.MessageCreateNestedManyWithoutStoreInput
+  products?: Prisma.ProductCreateNestedManyWithoutStoreInput
+  categories?: Prisma.CategoryCreateNestedManyWithoutStoreInput
+  users?: Prisma.UserCreateNestedManyWithoutStoreInput
+  services?: Prisma.ServiceCreateNestedManyWithoutStoreInput
+  orders?: Prisma.OrderCreateNestedManyWithoutStoreInput
+  appointments?: Prisma.AppointmentCreateNestedManyWithoutStoreInput
+  campaigns?: Prisma.CampaignCreateNestedManyWithoutStoreInput
+  aiConfig?: Prisma.AIConfigurationCreateNestedOneWithoutStoreInput
+  blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
+  waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
+  subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
+}
+
+export type StoreUncheckedCreateWithoutDailyReportsInput = {
+  storeId?: string
+  name: string
+  phone: string
+  ownerName?: string | null
+  adminPhone?: string | null
+  waSessionId?: string | null
+  isActive?: boolean
+  primaryColor?: string | null
+  secondaryColor?: string | null
+  accentColor?: string | null
+  subscriptionStatus?: string
+  subscriptionEnd?: Date | string | null
+  apiBlocked?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  customers?: Prisma.CustomerUncheckedCreateNestedManyWithoutStoreInput
+  conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutStoreInput
+  messages?: Prisma.MessageUncheckedCreateNestedManyWithoutStoreInput
+  products?: Prisma.ProductUncheckedCreateNestedManyWithoutStoreInput
+  categories?: Prisma.CategoryUncheckedCreateNestedManyWithoutStoreInput
+  users?: Prisma.UserUncheckedCreateNestedManyWithoutStoreInput
+  services?: Prisma.ServiceUncheckedCreateNestedManyWithoutStoreInput
+  orders?: Prisma.OrderUncheckedCreateNestedManyWithoutStoreInput
+  appointments?: Prisma.AppointmentUncheckedCreateNestedManyWithoutStoreInput
+  campaigns?: Prisma.CampaignUncheckedCreateNestedManyWithoutStoreInput
+  aiConfig?: Prisma.AIConfigurationUncheckedCreateNestedOneWithoutStoreInput
+  blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
+  waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
+  subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
+}
+
+export type StoreCreateOrConnectWithoutDailyReportsInput = {
+  where: Prisma.StoreWhereUniqueInput
+  create: Prisma.XOR<Prisma.StoreCreateWithoutDailyReportsInput, Prisma.StoreUncheckedCreateWithoutDailyReportsInput>
+}
+
+export type StoreUpsertWithoutDailyReportsInput = {
+  update: Prisma.XOR<Prisma.StoreUpdateWithoutDailyReportsInput, Prisma.StoreUncheckedUpdateWithoutDailyReportsInput>
+  create: Prisma.XOR<Prisma.StoreCreateWithoutDailyReportsInput, Prisma.StoreUncheckedCreateWithoutDailyReportsInput>
+  where?: Prisma.StoreWhereInput
+}
+
+export type StoreUpdateToOneWithWhereWithoutDailyReportsInput = {
+  where?: Prisma.StoreWhereInput
+  data: Prisma.XOR<Prisma.StoreUpdateWithoutDailyReportsInput, Prisma.StoreUncheckedUpdateWithoutDailyReportsInput>
+}
+
+export type StoreUpdateWithoutDailyReportsInput = {
+  storeId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  apiBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  customers?: Prisma.CustomerUpdateManyWithoutStoreNestedInput
+  conversations?: Prisma.ConversationUpdateManyWithoutStoreNestedInput
+  messages?: Prisma.MessageUpdateManyWithoutStoreNestedInput
+  products?: Prisma.ProductUpdateManyWithoutStoreNestedInput
+  categories?: Prisma.CategoryUpdateManyWithoutStoreNestedInput
+  users?: Prisma.UserUpdateManyWithoutStoreNestedInput
+  services?: Prisma.ServiceUpdateManyWithoutStoreNestedInput
+  orders?: Prisma.OrderUpdateManyWithoutStoreNestedInput
+  appointments?: Prisma.AppointmentUpdateManyWithoutStoreNestedInput
+  campaigns?: Prisma.CampaignUpdateManyWithoutStoreNestedInput
+  aiConfig?: Prisma.AIConfigurationUpdateOneWithoutStoreNestedInput
+  blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
+  waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
+  subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
+}
+
+export type StoreUncheckedUpdateWithoutDailyReportsInput = {
+  storeId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  apiBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  customers?: Prisma.CustomerUncheckedUpdateManyWithoutStoreNestedInput
+  conversations?: Prisma.ConversationUncheckedUpdateManyWithoutStoreNestedInput
+  messages?: Prisma.MessageUncheckedUpdateManyWithoutStoreNestedInput
+  products?: Prisma.ProductUncheckedUpdateManyWithoutStoreNestedInput
+  categories?: Prisma.CategoryUncheckedUpdateManyWithoutStoreNestedInput
+  users?: Prisma.UserUncheckedUpdateManyWithoutStoreNestedInput
+  services?: Prisma.ServiceUncheckedUpdateManyWithoutStoreNestedInput
+  orders?: Prisma.OrderUncheckedUpdateManyWithoutStoreNestedInput
+  appointments?: Prisma.AppointmentUncheckedUpdateManyWithoutStoreNestedInput
+  campaigns?: Prisma.CampaignUncheckedUpdateManyWithoutStoreNestedInput
+  aiConfig?: Prisma.AIConfigurationUncheckedUpdateOneWithoutStoreNestedInput
+  blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
+  waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
+  subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutAiConfigInput = {
@@ -1922,6 +2173,7 @@ export type StoreCreateWithoutAiConfigInput = {
   name: string
   phone: string
   ownerName?: string | null
+  adminPhone?: string | null
   waSessionId?: string | null
   isActive?: boolean
   primaryColor?: string | null
@@ -1945,6 +2197,7 @@ export type StoreCreateWithoutAiConfigInput = {
   blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
+  dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutAiConfigInput = {
@@ -1952,6 +2205,7 @@ export type StoreUncheckedCreateWithoutAiConfigInput = {
   name: string
   phone: string
   ownerName?: string | null
+  adminPhone?: string | null
   waSessionId?: string | null
   isActive?: boolean
   primaryColor?: string | null
@@ -1975,6 +2229,7 @@ export type StoreUncheckedCreateWithoutAiConfigInput = {
   blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
+  dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutAiConfigInput = {
@@ -1998,6 +2253,7 @@ export type StoreUpdateWithoutAiConfigInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2021,6 +2277,7 @@ export type StoreUpdateWithoutAiConfigInput = {
   blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
+  dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutAiConfigInput = {
@@ -2028,6 +2285,7 @@ export type StoreUncheckedUpdateWithoutAiConfigInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2051,6 +2309,7 @@ export type StoreUncheckedUpdateWithoutAiConfigInput = {
   blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
+  dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutCampaignsInput = {
@@ -2058,6 +2317,7 @@ export type StoreCreateWithoutCampaignsInput = {
   name: string
   phone: string
   ownerName?: string | null
+  adminPhone?: string | null
   waSessionId?: string | null
   isActive?: boolean
   primaryColor?: string | null
@@ -2081,6 +2341,7 @@ export type StoreCreateWithoutCampaignsInput = {
   blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
+  dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutCampaignsInput = {
@@ -2088,6 +2349,7 @@ export type StoreUncheckedCreateWithoutCampaignsInput = {
   name: string
   phone: string
   ownerName?: string | null
+  adminPhone?: string | null
   waSessionId?: string | null
   isActive?: boolean
   primaryColor?: string | null
@@ -2111,6 +2373,7 @@ export type StoreUncheckedCreateWithoutCampaignsInput = {
   blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
+  dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutCampaignsInput = {
@@ -2134,6 +2397,7 @@ export type StoreUpdateWithoutCampaignsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2157,6 +2421,7 @@ export type StoreUpdateWithoutCampaignsInput = {
   blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
+  dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutCampaignsInput = {
@@ -2164,6 +2429,7 @@ export type StoreUncheckedUpdateWithoutCampaignsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2187,6 +2453,7 @@ export type StoreUncheckedUpdateWithoutCampaignsInput = {
   blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
+  dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutUsersInput = {
@@ -2194,6 +2461,7 @@ export type StoreCreateWithoutUsersInput = {
   name: string
   phone: string
   ownerName?: string | null
+  adminPhone?: string | null
   waSessionId?: string | null
   isActive?: boolean
   primaryColor?: string | null
@@ -2217,6 +2485,7 @@ export type StoreCreateWithoutUsersInput = {
   blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
+  dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutUsersInput = {
@@ -2224,6 +2493,7 @@ export type StoreUncheckedCreateWithoutUsersInput = {
   name: string
   phone: string
   ownerName?: string | null
+  adminPhone?: string | null
   waSessionId?: string | null
   isActive?: boolean
   primaryColor?: string | null
@@ -2247,6 +2517,7 @@ export type StoreUncheckedCreateWithoutUsersInput = {
   blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
+  dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutUsersInput = {
@@ -2270,6 +2541,7 @@ export type StoreUpdateWithoutUsersInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2293,6 +2565,7 @@ export type StoreUpdateWithoutUsersInput = {
   blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
+  dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutUsersInput = {
@@ -2300,6 +2573,7 @@ export type StoreUncheckedUpdateWithoutUsersInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2323,6 +2597,7 @@ export type StoreUncheckedUpdateWithoutUsersInput = {
   blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
+  dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutBlockedContactsInput = {
@@ -2330,6 +2605,7 @@ export type StoreCreateWithoutBlockedContactsInput = {
   name: string
   phone: string
   ownerName?: string | null
+  adminPhone?: string | null
   waSessionId?: string | null
   isActive?: boolean
   primaryColor?: string | null
@@ -2353,6 +2629,7 @@ export type StoreCreateWithoutBlockedContactsInput = {
   aiConfig?: Prisma.AIConfigurationCreateNestedOneWithoutStoreInput
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
+  dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutBlockedContactsInput = {
@@ -2360,6 +2637,7 @@ export type StoreUncheckedCreateWithoutBlockedContactsInput = {
   name: string
   phone: string
   ownerName?: string | null
+  adminPhone?: string | null
   waSessionId?: string | null
   isActive?: boolean
   primaryColor?: string | null
@@ -2383,6 +2661,7 @@ export type StoreUncheckedCreateWithoutBlockedContactsInput = {
   aiConfig?: Prisma.AIConfigurationUncheckedCreateNestedOneWithoutStoreInput
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
+  dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutBlockedContactsInput = {
@@ -2406,6 +2685,7 @@ export type StoreUpdateWithoutBlockedContactsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2429,6 +2709,7 @@ export type StoreUpdateWithoutBlockedContactsInput = {
   aiConfig?: Prisma.AIConfigurationUpdateOneWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
+  dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutBlockedContactsInput = {
@@ -2436,6 +2717,7 @@ export type StoreUncheckedUpdateWithoutBlockedContactsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2459,6 +2741,7 @@ export type StoreUncheckedUpdateWithoutBlockedContactsInput = {
   aiConfig?: Prisma.AIConfigurationUncheckedUpdateOneWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
+  dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutWaSessionInput = {
@@ -2466,6 +2749,7 @@ export type StoreCreateWithoutWaSessionInput = {
   name: string
   phone: string
   ownerName?: string | null
+  adminPhone?: string | null
   waSessionId?: string | null
   isActive?: boolean
   primaryColor?: string | null
@@ -2489,6 +2773,7 @@ export type StoreCreateWithoutWaSessionInput = {
   aiConfig?: Prisma.AIConfigurationCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
+  dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutWaSessionInput = {
@@ -2496,6 +2781,7 @@ export type StoreUncheckedCreateWithoutWaSessionInput = {
   name: string
   phone: string
   ownerName?: string | null
+  adminPhone?: string | null
   waSessionId?: string | null
   isActive?: boolean
   primaryColor?: string | null
@@ -2519,6 +2805,7 @@ export type StoreUncheckedCreateWithoutWaSessionInput = {
   aiConfig?: Prisma.AIConfigurationUncheckedCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
   subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
+  dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutWaSessionInput = {
@@ -2542,6 +2829,7 @@ export type StoreUpdateWithoutWaSessionInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2565,6 +2853,7 @@ export type StoreUpdateWithoutWaSessionInput = {
   aiConfig?: Prisma.AIConfigurationUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
+  dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutWaSessionInput = {
@@ -2572,6 +2861,7 @@ export type StoreUncheckedUpdateWithoutWaSessionInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2595,6 +2885,7 @@ export type StoreUncheckedUpdateWithoutWaSessionInput = {
   aiConfig?: Prisma.AIConfigurationUncheckedUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
+  dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutSubscriptionInput = {
@@ -2602,6 +2893,7 @@ export type StoreCreateWithoutSubscriptionInput = {
   name: string
   phone: string
   ownerName?: string | null
+  adminPhone?: string | null
   waSessionId?: string | null
   isActive?: boolean
   primaryColor?: string | null
@@ -2625,6 +2917,7 @@ export type StoreCreateWithoutSubscriptionInput = {
   aiConfig?: Prisma.AIConfigurationCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
+  dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutSubscriptionInput = {
@@ -2632,6 +2925,7 @@ export type StoreUncheckedCreateWithoutSubscriptionInput = {
   name: string
   phone: string
   ownerName?: string | null
+  adminPhone?: string | null
   waSessionId?: string | null
   isActive?: boolean
   primaryColor?: string | null
@@ -2655,6 +2949,7 @@ export type StoreUncheckedCreateWithoutSubscriptionInput = {
   aiConfig?: Prisma.AIConfigurationUncheckedCreateNestedOneWithoutStoreInput
   blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
+  dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutSubscriptionInput = {
@@ -2678,6 +2973,7 @@ export type StoreUpdateWithoutSubscriptionInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2701,6 +2997,7 @@ export type StoreUpdateWithoutSubscriptionInput = {
   aiConfig?: Prisma.AIConfigurationUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
+  dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutSubscriptionInput = {
@@ -2708,6 +3005,7 @@ export type StoreUncheckedUpdateWithoutSubscriptionInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2731,6 +3029,7 @@ export type StoreUncheckedUpdateWithoutSubscriptionInput = {
   aiConfig?: Prisma.AIConfigurationUncheckedUpdateOneWithoutStoreNestedInput
   blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
+  dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 
@@ -2750,6 +3049,7 @@ export type StoreCountOutputType = {
   appointments: number
   campaigns: number
   blockedContacts: number
+  dailyReports: number
 }
 
 export type StoreCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -2764,6 +3064,7 @@ export type StoreCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.
   appointments?: boolean | StoreCountOutputTypeCountAppointmentsArgs
   campaigns?: boolean | StoreCountOutputTypeCountCampaignsArgs
   blockedContacts?: boolean | StoreCountOutputTypeCountBlockedContactsArgs
+  dailyReports?: boolean | StoreCountOutputTypeCountDailyReportsArgs
 }
 
 /**
@@ -2853,12 +3154,20 @@ export type StoreCountOutputTypeCountBlockedContactsArgs<ExtArgs extends runtime
   where?: Prisma.BlockedContactWhereInput
 }
 
+/**
+ * StoreCountOutputType without action
+ */
+export type StoreCountOutputTypeCountDailyReportsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.DailyReportWhereInput
+}
+
 
 export type StoreSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   storeId?: boolean
   name?: boolean
   phone?: boolean
   ownerName?: boolean
+  adminPhone?: boolean
   waSessionId?: boolean
   isActive?: boolean
   primaryColor?: boolean
@@ -2883,6 +3192,7 @@ export type StoreSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   blockedContacts?: boolean | Prisma.Store$blockedContactsArgs<ExtArgs>
   waSession?: boolean | Prisma.Store$waSessionArgs<ExtArgs>
   subscription?: boolean | Prisma.Store$subscriptionArgs<ExtArgs>
+  dailyReports?: boolean | Prisma.Store$dailyReportsArgs<ExtArgs>
   _count?: boolean | Prisma.StoreCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["store"]>
 
@@ -2891,6 +3201,7 @@ export type StoreSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   name?: boolean
   phone?: boolean
   ownerName?: boolean
+  adminPhone?: boolean
   waSessionId?: boolean
   isActive?: boolean
   primaryColor?: boolean
@@ -2908,6 +3219,7 @@ export type StoreSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   name?: boolean
   phone?: boolean
   ownerName?: boolean
+  adminPhone?: boolean
   waSessionId?: boolean
   isActive?: boolean
   primaryColor?: boolean
@@ -2925,6 +3237,7 @@ export type StoreSelectScalar = {
   name?: boolean
   phone?: boolean
   ownerName?: boolean
+  adminPhone?: boolean
   waSessionId?: boolean
   isActive?: boolean
   primaryColor?: boolean
@@ -2937,7 +3250,7 @@ export type StoreSelectScalar = {
   updatedAt?: boolean
 }
 
-export type StoreOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"storeId" | "name" | "phone" | "ownerName" | "waSessionId" | "isActive" | "primaryColor" | "secondaryColor" | "accentColor" | "subscriptionStatus" | "subscriptionEnd" | "apiBlocked" | "createdAt" | "updatedAt", ExtArgs["result"]["store"]>
+export type StoreOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"storeId" | "name" | "phone" | "ownerName" | "adminPhone" | "waSessionId" | "isActive" | "primaryColor" | "secondaryColor" | "accentColor" | "subscriptionStatus" | "subscriptionEnd" | "apiBlocked" | "createdAt" | "updatedAt", ExtArgs["result"]["store"]>
 export type StoreInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   customers?: boolean | Prisma.Store$customersArgs<ExtArgs>
   conversations?: boolean | Prisma.Store$conversationsArgs<ExtArgs>
@@ -2953,6 +3266,7 @@ export type StoreInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   blockedContacts?: boolean | Prisma.Store$blockedContactsArgs<ExtArgs>
   waSession?: boolean | Prisma.Store$waSessionArgs<ExtArgs>
   subscription?: boolean | Prisma.Store$subscriptionArgs<ExtArgs>
+  dailyReports?: boolean | Prisma.Store$dailyReportsArgs<ExtArgs>
   _count?: boolean | Prisma.StoreCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type StoreIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -2975,12 +3289,14 @@ export type $StorePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     blockedContacts: Prisma.$BlockedContactPayload<ExtArgs>[]
     waSession: Prisma.$WhatsappSessionPayload<ExtArgs> | null
     subscription: Prisma.$SubscriptionPayload<ExtArgs> | null
+    dailyReports: Prisma.$DailyReportPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     storeId: string
     name: string
     phone: string
     ownerName: string | null
+    adminPhone: string | null
     waSessionId: string | null
     isActive: boolean
     primaryColor: string | null
@@ -3399,6 +3715,7 @@ export interface Prisma__StoreClient<T, Null = never, ExtArgs extends runtime.Ty
   blockedContacts<T extends Prisma.Store$blockedContactsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Store$blockedContactsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BlockedContactPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   waSession<T extends Prisma.Store$waSessionArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Store$waSessionArgs<ExtArgs>>): Prisma.Prisma__WhatsappSessionClient<runtime.Types.Result.GetResult<Prisma.$WhatsappSessionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   subscription<T extends Prisma.Store$subscriptionArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Store$subscriptionArgs<ExtArgs>>): Prisma.Prisma__SubscriptionClient<runtime.Types.Result.GetResult<Prisma.$SubscriptionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  dailyReports<T extends Prisma.Store$dailyReportsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Store$dailyReportsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DailyReportPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -3432,6 +3749,7 @@ export interface StoreFieldRefs {
   readonly name: Prisma.FieldRef<"Store", 'String'>
   readonly phone: Prisma.FieldRef<"Store", 'String'>
   readonly ownerName: Prisma.FieldRef<"Store", 'String'>
+  readonly adminPhone: Prisma.FieldRef<"Store", 'String'>
   readonly waSessionId: Prisma.FieldRef<"Store", 'String'>
   readonly isActive: Prisma.FieldRef<"Store", 'Boolean'>
   readonly primaryColor: Prisma.FieldRef<"Store", 'String'>
@@ -4148,6 +4466,30 @@ export type Store$subscriptionArgs<ExtArgs extends runtime.Types.Extensions.Inte
    */
   include?: Prisma.SubscriptionInclude<ExtArgs> | null
   where?: Prisma.SubscriptionWhereInput
+}
+
+/**
+ * Store.dailyReports
+ */
+export type Store$dailyReportsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the DailyReport
+   */
+  select?: Prisma.DailyReportSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the DailyReport
+   */
+  omit?: Prisma.DailyReportOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.DailyReportInclude<ExtArgs> | null
+  where?: Prisma.DailyReportWhereInput
+  orderBy?: Prisma.DailyReportOrderByWithRelationInput | Prisma.DailyReportOrderByWithRelationInput[]
+  cursor?: Prisma.DailyReportWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.DailyReportScalarFieldEnum | Prisma.DailyReportScalarFieldEnum[]
 }
 
 /**

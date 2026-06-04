@@ -58,6 +58,7 @@ export type OrderMinAggregateOutputType = {
   isManual: boolean | null
   manualPaymentMethod: string | null
   idempotencyKey: string | null
+  appointmentId: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -78,6 +79,7 @@ export type OrderMaxAggregateOutputType = {
   isManual: boolean | null
   manualPaymentMethod: string | null
   idempotencyKey: string | null
+  appointmentId: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -98,6 +100,7 @@ export type OrderCountAggregateOutputType = {
   isManual: number
   manualPaymentMethod: number
   idempotencyKey: number
+  appointmentId: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -136,6 +139,7 @@ export type OrderMinAggregateInputType = {
   isManual?: true
   manualPaymentMethod?: true
   idempotencyKey?: true
+  appointmentId?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -156,6 +160,7 @@ export type OrderMaxAggregateInputType = {
   isManual?: true
   manualPaymentMethod?: true
   idempotencyKey?: true
+  appointmentId?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -176,6 +181,7 @@ export type OrderCountAggregateInputType = {
   isManual?: true
   manualPaymentMethod?: true
   idempotencyKey?: true
+  appointmentId?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -283,6 +289,7 @@ export type OrderGroupByOutputType = {
   isManual: boolean
   manualPaymentMethod: string | null
   idempotencyKey: string | null
+  appointmentId: string | null
   createdAt: Date
   updatedAt: Date
   _count: OrderCountAggregateOutputType | null
@@ -326,6 +333,7 @@ export type OrderWhereInput = {
   isManual?: Prisma.BoolFilter<"Order"> | boolean
   manualPaymentMethod?: Prisma.StringNullableFilter<"Order"> | string | null
   idempotencyKey?: Prisma.StringNullableFilter<"Order"> | string | null
+  appointmentId?: Prisma.StringNullableFilter<"Order"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Order"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Order"> | Date | string
   store?: Prisma.XOR<Prisma.StoreScalarRelationFilter, Prisma.StoreWhereInput>
@@ -349,6 +357,7 @@ export type OrderOrderByWithRelationInput = {
   isManual?: Prisma.SortOrder
   manualPaymentMethod?: Prisma.SortOrderInput | Prisma.SortOrder
   idempotencyKey?: Prisma.SortOrderInput | Prisma.SortOrder
+  appointmentId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   store?: Prisma.StoreOrderByWithRelationInput
@@ -359,6 +368,7 @@ export type OrderOrderByWithRelationInput = {
 export type OrderWhereUniqueInput = Prisma.AtLeast<{
   orderId?: string
   idempotencyKey?: string
+  appointmentId?: string
   AND?: Prisma.OrderWhereInput | Prisma.OrderWhereInput[]
   OR?: Prisma.OrderWhereInput[]
   NOT?: Prisma.OrderWhereInput | Prisma.OrderWhereInput[]
@@ -380,7 +390,7 @@ export type OrderWhereUniqueInput = Prisma.AtLeast<{
   store?: Prisma.XOR<Prisma.StoreScalarRelationFilter, Prisma.StoreWhereInput>
   customer?: Prisma.XOR<Prisma.CustomerScalarRelationFilter, Prisma.CustomerWhereInput>
   orderItems?: Prisma.OrderItemListRelationFilter
-}, "orderId" | "idempotencyKey">
+}, "orderId" | "idempotencyKey" | "appointmentId">
 
 export type OrderOrderByWithAggregationInput = {
   orderId?: Prisma.SortOrder
@@ -398,6 +408,7 @@ export type OrderOrderByWithAggregationInput = {
   isManual?: Prisma.SortOrder
   manualPaymentMethod?: Prisma.SortOrderInput | Prisma.SortOrder
   idempotencyKey?: Prisma.SortOrderInput | Prisma.SortOrder
+  appointmentId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.OrderCountOrderByAggregateInput
@@ -426,6 +437,7 @@ export type OrderScalarWhereWithAggregatesInput = {
   isManual?: Prisma.BoolWithAggregatesFilter<"Order"> | boolean
   manualPaymentMethod?: Prisma.StringNullableWithAggregatesFilter<"Order"> | string | null
   idempotencyKey?: Prisma.StringNullableWithAggregatesFilter<"Order"> | string | null
+  appointmentId?: Prisma.StringNullableWithAggregatesFilter<"Order"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Order"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Order"> | Date | string
 }
@@ -444,6 +456,7 @@ export type OrderCreateInput = {
   isManual?: boolean
   manualPaymentMethod?: string | null
   idempotencyKey?: string | null
+  appointmentId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   store: Prisma.StoreCreateNestedOneWithoutOrdersInput
@@ -467,6 +480,7 @@ export type OrderUncheckedCreateInput = {
   isManual?: boolean
   manualPaymentMethod?: string | null
   idempotencyKey?: string | null
+  appointmentId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   orderItems?: Prisma.OrderItemUncheckedCreateNestedManyWithoutOrderInput
@@ -486,6 +500,7 @@ export type OrderUpdateInput = {
   isManual?: Prisma.BoolFieldUpdateOperationsInput | boolean
   manualPaymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  appointmentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   store?: Prisma.StoreUpdateOneRequiredWithoutOrdersNestedInput
@@ -509,6 +524,7 @@ export type OrderUncheckedUpdateInput = {
   isManual?: Prisma.BoolFieldUpdateOperationsInput | boolean
   manualPaymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  appointmentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   orderItems?: Prisma.OrderItemUncheckedUpdateManyWithoutOrderNestedInput
@@ -530,6 +546,7 @@ export type OrderCreateManyInput = {
   isManual?: boolean
   manualPaymentMethod?: string | null
   idempotencyKey?: string | null
+  appointmentId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -548,6 +565,7 @@ export type OrderUpdateManyMutationInput = {
   isManual?: Prisma.BoolFieldUpdateOperationsInput | boolean
   manualPaymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  appointmentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -568,6 +586,7 @@ export type OrderUncheckedUpdateManyInput = {
   isManual?: Prisma.BoolFieldUpdateOperationsInput | boolean
   manualPaymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  appointmentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -598,6 +617,7 @@ export type OrderCountOrderByAggregateInput = {
   isManual?: Prisma.SortOrder
   manualPaymentMethod?: Prisma.SortOrder
   idempotencyKey?: Prisma.SortOrder
+  appointmentId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -626,6 +646,7 @@ export type OrderMaxOrderByAggregateInput = {
   isManual?: Prisma.SortOrder
   manualPaymentMethod?: Prisma.SortOrder
   idempotencyKey?: Prisma.SortOrder
+  appointmentId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -646,6 +667,7 @@ export type OrderMinOrderByAggregateInput = {
   isManual?: Prisma.SortOrder
   manualPaymentMethod?: Prisma.SortOrder
   idempotencyKey?: Prisma.SortOrder
+  appointmentId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -775,6 +797,7 @@ export type OrderCreateWithoutStoreInput = {
   isManual?: boolean
   manualPaymentMethod?: string | null
   idempotencyKey?: string | null
+  appointmentId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customer: Prisma.CustomerCreateNestedOneWithoutOrdersInput
@@ -796,6 +819,7 @@ export type OrderUncheckedCreateWithoutStoreInput = {
   isManual?: boolean
   manualPaymentMethod?: string | null
   idempotencyKey?: string | null
+  appointmentId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   orderItems?: Prisma.OrderItemUncheckedCreateNestedManyWithoutOrderInput
@@ -846,6 +870,7 @@ export type OrderScalarWhereInput = {
   isManual?: Prisma.BoolFilter<"Order"> | boolean
   manualPaymentMethod?: Prisma.StringNullableFilter<"Order"> | string | null
   idempotencyKey?: Prisma.StringNullableFilter<"Order"> | string | null
+  appointmentId?: Prisma.StringNullableFilter<"Order"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Order"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Order"> | Date | string
 }
@@ -864,6 +889,7 @@ export type OrderCreateWithoutCustomerInput = {
   isManual?: boolean
   manualPaymentMethod?: string | null
   idempotencyKey?: string | null
+  appointmentId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   store: Prisma.StoreCreateNestedOneWithoutOrdersInput
@@ -885,6 +911,7 @@ export type OrderUncheckedCreateWithoutCustomerInput = {
   isManual?: boolean
   manualPaymentMethod?: string | null
   idempotencyKey?: string | null
+  appointmentId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   orderItems?: Prisma.OrderItemUncheckedCreateNestedManyWithoutOrderInput
@@ -930,6 +957,7 @@ export type OrderCreateWithoutOrderItemsInput = {
   isManual?: boolean
   manualPaymentMethod?: string | null
   idempotencyKey?: string | null
+  appointmentId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   store: Prisma.StoreCreateNestedOneWithoutOrdersInput
@@ -952,6 +980,7 @@ export type OrderUncheckedCreateWithoutOrderItemsInput = {
   isManual?: boolean
   manualPaymentMethod?: string | null
   idempotencyKey?: string | null
+  appointmentId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -986,6 +1015,7 @@ export type OrderUpdateWithoutOrderItemsInput = {
   isManual?: Prisma.BoolFieldUpdateOperationsInput | boolean
   manualPaymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  appointmentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   store?: Prisma.StoreUpdateOneRequiredWithoutOrdersNestedInput
@@ -1008,6 +1038,7 @@ export type OrderUncheckedUpdateWithoutOrderItemsInput = {
   isManual?: Prisma.BoolFieldUpdateOperationsInput | boolean
   manualPaymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  appointmentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -1027,6 +1058,7 @@ export type OrderCreateManyStoreInput = {
   isManual?: boolean
   manualPaymentMethod?: string | null
   idempotencyKey?: string | null
+  appointmentId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -1045,6 +1077,7 @@ export type OrderUpdateWithoutStoreInput = {
   isManual?: Prisma.BoolFieldUpdateOperationsInput | boolean
   manualPaymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  appointmentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customer?: Prisma.CustomerUpdateOneRequiredWithoutOrdersNestedInput
@@ -1066,6 +1099,7 @@ export type OrderUncheckedUpdateWithoutStoreInput = {
   isManual?: Prisma.BoolFieldUpdateOperationsInput | boolean
   manualPaymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  appointmentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   orderItems?: Prisma.OrderItemUncheckedUpdateManyWithoutOrderNestedInput
@@ -1086,6 +1120,7 @@ export type OrderUncheckedUpdateManyWithoutStoreInput = {
   isManual?: Prisma.BoolFieldUpdateOperationsInput | boolean
   manualPaymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  appointmentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -1105,6 +1140,7 @@ export type OrderCreateManyCustomerInput = {
   isManual?: boolean
   manualPaymentMethod?: string | null
   idempotencyKey?: string | null
+  appointmentId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -1123,6 +1159,7 @@ export type OrderUpdateWithoutCustomerInput = {
   isManual?: Prisma.BoolFieldUpdateOperationsInput | boolean
   manualPaymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  appointmentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   store?: Prisma.StoreUpdateOneRequiredWithoutOrdersNestedInput
@@ -1144,6 +1181,7 @@ export type OrderUncheckedUpdateWithoutCustomerInput = {
   isManual?: Prisma.BoolFieldUpdateOperationsInput | boolean
   manualPaymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  appointmentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   orderItems?: Prisma.OrderItemUncheckedUpdateManyWithoutOrderNestedInput
@@ -1164,6 +1202,7 @@ export type OrderUncheckedUpdateManyWithoutCustomerInput = {
   isManual?: Prisma.BoolFieldUpdateOperationsInput | boolean
   manualPaymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  appointmentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -1215,6 +1254,7 @@ export type OrderSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   isManual?: boolean
   manualPaymentMethod?: boolean
   idempotencyKey?: boolean
+  appointmentId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   store?: boolean | Prisma.StoreDefaultArgs<ExtArgs>
@@ -1239,6 +1279,7 @@ export type OrderSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   isManual?: boolean
   manualPaymentMethod?: boolean
   idempotencyKey?: boolean
+  appointmentId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   store?: boolean | Prisma.StoreDefaultArgs<ExtArgs>
@@ -1261,6 +1302,7 @@ export type OrderSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   isManual?: boolean
   manualPaymentMethod?: boolean
   idempotencyKey?: boolean
+  appointmentId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   store?: boolean | Prisma.StoreDefaultArgs<ExtArgs>
@@ -1283,11 +1325,12 @@ export type OrderSelectScalar = {
   isManual?: boolean
   manualPaymentMethod?: boolean
   idempotencyKey?: boolean
+  appointmentId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type OrderOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"orderId" | "storeId" | "customerId" | "type" | "total" | "subtotal" | "discountPercent" | "discountAmount" | "status" | "notes" | "estimatedTime" | "deliveryAddress" | "isManual" | "manualPaymentMethod" | "idempotencyKey" | "createdAt" | "updatedAt", ExtArgs["result"]["order"]>
+export type OrderOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"orderId" | "storeId" | "customerId" | "type" | "total" | "subtotal" | "discountPercent" | "discountAmount" | "status" | "notes" | "estimatedTime" | "deliveryAddress" | "isManual" | "manualPaymentMethod" | "idempotencyKey" | "appointmentId" | "createdAt" | "updatedAt", ExtArgs["result"]["order"]>
 export type OrderInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   store?: boolean | Prisma.StoreDefaultArgs<ExtArgs>
   customer?: boolean | Prisma.CustomerDefaultArgs<ExtArgs>
@@ -1326,6 +1369,7 @@ export type $OrderPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     isManual: boolean
     manualPaymentMethod: string | null
     idempotencyKey: string | null
+    appointmentId: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["order"]>
@@ -1769,6 +1813,7 @@ export interface OrderFieldRefs {
   readonly isManual: Prisma.FieldRef<"Order", 'Boolean'>
   readonly manualPaymentMethod: Prisma.FieldRef<"Order", 'String'>
   readonly idempotencyKey: Prisma.FieldRef<"Order", 'String'>
+  readonly appointmentId: Prisma.FieldRef<"Order", 'String'>
   readonly createdAt: Prisma.FieldRef<"Order", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Order", 'DateTime'>
 }

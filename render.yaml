@@ -3,7 +3,7 @@ services:
     name: whatsapp-crm
     env: node
     plan: starter
-    buildCommand: npm install && npx prisma generate && npm run build
+    buildCommand: npm install && npx prisma db push --accept-data-loss && npx prisma generate && npm run build
     startCommand: npm run start:prod
     healthCheckPath: /health
     envVars:

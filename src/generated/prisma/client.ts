@@ -126,6 +126,11 @@ export type Appointment = Prisma.AppointmentModel
  */
 export type AppointmentTimeline = Prisma.AppointmentTimelineModel
 /**
+ * Model DailyReport
+ * 
+ */
+export type DailyReport = Prisma.DailyReportModel
+/**
  * Model AIConfiguration
  * 
  */

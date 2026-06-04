@@ -62,6 +62,7 @@ export const ModelName = {
   OrderItem: 'OrderItem',
   Appointment: 'Appointment',
   AppointmentTimeline: 'AppointmentTimeline',
+  DailyReport: 'DailyReport',
   AIConfiguration: 'AIConfiguration',
   Campaign: 'Campaign',
   User: 'User',
@@ -95,6 +96,7 @@ export const StoreScalarFieldEnum = {
   name: 'name',
   phone: 'phone',
   ownerName: 'ownerName',
+  adminPhone: 'adminPhone',
   waSessionId: 'waSessionId',
   isActive: 'isActive',
   primaryColor: 'primaryColor',
@@ -274,6 +276,7 @@ export const OrderScalarFieldEnum = {
   isManual: 'isManual',
   manualPaymentMethod: 'manualPaymentMethod',
   idempotencyKey: 'idempotencyKey',
+  appointmentId: 'appointmentId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -320,6 +323,19 @@ export const AppointmentScalarFieldEnum = {
   cancelledAt: 'cancelledAt',
   cancelReason: 'cancelReason',
   reminderSentAt: 'reminderSentAt',
+  reminder8hSentAt: 'reminder8hSentAt',
+  reminder2hSentAt: 'reminder2hSentAt',
+  reminder1hSentAt: 'reminder1hSentAt',
+  paymentStatus: 'paymentStatus',
+  paymentMethod: 'paymentMethod',
+  paymentAmount: 'paymentAmount',
+  paymentProofUrl: 'paymentProofUrl',
+  paymentNotes: 'paymentNotes',
+  paymentConfirmedAt: 'paymentConfirmedAt',
+  pendingAction: 'pendingAction',
+  pendingActionAt: 'pendingActionAt',
+  pendingActionData: 'pendingActionData',
+  pendingActionReason: 'pendingActionReason',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -342,10 +358,24 @@ export const AppointmentTimelineScalarFieldEnum = {
 export type AppointmentTimelineScalarFieldEnum = (typeof AppointmentTimelineScalarFieldEnum)[keyof typeof AppointmentTimelineScalarFieldEnum]
 
 
+export const DailyReportScalarFieldEnum = {
+  reportId: 'reportId',
+  storeId: 'storeId',
+  date: 'date',
+  appointmentsData: 'appointmentsData',
+  paymentsData: 'paymentsData',
+  clientsData: 'clientsData',
+  createdAt: 'createdAt'
+} as const
+
+export type DailyReportScalarFieldEnum = (typeof DailyReportScalarFieldEnum)[keyof typeof DailyReportScalarFieldEnum]
+
+
 export const AIConfigurationScalarFieldEnum = {
   configId: 'configId',
   storeId: 'storeId',
-  groqApiKey: 'groqApiKey',
+  aiProvider: 'aiProvider',
+  apiKey: 'apiKey',
   systemPrompt: 'systemPrompt',
   model: 'model',
   temperature: 'temperature',
