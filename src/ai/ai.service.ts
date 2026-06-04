@@ -1373,6 +1373,10 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
       const productosTxt = products.length > 0
         ? products.map((p: any) => {
             const lines = [`  · ${p.name}`];
+            if (p.description) {
+              const clean = p.description.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 300);
+              if (clean) lines.push(`    ${clean}`);
+            }
             if (p.variants?.length > 0) {
               p.variants.forEach((v: any) => {
                 lines.push(`    - ${v.name}: $${Number(v.salePrice).toLocaleString('es-CO')} | ${v.stock === 0 ? '⚠️ AGOTADO' : `${v.stock} disp.`}`);
@@ -1389,6 +1393,10 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
         ? services.map((s: any) => {
             const precioTxt = this.buildServicePriceLabel(s);
             const lines     = [`  · ${s.name} — ${precioTxt}`];
+            if (s.description) {
+              const clean = s.description.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 300);
+              if (clean) lines.push(`    ${clean}`);
+            }
             if (s.estimatedMinutes) {
               const h = Math.floor(s.estimatedMinutes / 60);
               const m = s.estimatedMinutes % 60;
