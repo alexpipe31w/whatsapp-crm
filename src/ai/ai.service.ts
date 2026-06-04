@@ -313,10 +313,13 @@ export class AiService {
 
   private readonly configCache           = new Map<string, CacheEntry<any>>();
   private readonly catalogCache          = new Map<string, CacheEntry<{ products: any[]; services: any[] }>>();
-  private readonly orderInProgress       = new Set<string>();
-  private readonly pendingExtractions    = new Map<string, ExtractionResult>();
-  private readonly appointmentInProgress = new Set<string>();
-  private readonly pendingAppointments   = new Map<string, AppointmentExtractionResult>();
+  private readonly orderInProgress        = new Set<string>();
+  private readonly pendingExtractions     = new Map<string, ExtractionResult>();
+  private readonly appointmentInProgress  = new Set<string>();
+  private readonly pendingAppointments    = new Map<string, AppointmentExtractionResult>();
+  // Citas ya creadas en esta conversación — se inyectan en el prompt del extractor
+  // para que el LLM no las vuelva a extraer cuando el cliente pide una segunda cita.
+  private readonly conversationCreatedAppts = new Map<string, Array<{scheduledDate: string; scheduledTime: string; type: string}>>();
 
   constructor(
     private readonly prisma:        PrismaService,
@@ -1051,10 +1054,16 @@ ${services.flatMap((s: any) => {
       const now      = new Date();
       const fechaHoy = now.toISOString().split('T')[0];
 
+      // Citas ya creadas en esta sesión → inyectar para que el LLM no las re-extraiga
+      const alreadyCreated = this.conversationCreatedAppts.get(conversationId) ?? [];
+      const alreadyCreatedBlock = alreadyCreated.length > 0
+        ? `\nCITAS YA REGISTRADAS EN ESTA CONVERSACIÓN (NO las vuelvas a extraer — ya están confirmadas en el sistema):\n${alreadyCreated.map(a => `- ${a.type || 'cita'} el ${a.scheduledDate} a las ${a.scheduledTime} → YA CREADA`).join('\n')}\nSi el cliente pide UNA NUEVA cita con fecha/hora DIFERENTE a las anteriores, extrae ESA nueva cita.\n`
+        : '';
+
       const appointmentPrompt = `Eres un extractor de datos para agendamiento de citas. Lee la conversación y extrae los datos en JSON.
 
 FECHA ACTUAL: ${fechaHoy} (Colombia, zona horaria America/Bogota)
-
+${alreadyCreatedBlock}
 ${servicesCatalog}
 
 CONVERSACIÓN:
@@ -1359,6 +1368,12 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
       this.pendingAppointments.delete(conversationId);
       this.logger.log(`✅ [Cita] ${appointment.appointmentId} — ${extracted.scheduledDate} ${extracted.scheduledTime}`);
       this.notifications.notifyAppointmentCreated(appointment as any).catch(() => {});
+
+      // Registrar cita creada para que el extractor no la vuelva a extraer
+      const created = this.conversationCreatedAppts.get(conversationId) ?? [];
+      created.push({ scheduledDate: extracted.scheduledDate!, scheduledTime: extracted.scheduledTime!, type: extracted.type ?? 'cita' });
+      this.conversationCreatedAppts.set(conversationId, created);
+      setTimeout(() => this.conversationCreatedAppts.delete(conversationId), ORDER_GUARD_TTL_MS);
 
       const nombreMostrar   = extracted.customerName ? extracted.customerName.split(' ')[0] : customer.name ? customer.name.split(' ')[0] : null;
       const nombreCliente   = nombreMostrar ? `, ${nombreMostrar}` : '';
