@@ -1,7 +1,7 @@
 import { IsString, IsOptional, IsNumber, IsInt, IsArray, Min, Max, MaxLength, MinLength, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
 
-const AI_PROVIDERS = ['groq', 'openai', 'together', 'mistral', 'anthropic'] as const;
+const AI_PROVIDERS = ['groq', 'openai', 'together', 'mistral', 'anthropic', 'gemini'] as const;
 
 export class CreateAiConfigDto {
   @IsString()
