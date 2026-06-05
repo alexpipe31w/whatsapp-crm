@@ -1,6 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '../generated/prisma/client';
 import { createCompletion, PROVIDER_CONFIG, AIProvider } from './providers';
+import {
+  buildCartridgeList, ensurePool, getNextCartridge,
+  markExhausted, isRateLimitError, getPoolStatus, Cartridge,
+} from './key-pool';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { formatBusinessHoursForAI } from '../utils/business-hours.util';
@@ -595,10 +599,17 @@ export class AiService {
         return null;
       }
 
-      const customer  = conversationRow.customer;
-      const provider  = (config.aiProvider ?? 'groq') as AIProvider;
-      const apiKey    = config.apiKey;
-      const settings  = this.parseSettings(config.settings);
+      const customer   = conversationRow.customer;
+      const settings   = this.parseSettings(config.settings);
+
+      // ── Cartridge pool — key rotation cross-provider ────────────────────────
+      const allCartridges = buildCartridgeList(config);
+      ensurePool(storeId, allCartridges);
+      const cartridge  = getNextCartridge(storeId) ?? allCartridges[0];
+      const provider   = cartridge.provider;
+      const apiKey     = cartridge.apiKey;
+      const model      = cartridge.model;
+      this.logger.debug(`[Pool] ${storeId} → ${provider}/${model} | ${getPoolStatus(storeId)}`);
 
       // ── Pago detectado ──────────────────────────────────────────────────────
       const paymentReply = await this.tryDetectPaymentProof(storeId, customer.customerId, userMessage);
@@ -622,7 +633,7 @@ export class AiService {
         !this.appointmentInProgress.has(conversationId)
       ) {
         const apptResult = await this.tryExtractAndCreateAppointment(
-          provider, apiKey, config.model, history, userMessage,
+          provider, apiKey, model, history, userMessage,
           customer, storeId, conversationId, services,
         );
         if (apptResult.created) return apptResult.message!;
@@ -637,7 +648,7 @@ export class AiService {
 
       if (shouldTryOrder) {
         const orderResult = await this.tryExtractAndCreateOrder(
-          provider, apiKey, config.model, history, userMessage,
+          provider, apiKey, model, history, userMessage,
           products, services, customer, storeId, conversationId, settings,
         );
         if (orderResult.created) return orderResult.message!;
@@ -677,19 +688,45 @@ export class AiService {
       ];
 
       let reply: string;
-      try {
-        reply = await Promise.race([
-          createCompletion(provider, apiKey, config.model, messages, Number(config.temperature), config.maxTokens),
+      const doCompletion = (c: Cartridge) =>
+        Promise.race([
+          createCompletion(c.provider, c.apiKey, c.model, messages, Number(config.temperature), config.maxTokens),
           new Promise<never>((_, reject) =>
             setTimeout(() => reject(new Error('AI timeout')), AI_TIMEOUT_MAIN_MS)
           ),
         ]);
-      } catch (modelErr: any) {
-        this.logger.warn(`Modelo ${config.model} falló, fallback: ${modelErr.message?.slice(0, 80)}`);
-        reply = await createCompletion(
-          provider, apiKey, PROVIDER_CONFIG[provider].defaultModel,
-          messages, Number(config.temperature), config.maxTokens,
-        );
+
+      try {
+        reply = await doCompletion(cartridge);
+      } catch (mainErr: any) {
+        if (isRateLimitError(mainErr)) {
+          this.logger.warn(`[Pool] ${provider} límite alcanzado, rotando cartucho...`);
+          markExhausted(storeId, cartridge);
+          const next = getNextCartridge(storeId);
+          if (next) {
+            try {
+              reply = await doCompletion(next);
+            } catch (nextErr: any) {
+              if (isRateLimitError(nextErr)) markExhausted(storeId, next);
+              this.logger.warn(`[Pool] Segundo cartucho también falló: ${nextErr.message?.slice(0, 60)}`);
+              reply = '⚠️ El asistente está temporalmente sin disponibilidad. Por favor intenta en unos minutos.';
+            }
+          } else {
+            this.logger.error(`[Pool] Todos los cartuchos agotados para store ${storeId}`);
+            reply = '⚠️ El asistente está temporalmente sin disponibilidad. Por favor intenta en unos minutos.';
+          }
+        } else {
+          // Non-rate-limit error → try fast model of same provider
+          this.logger.warn(`[Pool] Error no-rate-limit en ${provider}: ${mainErr.message?.slice(0, 60)}, fallback modelo rápido`);
+          try {
+            reply = await createCompletion(
+              provider, apiKey, PROVIDER_CONFIG[provider]?.defaultFastModel ?? model,
+              messages, Number(config.temperature), config.maxTokens,
+            );
+          } catch {
+            reply = '⚠️ El asistente no pudo responder. Intenta de nuevo.';
+          }
+        }
       }
 
       return reply ?? null;
