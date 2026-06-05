@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsNumber, IsInt, Min, Max, MaxLength, MinLength, IsIn } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsInt, IsArray, Min, Max, MaxLength, MinLength, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
 
 const AI_PROVIDERS = ['groq', 'openai', 'together', 'mistral', 'anthropic'] as const;
@@ -41,4 +41,8 @@ export class CreateAiConfigDto {
   @Max(4096)
   @IsOptional()
   maxTokens?: number;
+
+  @IsArray()
+  @IsOptional()
+  cartridges?: Array<{ provider: string; apiKey: string; model?: string }>;
 }

@@ -575,6 +575,7 @@ model AIConfiguration {
   temperature  Decimal @default(0.70) @db.Decimal(3, 2)
   maxTokens    Int     @default(1024) @map("max_tokens")
   settings     Json    @default("{}")
+  cartridges   Json?   @map("cartridges")
 
   store Store @relation(fields: [storeId], references: [storeId])
 
