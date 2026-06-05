@@ -1,7 +1,7 @@
 import {
   IsString, IsOptional, IsEnum, IsDateString,
   IsInt, IsNumber, IsUUID, Min, Max, MaxLength,
-  IsPositive,
+  IsPositive, IsBoolean,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { AppointmentPriority, AppointmentSource } from '../../generated/prisma/enums';
@@ -75,4 +75,8 @@ export class CreateAppointmentDto {
   @IsPositive()
   @Type(() => Number)
   agreedPrice?: number;
+
+  // Admin puede forzar citas fuera del horario configurado; la IA nunca puede
+  @IsBoolean() @IsOptional() @Type(() => Boolean)
+  forceSchedule?: boolean;
 }

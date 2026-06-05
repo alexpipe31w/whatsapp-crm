@@ -54,6 +54,37 @@ model Store {
   phone       String   @unique @db.VarChar(20)
   ownerName   String?  @map("owner_name") @db.VarChar(100)
   adminPhone  String?  @map("admin_phone") @db.VarChar(20)
+
+  // Información del negocio
+  description     String?  @map("description")
+  address         String?  @map("address")
+  neighborhood    String?  @map("neighborhood")
+  directions      String?  @map("directions")
+  googleMapsUrl   String?  @map("google_maps_url")
+
+  // Contacto y redes
+  email           String?  @map("email")
+  website         String?  @map("website")
+  instagram       String?  @map("instagram")
+  facebook        String?  @map("facebook")
+  tiktok          String?  @map("tiktok")
+
+  // Pagos
+  paymentMethods  String[] @map("payment_methods")
+  paymentAccount  String?  @map("payment_account")
+  requiresDeposit Boolean  @default(false) @map("requires_deposit")
+  depositAmount   String?  @map("deposit_amount")
+
+  // Políticas
+  minAdvanceMinutes  Int?     @map("min_advance_minutes")
+  cancellationPolicy String?  @map("cancellation_policy")
+  hasDelivery        Boolean  @default(false) @map("has_delivery")
+  deliveryZone       String?  @map("delivery_zone")
+  hasParking         Boolean  @default(false) @map("has_parking")
+
+  // Horarios de atención
+  businessHours   Json?    @map("business_hours")
+
   waSessionId String?  @unique @map("wa_session_id") @db.VarChar(50)
   isActive    Boolean  @default(true) @map("is_active")
 
