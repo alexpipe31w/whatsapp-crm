@@ -86,6 +86,7 @@ model Store {
   businessHours   Json?    @map("business_hours")
 
   waSessionId String?  @unique @map("wa_session_id") @db.VarChar(50)
+  staffLabel  String?  @default("Profesional") @map("staff_label") @db.VarChar(50)
   isActive    Boolean  @default(true) @map("is_active")
 
   // Paleta de colores personalizable por tienda
@@ -115,6 +116,7 @@ model Store {
   waSession       WhatsappSession?
   subscription    Subscription?
   dailyReports    DailyReport[]
+  staff           Staff[]
 
   @@map("stores")
 }
@@ -442,6 +444,7 @@ model Appointment {
   // ── Vínculo al catálogo (opcional) ────────────────────────────────────────
   serviceId        String? @map("service_id")
   serviceVariantId String? @map("service_variant_id")
+  staffId          String? @map("staff_id")
 
   // ── Clasificación ─────────────────────────────────────────────────────────
   // type: texto libre que describe el tipo cuando no hay servicio vinculado.
@@ -501,6 +504,7 @@ model Appointment {
   customer       Customer              @relation(fields: [customerId], references: [customerId])
   service        Service?              @relation(fields: [serviceId], references: [serviceId])
   serviceVariant ServiceVariant?       @relation(fields: [serviceVariantId], references: [variantId])
+  staff          Staff?                @relation(fields: [staffId], references: [staffId])
   timeline       AppointmentTimeline[]
 
   @@index([storeId, scheduledAt])
@@ -509,6 +513,7 @@ model Appointment {
   @@index([customerId])
   @@index([serviceId])
   @@index([storeId, createdAt])
+  @@index([storeId, staffId, scheduledAt])
   @@map("appointments")
 }
 
@@ -721,4 +726,26 @@ model SubscriptionPayment {
 
   @@index([subscriptionId])
   @@map("subscription_payments")
+}
+
+// ─── Staff ────────────────────────────────────────────────────────────────────
+
+model Staff {
+  staffId   String   @id @default(uuid()) @map("staff_id")
+  storeId   String   @map("store_id")
+  name      String   @db.VarChar(100)
+  isActive  Boolean  @default(true) @map("is_active")
+
+  // null = hereda store.businessHours
+  // Shape: { mon: { isOpen, shift1, shift2 }, tue: ..., ... }
+  schedule  Json?    @map("schedule")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  store        Store         @relation(fields: [storeId], references: [storeId], onDelete: Cascade)
+  appointments Appointment[]
+
+  @@index([storeId, isActive])
+  @@map("staff")
 }
