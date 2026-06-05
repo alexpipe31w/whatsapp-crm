@@ -6,6 +6,7 @@ import { Prisma } from '../generated/prisma/client';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { AppointmentStatus, AppointmentSource } from '../generated/prisma/enums';
+import { isWithinBusinessHours } from '../utils/business-hours.util';
 
 // ─── Selectores reutilizables ─────────────────────────────────────────────────
 
@@ -151,6 +152,18 @@ export class AppointmentsService {
   async create(storeId: string, dto: CreateAppointmentDto, performedById?: string) {
     const scheduledAt = new Date(dto.scheduledAt);
     const endsAt      = this.computeEndsAt(scheduledAt, dto.durationMinutes, dto.endsAt);
+
+    // Validate against business hours (AI can never override; admin can with forceSchedule)
+    const store = await this.prisma.store.findUnique({ where: { storeId } });
+    if (store?.businessHours) {
+      const isAI   = dto.source === AppointmentSource.AI;
+      const forced = !!dto.forceSchedule && !isAI;
+      if (!forced && !isWithinBusinessHours(scheduledAt, store.businessHours as any)) {
+        throw new BadRequestException(
+          'La hora solicitada está fuera del horario de atención del negocio.',
+        );
+      }
+    }
 
     return this.prisma.$transaction(async (tx) => {
       const appointment = await tx.appointment.create({
