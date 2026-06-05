@@ -40,4 +40,6 @@ export class CreateStoreDto {
 
   // Horarios
   @IsObject() @IsOptional() businessHours?: Record<string, any>;
+
+  @IsString() @IsOptional() staffLabel?: string;
 }
