@@ -6,7 +6,7 @@ import { Prisma } from '../generated/prisma/client';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { AppointmentStatus, AppointmentSource } from '../generated/prisma/enums';
-import { isWithinBusinessHours } from '../utils/business-hours.util';
+import { isWithinBusinessHours, BusinessHoursJson } from '../utils/business-hours.util';
 
 // ─── Selectores reutilizables ─────────────────────────────────────────────────
 
@@ -158,7 +158,7 @@ export class AppointmentsService {
     if (store?.businessHours) {
       const isAI   = dto.source === AppointmentSource.AI;
       const forced = !!dto.forceSchedule && !isAI;
-      if (!forced && !isWithinBusinessHours(scheduledAt, store.businessHours as any)) {
+      if (!forced && !isWithinBusinessHours(scheduledAt, store.businessHours as unknown as BusinessHoursJson)) {
         throw new BadRequestException(
           'La hora solicitada está fuera del horario de atención del negocio.',
         );
