@@ -154,8 +154,8 @@ function parseNombreCliente(text: string, conversationLines: string[] = []): str
     if (ADDRESS_RE.test(line)) return true;
     // Es teléfono (7+ dígitos)
     if (/^[\d\s+\-()\/.]{7,}$/.test(line)) return true;
-    // Es fecha o contiene fecha
-    if (/\b(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre|lunes|martes|miércoles|jueves|viernes|sábado|domingo)\b/i.test(line)) return true;
+    // Es fecha o contiene fecha/tiempo
+    if (/\b(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre|lunes|martes|miércoles|jueves|viernes|sábado|domingo|mañana|hoy|tarde|noche|ahora|después|antes|temprano)\b/i.test(line)) return true;
     // Es hora
     if (/\b\d{1,2}(:\d{2})?\s*(am|pm|a\.m\.|p\.m\.)\b/i.test(line)) return true;
     // Es confirmación
@@ -163,7 +163,9 @@ function parseNombreCliente(text: string, conversationLines: string[] = []): str
     // Es solo números y símbolos
     if (/^[\d\W]+$/.test(line)) return true;
     // Empieza con verbo o frase de intención — no es un nombre
-    if (/^(quiero|deseo|hola|buenos|buenas|gracias|necesito|quisiera|tengo|puedo|solo|también|tampoco|me\b|mi\b|mis\b|por\b|para\b|favor|sí|no\b|ok\b)/i.test(line)) return true;
+    if (/^(quiero|deseo|hola|buenos|buenas|gracias|necesito|quisiera|tengo|puedo|solo|también|tampoco|me\b|mi\b|mis\b|por\b|para\b|favor|sí|no\b|ok\b|agenda\b|agéndame|reserva\b|cita\b|corte\b|barba\b|manicure|pedicure|oye\b|oiga\b|necesit|quiero|dime\b|dame\b)/i.test(line)) return true;
+    // Contiene palabras de acción o servicio típicas (no pueden ser nombres)
+    if (/\b(agenda|agéndame|agendar|reservar|cita|corte|barba|mañana|hoy|servicio|precio|disponib)\b/i.test(line)) return true;
     // Más de 5 palabras → probablemente una frase, no un nombre
     if (line.trim().split(/\s+/).length > 5) return true;
     return false;
