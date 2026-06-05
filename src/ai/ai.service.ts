@@ -111,6 +111,47 @@ function parseFechaEspanol(text: string): string | null {
   return null;
 }
 
+// ─── Query date extractor for AI availability detection ───────────────────────
+function extractQueryDate(message: string, today: Date, tz = 'America/Bogota'): Date | null {
+  const lower = message.toLowerCase();
+  const nowInTz = new Date(today.toLocaleString('en-US', { timeZone: tz }));
+  const dayOfWeek = nowInTz.getDay(); // 0=sun,1=mon...6=sat
+
+  if (/\bhoy\b/.test(lower)) return today;
+
+  if (/\bmañana\b/.test(lower)) {
+    const d = new Date(today); d.setDate(d.getDate() + 1); return d;
+  }
+
+  const DAYS: Record<string, number> = {
+    domingo:0, lunes:1, martes:2, miércoles:3, miercoles:3,
+    jueves:4, viernes:5, sábado:6, sabado:6,
+  };
+  for (const [word, target] of Object.entries(DAYS)) {
+    if (lower.includes(word)) {
+      const diff = (target - dayOfWeek + 7) % 7 || 7;
+      const d = new Date(today); d.setDate(d.getDate() + diff); return d;
+    }
+  }
+
+  // "el 10" or "el 10 de junio"
+  const MONTHS: Record<string, number> = {
+    enero:0, febrero:1, marzo:2, abril:3, mayo:4, junio:5,
+    julio:6, agosto:7, septiembre:8, octubre:9, noviembre:10, diciembre:11,
+  };
+  const dateMatch = lower.match(/\bel\s+(\d{1,2})(?:\s+de\s+(\w+))?/);
+  if (dateMatch) {
+    const day = parseInt(dateMatch[1], 10);
+    const monthWord = dateMatch[2];
+    const month = monthWord ? (MONTHS[monthWord] ?? nowInTz.getMonth()) : nowInTz.getMonth();
+    const year = nowInTz.getFullYear();
+    const d = new Date(year, month, day);
+    if (!isNaN(d.getTime())) return d;
+  }
+
+  return null;
+}
+
 // ─── Parser de hora en español ────────────────────────────────────────────────
 function parseHoraEspanol(text: string): string | null {
   const t = text.toLowerCase().trim();
@@ -358,7 +399,7 @@ export class AiService {
 
   private readonly configCache           = new Map<string, CacheEntry<any>>();
   private readonly catalogCache          = new Map<string, CacheEntry<{ products: any[]; services: any[] }>>();
-  private readonly staffCache = new Map<string, { data: { staffId: string; name: string }[]; setAt: number }>();
+  private readonly staffCache = new Map<string, { data: { staffId: string; name: string; schedule: any }[]; setAt: number }>();
   private readonly orderInProgress        = new Set<string>();
   private readonly pendingExtractions     = new Map<string, ExtractionResult>();
   private readonly appointmentInProgress  = new Set<string>();
@@ -529,6 +570,79 @@ export class AiService {
       : 'Tu solicitud de cancelación fue enviada al admin. Te confirmaremos en breve ✅';
   }
 
+  private async computeSlotsForAI(
+    storeId: string,
+    date: Date,
+    activeStaff: { staffId: string; name: string; schedule: any }[],
+    store: { businessHours: any },
+  ): Promise<{ name: string; slots: string[] }[]> {
+    const tz = 'America/Bogota';
+    const dateStr = date.toLocaleDateString('en-CA', { timeZone: tz }); // YYYY-MM-DD
+    const startOfDay = new Date(`${dateStr}T00:00:00`);
+    const endOfDay   = new Date(`${dateStr}T23:59:59`);
+
+    const DAYS_ES = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+    const dayIdx  = new Date(date.toLocaleString('en-US', { timeZone: tz })).getDay();
+    const dayKey  = DAYS_ES[dayIdx];
+
+    const results: { name: string; slots: string[] }[] = [];
+
+    const members = activeStaff.length > 0
+      ? activeStaff
+      : [{ staffId: null as any, name: (store as any).name ?? 'Negocio', schedule: null }];
+
+    for (const member of members) {
+      const effectiveHours = member.schedule ?? store.businessHours;
+      if (!effectiveHours) { results.push({ name: member.name, slots: [] }); continue; }
+
+      const daySchedule = (effectiveHours as any)[dayKey];
+      if (!daySchedule?.isOpen) { results.push({ name: member.name, slots: [] }); continue; }
+
+      const whereClause: any = {
+        storeId,
+        scheduledAt: { gte: startOfDay, lte: endOfDay },
+        status: { in: ['PENDING', 'CONFIRMED', 'IN_PROGRESS'] },
+      };
+      if (member.staffId) whereClause.staffId = member.staffId;
+
+      const appts = await this.prisma.appointment.findMany({
+        where: whereClause,
+        select: { scheduledAt: true, endsAt: true },
+      });
+
+      const slots: string[] = [];
+      const SLOT = 30;
+
+      for (const shift of ['shift1', 'shift2'] as const) {
+        const s = daySchedule[shift];
+        if (!s?.start || !s?.end) continue;
+        const [sh, sm] = s.start.split(':').map(Number);
+        const [eh, em] = s.end.split(':').map(Number);
+        let cur = sh * 60 + sm;
+        const end = eh * 60 + em;
+
+        while (cur + SLOT <= end) {
+          const slotStart = new Date(`${dateStr}T${String(Math.floor(cur/60)).padStart(2,'0')}:${String(cur%60).padStart(2,'0')}:00`);
+          const slotEnd   = new Date(slotStart.getTime() + SLOT * 60000);
+
+          const occupied = appts.some(a => {
+            const aEnd = a.endsAt ?? new Date(a.scheduledAt.getTime() + SLOT * 60000);
+            return a.scheduledAt < slotEnd && aEnd > slotStart;
+          });
+
+          if (!occupied) {
+            slots.push(`${String(Math.floor(cur/60)).padStart(2,'0')}:${String(cur%60).padStart(2,'0')}`);
+          }
+          cur += SLOT;
+        }
+      }
+
+      results.push({ name: member.name, slots });
+    }
+
+    return results;
+  }
+
   async generateReply(
     storeId: string,
     userMessage: string,
@@ -605,7 +719,7 @@ export class AiService {
             .findMany({
               where:   { storeId, isActive: true },
               orderBy: { createdAt: 'asc' },
-              select:  { staffId: true, name: true },
+              select:  { staffId: true, name: true, schedule: true },
             })
             .then(list => {
               this.staffCache.set(storeId, { data: list, setAt: now });
@@ -690,6 +804,31 @@ export class AiService {
       ].join(' ');
       const addressAlreadyGiven = ADDRESS_RE.test(allClientText);
 
+      const AVAIL_RE = /horario|disponible|disponibilidad|cuándo puedo|qué hora|hora libre|cuando tiene|qué días|que dias/i;
+      let availabilityBlock = '';
+
+      if (AVAIL_RE.test(userMessage) && store) {
+        const queryDate = extractQueryDate(userMessage, new Date());
+        if (queryDate) {
+          const slotsData = await this.computeSlotsForAI(
+            storeId,
+            queryDate,
+            activeStaff,
+            store,
+          );
+          const dayName = queryDate.toLocaleDateString('es-CO', { weekday: 'long', timeZone: 'America/Bogota' });
+          const dateLabel = queryDate.toLocaleDateString('es-CO', { day: 'numeric', month: 'long', timeZone: 'America/Bogota' });
+          const lines = slotsData
+            .filter(s => s.slots.length > 0)
+            .map(s => `- ${s.name}: ${s.slots.join(', ')}`);
+          if (lines.length > 0) {
+            availabilityBlock = `\nDISPONIBILIDAD REAL PARA ${dayName.toUpperCase()}, ${dateLabel}:\n${lines.join('\n')}\n\nINSTRUCCIÓN: Responde con estos horarios exactos. No inventes horas que no estén en la lista. Si el cliente elige un slot específico, avanza al flujo de agendamiento normal.`;
+          } else {
+            availabilityBlock = `\nDISPONIBILIDAD PARA ${dayName.toUpperCase()}, ${dateLabel}: No hay horarios disponibles para ese día.`;
+          }
+        }
+      }
+
       const enrichedSystemPrompt = this.buildSystemPrompt(
         config.systemPrompt, customer, orders, appointments,
         products, services, fechaActual, horaActual,
@@ -697,6 +836,7 @@ export class AiService {
         customer.lastConversationSummary ?? null,
         store,
         activeStaff,
+        availabilityBlock,
       );
 
       const messages: any[] = [
@@ -1080,7 +1220,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
     storeId: string,
     conversationId: string,
     services: any[],
-    activeStaff: Array<{ staffId: string; name: string }> = [],
+    activeStaff: Array<{ staffId: string; name: string; schedule?: any }> = [],
   ): Promise<{ created: boolean; message?: string }> {
 
     const cached = this.pendingAppointments.get(conversationId);
@@ -1541,7 +1681,8 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
     settings: StoreSettings,
     lastConversationSummary: string | null = null,
     store: any = null,
-    activeStaff: Array<{ staffId: string; name: string }> = [],
+    activeStaff: Array<{ staffId: string; name: string; schedule?: any }> = [],
+    availabilityBlock = '',
   ): string {
     const sep           = '\n===================================================\n';
     const nombreCliente = customer.name ?? null;
@@ -1738,7 +1879,12 @@ IMPORTANTE:
 - Si el cliente menciona "mañana", calcula la fecha real desde hoy.
 - Si la hora es ambigua (ej: "2"), confirma: "¿A las 2pm o 2am?"
 - Para servicios VARIABLE, avisa que el precio lo confirma un asesor en la visita.
-${staffBlock}`;
+${staffBlock}
+
+CONSULTA DE DISPONIBILIDAD:
+Si el cliente pregunta sobre horarios disponibles y no menciona un día específico,
+pregunta: "¿Para qué día quieres consultar la disponibilidad? (ej: mañana, el lunes, el 15 de junio)"
+`;
 
     // Contexto de conversaciones anteriores (generado por el cleanup nocturno)
     const contextoPrevio = lastConversationSummary
@@ -1816,6 +1962,7 @@ ${staffBlock}`;
       audioSection, sep, antiBucleSection, sep, formatoSection, sep,
       `FECHA Y HORA ACTUAL: ${fechaActual}, ${horaActual} (Colombia).`,
     );
-    return allSections.join('\n');
+    const availSection = availabilityBlock ? `\n\n${availabilityBlock}` : '';
+    return allSections.join('\n') + availSection;
   }
 }
