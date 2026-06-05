@@ -38,6 +38,7 @@ const APPOINTMENT_INCLUDE = {
   customer:       { select: CUSTOMER_SELECT },
   service:        { select: SERVICE_SELECT },
   serviceVariant: { select: SERVICE_VARIANT_SELECT },
+  staff:          { select: { staffId: true, name: true } },
   timeline: {
     orderBy: { createdAt: 'asc' as const },
     where:   { isPublic: true },
@@ -103,6 +104,7 @@ export class AppointmentsService {
       from?:             string;
       to?:               string;
       serviceId?:        string;
+      staffId?:          string;
       priority?:         string;
       hasPendingAction?: string;
     },
@@ -113,6 +115,7 @@ export class AppointmentsService {
     if (filters?.status)    where.status    = filters.status.toUpperCase();
     if (filters?.type)      where.type      = filters.type;
     if (filters?.serviceId) where.serviceId = filters.serviceId;
+    if (filters?.staffId)   where.staffId   = filters.staffId;
     if (filters?.priority)  where.priority  = filters.priority?.toUpperCase();
     if (filters?.hasPendingAction === 'true') where.pendingAction = { not: null };
 
@@ -154,13 +157,48 @@ export class AppointmentsService {
     const endsAt      = this.computeEndsAt(scheduledAt, dto.durationMinutes, dto.endsAt);
 
     // Validate against business hours (AI can never override; admin can with forceSchedule)
-    const store = await this.prisma.store.findUnique({ where: { storeId } });
-    if (store?.businessHours) {
-      const isAI   = dto.source === AppointmentSource.AI;
-      const forced = !!dto.forceSchedule && !isAI;
-      if (!forced && !isWithinBusinessHours(scheduledAt, store.businessHours as unknown as BusinessHoursJson)) {
+    const [store, staffMember] = await Promise.all([
+      this.prisma.store.findUnique({ where: { storeId } }),
+      dto.staffId
+        ? this.prisma.staff.findUnique({ where: { staffId: dto.staffId } })
+        : Promise.resolve(null),
+    ]);
+
+    const isAI   = dto.source === AppointmentSource.AI;
+    const forced = !!dto.forceSchedule && !isAI;
+
+    const effectiveHours = (staffMember?.schedule as unknown as BusinessHoursJson | null) ?? store?.businessHours;
+    if (effectiveHours && !forced) {
+      if (!isWithinBusinessHours(scheduledAt, effectiveHours as unknown as BusinessHoursJson)) {
         throw new BadRequestException(
-          'La hora solicitada está fuera del horario de atención del negocio.',
+          'La hora solicitada está fuera del horario de atención.',
+        );
+      }
+    }
+
+    if (dto.staffId) {
+      const newEndsAt = endsAt ?? new Date(scheduledAt.getTime() + 30 * 60_000);
+      const conflict  = await this.prisma.appointment.findFirst({
+        where: {
+          staffId: dto.staffId,
+          status:  { in: [AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED, AppointmentStatus.IN_PROGRESS] },
+          AND: [
+            { scheduledAt: { lt: newEndsAt } },
+            {
+              OR: [
+                { endsAt: { gt: scheduledAt } },
+                {
+                  endsAt:      null,
+                  scheduledAt: { gt: new Date(scheduledAt.getTime() - 30 * 60_000) },
+                },
+              ],
+            },
+          ],
+        },
+      });
+      if (conflict) {
+        throw new BadRequestException(
+          'El profesional ya tiene una cita en ese horario. Elige otro horario o profesional.',
         );
       }
     }
@@ -172,6 +210,7 @@ export class AppointmentsService {
           customerId:       dto.customerId,
           serviceId:        dto.serviceId        ?? null,
           serviceVariantId: dto.serviceVariantId ?? null,
+          staffId:          dto.staffId          ?? null,
           type:             dto.type             ?? 'cita',
           status:           AppointmentStatus.PENDING,
           priority:         dto.priority         ?? 'NORMAL',
@@ -272,6 +311,7 @@ export class AppointmentsService {
           ...(dto.notes           !== undefined && { notes:          dto.notes }),
           ...(dto.internalNotes   !== undefined && { internalNotes:  dto.internalNotes }),
           ...(dto.agreedPrice     !== undefined && { agreedPrice:    dto.agreedPrice }),
+          ...(dto.staffId         !== undefined && { staffId:        dto.staffId }),
           ...(dto.cancelReason    !== undefined && { cancelReason:   dto.cancelReason }),
           ...(dto.paymentStatus   !== undefined && { paymentStatus:  dto.paymentStatus }),
           ...(dto.paymentMethod   !== undefined && { paymentMethod:  dto.paymentMethod }),

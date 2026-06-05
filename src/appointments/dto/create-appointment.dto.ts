@@ -21,6 +21,10 @@ export class CreateAppointmentDto {
   @IsOptional()
   serviceVariantId?: string;
 
+  @IsUUID()
+  @IsOptional()
+  staffId?: string;
+
   // ── Clasificación ─────────────────────────────────────────────────────────
   // type es texto libre: "cita", "visita_tecnica", "consulta", "instalacion", etc.
   @IsString()

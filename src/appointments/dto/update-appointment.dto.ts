@@ -1,6 +1,6 @@
 import {
   IsString, IsOptional, IsEnum, IsDateString,
-  IsInt, IsNumber, Min, Max, MaxLength, IsPositive, IsIn,
+  IsInt, IsNumber, IsUUID, Min, Max, MaxLength, IsPositive, IsIn,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { AppointmentStatus, AppointmentPriority } from '../../generated/prisma/enums';
@@ -98,4 +98,8 @@ export class UpdateAppointmentDto {
   @IsOptional()
   @MaxLength(500)
   rejectionReason?: string;
+
+  @IsUUID()
+  @IsOptional()
+  staffId?: string;
 }

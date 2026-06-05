@@ -30,11 +30,12 @@ export class AppointmentsController {
     @Query('from')             from?:             string,
     @Query('to')               to?:               string,
     @Query('serviceId')        serviceId?:        string,
+    @Query('staffId')          staffId?:          string,
     @Query('priority')         priority?:         string,
     @Query('hasPendingAction') hasPendingAction?: string,
   ) {
     return this.appointmentsService.findAll(req.user.storeId, {
-      status, type, from, to, serviceId, priority, hasPendingAction,
+      status, type, from, to, serviceId, staffId, priority, hasPendingAction,
     });
   }
 
