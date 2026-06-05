@@ -149,23 +149,57 @@ function parseNombreCliente(text: string, conversationLines: string[] = []): str
   const allText = [text, ...conversationLines].join('\n');
   const lines = allText.split(/\n/).map(l => l.trim()).filter(Boolean);
 
+  // Palabras comunes del español que NUNCA forman parte de un nombre propio.
+  // Si cualquier palabra del mensaje está en este set, el mensaje no es un nombre.
+  const NON_NAME_WORDS = new Set([
+    // Saludos
+    'hola','hey','ei','ey','buen','buenas','buenos','saludos','bueno',
+    // Despedidas / cortesía
+    'gracias','favor','disculpa','disculpe','perdón','permiso','adiós','hasta',
+    // Tiempo
+    'mañana','hoy','tarde','noche','madrugada','ahora','ahorita','después','antes',
+    'temprano','pronto','ya','rato','momento','día','dias','semana','semanas','mes','año',
+    'lunes','martes','miercoles','miércoles','jueves','viernes','sabado','sábado','domingo',
+    'enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre',
+    'octubre','noviembre','diciembre',
+    // Verbos de intención / acción frecuentes
+    'quiero','deseo','necesito','quisiera','puedo','tengo','tienen','tiene',
+    'hay','están','quisieras','saber','conocer','preguntar','agendar','agenda',
+    'agéndame','agendame','reserva','reservar','programar','consultar','ayudar',
+    'dime','dame','muestrame','muéstrame','explica','explícame','informar',
+    // Partículas / conectores frecuentes al inicio de mensajes
+    'para','por','con','sin','una','unos','unas','los','las','del','sobre',
+    'entre','desde','hasta','durante','también','tampoco','solo','sólo',
+    'me','mi','mis','sus','tu','tus','nos','les',
+    'que','qué','como','cómo','cuando','cuándo','donde','dónde',
+    'cuanto','cuánto','cuantos','cuántos','cual','cuál','cuales','cuáles',
+    // Respuestas / confirmaciones
+    'si','sí','no','ok','okey','bien','claro','perfecto','listo','dale','va',
+    'entendido','exacto','correcto','genial','super','súper',
+    // Servicios y términos del negocio
+    'cita','citas','corte','barba','manicure','pedicure','servicio','servicios',
+    'precio','precios','costo','costos','disponible','disponibilidad','disponibles',
+    'info','información','informacion','ayuda','atención','atencion','contacto',
+    'quisiera','trabajo','trabajar','pago','pagar','cobrar','cobro',
+    // Palabras de consulta
+    'tienen','ofrecen','hacen','atienden','abren','cierran','trabajan',
+    'oye','oiga','mira','mire','ve','vea',
+  ]);
+
   const isNotName = (line: string): boolean => {
     // Es dirección
     if (ADDRESS_RE.test(line)) return true;
     // Es teléfono (7+ dígitos)
     if (/^[\d\s+\-()\/.]{7,}$/.test(line)) return true;
-    // Es fecha o contiene fecha/tiempo
-    if (/\b(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre|lunes|martes|miércoles|jueves|viernes|sábado|domingo|mañana|hoy|tarde|noche|ahora|después|antes|temprano)\b/i.test(line)) return true;
     // Es hora
     if (/\b\d{1,2}(:\d{2})?\s*(am|pm|a\.m\.|p\.m\.)\b/i.test(line)) return true;
     // Es confirmación
     if (CONFIRMATION_RE.test(line)) return true;
     // Es solo números y símbolos
     if (/^[\d\W]+$/.test(line)) return true;
-    // Empieza con verbo o frase de intención — no es un nombre
-    if (/^(quiero|deseo|hola|buenos|buenas|gracias|necesito|quisiera|tengo|puedo|solo|también|tampoco|me\b|mi\b|mis\b|por\b|para\b|favor|sí|no\b|ok\b|agenda\b|agéndame|reserva\b|cita\b|corte\b|barba\b|manicure|pedicure|oye\b|oiga\b|necesit|quiero|dime\b|dame\b)/i.test(line)) return true;
-    // Contiene palabras de acción o servicio típicas (no pueden ser nombres)
-    if (/\b(agenda|agéndame|agendar|reservar|cita|corte|barba|mañana|hoy|servicio|precio|disponib)\b/i.test(line)) return true;
+    // Alguna palabra de la línea está en el set de palabras no-nombre
+    const words = line.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').split(/\s+/);
+    if (words.some(w => NON_NAME_WORDS.has(w.replace(/[^a-z]/g, '')))) return true;
     // Más de 5 palabras → probablemente una frase, no un nombre
     if (line.trim().split(/\s+/).length > 5) return true;
     return false;
