@@ -674,11 +674,30 @@ export class WhatsappService implements OnModuleInit {
         return; // no respondemos para no recompensar el spam
       }
 
-      // ── 2. Verificar que la tienda tiene API key de Groq ──────────────────
+      // ── 2. Resolver key de Whisper ────────────────────────────────────────
+      // Whisper solo disponible en Groq y OpenAI. Si el provider principal no lo
+      // soporta (ej: Gemini), se busca automáticamente en los cartuchos adicionales.
       const aiConfig = await this.prisma.aIConfiguration.findUnique({ where: { storeId } });
       if (!aiConfig?.apiKey) {
         this.logger.debug(`[Audio] ${phone}: sin API key → fallback`);
         return fallback();
+      }
+
+      const supportsWhisper = (p: string) => p === 'groq' || p === 'openai';
+      let whisperProvider = aiConfig.aiProvider ?? 'groq';
+      let whisperApiKey   = aiConfig.apiKey;
+
+      if (!supportsWhisper(whisperProvider)) {
+        const extras = Array.isArray(aiConfig.cartridges) ? aiConfig.cartridges as any[] : [];
+        const found  = extras.find(c => supportsWhisper(c.provider) && c.apiKey?.trim());
+        if (found) {
+          whisperProvider = found.provider;
+          whisperApiKey   = found.apiKey;
+          this.logger.debug(`[Audio] ${phone}: usando cartucho ${found.provider} para Whisper`);
+        } else {
+          this.logger.debug(`[Audio] ${phone}: provider "${whisperProvider}" sin Whisper y sin cartucho compatible → fallback`);
+          return fallback();
+        }
       }
 
       const audioMsg  = msg.message?.audioMessage;
@@ -725,7 +744,7 @@ export class WhatsappService implements OnModuleInit {
       }
 
       // ── 5. Transcribir con Whisper ───────────────────────────────────────
-      const raw = await this.transcribeAudio(buffer, ext, aiConfig.apiKey, aiConfig.aiProvider ?? 'groq');
+      const raw = await this.transcribeAudio(buffer, ext, whisperApiKey, whisperProvider);
 
       // Sanitizar transcripción igual que cualquier mensaje de texto
       const transcription = raw ? sanitizeContent(raw) : null;
