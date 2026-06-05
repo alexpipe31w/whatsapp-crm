@@ -40,4 +40,10 @@ export class AnalyticsController {
     const days = Math.min(90, Math.max(7, parseInt(daysStr ?? '30') || 30));
     return this.analyticsService.getRevenueTrends(req.user.storeId, days);
   }
+
+  // Resumen analytics — ?period=month (default) | today | week | last_month
+  @Get('summary')
+  getSummary(@Request() req: any, @Query('period') period?: string) {
+    return this.analyticsService.getSummary(req.user.storeId, period ?? 'month');
+  }
 }

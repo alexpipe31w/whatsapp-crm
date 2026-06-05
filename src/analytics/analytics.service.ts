@@ -229,4 +229,171 @@ Analiza el sentimiento general y los patrones. Devuelve ÚNICAMENTE este JSON (s
       totalOrders: orders.length,
     };
   }
+
+  async getSummary(storeId: string, period: string) {
+    const now   = new Date();
+    const tz    = 'America/Bogota';
+    let from: Date;
+    let to: Date = new Date(now);
+
+    switch (period) {
+      case 'today':
+        from = new Date(now); from.setHours(0, 0, 0, 0);
+        to   = new Date(now); to.setHours(23, 59, 59, 999);
+        break;
+      case 'week': {
+        const day = now.getDay();
+        from = new Date(now);
+        from.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
+        from.setHours(0, 0, 0, 0);
+        break;
+      }
+      case 'last_month': {
+        from = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
+        to   = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+        break;
+      }
+      case 'month':
+      default:
+        from = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+        break;
+    }
+
+    const [orders, customers, staffList] = await Promise.all([
+      this.prisma.order.findMany({
+        where: {
+          storeId,
+          createdAt: { gte: from, lte: to },
+          status:    { not: 'cancelled' },
+        },
+        include: {
+          orderItems: { include: { product: { select: { name: true } }, service: { select: { name: true } } } },
+          customer:   { select: { customerId: true } },
+        },
+      }),
+      this.prisma.customer.findMany({
+        where:  { storeId, createdAt: { gte: from, lte: to } },
+        select: { customerId: true },
+      }),
+      this.prisma.staff.findMany({
+        where:  { storeId, isActive: true },
+        select: { staffId: true, name: true },
+      }),
+    ]);
+
+    const productOrders = orders.filter(o => o.type !== 'service');
+    const serviceOrders = orders.filter(o => o.type === 'service');
+
+    const productRevenue = productOrders.reduce((s, o) => s + Number(o.total), 0);
+    const serviceRevenue = serviceOrders.reduce((s, o) => s + Number(o.total), 0);
+
+    // Payment method breakdown
+    const methodMap: Record<string, { label: string; amount: number; count: number }> = {};
+    const METHOD_LABELS: Record<string, string> = {
+      CASH: 'Efectivo', TRANSFER: 'Transferencia', CARD: 'Tarjeta',
+      efectivo: 'Efectivo', transferencia: 'Transferencia', nequi: 'Nequi',
+      daviplata: 'Daviplata', OTHER: 'Otro',
+    };
+    for (const o of orders) {
+      const m = (o.manualPaymentMethod ?? 'OTHER').toUpperCase();
+      if (!methodMap[m]) methodMap[m] = { label: METHOD_LABELS[m] ?? m, amount: 0, count: 0 };
+      methodMap[m].amount += Number(o.total);
+      methodMap[m].count  += 1;
+    }
+    const byPaymentMethod = Object.entries(methodMap)
+      .map(([method, v]) => ({ method, ...v }))
+      .sort((a, b) => b.amount - a.amount);
+
+    // Top products
+    const productQty: Record<string, { name: string; quantity: number; revenue: number }> = {};
+    for (const o of productOrders) {
+      for (const item of o.orderItems) {
+        const name = item.product?.name ?? item.description ?? 'Desconocido';
+        if (!productQty[name]) productQty[name] = { name, quantity: 0, revenue: 0 };
+        productQty[name].quantity += item.quantity;
+        productQty[name].revenue  += item.quantity * Number(item.unitPrice);
+      }
+    }
+    const topProducts = Object.values(productQty).sort((a, b) => b.quantity - a.quantity).slice(0, 5);
+
+    // Top services
+    const serviceQty: Record<string, { name: string; quantity: number; revenue: number }> = {};
+    for (const o of serviceOrders) {
+      for (const item of o.orderItems) {
+        const name = item.service?.name ?? item.description ?? 'Servicio';
+        if (!serviceQty[name]) serviceQty[name] = { name, quantity: 0, revenue: 0 };
+        serviceQty[name].quantity += item.quantity;
+        serviceQty[name].revenue  += item.quantity * Number(item.unitPrice);
+      }
+    }
+    const topServices = Object.values(serviceQty).sort((a, b) => b.quantity - a.quantity).slice(0, 5);
+
+    // By staff: count appointments + revenue from service orders linked via appointmentId
+    const byStaff: { staffId: string; name: string; appointments: number; revenue: number }[] = [];
+    if (staffList.length > 0) {
+      const staffAppts = await this.prisma.appointment.findMany({
+        where: {
+          storeId,
+          staffId:     { in: staffList.map(s => s.staffId) },
+          scheduledAt: { gte: from, lte: to },
+          status:      { in: ['CONFIRMED', 'IN_PROGRESS', 'COMPLETED'] },
+        },
+        select: { staffId: true, agreedPrice: true },
+      });
+
+      for (const member of staffList) {
+        const memberAppts = staffAppts.filter(a => a.staffId === member.staffId);
+        const revenue     = memberAppts.reduce((s, a) => s + (a.agreedPrice ? Number(a.agreedPrice) : 0), 0);
+        byStaff.push({
+          staffId:      member.staffId,
+          name:         member.name,
+          appointments: memberAppts.length,
+          revenue,
+        });
+      }
+      byStaff.sort((a, b) => b.appointments - a.appointments);
+    }
+
+    // Recent orders (last 50, combined)
+    const recentOrders = orders
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 50)
+      .map(o => ({
+        orderId:       o.orderId,
+        createdAt:     o.createdAt,
+        type:          o.type,
+        customerName:  null as string | null,  // not included to keep query light
+        description:   o.orderItems[0]?.product?.name ?? o.orderItems[0]?.service?.name ?? o.orderItems[0]?.description ?? '—',
+        amount:        Number(o.total),
+        paymentMethod: o.manualPaymentMethod ?? 'OTHER',
+      }));
+
+    // Total customers
+    const totalCustomers = await this.prisma.customer.count({ where: { storeId } });
+
+    return {
+      period,
+      from:      from.toISOString().slice(0, 10),
+      to:        to.toISOString().slice(0, 10),
+      revenue: {
+        total:    productRevenue + serviceRevenue,
+        products: productRevenue,
+        services: serviceRevenue,
+      },
+      orders: {
+        total:    orders.length,
+        products: productOrders.length,
+        services: serviceOrders.length,
+      },
+      customers: {
+        total: totalCustomers,
+        new:   customers.length,
+      },
+      byPaymentMethod,
+      topProducts,
+      topServices,
+      byStaff,
+      recentOrders,
+    };
+  }
 }
