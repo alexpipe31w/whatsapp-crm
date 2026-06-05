@@ -1,0 +1,56 @@
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Prisma } from '../generated/prisma/client';
+import { PrismaService } from '../prisma/prisma.service';
+import { CreateStaffDto } from './dto/create-staff.dto';
+import { UpdateStaffDto } from './dto/update-staff.dto';
+
+@Injectable()
+export class StaffService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  findAll(storeId: string) {
+    return this.prisma.staff.findMany({
+      where:   { storeId, isActive: true },
+      orderBy: { createdAt: 'asc' },
+      select:  { staffId: true, name: true, isActive: true, schedule: true, createdAt: true },
+    });
+  }
+
+  create(storeId: string, dto: CreateStaffDto) {
+    return this.prisma.staff.create({
+      data: {
+        storeId,
+        name:     dto.name,
+        schedule: dto.schedule ?? Prisma.JsonNull,
+      },
+      select: { staffId: true, name: true, isActive: true, schedule: true, createdAt: true },
+    });
+  }
+
+  async update(staffId: string, storeId: string, dto: UpdateStaffDto) {
+    await this.verifyOwnership(staffId, storeId);
+    return this.prisma.staff.update({
+      where: { staffId },
+      data:  {
+        ...(dto.name     !== undefined && { name:     dto.name }),
+        ...(dto.isActive !== undefined && { isActive: dto.isActive }),
+        ...(dto.schedule !== undefined && { schedule: dto.schedule ?? Prisma.JsonNull }),
+      },
+      select: { staffId: true, name: true, isActive: true, schedule: true, createdAt: true },
+    });
+  }
+
+  async remove(staffId: string, storeId: string) {
+    await this.verifyOwnership(staffId, storeId);
+    return this.prisma.staff.update({
+      where: { staffId },
+      data:  { isActive: false },
+    });
+  }
+
+  private async verifyOwnership(staffId: string, storeId: string) {
+    const staff = await this.prisma.staff.findUnique({ where: { staffId } });
+    if (!staff)                    throw new NotFoundException('Profesional no encontrado');
+    if (staff.storeId !== storeId) throw new ForbiddenException();
+  }
+}
