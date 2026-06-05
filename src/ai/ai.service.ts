@@ -287,6 +287,8 @@ function mergeAppt(
     notes:            update.notes            ?? base.notes,
     customerName:     update.customerName     ?? base.customerName,
     customerCedula:   update.customerCedula   ?? base.customerCedula,
+    staffId:          update.staffId          ?? base.staffId,
+    staffName:        update.staffName        ?? base.staffName,
     complete:         update.complete,
     reason:           update.reason,
   };
@@ -340,6 +342,8 @@ interface AppointmentExtractionResult {
   reason: string;
   customerName: string | null;
   customerCedula: string | null;
+  staffId: string | null;
+  staffName: string | null;
 }
 
 interface StoreSettings {
@@ -354,6 +358,7 @@ export class AiService {
 
   private readonly configCache           = new Map<string, CacheEntry<any>>();
   private readonly catalogCache          = new Map<string, CacheEntry<{ products: any[]; services: any[] }>>();
+  private readonly staffCache = new Map<string, { data: { staffId: string; name: string }[]; setAt: number }>();
   private readonly orderInProgress        = new Set<string>();
   private readonly pendingExtractions     = new Map<string, ExtractionResult>();
   private readonly appointmentInProgress  = new Set<string>();
@@ -559,7 +564,7 @@ export class AiService {
       }
       const { products, services } = catalog;
 
-      const [conversationRow, orders, appointments, history, store] = await Promise.all([
+      const [conversationRow, orders, appointments, history, store, activeStaff] = await Promise.all([
         this.prisma.conversation.findFirst({
           where:   { conversationId, storeId },
           include: {
@@ -592,6 +597,21 @@ export class AiService {
           take:    MAX_HISTORY_MESSAGES,
         }),
         this.prisma.store.findUnique({ where: { storeId } }),
+        (() => {
+          const now = Date.now();
+          const cached = this.staffCache.get(storeId);
+          if (cached && (now - cached.setAt) < 5 * 60_000) return Promise.resolve(cached.data);
+          return this.prisma.staff
+            .findMany({
+              where:   { storeId, isActive: true },
+              orderBy: { createdAt: 'asc' },
+              select:  { staffId: true, name: true },
+            })
+            .then(list => {
+              this.staffCache.set(storeId, { data: list, setAt: now });
+              return list;
+            });
+        })(),
       ]);
 
       if (!conversationRow) {
@@ -634,7 +654,7 @@ export class AiService {
       ) {
         const apptResult = await this.tryExtractAndCreateAppointment(
           provider, apiKey, model, history, userMessage,
-          customer, storeId, conversationId, services,
+          customer, storeId, conversationId, services, activeStaff,
         );
         if (apptResult.created) return apptResult.message!;
       }
@@ -676,6 +696,7 @@ export class AiService {
         history, userMessage, addressAlreadyGiven, settings,
         customer.lastConversationSummary ?? null,
         store,
+        activeStaff,
       );
 
       const messages: any[] = [
@@ -1059,6 +1080,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
     storeId: string,
     conversationId: string,
     services: any[],
+    activeStaff: Array<{ staffId: string; name: string }> = [],
   ): Promise<{ created: boolean; message?: string }> {
 
     const cached = this.pendingAppointments.get(conversationId);
@@ -1130,6 +1152,10 @@ ${services.flatMap((s: any) => {
       const now      = new Date();
       const fechaHoy = now.toISOString().split('T')[0];
 
+      const staffCatalog = activeStaff.length > 0
+        ? `\nEQUIPO DISPONIBLE:\n${activeStaff.map((s: { staffId: string; name: string }) => `- "${s.name}" → staffId: "${s.staffId}"`).join('\n')}\n`
+        : '';
+
       // Citas ya creadas en esta sesión → inyectar para que el LLM no las re-extraiga
       const alreadyCreated = this.conversationCreatedAppts.get(conversationId) ?? [];
       const alreadyCreatedBlock = alreadyCreated.length > 0
@@ -1141,6 +1167,7 @@ ${services.flatMap((s: any) => {
 FECHA ACTUAL: ${fechaHoy} (Colombia, zona horaria America/Bogota)
 ${alreadyCreatedBlock}
 ${servicesCatalog}
+${staffCatalog}
 
 CONVERSACIÓN:
 ${conversationText}
@@ -1163,6 +1190,7 @@ REGLAS ESTRICTAS:
 5. "address": dirección si es visita a domicilio. null si es en el local.
 6. "customerCedula": extrae SOLO si el cliente la mencionó explícitamente. Si no → null.
 7. "type": texto libre describiendo la cita (ej: "visita_tecnica", "instalación solar", "corte de cabello").
+8. "staffId": si el cliente eligió un profesional, usa su ID del EQUIPO DISPONIBLE. Si no hay equipo o no eligió → null.
 
 Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
 {
@@ -1179,7 +1207,9 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
   "notes": "notas adicionales o null",
   "reason": "por qué complete es true o false",
   "customerName": "nombre completo o null",
-  "customerCedula": "número de cédula o null (solo si fue mencionado)"
+  "customerCedula": "número de cédula o null (solo si fue mencionado)",
+  "staffId": "uuid del profesional elegido o null",
+  "staffName": "nombre del profesional elegido o null"
 }`;
 
       try {
@@ -1433,6 +1463,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
               address:      extracted.address     ?? null,
               notes:        extracted.notes       ?? null,
               agreedPrice:  extracted.agreedPrice ?? null,
+              staffId:      extracted.staffId     ?? null,
             },
           });
           await tx.appointmentTimeline.create({
@@ -1470,12 +1501,17 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
         hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota',
       });
 
+      const staffLine = extracted.staffName
+        ? `\n👤 *Profesional:* ${extracted.staffName}`
+        : '';
+
       return {
         created: true,
         message:
           `¡Cita agendada${nombreCliente}! ✅\n\n` +
           `📆 *Fecha:* ${fechaFormateada}\n` +
           `🕐 *Hora:* ${horaFormateada}` +
+          staffLine +
           (durationMinutes ? `\n⏱ *Duración estimada:* ${Math.floor(durationMinutes / 60)}h${durationMinutes % 60 > 0 ? ` ${durationMinutes % 60}min` : ''}` : '') +
           (extracted.agreedPrice ? `\n💰 *Precio acordado:* $${Number(extracted.agreedPrice).toLocaleString('es-CO')}` : '') +
           (extracted.address ? `\n📍 *Dirección:* ${extracted.address}` : '') +
@@ -1505,6 +1541,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
     settings: StoreSettings,
     lastConversationSummary: string | null = null,
     store: any = null,
+    activeStaff: Array<{ staffId: string; name: string }> = [],
   ): string {
     const sep           = '\n===================================================\n';
     const nombreCliente = customer.name ?? null;
@@ -1674,6 +1711,13 @@ PROHIBIDO:
 - Inventar precios o características.
 - Mencionar items fuera del catálogo.`;
 
+    const staffLabel = ((store as any)?.staffLabel ?? 'profesional').toLowerCase();
+    const staffLabelCap = staffLabel.charAt(0).toUpperCase() + staffLabel.slice(1);
+
+    const staffBlock = activeStaff.length > 0
+      ? `\nEQUIPO DISPONIBLE (${staffLabelCap}s):\n${activeStaff.map((s: { staffId: string; name: string }) => `- ${s.name} (id: ${s.staffId})`).join('\n')}\n\nREGLA OBLIGATORIA DE AGENDAMIENTO CON EQUIPO:\n1. SIEMPRE pregunta: "¿Con qué ${staffLabel} quieres tu cita? Tenemos disponibles: ${activeStaff.map((s: { staffId: string; name: string }) => s.name).join(', ')}"\n2. El cliente DEBE elegir un ${staffLabel} antes de confirmar.\n3. Una vez elegido, NO preguntes de nuevo.\n4. Si el ${staffLabel} elegido no está disponible en ese horario, avisa y sugiere otro horario o ${staffLabel} alternativo.`
+      : '';
+
     const agendamientoSection = `FLUJO DE AGENDAMIENTO (CITAS Y SERVICIOS):
 
 Cuando el cliente quiera agendar, necesito:
@@ -1693,7 +1737,8 @@ Cuando tengas todo, muestra el resumen y pide confirmación:
 IMPORTANTE:
 - Si el cliente menciona "mañana", calcula la fecha real desde hoy.
 - Si la hora es ambigua (ej: "2"), confirma: "¿A las 2pm o 2am?"
-- Para servicios VARIABLE, avisa que el precio lo confirma un asesor en la visita.`;
+- Para servicios VARIABLE, avisa que el precio lo confirma un asesor en la visita.
+${staffBlock}`;
 
     // Contexto de conversaciones anteriores (generado por el cleanup nocturno)
     const contextoPrevio = lastConversationSummary
