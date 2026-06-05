@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsBoolean, IsArray, IsInt, IsObject, Min } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsArray, IsInt, IsObject, Min, IsEmail, IsUrl } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateStoreDto {
@@ -19,8 +19,8 @@ export class CreateStoreDto {
   @IsString() @IsOptional() googleMapsUrl?: string;
 
   // Contacto y redes
-  @IsString() @IsOptional() email?: string;
-  @IsString() @IsOptional() website?: string;
+  @IsEmail() @IsOptional() email?: string;
+  @IsUrl() @IsOptional() website?: string;
   @IsString() @IsOptional() instagram?: string;
   @IsString() @IsOptional() facebook?: string;
   @IsString() @IsOptional() tiktok?: string;
