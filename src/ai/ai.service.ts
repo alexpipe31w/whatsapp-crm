@@ -3,6 +3,7 @@ import { Prisma } from '../generated/prisma/client';
 import { createCompletion, PROVIDER_CONFIG, AIProvider } from './providers';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { formatBusinessHoursForAI } from '../utils/business-hours.util';
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
@@ -518,7 +519,7 @@ export class AiService {
       }
       const { products, services } = catalog;
 
-      const [conversationRow, orders, appointments, history] = await Promise.all([
+      const [conversationRow, orders, appointments, history, store] = await Promise.all([
         this.prisma.conversation.findFirst({
           where:   { conversationId, storeId },
           include: {
@@ -550,6 +551,7 @@ export class AiService {
           orderBy: { createdAt: 'asc' },
           take:    MAX_HISTORY_MESSAGES,
         }),
+        this.prisma.store.findUnique({ where: { storeId } }),
       ]);
 
       if (!conversationRow) {
@@ -626,6 +628,7 @@ export class AiService {
         products, services, fechaActual, horaActual,
         history, userMessage, addressAlreadyGiven, settings,
         customer.lastConversationSummary ?? null,
+        store,
       );
 
       const messages: any[] = [
@@ -1428,6 +1431,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
     addressAlreadyGiven: boolean,
     settings: StoreSettings,
     lastConversationSummary: string | null = null,
+    store: any = null,
   ): string {
     const sep           = '\n===================================================\n';
     const nombreCliente = customer.name ?? null;
@@ -1651,12 +1655,48 @@ IMPORTANTE:
 - Usa saltos de línea para separar productos, no guiones ni líneas decorativas.
 - El texto debe verse limpio en WhatsApp sin ningún símbolo de formato visible.`;
 
-    return [
+    // ── Información del negocio ───────────────────────────────────────────────
+    const negocioLines: string[] = [];
+    if (store) {
+      if (store.description)        negocioLines.push(store.description);
+      if (store.address)            negocioLines.push(`📍 Dirección: ${store.address}${store.neighborhood ? `, ${store.neighborhood}` : ''}`);
+      if (store.directions)         negocioLines.push(`🗺️ Cómo llegar: ${store.directions}`);
+      if (store.googleMapsUrl)      negocioLines.push(`🔗 Google Maps: ${store.googleMapsUrl}`);
+      if (store.email)              negocioLines.push(`📧 Email: ${store.email}`);
+      if (store.website)            negocioLines.push(`🌐 Web: ${store.website}`);
+      if (store.instagram)          negocioLines.push(`📸 Instagram: @${store.instagram}`);
+      if (store.facebook)           negocioLines.push(`📘 Facebook: ${store.facebook}`);
+      if (store.tiktok)             negocioLines.push(`🎵 TikTok: @${store.tiktok}`);
+      if ((store.paymentMethods as string[])?.length > 0)
+        negocioLines.push(`💳 Formas de pago: ${(store.paymentMethods as string[]).join(', ')}`);
+      if (store.paymentAccount)     negocioLines.push(`🏦 Nequi/Cuenta: ${store.paymentAccount}`);
+      if (store.requiresDeposit)    negocioLines.push(`💰 Se requiere anticipo de ${store.depositAmount ?? 'un monto a convenir'} para confirmar la cita.`);
+      if (store.cancellationPolicy) negocioLines.push(`❌ Cancelaciones: ${store.cancellationPolicy}`);
+      if (store.hasDelivery)        negocioLines.push(`🚗 Servicio a domicilio${store.deliveryZone ? ` en: ${store.deliveryZone}` : ''}.`);
+      if (store.hasParking)         negocioLines.push(`🅿️ Contamos con parqueadero disponible.`);
+      if (store.minAdvanceMinutes) {
+        const h = Math.round(store.minAdvanceMinutes / 60);
+        negocioLines.push(`⏰ Citas con mínimo ${h} hora${h !== 1 ? 's' : ''} de anticipación.`);
+      }
+    }
+    const negocioSection = negocioLines.length > 0
+      ? `INFORMACIÓN DEL NEGOCIO:\n${negocioLines.join('\n')}`
+      : '';
+
+    // ── Horarios ──────────────────────────────────────────────────────────────
+    const horariosSection = store?.businessHours
+      ? `HORARIO DE ATENCIÓN:\n${formatBusinessHoursForAI(store.businessHours as any)}\n\nREGLA CRÍTICA DE HORARIOS: NUNCA agendes citas fuera del horario de atención. Si el cliente pide una hora no disponible, sugiere la hora válida más cercana. Si el día solicitado está cerrado, sugiere el próximo día hábil.`
+      : '';
+
+    const sections = [
       basePrompt, sep, clienteSection, sep, contextoPrevio, sep,
       datosSection, sep, ordenesSection, sep, citasSection, sep,
       catalogoSection, sep, flujoSection, sep, agendamientoSection, sep,
       audioSection, sep, antiBucleSection, sep, formatoSection, sep,
       `FECHA Y HORA ACTUAL: ${fechaActual}, ${horaActual} (Colombia).`,
-    ].join('\n');
+    ];
+    if (negocioSection)  sections.splice(1, 0, negocioSection);
+    if (horariosSection) sections.splice(negocioSection ? 2 : 1, 0, horariosSection);
+    return sections.join('\n');
   }
 }
