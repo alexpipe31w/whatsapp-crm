@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsBoolean, IsArray, IsInt, IsObject, Min, IsEmail, IsUrl } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsArray, IsInt, IsObject, Min, IsEmail, IsUrl, Matches } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateStoreDto {
@@ -42,4 +42,9 @@ export class CreateStoreDto {
   @IsObject() @IsOptional() businessHours?: Record<string, any>;
 
   @IsString() @IsOptional() staffLabel?: string;
+
+  @IsString()
+  @IsOptional()
+  @Matches(/^[a-z0-9-]{3,100}$/, { message: 'Slug: solo minúsculas, números y guiones (3-100 chars)' })
+  slug?: string;
 }
