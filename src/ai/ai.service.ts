@@ -1688,15 +1688,16 @@ IMPORTANTE:
       ? `HORARIO DE ATENCIÓN:\n${formatBusinessHoursForAI(store.businessHours as any)}\n\nREGLA CRÍTICA DE HORARIOS: NUNCA agendes citas fuera del horario de atención. Si el cliente pide una hora no disponible, sugiere la hora válida más cercana. Si el día solicitado está cerrado, sugiere el próximo día hábil.`
       : '';
 
-    const sections = [
-      basePrompt, sep, clienteSection, sep, contextoPrevio, sep,
+    const allSections: string[] = [basePrompt];
+    if (negocioSection)  allSections.push(sep, negocioSection);
+    if (horariosSection) allSections.push(sep, horariosSection);
+    allSections.push(
+      sep, clienteSection, sep, contextoPrevio, sep,
       datosSection, sep, ordenesSection, sep, citasSection, sep,
       catalogoSection, sep, flujoSection, sep, agendamientoSection, sep,
       audioSection, sep, antiBucleSection, sep, formatoSection, sep,
       `FECHA Y HORA ACTUAL: ${fechaActual}, ${horaActual} (Colombia).`,
-    ];
-    if (negocioSection)  sections.splice(1, 0, negocioSection);
-    if (horariosSection) sections.splice(negocioSection ? 2 : 1, 0, horariosSection);
-    return sections.join('\n');
+    );
+    return allSections.join('\n');
   }
 }
