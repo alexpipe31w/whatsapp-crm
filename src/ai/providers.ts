@@ -1,7 +1,7 @@
 import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
 
-export type AIProvider = 'groq' | 'openai' | 'together' | 'mistral' | 'anthropic';
+export type AIProvider = 'groq' | 'openai' | 'together' | 'mistral' | 'anthropic' | 'gemini';
 
 interface ProviderMeta {
   baseURL?: string;
@@ -45,6 +45,13 @@ export const PROVIDER_CONFIG: Record<AIProvider, ProviderMeta> = {
     defaultModel:     'claude-sonnet-4-6',
     defaultFastModel: 'claude-haiku-4-5-20251001',
   },
+  gemini: {
+    baseURL:          'https://generativelanguage.googleapis.com/v1beta/openai/',
+    whisperSupported: false,
+    whisperBaseURL:   '',
+    defaultModel:     'gemini-2.0-flash',
+    defaultFastModel: 'gemini-1.5-flash',
+  },
 };
 
 export interface CompletionMessage {
@@ -69,10 +76,11 @@ function getOpenAIClient(provider: AIProvider, apiKey: string): OpenAI {
 }
 
 function getAnthropicClient(apiKey: string): Anthropic {
-  if (!anthropicCache.has(apiKey)) {
-    anthropicCache.set(apiKey, new Anthropic({ apiKey }));
+  const key  = `anthropic:${apiKey}`;
+  if (!anthropicCache.has(key)) {
+    anthropicCache.set(key, new Anthropic({ apiKey }));
   }
-  return anthropicCache.get(apiKey)!;
+  return anthropicCache.get(key)!;
 }
 
 export async function createCompletion(
