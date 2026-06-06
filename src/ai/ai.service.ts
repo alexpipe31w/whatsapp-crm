@@ -1076,7 +1076,7 @@ export class AiService {
         const extractorC = getNextCartridge(storeId) ?? cartridge;
         const apptResult = await this.tryExtractAndCreateAppointment(
           extractorC.provider, extractorC.apiKey, extractorC.model, history, userMessage,
-          customer, storeId, conversationId, services, activeStaff,
+          customer, storeId, conversationId, services, activeStaff, store,
         );
         if (apptResult.created) return apptResult.message!;
         // Si falló por horario/conflicto hay un mensaje específico — usarlo directamente
@@ -1556,6 +1556,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
     conversationId: string,
     services: any[],
     activeStaff: Array<{ staffId: string; name: string; schedule?: any }> = [],
+    store: any = null,
   ): Promise<{ created: boolean; message?: string }> {
 
     const cached = this.pendingAppointments.get(conversationId);
@@ -1582,6 +1583,12 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
     );
 
     if (cacheHasAllData && CONFIRMATION_RE.test(latestMessage.trim())) {
+      // Guard: no re-crear si el mismo slot ya fue creado en esta conversación
+      const caso1Already = this.conversationCreatedAppts.get(conversationId) ?? [];
+      if (caso1Already.some(a => a.scheduledDate === cached!.scheduledDate && a.scheduledTime === cached!.scheduledTime)) {
+        this.logger.warn(`[Cita] Caso 1 — slot ${cached!.scheduledDate} ${cached!.scheduledTime} ya fue creado — ignorando`);
+        return { created: false };
+      }
       this.logger.log(`[Cita] Caso 1 — caché con datos suficientes + confirmación para ${conversationId}`);
       // Re-parsear hora y fecha del mensaje actual: el cliente puede confirmar Y dar
       // un horario diferente al del caché (ej: "ok, a las 3 pm"). Siempre el mensaje
@@ -1862,7 +1869,12 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
           }, ORDER_GUARD_TTL_MS);
 
           // Si el merge ahora tiene todos los datos y hay confirmación → crear
+          const mergeAlready = this.conversationCreatedAppts.get(conversationId) ?? [];
+          const mergeDupe = mergeAlready.some(
+            a => a.scheduledDate === merged.scheduledDate && a.scheduledTime === merged.scheduledTime,
+          );
           if (
+            !mergeDupe &&
             merged.scheduledDate &&
             merged.scheduledTime &&
             (!needsCustomerData || merged.customerName) &&
@@ -1872,6 +1884,9 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
             extracted = { ...merged, complete: true };
             this.pendingAppointments.delete(conversationId);
             this.cancelConfirmReminder(conversationId);
+          } else if (mergeDupe) {
+            this.logger.warn(`[Cita] Merge — slot ${merged.scheduledDate} ${merged.scheduledTime} ya fue creado — ignorando`);
+            extracted = merged;
           } else {
             extracted = merged;
             // Si la caché tiene todos los datos pero el cliente aún no confirma,
@@ -1937,6 +1952,40 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
       if (isNaN(scheduledAt.getTime())) {
         this.logger.warn(`[Cita] Fecha inválida: ${extracted.scheduledDate}T${extracted.scheduledTime}`);
         return { created: false };
+      }
+
+      // Validar horario aunque no se haya seleccionado un profesional específico
+      if (!extracted.staffId) {
+        const dayKey = coDayKey(scheduledAt);
+        const DAY_NAMES: Record<string, string> = { sun:'domingos', mon:'lunes', tue:'martes', wed:'miércoles', thu:'jueves', fri:'viernes', sat:'sábados' };
+        // Con staff activo: bloquear si ninguno trabaja ese día
+        if (activeStaff.length > 0) {
+          const anyoneWorks = activeStaff.some(s => (s.schedule as any)?.[dayKey]?.isOpen === true);
+          if (!anyoneWorks) {
+            this.logger.warn(`[Cita] Ningún profesional trabaja el ${dayKey} — bloqueando cita sin staffId`);
+            const cur = this.pendingAppointments.get(conversationId);
+            if (cur) this.pendingAppointments.set(conversationId, { ...cur, scheduledDate: null, scheduledTime: null, complete: false });
+            this.cancelConfirmReminder(conversationId);
+            return {
+              created: false,
+              message: `Lo siento, no tenemos disponibilidad los ${DAY_NAMES[dayKey] ?? dayKey}. ¿Quieres elegir otro día? 😊`,
+            };
+          }
+        }
+        // Sin staff pero con businessHours: bloquear si la tienda está cerrada ese día
+        else if (store?.businessHours) {
+          const dayBH = (store.businessHours as any)[dayKey];
+          if (dayBH?.isOpen === false) {
+            this.logger.warn(`[Cita] Tienda cerrada el ${dayKey} (businessHours) — bloqueando`);
+            const cur = this.pendingAppointments.get(conversationId);
+            if (cur) this.pendingAppointments.set(conversationId, { ...cur, scheduledDate: null, scheduledTime: null, complete: false });
+            this.cancelConfirmReminder(conversationId);
+            return {
+              created: false,
+              message: `Lo siento, estamos cerrados los ${DAY_NAMES[dayKey] ?? dayKey}. ¿Quieres elegir otro día? 😊`,
+            };
+          }
+        }
       }
 
       // Validar que el barbero/profesional trabaje ese día y en ese horario
