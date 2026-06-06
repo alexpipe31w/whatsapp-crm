@@ -78,7 +78,7 @@ function buildCalendarioRef(): string {
     const label = i === 1 ? ' ← mañana' : '';
     lines.push(`  ${nombre}: ${ymd}${label}`);
   }
-  lines.push('REGLA: "el lunes" = el lunes más cercano en el futuro. "la otra semana/próxima semana" = la semana 7-13 días adelante. "dentro de dos semanas" = el día MÁS CERCANO al punto HOY+14; si HOY es sábado 6-jun, "viernes dentro de dos semanas" → el punto es sáb 20-jun → viernes más cercano = 19-jun (1 día antes), NO 26-jun (6 días después). Siempre elige el día más cercano al punto HOY+N*7, puede ser antes o después.');
+  lines.push('REGLA: "el lunes" = el lunes más cercano en el futuro. "la otra semana"/"la próxima semana" = la semana que EMPIEZA el PRÓXIMO LUNES; si HOY es sáb 6-jun, esa semana empieza el lun 8-jun → "el lunes de la otra semana" = 8-jun, "el viernes de la otra semana" = 12-jun. "dentro de dos semanas" = el día MÁS CERCANO al punto HOY+14; si HOY es sáb 6-jun, "viernes dentro de dos semanas" → punto=sáb 20-jun → viernes más cercano = 19-jun (1 día antes), NO 26-jun. Siempre elige el día más cercano al punto HOY+N*7, puede ser antes o después.');
   return lines.join('\n');
 }
 
@@ -152,11 +152,14 @@ function parseFechaEspanol(text: string): string | null {
 
   // "el lunes" | "el próximo martes" | "este viernes" | "el lunes dentro de tres semanas"
   const weekDaysOffset = parseSemanaOffset(t); // 0 si no menciona semanas
+  const otroSemana = /otra\s+semana|pr[oó]xima\s+semana|siguiente\s+semana/.test(t);
   const refPoint = new Date(hoy);
   if (weekDaysOffset > 0) {
     refPoint.setDate(refPoint.getDate() + weekDaysOffset);
-  } else if (/otra\s+semana|pr[oó]xima\s+semana|siguiente\s+semana/.test(t)) {
-    refPoint.setDate(refPoint.getDate() + 7);
+  } else if (otroSemana) {
+    // "La otra semana" = la semana que empieza el próximo lunes
+    const daysToMon = (1 - hoy.getDay() + 7) % 7 || 7;
+    refPoint.setDate(refPoint.getDate() + daysToMon);
   }
   const refDia = refPoint.getDay();
 
@@ -165,12 +168,13 @@ function parseFechaEspanol(text: string): string | null {
     if (re.test(t)) {
       const d = new Date(refPoint);
       let diff = diaSemana - refDia;
-      // Si weekOffset > 0: tomar el día de esa semana (hacia adelante si no coincide)
-      // Si weekOffset = 0: siempre buscar hacia el futuro (nunca hoy)
       if (weekDaysOffset > 0) {
         // Nearest neighbor: encontrar el día más cercano al refPoint (puede ser antes o después)
         if (diff > 3)  diff -= 7;
         if (diff < -3) diff += 7;
+      } else if (otroSemana) {
+        // El día cae dentro de la semana anclada al lunes; diff=0 es válido (el lunes mismo)
+        if (diff < 0) diff += 7;
       } else {
         if (diff <= 0) diff += 7;
       }
@@ -2666,12 +2670,18 @@ PROHIBIDO:
 
     const agendamientoSection = `FLUJO DE AGENDAMIENTO (CITAS Y SERVICIOS):
 
-REGLA DE EFICIENCIA — MUY IMPORTANTE:
-Cuando el cliente muestre intención de agendar, pide TODA la información en UN solo mensaje.
-${clienteDataPendiente
-  ? `Ejemplo: "Para agendar necesito: ¿qué servicio, con qué ${staffLabel}, para qué día y hora? Y tu nombre completo por favor."`
-  : `Ejemplo: "Para agendar necesito: ¿qué servicio, con qué ${staffLabel}, para qué día y hora?"`
-}
+PRIMER MENSAJE — REGLA CRÍTICA:
+Cuando el cliente muestre intención de agendar (o simplemente salude en un negocio orientado a citas), en TU PRIMER MENSAJE debes:
+1. Dar un saludo breve y amable.
+2. Preguntar TODO lo que necesitas en ESE MISMO mensaje, sin esperar la respuesta del cliente para pedir el siguiente dato:
+   - ¿Qué servicio desea?${activeStaff.length > 0 ? `\n   - ¿Con qué ${staffLabel} prefiere? (${activeStaff.map((s: { name: string }) => s.name).join(', ')})` : ''}
+   - ¿Qué día y hora prefiere?${clienteDataPendiente ? `\n   - Su nombre completo.` : ''}
+
+Ejemplo de primer mensaje ideal:
+"¡Hola! 👋 Para agendar tu cita necesito: ¿qué servicio deseas${activeStaff.length > 0 ? `, con quién prefieres (${activeStaff.map((s: { name: string }) => s.name).join(' o ')})` : ''}, y para qué día y hora?${clienteDataPendiente ? ' También tu nombre completo.' : ''}"
+
+ESTA REGLA ES PARA CUALQUIER TIPO DE NEGOCIO — no solo barberías. Aplica igual para salones de belleza, talleres, consultorios, reparaciones, y cualquier servicio con citas. Usa términos genéricos: "${staffLabel}", "servicio", "cita".
+
 NO hagas una pregunta por vez. Recoge todo en un solo intercambio para confirmar rápido.
 
 Cuando tengas todo, muestra el resumen y pide confirmación:
@@ -2701,7 +2711,7 @@ pregunta: "¿Para qué día quieres consultar la disponibilidad?"
     const antiBucleSection = `REGLA ANTI-CONFIRMACIÓN FALSA (ABSOLUTA — NUNCA VIOLAR):
 - NUNCA digas "tu cita está confirmada", "cita registrada", "cita agendada", "quedas agendado", "nos vemos el X", "hasta entonces" ni ninguna variante que implique que la cita fue creada.
 - La confirmación REAL la genera el sistema automáticamente con el mensaje "¡Cita agendada! ✅". Si NO ves ese mensaje en la conversación, la cita NO existe en el sistema.
-- Si el cliente dice "sí" confirmando y tú no tienes certeza de que el sistema creó la cita, responde: "Entendido, estoy procesando tu solicitud. Dame un momento."
+- Si el cliente dice "sí" confirmando y la cita aún no fue creada, responde con un resumen de los datos recogidos: "¡Perfecto! Para confirmar: [servicio] con [profesional] el [fecha] a las [hora]. ¿Todo correcto?" — NUNCA respondas "dame un momento" ni "estoy procesando" porque el sistema NO enviará un mensaje automático después; el cliente quedaría esperando indefinidamente.
 - NUNCA inventes una confirmación. Si fallas en crear la cita, pide al cliente que elija otro horario.
 
 REGLA ANTI-BUCLE EN CONVERSACIÓN (OBLIGATORIA):
