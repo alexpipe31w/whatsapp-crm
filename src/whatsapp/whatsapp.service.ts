@@ -25,8 +25,9 @@ const MSG_DEBOUNCE_MS        = 3_000;
 const MSG_DEDUP_TTL_MS       = 10 * 60 * 1000;
 const HISTORY_SYNC_WINDOW_MS = 24 * 60 * 60 * 1000;
 const MAX_CONTENT_LENGTH     = 4_000; // caracteres máximos que se pasan a la IA
-const SEND_RETRY_ATTEMPTS    = 3;
-const SEND_RETRY_DELAY_MS    = 1_500;
+const SEND_RETRY_ATTEMPTS          = 4;
+const SEND_RETRY_DELAY_MS          = 1_500;
+const SEND_NOT_ACCEPTABLE_DELAY_MS = 6_000; // sesión Signal en renegociación, esperar más
 
 const RECONNECT_DELAYS: Record<number, number> = {
   408: 5_000,
@@ -715,6 +716,7 @@ export class WhatsappService implements OnModuleInit {
           sock, jid,
           `El audio es demasiado largo (máximo ${Math.floor(AUDIO_MAX_SECONDS / 60)} min). ¿Puedes contarme en texto qué necesitas?`,
           phone,
+          storeId,
         );
         return;
       }
@@ -863,7 +865,7 @@ export class WhatsappService implements OnModuleInit {
         isAiResponse: false,
       });
 
-      await this.safeSend(sock, jid, reply, phone);
+      await this.safeSend(sock, jid, reply, phone, storeId);
 
       await this.messagesService.create({
         conversationId: conversation.conversationId,
@@ -915,7 +917,7 @@ export class WhatsappService implements OnModuleInit {
       if (isAdmin) {
         this.logger.log(`🔑 Mensaje del admin (${phone}) → Admin Assistant`);
         const reply = await this.adminAssistant.handle(storeId, phone, content);
-        await this.safeSend(sock, jid, reply, phone);
+        await this.safeSend(sock, jid, reply, phone, storeId);
         return;
       }
 
@@ -972,7 +974,7 @@ export class WhatsappService implements OnModuleInit {
           `Entendido, ahora mismo te conecto con un asesor. ` +
           `Por favor espera un momento, pronto alguien te atenderá. 😊`;
 
-        await this.safeSend(sock, jid, handoffReply, phone);
+        await this.safeSend(sock, jid, handoffReply, phone, storeId);
 
         await this.messagesService.create({
           conversationId: conversation.conversationId,
@@ -1014,7 +1016,7 @@ export class WhatsappService implements OnModuleInit {
       }).catch(err => this.logger.warn(`No se pudo guardar respuesta IA: ${err.message}`));
 
       // Enviar al cliente con retry
-      await this.safeSend(sock, jid, aiReply, phone);
+      await this.safeSend(sock, jid, aiReply, phone, storeId);
       this.logger.log(`🤖 IA respondió a ${phone}`);
 
     } catch (err: any) {
@@ -1030,18 +1032,16 @@ export class WhatsappService implements OnModuleInit {
     jid: string,
     text: string,
     phoneLabel: string,
+    storeId?: string,
   ): Promise<void> {
     if (!text?.trim()) return;
 
-    // WhatsApp tiene límite de ~65536 caracteres por mensaje
-    // Si es muy largo, partir en chunks
     const MAX_WA_LENGTH = 4096;
     const chunks: string[] = [];
 
     if (text.length > MAX_WA_LENGTH) {
       let remaining = text;
       while (remaining.length > 0) {
-        // Intentar cortar en salto de línea para no partir palabras
         let cut = MAX_WA_LENGTH;
         if (remaining.length > MAX_WA_LENGTH) {
           const lastNewline = remaining.lastIndexOf('\n', MAX_WA_LENGTH);
@@ -1055,13 +1055,35 @@ export class WhatsappService implements OnModuleInit {
     }
 
     for (const chunk of chunks) {
-      await withRetry(
-        () => sock.sendMessage(jid, { text: chunk }),
-        SEND_RETRY_ATTEMPTS,
-        SEND_RETRY_DELAY_MS,
-        `sendMessage a ${phoneLabel}`,
-        this.logger,
-      );
+      let lastErr: any;
+      for (let i = 0; i < SEND_RETRY_ATTEMPTS; i++) {
+        try {
+          // En reintentos, buscar socket fresco en caso de reconexión
+          const currentSock = (storeId && i > 0) ? (this.sockets.get(storeId) ?? sock) : sock;
+          await currentSock.sendMessage(jid, { text: chunk });
+          lastErr = null;
+          break;
+        } catch (err: any) {
+          lastErr = err;
+          if (i < SEND_RETRY_ATTEMPTS - 1) {
+            const isNotAcceptable = String(err?.message ?? '').includes('not-acceptable');
+            const delay = isNotAcceptable ? SEND_NOT_ACCEPTABLE_DELAY_MS : SEND_RETRY_DELAY_MS;
+            if (isNotAcceptable) {
+              this.logger.warn(
+                `sendMessage a ${phoneLabel} — not-acceptable (sesión renegociando), ` +
+                `reintentando en ${delay}ms... (${i + 1}/${SEND_RETRY_ATTEMPTS})`,
+              );
+            } else {
+              this.logger.warn(
+                `sendMessage a ${phoneLabel} — intento ${i + 1}/${SEND_RETRY_ATTEMPTS} ` +
+                `falló: ${err.message}. Reintentando en ${delay}ms...`,
+              );
+            }
+            await new Promise(r => setTimeout(r, delay));
+          }
+        }
+      }
+      if (lastErr) throw lastErr;
     }
   }
 
@@ -1097,7 +1119,7 @@ export class WhatsappService implements OnModuleInit {
     const sock = this.sockets.get(storeId);
     if (!sock) throw new Error(`No hay socket activo para store: ${storeId}`);
     const jid = jidFromPhone(phone);
-    await this.safeSend(sock, jid, content, phone);
+    await this.safeSend(sock, jid, content, phone, storeId);
     this.logger.log(`📤 Mensaje enviado a ${phone}`);
   }
 }
