@@ -71,7 +71,7 @@ function buildCalendarioRef(): string {
   const todayName = DIAS[today.getUTCDay()];
   const lines = [`HOY: ${todayName}, ${todayStr} (Colombia — America/Bogota)`];
   lines.push('PRÓXIMAS FECHAS (usa exactamente estos valores YYYY-MM-DD):');
-  for (let i = 1; i <= 14; i++) {
+  for (let i = 1; i <= 30; i++) {
     const d = new Date(today.getTime() + i * 86_400_000);
     const ymd = coDateStr(d);
     const nombre = DIAS[d.getUTCDay()];
