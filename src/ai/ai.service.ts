@@ -78,7 +78,7 @@ function buildCalendarioRef(): string {
     const label = i === 1 ? ' ← mañana' : '';
     lines.push(`  ${nombre}: ${ymd}${label}`);
   }
-  lines.push('REGLA: "el lunes" = el lunes más cercano en el futuro según la tabla anterior. "la otra semana" = la semana 8-14 días adelante.');
+  lines.push('REGLA: "el lunes" = el lunes más cercano en el futuro. "la otra semana/próxima semana" = la semana 7-13 días adelante. "dentro de dos semanas" = el día MÁS CERCANO al punto HOY+14; si HOY es sábado 6-jun, "viernes dentro de dos semanas" → el punto es sáb 20-jun → viernes más cercano = 19-jun (1 día antes), NO 26-jun (6 días después). Siempre elige el día más cercano al punto HOY+N*7, puede ser antes o después.');
   return lines.join('\n');
 }
 
@@ -168,8 +168,9 @@ function parseFechaEspanol(text: string): string | null {
       // Si weekOffset > 0: tomar el día de esa semana (hacia adelante si no coincide)
       // Si weekOffset = 0: siempre buscar hacia el futuro (nunca hoy)
       if (weekDaysOffset > 0) {
-        if (diff < 0) diff += 7;
-        // diff=0 significa que refPoint YA ES ese día → usarlo directamente
+        // Nearest neighbor: encontrar el día más cercano al refPoint (puede ser antes o después)
+        if (diff > 3)  diff -= 7;
+        if (diff < -3) diff += 7;
       } else {
         if (diff <= 0) diff += 7;
       }
@@ -226,7 +227,10 @@ function extractQueryDate(message: string, _today: Date, tz = TZ_CO): Date | nul
   for (const [word, target] of Object.entries(DAYS)) {
     if (lower.includes(word)) {
       if (weeksOff > 0) {
-        const diff = (target - refDayEQ + 7) % 7;
+        // Nearest neighbor: día más cercano al refDateEQ (puede ser antes o después)
+        let diff = target - refDayEQ;
+        if (diff > 3)  diff -= 7;
+        if (diff < -3) diff += 7;
         const d = new Date(refDateEQ); d.setDate(d.getDate() + diff); return d;
       }
       const diff = (target - dayOfWeek + 7) % 7 || 7;
@@ -1268,6 +1272,31 @@ export class AiService {
       const CATALOG_QUERY_RE = /\b(servicio|servicios|producto|productos|cat[aá]logo|precio|precios|tienen|tienes|ofrecen|disponible|cu[aá]nto|descuento|paquete|qu[eé]\s+(hay|tienen|ofrecen|tienes))\b/i;
       const includeCatalog = hasPurchaseIntent || hasAppointmentIntent || hasPendingOrder || hasPendingAppt || CATALOG_QUERY_RE.test(userMessage);
 
+      // Inyectar datos del caché de cita incompleta para que el LLM principal no recalcule fechas
+      const cachedAppt = this.pendingAppointments.get(conversationId);
+      let pendingApptBlock = '';
+      if (cachedAppt && (cachedAppt.scheduledDate || cachedAppt.scheduledTime || cachedAppt.staffId)) {
+        const DIAS_ES: Record<string,string> = { sun:'domingo', mon:'lunes', tue:'martes', wed:'miércoles', thu:'jueves', fri:'viernes', sat:'sábado' };
+        const lines: string[] = ['CITA EN PROGRESO (datos ya recopilados — NO los recalcules, úsalos tal cual):'];
+        if (cachedAppt.scheduledDate) {
+          const dk = coDayKey(coNoon(cachedAppt.scheduledDate));
+          lines.push(`  Fecha: ${cachedAppt.scheduledDate} (${DIAS_ES[dk] ?? dk})`);
+        }
+        if (cachedAppt.scheduledTime) lines.push(`  Hora: ${cachedAppt.scheduledTime}`);
+        if (cachedAppt.staffName)     lines.push(`  Profesional: ${cachedAppt.staffName}`);
+        else if (cachedAppt.staffId) {
+          const sn = activeStaff.find(s => s.staffId === cachedAppt.staffId)?.name;
+          if (sn) lines.push(`  Profesional: ${sn}`);
+        }
+        if (cachedAppt.serviceId) {
+          const svcName = services.find((s: any) => s.serviceId === cachedAppt.serviceId)?.name;
+          if (svcName) lines.push(`  Servicio: ${svcName}`);
+        }
+        lines.push('  Falta: confirmación explícita del cliente.');
+        lines.push('REGLA: Usa exactamente la fecha/hora/profesional de arriba en tu respuesta. NO calcules ni "corrijas" estas fechas.');
+        pendingApptBlock = '\n' + lines.join('\n');
+      }
+
       const enrichedSystemPrompt = this.buildSystemPrompt(
         config.systemPrompt, customer, orders, appointments,
         products, services, fechaActual, horaActual,
@@ -1280,7 +1309,7 @@ export class AiService {
       );
 
       const messages: any[] = [
-        { role: 'system', content: enrichedSystemPrompt },
+        { role: 'system', content: enrichedSystemPrompt + pendingApptBlock },
         ...history.map((m: any) => ({
           role:    m.isAiResponse ? 'assistant' : 'user',
           content: m.content.trim(),
