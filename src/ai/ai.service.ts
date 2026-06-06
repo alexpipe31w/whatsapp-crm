@@ -2210,12 +2210,61 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
           return appt;
         });
       } else {
+        // Auto-asignar primer staff disponible si el cliente no especificó uno
+        let resolvedStaffId = extracted.staffId ?? null;
+        if (!resolvedStaffId && activeStaff.length > 0) {
+          const slotEnd = endsAt ?? new Date(scheduledAt.getTime() + 30 * 60_000);
+          const dayKey = coDayKey(scheduledAt);
+          const [hReq, mReq] = extracted.scheduledTime!.split(':').map(Number);
+          const minReq = hReq * 60 + mReq;
+          for (const s of activeStaff) {
+            const sched = (s.schedule as any)?.[dayKey] ?? (store?.businessHours as any)?.[dayKey];
+            if (sched?.isOpen === false) continue;
+            if (sched) {
+              const inShift = ['shift1', 'shift2'].some(sh => {
+                const t = sched[sh];
+                if (!t?.open || !t?.close) return false;
+                const [shH, shM] = t.open.split(':').map(Number);
+                const [ehH, ehM] = t.close.split(':').map(Number);
+                return minReq >= shH * 60 + shM && minReq < ehH * 60 + ehM;
+              });
+              if (!inShift) continue;
+            }
+            const busy = await this.prisma.appointment.findFirst({
+              where: {
+                staffId: s.staffId,
+                status: { in: ['PENDING', 'CONFIRMED', 'IN_PROGRESS'] },
+                AND: [
+                  { scheduledAt: { lt: slotEnd } },
+                  { OR: [
+                    { endsAt: { gt: scheduledAt } },
+                    { endsAt: null, scheduledAt: { gt: new Date(scheduledAt.getTime() - 30 * 60_000) } },
+                  ]},
+                ],
+              },
+            });
+            if (!busy) {
+              resolvedStaffId = s.staffId;
+              this.logger.log(`[Cita] Auto-asignando ${s.name} (primer disponible en el slot)`);
+              break;
+            }
+          }
+          if (!resolvedStaffId) {
+            this.pendingAppointments.delete(conversationId);
+            this.cancelConfirmReminder(conversationId);
+            return {
+              created: false,
+              message: `Lo siento, no hay disponibilidad a las ${extracted.scheduledTime}. ¿Quieres elegir otra hora?`,
+            };
+          }
+        }
+
         // Conflict check before transaction to return a proper message
-        if (extracted.staffId) {
+        if (resolvedStaffId) {
           const slotEnd = endsAt ?? new Date(scheduledAt.getTime() + 30 * 60_000);
           const preConflict = await this.prisma.appointment.findFirst({
             where: {
-              staffId: extracted.staffId,
+              staffId: resolvedStaffId,
               status: { in: ['PENDING', 'CONFIRMED', 'IN_PROGRESS'] },
               AND: [
                 { scheduledAt: { lt: slotEnd } },
@@ -2229,7 +2278,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
           if (preConflict) {
             this.pendingAppointments.delete(conversationId);
             this.cancelConfirmReminder(conversationId);
-            const staffInfo = activeStaff.find(s => s.staffId === extracted.staffId);
+            const staffInfo = activeStaff.find(s => s.staffId === resolvedStaffId);
             return {
               created: false,
               message: `Lo siento, ese horario ya está ocupado para ${staffInfo?.name ?? 'el profesional'}. Por favor elige otra hora disponible.`,
@@ -2239,11 +2288,11 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
 
         appointment = await this.prisma.$transaction(async (tx) => {
           // Guard final dentro de la transacción para evitar doble-booking concurrente
-          if (extracted.staffId) {
+          if (resolvedStaffId) {
             const slotEnd = endsAt ?? new Date(scheduledAt.getTime() + 30 * 60_000);
             const conflict = await tx.appointment.findFirst({
               where: {
-                staffId: extracted.staffId,
+                staffId: resolvedStaffId,
                 status: { in: ['PENDING', 'CONFIRMED', 'IN_PROGRESS'] },
                 AND: [
                   { scheduledAt: { lt: slotEnd } },
@@ -2276,7 +2325,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
               address:      extracted.address     ?? null,
               notes:        extracted.notes       ?? null,
               agreedPrice:  extracted.agreedPrice ?? null,
-              staffId:      extracted.staffId     ?? null,
+              staffId:      resolvedStaffId,
             },
           });
           await tx.appointmentTimeline.create({
@@ -2315,9 +2364,9 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
         hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota',
       });
 
-      const staffLine = extracted.staffName
-        ? `\n👤 *Profesional:* ${extracted.staffName}`
-        : '';
+      const staffName = extracted.staffName
+        ?? (appointment.staffId ? activeStaff.find(s => s.staffId === appointment.staffId)?.name : undefined);
+      const staffLine = staffName ? `\n👤 *Profesional:* ${staffName}` : '';
 
       return {
         created: true,
