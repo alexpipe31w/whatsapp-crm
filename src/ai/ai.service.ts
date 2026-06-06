@@ -280,9 +280,12 @@ function parseHoraEspanol(text: string): string | null {
     return `${String(coDate.getUTCHours()).padStart(2,'0')}:${String(coDate.getUTCMinutes()).padStart(2,'0')}`;
   }
 
-  // "3 pm" | "3pm" | "las 3 pm" | "a las 3 de la tarde"
-  // (?!\s*...) evita capturar "17" de "17 días / semanas / meses"
-  const simpleFmt = t.match(/\b(?:a\s+las?\s+|las?\s+)?(\d{1,2})(?!\s*(?:días?|semanas?|meses?|años?))\s*(?:y\s+(?:media|cuarto|tres\s+cuartos?))?\s*(am|pm|a\.m\.|p\.m\.|(?:de|en|por)\s+la\s+(?:ma[ñn]ana|tarde|noche))?\b/);
+  // Primero intenta con prefijo explícito ("a las"/"las") — permite omitir am/pm
+  // Luego intenta con marcador de periodo explícito (am/pm/mañana/tarde) — permite omitir prefijo
+  // Nunca captura un número desnudo sin contexto: evita confundir "11" de "jueves 11 a las 8 am"
+  const prefixFmt = t.match(/\b(?:a\s+las?\s+|las?\s+)(\d{1,2})(?!\s*(?:días?|semanas?|meses?|años?))\s*(?:y\s+(?:media|cuarto|tres\s+cuartos?))?\s*(am|pm|a\.m\.|p\.m\.|(?:de|en|por)\s+la\s+(?:ma[ñn]ana|tarde|noche))?\b/);
+  const periodFmt = t.match(/\b(\d{1,2})(?!\s*(?:días?|semanas?|meses?|años?))\s*(?:y\s+(?:media|cuarto|tres\s+cuartos?))?\s*(am|pm|a\.m\.|p\.m\.|(?:de|en|por)\s+la\s+(?:ma[ñn]ana|tarde|noche))\b/);
+  const simpleFmt = prefixFmt ?? periodFmt;
   if (simpleFmt) {
     let h = parseInt(simpleFmt[1]);
     if (h > 23) return null; // no es una hora
@@ -1681,7 +1684,9 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
       // Guard: no re-crear si el mismo slot ya fue creado en esta conversación
       const caso1Already = this.conversationCreatedAppts.get(conversationId) ?? [];
       if (caso1Already.some(a => a.scheduledDate === cached!.scheduledDate && a.scheduledTime === cached!.scheduledTime)) {
-        this.logger.warn(`[Cita] Caso 1 — slot ${cached!.scheduledDate} ${cached!.scheduledTime} ya fue creado — ignorando`);
+        this.logger.warn(`[Cita] Caso 1 — slot ${cached!.scheduledDate} ${cached!.scheduledTime} ya fue creado — limpiando caché`);
+        this.pendingAppointments.delete(conversationId);
+        this.cancelConfirmReminder(conversationId);
         return { created: false };
       }
       this.logger.log(`[Cita] Caso 1 — caché con datos suficientes + confirmación para ${conversationId}`);
@@ -2005,7 +2010,9 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
             this.pendingAppointments.delete(conversationId);
             this.cancelConfirmReminder(conversationId);
           } else if (mergeDupe) {
-            this.logger.warn(`[Cita] Merge — slot ${merged.scheduledDate} ${merged.scheduledTime} ya fue creado — ignorando`);
+            this.logger.warn(`[Cita] Merge — slot ${merged.scheduledDate} ${merged.scheduledTime} ya fue creado — limpiando caché`);
+            this.pendingAppointments.delete(conversationId);
+            this.cancelConfirmReminder(conversationId);
             extracted = merged;
           } else {
             extracted = merged;
