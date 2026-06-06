@@ -1060,6 +1060,34 @@ export class AiService {
       );
       const hasApptContextHint = APPT_CONTEXT_RE.test(userMessage) && prevHadApptCtx;
 
+      // ── Pre-check horario: día cerrado detectado en el mensaje actual ───────────
+      // Si el cliente menciona una fecha y ese día está cerrado, avisar de inmediato
+      // antes de llamar al extractor o al LLM principal (evita que el LLM pida
+      // servicio/barbero para un día sin disponibilidad).
+      if ((hasAppointmentIntent || hasPendingAppt) && store) {
+        const earlyDate = extractQueryDate(userMessage, new Date());
+        if (earlyDate) {
+          const edKey = coDayKey(earlyDate);
+          const DAY_NAMES_PRE: Record<string, string> = {
+            sun: 'domingos', mon: 'lunes', tue: 'martes', wed: 'miércoles',
+            thu: 'jueves', fri: 'viernes', sat: 'sábados',
+          };
+          let edClosed = false;
+          if (activeStaff.length > 0) {
+            edClosed = !activeStaff.some(s => (s.schedule as any)?.[edKey]?.isOpen === true);
+          } else if (store.businessHours) {
+            edClosed = (store.businessHours as any)[edKey]?.isOpen === false;
+          }
+          if (edClosed) {
+            this.logger.warn(`[Pre-check] Día ${edKey} cerrado — bloqueando antes del extractor/LLM`);
+            const cur = this.pendingAppointments.get(conversationId);
+            if (cur) this.pendingAppointments.set(conversationId, { ...cur, scheduledDate: null, scheduledTime: null, complete: false });
+            this.cancelConfirmReminder(conversationId);
+            return `Lo siento, no tenemos disponibilidad los ${DAY_NAMES_PRE[edKey] ?? edKey}. ¿Te gustaría agendar para otro día? 😊`;
+          }
+        }
+      }
+
       // ── Flujo de agendamiento ────────────────────────────────────────────────
       // Solo correr el extractor si hay datos concretos para extraer.
       // Si el mensaje es pura intención sin fecha/hora/confirmación y no hay caché → saltar y dejar que el AI principal pida los datos.
