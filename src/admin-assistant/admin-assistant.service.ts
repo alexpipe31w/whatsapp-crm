@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { createCompletion, AIProvider } from '../ai/providers';
 
@@ -14,13 +14,17 @@ const ACTION_RE         = /⚡ACTION⚡([A-Z_]+)⚡({[\s\S]*?})⚡END⚡/;
 const normalizePhone = (p: string) => p.replace(/\D/g, '');
 
 @Injectable()
-export class AdminAssistantService {
+export class AdminAssistantService implements OnModuleDestroy {
   private readonly logger   = new Logger(AdminAssistantService.name);
   private readonly sessions = new Map<string, Session>();
+  private readonly cleanupTimer: ReturnType<typeof setInterval>;
 
   constructor(private readonly prisma: PrismaService) {
-    // Limpieza de sesiones expiradas cada 30min
-    setInterval(() => this.cleanSessions(), 30 * 60 * 1000);
+    this.cleanupTimer = setInterval(() => this.cleanSessions(), 30 * 60 * 1000);
+  }
+
+  onModuleDestroy() {
+    clearInterval(this.cleanupTimer);
   }
 
   // ─── Punto de entrada principal ───────────────────────────────────────────
@@ -47,14 +51,35 @@ export class AdminAssistantService {
         { role: 'user' as const,      content },
       ];
 
-      let reply = await createCompletion(
-        aiConfig.aiProvider as AIProvider,
-        aiConfig.apiKey,
-        aiConfig.model,
-        messages,
-        0.4,
-        1200,
-      );
+      // Build ordered candidate list: primary key first, then cartridges
+      const extras: Array<{ provider: string; apiKey: string; model?: string }> =
+        Array.isArray((aiConfig as any).cartridges)
+          ? (aiConfig as any).cartridges
+          : [];
+      const candidates = [
+        { provider: aiConfig.aiProvider as string, apiKey: aiConfig.apiKey, model: aiConfig.model },
+        ...extras.map(c => ({ provider: c.provider, apiKey: c.apiKey, model: c.model ?? aiConfig.model })),
+      ].filter(c => c.apiKey?.trim());
+
+      let reply = '';
+      let lastErr: unknown;
+      for (const cand of candidates) {
+        try {
+          reply = await createCompletion(
+            cand.provider as AIProvider,
+            cand.apiKey,
+            cand.model,
+            messages,
+            0.4,
+            1200,
+          );
+          break;
+        } catch (err: any) {
+          lastErr = err;
+          this.logger.warn(`[AdminAssistant] ${storeId}: proveedor ${cand.provider} falló (${err?.status ?? err?.message ?? err}), probando siguiente cartridge...`);
+        }
+      }
+      if (!reply) throw lastErr ?? new Error('Todos los cartridges fallaron');
 
       // ── Detectar y ejecutar acción ─────────────────────────────────────────
       const actionMatch = ACTION_RE.exec(reply);
