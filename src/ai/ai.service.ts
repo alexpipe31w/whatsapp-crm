@@ -224,7 +224,7 @@ function parseHoraEspanol(text: string): string | null {
   }
 
   // "3 pm" | "3pm" | "las 3 pm" | "a las 3 de la tarde"
-  const simpleFmt = t.match(/\b(?:a\s+las?\s+|las?\s+)?(\d{1,2})\s*(?:y\s+media|y\s+cuarto|y\s+tres\s+cuartos?)?\s*(am|pm|a\.m\.|p\.m\.|de\s+la\s+ma[ñn]ana|de\s+la\s+tarde|de\s+la\s+noche)?\b/);
+  const simpleFmt = t.match(/\b(?:a\s+las?\s+|las?\s+)?(\d{1,2})\s*(?:y\s+(?:media|cuarto|tres\s+cuartos?))?\s*(am|pm|a\.m\.|p\.m\.|(?:de|en|por)\s+la\s+(?:ma[ñn]ana|tarde|noche))?\b/);
   if (simpleFmt) {
     let h = parseInt(simpleFmt[1]);
     if (h > 23) return null; // no es una hora
@@ -1147,6 +1147,10 @@ export class AiService {
         }
       }
 
+      // Incluir catálogo completo solo cuando hay intención real de compra/cita/consulta
+      const CATALOG_QUERY_RE = /\b(servicio|servicios|producto|productos|cat[aá]logo|precio|precios|tienen|tienes|ofrecen|disponible|cu[aá]nto|descuento|paquete|qu[eé]\s+(hay|tienen|ofrecen|tienes))\b/i;
+      const includeCatalog = hasPurchaseIntent || hasAppointmentIntent || hasPendingOrder || hasPendingAppt || CATALOG_QUERY_RE.test(userMessage);
+
       const enrichedSystemPrompt = this.buildSystemPrompt(
         config.systemPrompt, customer, orders, appointments,
         products, services, fechaActual, horaActual,
@@ -1155,6 +1159,7 @@ export class AiService {
         store,
         activeStaff,
         availabilityBlock,
+        includeCatalog,
       );
 
       const messages: any[] = [
@@ -2183,6 +2188,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
     store: any = null,
     activeStaff: Array<{ staffId: string; name: string; schedule?: any }> = [],
     availabilityBlock = '',
+    includeCatalog = true,
   ): string {
     const sep           = '\n===================================================\n';
     const nombreCliente = customer.name ?? null;
@@ -2266,12 +2272,21 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
 
     if (!hasItems) {
       catalogoSection = `CATÁLOGO: Sin productos ni servicios registrados.`;
+    } else if (!includeCatalog) {
+      // Modo compacto: solo nombres para mensajes sin intención de compra/cita
+      const prodNames = products.map((p: any) => p.name).join(', ');
+      const svcNames  = services.map((s: any) => s.name).join(', ');
+      catalogoSection = [
+        prodNames ? `PRODUCTOS DISPONIBLES: ${prodNames}` : null,
+        svcNames  ? `SERVICIOS DISPONIBLES: ${svcNames}` : null,
+        `(El cliente puede pedir detalles, precios o agendar en cualquier momento.)`,
+      ].filter(Boolean).join('\n');
     } else {
       const productosTxt = products.length > 0
         ? products.map((p: any) => {
             const lines = [`  · ${p.name}`];
             if (p.description) {
-              const clean = p.description.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 300);
+              const clean = p.description.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 150);
               if (clean) lines.push(`    ${clean}`);
             }
             if (p.variants?.length > 0) {
@@ -2291,7 +2306,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
             const precioTxt = this.buildServicePriceLabel(s);
             const lines     = [`  · ${s.name} — ${precioTxt}`];
             if (s.description) {
-              const clean = s.description.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 300);
+              const clean = s.description.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 150);
               if (clean) lines.push(`    ${clean}`);
             }
             if (s.estimatedMinutes) {
@@ -2462,10 +2477,12 @@ REGLA ANTI-BUCLE EN CONVERSACIÓN (OBLIGATORIA):
     const allSections: string[] = [basePrompt];
     if (negocioSection)  allSections.push(sep, negocioSection);
     if (horariosSection) allSections.push(sep, horariosSection);
+    allSections.push(sep, clienteSection, sep, contextoPrevio);
+    if (datosMencionados.length > 0) allSections.push(sep, datosSection);
+    if (orders.length > 0)           allSections.push(sep, ordenesSection);
+    if (appointments.length > 0)     allSections.push(sep, citasSection);
     allSections.push(
-      sep, clienteSection, sep, contextoPrevio, sep,
-      datosSection, sep, ordenesSection, sep, citasSection, sep,
-      catalogoSection, sep, flujoSection, sep, agendamientoSection, sep,
+      sep, catalogoSection, sep, flujoSection, sep, agendamientoSection, sep,
       audioSection, sep, antiBucleSection, sep, formatoSection, sep,
       `FECHA Y HORA ACTUAL: ${fechaActual}, ${horaActual} (Colombia).`,
     );
