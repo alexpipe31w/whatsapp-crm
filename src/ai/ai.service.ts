@@ -1839,6 +1839,31 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
           }
         }
 
+        // Servicio — si el LLM no resolvió el serviceId pero sí dio un tipo de cita,
+        // hacer fuzzy-match contra los servicios registrados por solapamiento de palabras.
+        if (!extracted.serviceId && extracted.type && services.length > 0) {
+          const norm = (s: string) =>
+            s.toLowerCase()
+              .normalize('NFD').replace(/[̀-ͯ]/g, '')
+              .replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+          const needleWords = norm(extracted.type).split(' ').filter(w => w.length > 2);
+          let bestScore = 0;
+          let bestSvc: any = null;
+          for (const svc of services) {
+            const hay = norm(svc.name);
+            if (needleWords.length === 0) continue;
+            const matches = needleWords.filter(w => hay.includes(w)).length;
+            const score = matches / needleWords.length;
+            if (score > bestScore) { bestScore = score; bestSvc = svc; }
+          }
+          if (bestSvc && bestScore >= 0.5) {
+            this.logger.log(`[Cita] Fallback serviceId: "${extracted.type}" → "${bestSvc.name}" (score=${bestScore.toFixed(2)})`);
+            extracted.serviceId = bestSvc.serviceId;
+            if (!extracted.durationMinutes && bestSvc.estimatedMinutes) extracted.durationMinutes = bestSvc.estimatedMinutes;
+            if (!extracted.agreedPrice    && bestSvc.price)             extracted.agreedPrice    = bestSvc.price;
+          }
+        }
+
         this.logger.log(`[Cita] Post-fallback: complete=${extracted.complete} date=${extracted.scheduledDate} time=${extracted.scheduledTime} staff=${extracted.staffId?.slice(-8)} name=${extracted.customerName} reason=${extracted.reason}`);
 
         // Guardar nombre proactivamente aunque la cita aún no esté completa
