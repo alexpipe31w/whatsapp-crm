@@ -223,6 +223,38 @@ function parseHoraEspanol(text: string): string | null {
     return `${String(h).padStart(2,'0')}:${m}`;
   }
 
+  // Tiempo relativo: "en media hora", "dentro de una hora", "en dos horas y media"
+  // Solo con prefijo explícito (evita confundir "las 16 horas" con relativo)
+  const NUM_ES: Record<string, number> = {
+    'un': 1, 'una': 1, 'dos': 2, 'tres': 3, 'cuatro': 4,
+    'cinco': 5, 'seis': 6, 'siete': 7, 'ocho': 8, 'nueve': 9, 'diez': 10,
+  };
+  const relRe = /(?:dentro\s+de|en)\s+(media\s+hora|hora(?:\s+y\s+(?:media|cuarto))?|(?:un[a]?|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|\d+)\s+hora(?:s)?(?:\s+y\s+(?:media|cuarto))?)/;
+  const relM = t.match(relRe);
+  if (relM) {
+    const phrase = relM[1].trim();
+    let offsetMin = 0;
+    if (/^media\s+hora/.test(phrase)) {
+      offsetMin = 30;
+    } else if (/^hora\s+y\s+media/.test(phrase)) {
+      offsetMin = 90;
+    } else if (/^hora\s+y\s+cuarto/.test(phrase)) {
+      offsetMin = 75;
+    } else if (/^hora$/.test(phrase)) {
+      offsetMin = 60;
+    } else {
+      const numM = phrase.match(/^(un[a]?|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|\d+)/);
+      const numStr = numM?.[1] ?? '1';
+      const n = parseInt(numStr) || NUM_ES[numStr] || 1;
+      offsetMin = n * 60;
+      if (/y\s+media/.test(phrase)) offsetMin += 30;
+      if (/y\s+cuarto/.test(phrase)) offsetMin += 15;
+    }
+    // Colombia es UTC-5 (sin horario de verano)
+    const coDate = new Date(Date.now() - 5 * 60 * 60 * 1000 + offsetMin * 60_000);
+    return `${String(coDate.getUTCHours()).padStart(2,'0')}:${String(coDate.getUTCMinutes()).padStart(2,'0')}`;
+  }
+
   // "3 pm" | "3pm" | "las 3 pm" | "a las 3 de la tarde"
   const simpleFmt = t.match(/\b(?:a\s+las?\s+|las?\s+)?(\d{1,2})\s*(?:y\s+(?:media|cuarto|tres\s+cuartos?))?\s*(am|pm|a\.m\.|p\.m\.|(?:de|en|por)\s+la\s+(?:ma[ñn]ana|tarde|noche))?\b/);
   if (simpleFmt) {
