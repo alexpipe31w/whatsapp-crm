@@ -689,20 +689,17 @@ export class WhatsappService implements OnModuleInit {
       }
 
       const supportsWhisper = (p: string) => p === 'groq' || p === 'openai';
-      let whisperProvider = aiConfig.aiProvider ?? 'groq';
-      let whisperApiKey   = aiConfig.apiKey;
+      const extras = Array.isArray(aiConfig.cartridges) ? aiConfig.cartridges as any[] : [];
 
-      if (!supportsWhisper(whisperProvider)) {
-        const extras = Array.isArray(aiConfig.cartridges) ? aiConfig.cartridges as any[] : [];
-        const found  = extras.find(c => supportsWhisper(c.provider) && c.apiKey?.trim());
-        if (found) {
-          whisperProvider = found.provider;
-          whisperApiKey   = found.apiKey;
-          this.logger.debug(`[Audio] ${phone}: usando cartucho ${found.provider} para Whisper`);
-        } else {
-          this.logger.debug(`[Audio] ${phone}: provider "${whisperProvider}" sin Whisper y sin cartucho compatible → fallback`);
-          return fallback();
-        }
+      // Construir lista ordenada de candidatos Whisper: primary primero, luego cartuchos
+      const whisperCandidates: Array<{ provider: string; apiKey: string }> = [
+        { provider: aiConfig.aiProvider ?? 'groq', apiKey: aiConfig.apiKey ?? '' },
+        ...extras.map((c: any) => ({ provider: c.provider ?? '', apiKey: c.apiKey ?? '' })),
+      ].filter(c => supportsWhisper(c.provider) && c.apiKey.trim());
+
+      if (whisperCandidates.length === 0) {
+        this.logger.debug(`[Audio] ${phone}: sin clave Groq/OpenAI disponible → fallback`);
+        return fallback();
       }
 
       const audioMsg  = msg.message?.audioMessage;
@@ -748,11 +745,16 @@ export class WhatsappService implements OnModuleInit {
         return fallback();
       }
 
-      // ── 5. Transcribir con Whisper ───────────────────────────────────────
-      const raw = await this.transcribeAudio(buffer, ext, whisperApiKey, whisperProvider);
+      // ── 5. Transcribir con Whisper — intentar candidatos en orden ───────
+      let rawTranscription: string | null = null;
+      for (const cand of whisperCandidates) {
+        rawTranscription = await this.transcribeAudio(buffer, ext, cand.apiKey, cand.provider);
+        if (rawTranscription !== null) break;
+        this.logger.debug(`[Audio] ${phone}: clave ${cand.provider} falló, probando siguiente...`);
+      }
 
       // Sanitizar transcripción igual que cualquier mensaje de texto
-      const transcription = raw ? sanitizeContent(raw) : null;
+      const transcription = rawTranscription ? sanitizeContent(rawTranscription) : null;
 
       if (!transcription) {
         this.logger.warn(`[Audio] ${phone}: transcripción vacía → fallback`);

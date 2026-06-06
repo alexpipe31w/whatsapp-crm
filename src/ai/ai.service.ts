@@ -93,6 +93,18 @@ function parseFechaEspanol(text: string): string | null {
     return hoyStr;
   }
 
+  // "dentro de N días" | "en N días"
+  const NUM_DIAS_ES: Record<string, number> = {
+    'un': 1, 'uno': 1, 'una': 1, 'dos': 2, 'tres': 3, 'cuatro': 4, 'cinco': 5,
+    'seis': 6, 'siete': 7, 'ocho': 8, 'nueve': 9, 'diez': 10,
+    'quince': 15, 'veinte': 20, 'veintiuno': 21, 'veintidos': 22, 'treinta': 30,
+  };
+  const diasM = t.match(/\b(?:dentro\s+de|en)\s+(\d+|un[ao]?|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|quince|veinte|treinta)\s+días?\b/);
+  if (diasM) {
+    const n = parseInt(diasM[1]) || NUM_DIAS_ES[diasM[1]] || 0;
+    if (n > 0) { const d = new Date(hoy); d.setDate(d.getDate() + n); return coDateStr(d); }
+  }
+
   // Formatos numéricos: 24/03/2026 | 24-03-2026 | 24/03 | 24-03
   const numFmt = t.match(/\b(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?\b/);
   if (numFmt) {
@@ -164,12 +176,25 @@ function extractQueryDate(message: string, _today: Date, tz = TZ_CO): Date | nul
     const d = new Date(hoy); d.setDate(d.getDate() + 1); return d;
   }
 
+  // "dentro de N días" — antes del loop de días para que tome prioridad
+  const NUM_DIAS_EQ: Record<string, number> = {
+    'un': 1, 'uno': 1, 'una': 1, 'dos': 2, 'tres': 3, 'cuatro': 4, 'cinco': 5,
+    'seis': 6, 'siete': 7, 'ocho': 8, 'nueve': 9, 'diez': 10,
+    'quince': 15, 'veinte': 20, 'treinta': 30,
+  };
+  const diasMEQ = lower.match(/\b(?:dentro\s+de|en)\s+(\d+|un[ao]?|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|quince|veinte|treinta)\s+días?\b/);
+  if (diasMEQ) {
+    const n = parseInt(diasMEQ[1]) || NUM_DIAS_EQ[diasMEQ[1]] || 0;
+    if (n > 0) { const d = new Date(hoy); d.setDate(d.getDate() + n); return d; }
+  }
+
   const DAYS: Record<string, number> = {
     domingo:0, lunes:1, martes:2, miércoles:3, miercoles:3,
     jueves:4, viernes:5, sábado:6, sabado:6,
   };
 
-  // Soporte "dentro de N semanas" para avanzar el punto de referencia
+  // Soporte "dentro de N días / semanas" para avanzar el punto de referencia del día de semana
+  // Ej: "dentro de 8 días el miércoles" | "dentro de una semana el lunes"
   const weeksOff = parseSemanaOffset(lower);
   const refDateEQ = new Date(hoy);
   if (weeksOff > 0) {
@@ -256,7 +281,8 @@ function parseHoraEspanol(text: string): string | null {
   }
 
   // "3 pm" | "3pm" | "las 3 pm" | "a las 3 de la tarde"
-  const simpleFmt = t.match(/\b(?:a\s+las?\s+|las?\s+)?(\d{1,2})\s*(?:y\s+(?:media|cuarto|tres\s+cuartos?))?\s*(am|pm|a\.m\.|p\.m\.|(?:de|en|por)\s+la\s+(?:ma[ñn]ana|tarde|noche))?\b/);
+  // (?!\s*...) evita capturar "17" de "17 días / semanas / meses"
+  const simpleFmt = t.match(/\b(?:a\s+las?\s+|las?\s+)?(\d{1,2})(?!\s*(?:días?|semanas?|meses?|años?))\s*(?:y\s+(?:media|cuarto|tres\s+cuartos?))?\s*(am|pm|a\.m\.|p\.m\.|(?:de|en|por)\s+la\s+(?:ma[ñn]ana|tarde|noche))?\b/);
   if (simpleFmt) {
     let h = parseInt(simpleFmt[1]);
     if (h > 23) return null; // no es una hora
@@ -306,6 +332,9 @@ function parseNombreCliente(text: string, conversationLines: string[] = []): str
     'me','mi','mis','sus','tu','tus','nos','les',
     'que','qué','como','cómo','cuando','cuándo','donde','dónde',
     'cuanto','cuánto','cuantos','cuántos','cual','cuál','cuales','cuáles',
+    // Adjetivos / pronombres frecuentes que NO son nombres
+    'nuevo','nueva','nuevos','nuevas','soy','eres','es','era','estoy','estas',
+    'esta','estás','están','somos','viejo','vieja','joven','pequeño','grande',
     // Respuestas / confirmaciones
     'si','sí','no','ok','okey','bien','claro','perfecto','listo','dale','va',
     'entendido','exacto','correcto','genial','super','súper',
@@ -347,17 +376,23 @@ function parseNombreCliente(text: string, conversationLines: string[] = []): str
   }
 
   // Patrones explícitos primero: "me llamo X", "soy X", "mi nombre es X"
+  // IMPORTANTE: usar [ \t]+ (no \s+) para no cruzar saltos de línea entre mensajes distintos
   const explicitPatterns = [
-    /(?:me\s+llamo|soy|mi\s+nombre\s+es|nombre[:\s]+|llámame|llamamé)\s+([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)*)/i,
-    /(?:me\s+llamo|soy|mi\s+nombre\s+es|nombre[:\s]+)\s+([a-záéíóúñ]+(?:\s+[a-záéíóúñ]+)*)/i,
+    /(?:me\s+llamo|mi\s+nombre\s+es|nombre[:\s]+|llámame|llamamé)[ \t]+([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:[ \t]+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)*)/i,
+    /(?:me\s+llamo|mi\s+nombre\s+es|nombre[:\s]+)[ \t]+([a-záéíóúñ]+(?:[ \t]+[a-záéíóúñ]+)*)/i,
+    /\bsoy[ \t]+([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+[ \t]+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:[ \t]+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)*)/i,
+    /\bsoy[ \t]+([a-záéíóúñ]{3,}[ \t]+[a-záéíóúñ]{3,}(?:[ \t]+[a-záéíóúñ]{3,})*)/i,
   ];
 
   for (const pattern of explicitPatterns) {
     const match = allText.match(pattern);
     if (match) {
       const nombre = match[1].trim();
-      const words = nombre.split(/\s+/);
+      const words = nombre.split(/[ \t]+/);
       if (words.length >= 2 && words.length <= 6) {
+        const cleanWords = words.map(w => w.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z]/g, ''));
+        // Rechazar si alguna palabra capturada está en el set de no-nombres
+        if (cleanWords.some(w => NON_NAME_WORDS.has(w))) continue;
         return words.map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
       }
     }
