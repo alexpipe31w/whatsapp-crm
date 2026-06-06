@@ -16,7 +16,8 @@ const CATALOG_CACHE_TTL_MS = 120_000;
 const AI_TIMEOUT_MAIN_MS = 30_000;
 const AI_TIMEOUT_EXT_MS  = 20_000;
 const ORDER_GUARD_TTL_MS   = 10 * 60 * 1000;
-const MAX_HISTORY_MESSAGES = 20;
+const CONFIRM_REMINDER_MS  =  5 * 60 * 1000; // recordatorio si el cliente no confirma en 5 min
+const MAX_HISTORY_MESSAGES = 8;
 
 const PURCHASE_INTENT_RE = /\b(quiero|deseo|pedir|pido|ordenar|comprar|llevar|encargar|confirm|dale|listo|acepto|perfecto|procede|adelante|claro|exacto|sip|yep|yes|sí|si\b|ok\b|pedido|orden|dirección|entrega|envío|cantidad|unidades?)\b|\[Pedido del catálogo:/i;
 const APPOINTMENT_INTENT_RE = /\b(agendar|agenda|cita|visita|visita técnica|técnico|técnica|programar|reservar|reserva|turno|appointment|quiero una cita|necesito una visita|instalar|instalación|mantenimiento|corte|sesión)\b/i;
@@ -43,68 +44,85 @@ const DIAS_SEMANA: Record<string, number> = {
   jueves:4, viernes:5, sábado:6, sabado:6,
 };
 
+// ─── Fecha en zona horaria Colombia (YYYY-MM-DD) ─────────────────────────────
+const TZ_CO = 'America/Bogota';
+
+function coDateStr(d: Date = new Date()): string {
+  return d.toLocaleDateString('en-CA', { timeZone: TZ_CO }); // YYYY-MM-DD
+}
+
+// Devuelve un Date representando mediodia Colombia para la fecha dada (evita DST)
+function coNoon(dateStr: string): Date {
+  return new Date(`${dateStr}T12:00:00-05:00`);
+}
+
+// Devuelve la clave de día ('sun'|'mon'|...'sat') en timezone Colombia.
+// SEGURO: usa en-CA (YYYY-MM-DD) + new Date(y,m,d) que nunca devuelve NaN.
+function coDayKey(d: Date): string {
+  const [y, m, dy] = d.toLocaleDateString('en-CA', { timeZone: TZ_CO }).split('-').map(Number);
+  return ['sun','mon','tue','wed','thu','fri','sat'][new Date(y, m - 1, dy).getDay()];
+}
+
 // ─── Parser de fecha en español ───────────────────────────────────────────────
 function parseFechaEspanol(text: string): string | null {
-  const t   = text.toLowerCase().trim();
-  const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
+  const t      = text.toLowerCase().trim();
+  const hoyStr = coDateStr();            // "2026-06-05" en hora Colombia
+  const hoy    = coNoon(hoyStr);         // mediodia Colombia hoy
 
   // mañana / manana
   if (/\bma[ñn]ana\b/.test(t)) {
     const d = new Date(hoy); d.setDate(d.getDate() + 1);
-    return d.toISOString().split('T')[0];
+    return coDateStr(d);
   }
   // pasado mañana
   if (/\bpasado\s+ma[ñn]ana\b/.test(t)) {
     const d = new Date(hoy); d.setDate(d.getDate() + 2);
-    return d.toISOString().split('T')[0];
+    return coDateStr(d);
   }
   // hoy
   if (/\bhoy\b/.test(t)) {
-    return hoy.toISOString().split('T')[0];
+    return hoyStr;
   }
 
   // Formatos numéricos: 24/03/2026 | 24-03-2026 | 24/03 | 24-03
   const numFmt = t.match(/\b(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?\b/);
   if (numFmt) {
-    let day = parseInt(numFmt[1]);
+    let day   = parseInt(numFmt[1]);
     let month = parseInt(numFmt[2]);
     let year  = numFmt[3] ? parseInt(numFmt[3]) : hoy.getFullYear();
     if (year < 100) year += 2000;
-    // Si el mes ya pasó este año, usar el próximo año
-    const fecha = new Date(year, month - 1, day);
+    const fecha = coNoon(`${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`);
     if (fecha < hoy) fecha.setFullYear(fecha.getFullYear() + 1);
-    return fecha.toISOString().split('T')[0];
+    return coDateStr(fecha);
   }
 
   // "el 24 de marzo" | "24 de marzo" | "el 24 de marzo de 2026"
   const textFmt = t.match(/\b(\d{1,2})\s+de\s+([a-záéíóúñ]+)(?:\s+(?:de\s+)?(\d{4}))?\b/);
   if (textFmt) {
-    const day   = parseInt(textFmt[1]);
+    const day    = parseInt(textFmt[1]);
     const mesNom = textFmt[2].toLowerCase();
     const month  = MESES[mesNom];
     if (month) {
-      let year = textFmt[3] ? parseInt(textFmt[3]) : hoy.getFullYear();
-      const fecha = new Date(year, month - 1, day);
+      const year  = textFmt[3] ? parseInt(textFmt[3]) : hoy.getFullYear();
+      const fecha = coNoon(`${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`);
       if (fecha < hoy) fecha.setFullYear(fecha.getFullYear() + 1);
-      return fecha.toISOString().split('T')[0];
+      return coDateStr(fecha);
     }
   }
 
   // "el lunes" | "el próximo martes" | "este viernes"
+  const hoyDia = hoy.getDay(); // getDay sobre mediodia Colombia es correcto
   for (const [nombre, diaSemana] of Object.entries(DIAS_SEMANA)) {
     const re = new RegExp(`\\b(?:el\\s+)?(?:pr[oó]ximo\\s+|este\\s+|esta\\s+)?${nombre}\\b`);
     if (re.test(t)) {
       const d = new Date(hoy);
-      const hoyDia = d.getDay();
       let diff = diaSemana - hoyDia;
-      if (diff <= 0) diff += 7; // siempre hacia adelante
+      if (diff <= 0) diff += 7;
       d.setDate(d.getDate() + diff);
-      // "de la otra semana" / "de la próxima semana" = +7 días más
       if (/otra\s+semana|pr[oó]xima\s+semana|siguiente\s+semana/.test(t)) {
         d.setDate(d.getDate() + 7);
       }
-      return d.toISOString().split('T')[0];
+      return coDateStr(d);
     }
   }
 
@@ -112,15 +130,16 @@ function parseFechaEspanol(text: string): string | null {
 }
 
 // ─── Query date extractor for AI availability detection ───────────────────────
-function extractQueryDate(message: string, today: Date, tz = 'America/Bogota'): Date | null {
-  const lower = message.toLowerCase();
-  const nowInTz = new Date(today.toLocaleString('en-US', { timeZone: tz }));
-  const dayOfWeek = nowInTz.getDay(); // 0=sun,1=mon...6=sat
+function extractQueryDate(message: string, _today: Date, tz = TZ_CO): Date | null {
+  const lower  = message.toLowerCase();
+  const hoyStr = coDateStr();        // fecha actual en Colombia
+  const hoy    = coNoon(hoyStr);     // mediodia Colombia hoy
+  const dayOfWeek = hoy.getDay();    // día de semana correcto en Colombia
 
-  if (/\bhoy\b/.test(lower)) return today;
+  if (/\bhoy\b/.test(lower)) return hoy;
 
   if (/\bmañana\b/.test(lower)) {
-    const d = new Date(today); d.setDate(d.getDate() + 1); return d;
+    const d = new Date(hoy); d.setDate(d.getDate() + 1); return d;
   }
 
   const DAYS: Record<string, number> = {
@@ -130,21 +149,21 @@ function extractQueryDate(message: string, today: Date, tz = 'America/Bogota'): 
   for (const [word, target] of Object.entries(DAYS)) {
     if (lower.includes(word)) {
       const diff = (target - dayOfWeek + 7) % 7 || 7;
-      const d = new Date(today); d.setDate(d.getDate() + diff); return d;
+      const d = new Date(hoy); d.setDate(d.getDate() + diff); return d;
     }
   }
 
   // "el 10" or "el 10 de junio"
-  const MONTHS: Record<string, number> = {
+  const MONTHS_NUM: Record<string, number> = {
     enero:0, febrero:1, marzo:2, abril:3, mayo:4, junio:5,
     julio:6, agosto:7, septiembre:8, octubre:9, noviembre:10, diciembre:11,
   };
   const dateMatch = lower.match(/\bel\s+(\d{1,2})(?:\s+de\s+(\w+))?/);
   if (dateMatch) {
-    const day = parseInt(dateMatch[1], 10);
+    const day  = parseInt(dateMatch[1], 10);
     const monthWord = dateMatch[2];
-    const month = monthWord ? (MONTHS[monthWord] ?? nowInTz.getMonth()) : nowInTz.getMonth();
-    const year = nowInTz.getFullYear();
+    const month = monthWord ? (MONTHS_NUM[monthWord] ?? hoy.getMonth()) : hoy.getMonth();
+    const year  = hoy.getFullYear();
     const d = new Date(year, month, day);
     if (!isNaN(d.getTime())) return d;
   }
@@ -404,14 +423,57 @@ export class AiService {
   private readonly pendingExtractions     = new Map<string, ExtractionResult>();
   private readonly appointmentInProgress  = new Set<string>();
   private readonly pendingAppointments    = new Map<string, AppointmentExtractionResult>();
+  // conversationId → appointmentId: client said "quiero reprogramar" but didn't give new date/time yet
+  private readonly pendingReschedules     = new Map<string, string>();
   // Citas ya creadas en esta conversación — se inyectan en el prompt del extractor
   // para que el LLM no las vuelva a extraer cuando el cliente pide una segunda cita.
   private readonly conversationCreatedAppts = new Map<string, Array<{scheduledDate: string; scheduledTime: string; type: string}>>();
+  private readonly pendingConfirmTimers = new Map<string, NodeJS.Timeout>();
+  private sendFn: ((storeId: string, phone: string, message: string) => Promise<void>) | null = null;
 
   constructor(
     private readonly prisma:        PrismaService,
     private readonly notifications: NotificationsService,
   ) {}
+
+  // ─── Recordatorio de confirmación de cita ────────────────────────────────────
+
+  setSendFn(fn: (storeId: string, phone: string, message: string) => Promise<void>): void {
+    this.sendFn = fn;
+  }
+
+  private scheduleConfirmReminder(conversationId: string, storeId: string, phone: string): void {
+    const existing = this.pendingConfirmTimers.get(conversationId);
+    if (existing) clearTimeout(existing);
+
+    const timer = setTimeout(async () => {
+      this.pendingConfirmTimers.delete(conversationId);
+      if (!this.pendingAppointments.has(conversationId) || !this.sendFn) return;
+
+      const reminder = '¿Confirmamos tu cita? Responde *Sí* para agendarla o *No* si prefieres otro horario. 😊';
+      try {
+        await this.prisma.message.create({
+          data: { conversationId, storeId, content: reminder, type: 'text', sender: 'store', isAiResponse: true },
+        });
+        await this.sendFn(storeId, phone, reminder);
+        this.logger.log(`[Cita] 🔔 Recordatorio enviado a ${phone} (conv ${conversationId.slice(-8)})`);
+      } catch (err: any) {
+        this.logger.warn(`[Cita] No se pudo enviar recordatorio: ${err.message}`);
+      }
+    }, CONFIRM_REMINDER_MS);
+
+    this.pendingConfirmTimers.set(conversationId, timer);
+  }
+
+  private cancelConfirmReminder(conversationId: string): void {
+    const t = this.pendingConfirmTimers.get(conversationId);
+    if (t) {
+      clearTimeout(t);
+      this.pendingConfirmTimers.delete(conversationId);
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
 
   private getCached<T>(cache: Map<string, CacheEntry<T>>, key: string): T | null {
     const entry = cache.get(key);
@@ -514,10 +576,26 @@ export class AiService {
   private async tryHandleCancelOrReschedule(
     storeId: string,
     customerId: string,
+    conversationId: string,
     userMessage: string,
     systemPrompt: string,
+    activeStaff: Array<{ staffId: string; name: string; schedule?: any }> = [],
   ): Promise<string | null> {
     if (!CANCEL_RESCHEDULE_RE.test(userMessage)) return null;
+
+    // ── Prevenir bucle: si ya hay una acción pendiente registrada, informar y no repetir ──
+    const alreadyPending = await this.prisma.appointment.findFirst({
+      where: {
+        storeId,
+        customerId,
+        status:        { in: ['PENDING', 'CONFIRMED'] },
+        pendingAction: { in: ['CANCEL_REQUESTED', 'RESCHEDULE_REQUESTED'] },
+      },
+    });
+    if (alreadyPending) {
+      const tipo = alreadyPending.pendingAction === 'CANCEL_REQUESTED' ? 'cancelación' : 'reprogramación';
+      return `Tu solicitud de ${tipo} ya fue registrada y está siendo procesada por el equipo ✅ Te avisaremos en cuanto tengamos respuesta.`;
+    }
 
     const appt = await this.prisma.appointment.findFirst({
       where: {
@@ -538,36 +616,205 @@ export class AiService {
     const minHours   = this.extractMinAdvanceHours(systemPrompt);
     const hoursUntil = (appt.scheduledAt.getTime() - Date.now()) / (1000 * 60 * 60);
     if (hoursUntil < minHours) {
-      return `Lo sentimos, solo podemos procesar cambios con al menos ${minHours} horas de anticipación. Contacta directamente a la barbería para más información.`;
+      return `Lo sentimos, solo podemos procesar cambios con al menos ${minHours} horas de anticipación. Contacta directamente a la barbería.`;
     }
 
-    const isReschedule = /reprogramar|cambiar|mover|otro d[ií]a|otra hora|posponer/i.test(userMessage);
-    const action = isReschedule ? 'RESCHEDULE_REQUESTED' : 'CANCEL_REQUESTED';
+    const isReschedule = /reprogramar|cambiar la cita|mover|otro d[ií]a|otra hora|posponer|aplazar/i.test(userMessage);
 
-    let pendingActionData: any = null;
+    // ── Reprogramación directa si el cliente ya dio la nueva fecha y hora ──────
     if (isReschedule) {
-      const newDate  = parseFechaEspanol(userMessage);
-      const timeMatch = userMessage.match(/\b(\d{1,2}):(\d{2})\s*(am|pm)?\b/i);
-      const newTime  = timeMatch ? timeMatch[0] : null;
-      pendingActionData = { newDate, newTime };
+      const newDate = parseFechaEspanol(userMessage);
+      const newTime = parseHoraEspanol(userMessage);
+
+      if (newDate && newTime) {
+        const newScheduledAt = new Date(`${newDate}T${newTime}:00-05:00`);
+
+        // Validar que el nuevo horario esté dentro del turno del barbero asignado
+        if (appt.staffId) {
+          const staffMember = activeStaff.find(s => s.staffId === appt.staffId);
+          if (staffMember?.schedule) {
+            const dayKey = coDayKey(newScheduledAt);
+            const daySched = (staffMember.schedule as any)[dayKey];
+            if (!daySched?.isOpen) {
+              return `Lo siento, ${staffMember.name} no trabaja ese día. ¿Te funciona otro día de la semana?`;
+            }
+          }
+          // Verificar conflicto con otras citas del barbero
+          const slotEnd = new Date(newScheduledAt.getTime() + 30 * 60_000);
+          const conflict = await this.prisma.appointment.findFirst({
+            where: {
+              appointmentId: { not: appt.appointmentId },
+              staffId:       appt.staffId,
+              status:        { in: ['PENDING', 'CONFIRMED', 'IN_PROGRESS'] },
+              AND: [
+                { scheduledAt: { lt: slotEnd } },
+                { OR: [
+                  { endsAt: { gt: newScheduledAt } },
+                  { endsAt: null, scheduledAt: { gt: new Date(newScheduledAt.getTime() - 30 * 60_000) } },
+                ]},
+              ],
+            },
+          });
+          if (conflict) {
+            const staffInfo = activeStaff.find(s => s.staffId === appt.staffId);
+            return `Ese horario ya está ocupado para ${staffInfo?.name ?? 'el profesional'}. ¿Te funciona otra hora o fecha?`;
+          }
+        }
+
+        // Reagendar directamente
+        await this.prisma.$transaction(async (tx) => {
+          await tx.appointment.update({
+            where: { appointmentId: appt.appointmentId },
+            data: {
+              scheduledAt:       newScheduledAt,
+              status:            'PENDING',
+              pendingAction:     null,
+              pendingActionAt:   null,
+              pendingActionData: Prisma.JsonNull,
+            },
+          });
+          await tx.appointmentTimeline.create({
+            data: {
+              appointmentId: appt.appointmentId,
+              action:        'RESCHEDULED',
+              newStatus:     'PENDING',
+              note:          `Reprogramado por el cliente vía WhatsApp → ${newDate} ${newTime}`,
+              isPublic:      true,
+              performedById: null,
+            },
+          });
+        });
+        this.pendingReschedules.delete(conversationId);
+
+        // Notificar al admin del cambio
+        this.notifications.notifyPendingAction(
+          { ...appt, pendingAction: 'RESCHEDULE_REQUESTED', pendingActionData: { newDate, newTime } } as any,
+          'reschedule',
+        ).catch(() => {});
+
+        const fechaFormateada = newScheduledAt.toLocaleDateString('es-CO', {
+          weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/Bogota',
+        });
+        const horaFormateada = newScheduledAt.toLocaleTimeString('es-CO', {
+          hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota',
+        });
+
+        return `✅ ¡Tu cita fue reprogramada!\n\n📆 *Nueva fecha:* ${fechaFormateada}\n🕐 *Nueva hora:* ${horaFormateada}\n\nUn asesor confirmará el cambio desde el panel. ¡Gracias! 😊`;
+      }
+
+      // Sin fecha/hora aún — guardar estado y preguntar al cliente
+      this.pendingReschedules.set(conversationId, appt.appointmentId);
+      setTimeout(() => this.pendingReschedules.delete(conversationId), 10 * 60_000);
+
+      const fechaActual = appt.scheduledAt.toLocaleDateString('es-CO', {
+        weekday: 'long', day: 'numeric', month: 'long', timeZone: 'America/Bogota',
+      });
+      const horaActual = appt.scheduledAt.toLocaleTimeString('es-CO', {
+        hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota',
+      });
+      return `Claro, puedo reprogramar tu cita del ${fechaActual} a las ${horaActual}. ¿Para qué fecha y hora te gustaría cambiarla?`;
     }
 
+    // ── Cancelación — requiere aprobación del admin ───────────────────────────
     await this.prisma.appointment.update({
       where: { appointmentId: appt.appointmentId },
       data: {
-        pendingAction:       action,
+        pendingAction:       'CANCEL_REQUESTED',
         pendingActionAt:     new Date(),
-        pendingActionData:   pendingActionData,
+        pendingActionData:   Prisma.JsonNull,
         pendingActionReason: userMessage.slice(0, 500),
       },
     });
+    this.notifications.notifyPendingAction(appt as any, 'cancel').catch(() => {});
 
-    const actionType: 'cancel' | 'reschedule' = isReschedule ? 'reschedule' : 'cancel';
-    this.notifications.notifyPendingAction(appt as any, actionType).catch(() => {});
+    return '🗑 Tu solicitud de *cancelación* fue enviada al equipo. Un asesor la procesará y te confirmará en breve ✅';
+  }
 
-    return isReschedule
-      ? 'Tu solicitud de reprogramación fue enviada al admin. Te confirmaremos la nueva fecha en breve ✅'
-      : 'Tu solicitud de cancelación fue enviada al admin. Te confirmaremos en breve ✅';
+  // ── Segundo paso de reprogramación: cliente ya dio la nueva fecha/hora ──────
+  private async tryCompleteReschedule(
+    appointmentId: string,
+    conversationId: string,
+    userMessage: string,
+    activeStaff: Array<{ staffId: string; name: string; schedule?: any }>,
+  ): Promise<string | null> {
+    const newDate = parseFechaEspanol(userMessage);
+    const newTime = parseHoraEspanol(userMessage);
+    if (!newDate || !newTime) return null;
+
+    const appt = await this.prisma.appointment.findFirst({
+      where: { appointmentId, status: { in: ['PENDING', 'CONFIRMED'] } },
+      include: { customer: { select: { name: true, phone: true } }, service: { select: { name: true } } },
+    });
+    if (!appt) { this.pendingReschedules.delete(conversationId); return null; }
+
+    const newScheduledAt = new Date(`${newDate}T${newTime}:00-05:00`);
+
+    if (appt.staffId) {
+      const staffMember = activeStaff.find(s => s.staffId === appt.staffId);
+      if (staffMember?.schedule) {
+        const dayKey = coDayKey(newScheduledAt);
+        if (!(staffMember.schedule as any)[dayKey]?.isOpen) {
+          return `Lo siento, ${staffMember.name} no trabaja ese día. ¿Te funciona otro día?`;
+        }
+      }
+      const slotEnd = new Date(newScheduledAt.getTime() + 30 * 60_000);
+      const conflict = await this.prisma.appointment.findFirst({
+        where: {
+          appointmentId: { not: appt.appointmentId },
+          staffId:       appt.staffId,
+          status:        { in: ['PENDING', 'CONFIRMED', 'IN_PROGRESS'] },
+          AND: [
+            { scheduledAt: { lt: slotEnd } },
+            { OR: [
+              { endsAt: { gt: newScheduledAt } },
+              { endsAt: null, scheduledAt: { gt: new Date(newScheduledAt.getTime() - 30 * 60_000) } },
+            ]},
+          ],
+        },
+      });
+      if (conflict) {
+        const staffInfo = activeStaff.find(s => s.staffId === appt.staffId);
+        return `Ese horario ya está ocupado para ${staffInfo?.name ?? 'el profesional'}. ¿Te funciona otra hora?`;
+      }
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.appointment.update({
+        where: { appointmentId },
+        data: {
+          scheduledAt:       newScheduledAt,
+          status:            'PENDING',
+          pendingAction:     null,
+          pendingActionAt:   null,
+          pendingActionData: Prisma.JsonNull,
+        },
+      });
+      await tx.appointmentTimeline.create({
+        data: {
+          appointmentId,
+          action:        'RESCHEDULED',
+          newStatus:     'PENDING',
+          note:          `Reprogramado por el cliente vía WhatsApp → ${newDate} ${newTime}`,
+          isPublic:      true,
+          performedById: null,
+        },
+      });
+    });
+
+    this.pendingReschedules.delete(conversationId);
+    this.notifications.notifyPendingAction(
+      { ...appt, pendingAction: 'RESCHEDULE_REQUESTED', pendingActionData: { newDate, newTime } } as any,
+      'reschedule',
+    ).catch(() => {});
+
+    const fechaFormateada = newScheduledAt.toLocaleDateString('es-CO', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/Bogota',
+    });
+    const horaFormateada = newScheduledAt.toLocaleTimeString('es-CO', {
+      hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota',
+    });
+
+    return `✅ ¡Tu cita fue reprogramada!\n\n📆 *Nueva fecha:* ${fechaFormateada}\n🕐 *Nueva hora:* ${horaFormateada}\n\nUn asesor confirmará el cambio. ¡Gracias! 😊`;
   }
 
   private async computeSlotsForAI(
@@ -581,9 +828,7 @@ export class AiService {
     const startOfDay = new Date(`${dateStr}T00:00:00`);
     const endOfDay   = new Date(`${dateStr}T23:59:59`);
 
-    const DAYS_ES = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
-    const dayIdx  = new Date(date.toLocaleString('en-US', { timeZone: tz })).getDay();
-    const dayKey  = DAYS_ES[dayIdx];
+    const dayKey = coDayKey(date);
 
     const results: { name: string; slots: string[] }[] = [];
 
@@ -615,9 +860,9 @@ export class AiService {
 
       for (const shift of ['shift1', 'shift2'] as const) {
         const s = daySchedule[shift];
-        if (!s?.start || !s?.end) continue;
-        const [sh, sm] = s.start.split(':').map(Number);
-        const [eh, em] = s.end.split(':').map(Number);
+        if (!s?.open || !s?.close) continue;
+        const [sh, sm] = s.open.split(':').map(Number);
+        const [eh, em] = s.close.split(':').map(Number);
         let cur = sh * 60 + sm;
         const end = eh * 60 + em;
 
@@ -749,9 +994,18 @@ export class AiService {
       const paymentReply = await this.tryDetectPaymentProof(storeId, customer.customerId, userMessage);
       if (paymentReply) return paymentReply;
 
+      // ── Paso 2 de reprogramación: cliente ya dio la nueva fecha/hora ──────────
+      const pendingRescheduleApptId = this.pendingReschedules.get(conversationId);
+      if (pendingRescheduleApptId) {
+        const rescheduleResult = await this.tryCompleteReschedule(
+          pendingRescheduleApptId, conversationId, userMessage, activeStaff,
+        );
+        if (rescheduleResult) return rescheduleResult;
+      }
+
       // ── Cancelar / Reprogramar ──────────────────────────────────────────────
       const cancelRescheduleReply = await this.tryHandleCancelOrReschedule(
-        storeId, customer.customerId, userMessage, config.systemPrompt,
+        storeId, customer.customerId, conversationId, userMessage, config.systemPrompt, activeStaff,
       );
       if (cancelRescheduleReply) return cancelRescheduleReply;
 
@@ -761,16 +1015,36 @@ export class AiService {
       const hasPendingOrder      = this.pendingExtractions.has(conversationId);
       const hasPendingAppt       = this.pendingAppointments.has(conversationId);
 
+      // Detectar día de semana o confirmación dentro del contexto de agendamiento previo
+      const APPT_CONTEXT_RE = /\b(lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo|ma[ñn]ana|hoy|las?\s+\d{1,2}(\s*(am|pm))?|\d{1,2}:\d{2}|agend[aeo]|con\s+(luis|carlos))\b/i;
+      const recentHistory   = history.slice(-6);
+      const prevHadApptCtx  = recentHistory.some(
+        (m: any) => m.isAiResponse && /cita|agend|barbero|profesional|confirma|horario/i.test(m.content),
+      );
+      const hasApptContextHint = APPT_CONTEXT_RE.test(userMessage) && prevHadApptCtx;
+
       // ── Flujo de agendamiento ────────────────────────────────────────────────
+      // Solo correr el extractor si hay datos concretos para extraer.
+      // Si el mensaje es pura intención sin fecha/hora/confirmación y no hay caché → saltar y dejar que el AI principal pida los datos.
+      const messageHasBookingData =
+        parseFechaEspanol(userMessage) !== null ||
+        parseHoraEspanol(userMessage) !== null ||
+        CONFIRMATION_RE.test(userMessage.trim());
+
       if (
-        (hasAppointmentIntent || hasPendingAppt) &&
+        (hasPendingAppt || hasApptContextHint || (hasAppointmentIntent && messageHasBookingData)) &&
         !this.appointmentInProgress.has(conversationId)
       ) {
+        // Extractor usa su propio cartucho del pool (distinto al del main call) para no duplicar carga sobre la misma key
+        const extractorC = getNextCartridge(storeId) ?? cartridge;
         const apptResult = await this.tryExtractAndCreateAppointment(
-          provider, apiKey, model, history, userMessage,
+          extractorC.provider, extractorC.apiKey, extractorC.model, history, userMessage,
           customer, storeId, conversationId, services, activeStaff,
         );
         if (apptResult.created) return apptResult.message!;
+        // Si falló por horario/conflicto hay un mensaje específico — usarlo directamente
+        // para evitar que el AI principal genere una confirmación falsa
+        if (!apptResult.created && apptResult.message) return apptResult.message;
       }
 
       // ── Flujo de orden ────────────────────────────────────────────────────────
@@ -807,7 +1081,8 @@ export class AiService {
       const AVAIL_RE = /horario|disponible|disponibilidad|cuándo puedo|qué hora|hora libre|cuando tiene|qué días|que dias/i;
       let availabilityBlock = '';
 
-      if (AVAIL_RE.test(userMessage) && store) {
+      // Calcular disponibilidad tanto cuando preguntan como cuando agenden con fecha específica
+      if ((AVAIL_RE.test(userMessage) || hasAppointmentIntent) && store) {
         const queryDate = extractQueryDate(userMessage, new Date());
         if (queryDate) {
           const slotsData = await this.computeSlotsForAI(
@@ -818,13 +1093,19 @@ export class AiService {
           );
           const dayName = queryDate.toLocaleDateString('es-CO', { weekday: 'long', timeZone: 'America/Bogota' });
           const dateLabel = queryDate.toLocaleDateString('es-CO', { day: 'numeric', month: 'long', timeZone: 'America/Bogota' });
-          const lines = slotsData
-            .filter(s => s.slots.length > 0)
-            .map(s => `- ${s.name}: ${s.slots.join(', ')}`);
-          if (lines.length > 0) {
-            availabilityBlock = `\nDISPONIBILIDAD REAL PARA ${dayName.toUpperCase()}, ${dateLabel}:\n${lines.join('\n')}\n\nINSTRUCCIÓN: Responde con estos horarios exactos. No inventes horas que no estén en la lista. Si el cliente elige un slot específico, avanza al flujo de agendamiento normal.`;
+          // Incluir slots libres y quién no trabaja ese día
+          const lines: string[] = [];
+          for (const s of slotsData) {
+            if (s.slots.length > 0) {
+              lines.push(`- ${s.name}: ${s.slots.join(', ')}`);
+            } else {
+              lines.push(`- ${s.name}: NO DISPONIBLE ese día`);
+            }
+          }
+          if (lines.some(l => !l.includes('NO DISPONIBLE'))) {
+            availabilityBlock = `\nDISPONIBILIDAD REAL PARA EL ${dayName.toUpperCase()} ${dateLabel}:\n${lines.join('\n')}\n\nREGLA CRÍTICA: Usa SOLO estos horarios para ese día. Si el cliente pide un horario que no aparece en la lista o dice "NO DISPONIBLE", dile claramente que no hay disponibilidad y ofrece las horas que SÍ están en la lista.`;
           } else {
-            availabilityBlock = `\nDISPONIBILIDAD PARA ${dayName.toUpperCase()}, ${dateLabel}: No hay horarios disponibles para ese día.`;
+            availabilityBlock = `\nDISPONIBILIDAD PARA EL ${dayName.toUpperCase()} ${dateLabel}: Ningún profesional disponible ese día.`;
           }
         }
       }
@@ -848,7 +1129,7 @@ export class AiService {
         { role: 'user', content: userMessage },
       ];
 
-      let reply: string;
+      let reply: string | undefined;
       const doCompletion = (c: Cartridge) =>
         Promise.race([
           createCompletion(c.provider, c.apiKey, c.model, messages, Number(config.temperature), config.maxTokens),
@@ -857,37 +1138,49 @@ export class AiService {
           ),
         ]);
 
-      try {
-        reply = await doCompletion(cartridge);
-      } catch (mainErr: any) {
-        if (isRateLimitError(mainErr)) {
-          this.logger.warn(`[Pool] ${provider} límite alcanzado, rotando cartucho...`);
-          markExhausted(storeId, cartridge);
-          const next = getNextCartridge(storeId);
-          if (next) {
-            try {
-              reply = await doCompletion(next);
-            } catch (nextErr: any) {
-              if (isRateLimitError(nextErr)) markExhausted(storeId, next);
-              this.logger.warn(`[Pool] Segundo cartucho también falló: ${nextErr.message?.slice(0, 60)}`);
-              reply = '⚠️ El asistente está temporalmente sin disponibilidad. Por favor intenta en unos minutos.';
-            }
-          } else {
-            this.logger.error(`[Pool] Todos los cartuchos agotados para store ${storeId}`);
-            reply = '⚠️ El asistente está temporalmente sin disponibilidad. Por favor intenta en unos minutos.';
-          }
-        } else {
-          // Non-rate-limit error → try fast model of same provider
-          this.logger.warn(`[Pool] Error no-rate-limit en ${provider}: ${mainErr.message?.slice(0, 60)}, fallback modelo rápido`);
-          try {
-            reply = await createCompletion(
-              provider, apiKey, PROVIDER_CONFIG[provider]?.defaultFastModel ?? model,
-              messages, Number(config.temperature), config.maxTokens,
+      // Retry loop — intenta TODOS los cartuchos activos antes de rendirse
+      const triedKeys = new Set<string>();
+      let cur: Cartridge | null = cartridge;
+
+      while (cur !== null && reply === undefined) {
+        const key = `${cur.provider}:${cur.apiKey}`;
+        if (triedKeys.has(key)) break;
+        triedKeys.add(key);
+        const thisCur = cur;
+
+        try {
+          reply = await doCompletion(thisCur);
+        } catch (err: any) {
+          if (isRateLimitError(err)) {
+            this.logger.warn(
+              `[Pool] Límite de tasa ${thisCur.provider} ...${thisCur.apiKey.slice(-4)}, rotando ` +
+              `(${triedKeys.size}/${allCartridges.length} cartuchos probados)`,
             );
-          } catch {
-            reply = '⚠️ El asistente no pudo responder. Intenta de nuevo.';
+            markExhausted(storeId, thisCur);
+            const next = getNextCartridge(storeId);
+            cur = (next && !triedKeys.has(`${next.provider}:${next.apiKey}`)) ? next : null;
+          } else {
+            // Error no-rate-limit → intenta modelo rápido del mismo cartucho
+            this.logger.warn(`[Pool] Error en ${thisCur.provider}: ${err.message?.slice(0, 60)}, probando modelo rápido`);
+            try {
+              reply = await createCompletion(
+                thisCur.provider, thisCur.apiKey,
+                PROVIDER_CONFIG[thisCur.provider]?.defaultFastModel ?? thisCur.model,
+                messages, Number(config.temperature), config.maxTokens,
+              );
+            } catch {
+              // Modelo rápido también falló → marca agotado y rota
+              markExhausted(storeId, thisCur);
+              const next = getNextCartridge(storeId);
+              cur = (next && !triedKeys.has(`${next.provider}:${next.apiKey}`)) ? next : null;
+            }
           }
         }
+      }
+
+      if (reply === undefined) {
+        this.logger.error(`[Pool] Todos los cartuchos agotados para store ${storeId}`);
+        reply = '⚠️ El asistente está temporalmente sin disponibilidad. Por favor intenta en unos minutos.';
       }
 
       return reply ?? null;
@@ -1240,10 +1533,17 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
       cached.scheduledTime &&
       (!needsCustomerData || cached.customerName);
 
+    this.logger.log(
+      `[Cita] ENTRY convId=${conversationId.slice(-8)} msg="${latestMessage.slice(0,30)}" ` +
+      `cache={date:${cached?.scheduledDate},time:${cached?.scheduledTime},staff:${cached?.staffId?.slice(-8)}} ` +
+      `cacheOK=${!!cacheHasAllData} confRE=${CONFIRMATION_RE.test(latestMessage.trim())} needName=${needsCustomerData}`,
+    );
+
     if (cacheHasAllData && CONFIRMATION_RE.test(latestMessage.trim())) {
       this.logger.log(`[Cita] Caso 1 — caché con datos suficientes + confirmación para ${conversationId}`);
       extracted = { ...cached, complete: true };
-      this.pendingAppointments.delete(conversationId);
+      // NO borramos el caché aquí — se borra al crear exitosamente (línea ~1966)
+      // o al detectar conflicto/horario inválido. Así el cliente puede reintentar si falla.
 
     // ── Caso 2: correr el extractor ───────────────────────────────────────────
     } else {
@@ -1289,8 +1589,7 @@ ${services.flatMap((s: any) => {
 }).join('\n')}`
         : `CATÁLOGO DE SERVICIOS: No hay servicios registrados.`;
 
-      const now      = new Date();
-      const fechaHoy = now.toISOString().split('T')[0];
+      const fechaHoy = coDateStr(); // YYYY-MM-DD en hora Colombia (no UTC)
 
       const staffCatalog = activeStaff.length > 0
         ? `\nEQUIPO DISPONIBLE:\n${activeStaff.map((s: { staffId: string; name: string }) => `- "${s.name}" → staffId: "${s.staffId}"`).join('\n')}\n`
@@ -1327,7 +1626,7 @@ REGLAS ESTRICTAS:
    - "el martes de la otra semana" = busca el martes de la semana que viene
    - "el lunes" = próximo lunes
 4. "scheduledTime": formato "HH:MM" en 24h. "2pm" → "14:00", "4pm" → "16:00"
-5. "address": dirección si es visita a domicilio. null si es en el local.
+5. "address": SOLO si el cliente da una dirección física real (calle, carrera, barrio + número, ej: "Cra 45 #20-48"). Si la cita es en el local o no hay dirección explícita → null. NUNCA pongas el mensaje del cliente como dirección.
 6. "customerCedula": extrae SOLO si el cliente la mencionó explícitamente. Si no → null.
 7. "type": texto libre describiendo la cita (ej: "visita_tecnica", "instalación solar", "corte de cabello").
 8. "staffId": si el cliente eligió un profesional, usa su ID del EQUIPO DISPONIBLE. Si no hay equipo o no eligió → null.
@@ -1388,6 +1687,30 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
             extracted.scheduledDate = null;
           }
         }
+
+        // Cruce día-semana: si el cliente mencionó "lunes", "martes", etc.,
+        // verificar que la fecha del LLM sea ese día. Si no coincide, usar fallback TS.
+        if (extracted.scheduledDate) {
+          const latestLower = latestMessage.toLowerCase();
+          const DIAS_CHECK: [string, number][] = [
+            ['lunes',1],['martes',2],['miércoles',3],['miercoles',3],
+            ['jueves',4],['viernes',5],['sábado',6],['sabado',6],['domingo',0],
+          ];
+          for (const [nombre, numDia] of DIAS_CHECK) {
+            if (latestLower.includes(nombre)) {
+              const llmDay = new Date(extracted.scheduledDate + 'T12:00:00').getDay();
+              if (llmDay !== numDia) {
+                const fallback = parseFechaEspanol(latestMessage);
+                if (fallback) {
+                  this.logger.warn(`[Cita] LLM asignó ${extracted.scheduledDate} (día ${llmDay}) pero cliente dijo "${nombre}" (día ${numDia}) → override TS: ${fallback}`);
+                  extracted.scheduledDate = fallback;
+                }
+              }
+              break;
+            }
+          }
+        }
+
         if (!extracted.scheduledDate) {
           const allText = [
             ...history.filter((m: any) => !m.isAiResponse).map((m: any) => m.content),
@@ -1420,6 +1743,30 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
           }
         }
 
+        // Staff — el nombre mencionado en el último mensaje del cliente tiene prioridad
+        // sobre el staffId del LLM. El modelo rápido se confunde cuando el historial
+        // contiene muchas menciones de otro profesional.
+        if (activeStaff.length > 0) {
+          let bestStaff: { staffId: string; name: string } | null = null;
+          let bestPos = -1;
+          for (const s of activeStaff) {
+            const firstName = s.name.split(' ')[0];
+            const re = new RegExp(`\\b${firstName}\\b`, 'gi');
+            let m: RegExpExecArray | null;
+            while ((m = re.exec(latestMessage)) !== null) {
+              if (m.index > bestPos) {
+                bestPos = m.index;
+                bestStaff = s;
+              }
+            }
+          }
+          if (bestStaff && extracted.staffId !== bestStaff.staffId) {
+            this.logger.log(`[Cita] Fallback staffId: LLM="${extracted.staffId?.slice(-8)}" → "${bestStaff.staffId.slice(-8)}" (${bestStaff.name})`);
+            extracted.staffId = bestStaff.staffId;
+            extracted.staffName = bestStaff.name;
+          }
+        }
+
         // Dirección (si es visita a domicilio y no vino del LLM)
         if (!extracted.address && ADDRESS_RE.test(latestMessage)) {
           const lines = latestMessage.split('\n').map(l => l.trim());
@@ -1430,7 +1777,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
           }
         }
 
-        this.logger.log(`[Cita] Post-fallback: complete=${extracted.complete} date=${extracted.scheduledDate} time=${extracted.scheduledTime} name=${extracted.customerName} reason=${extracted.reason}`);
+        this.logger.log(`[Cita] Post-fallback: complete=${extracted.complete} date=${extracted.scheduledDate} time=${extracted.scheduledTime} staff=${extracted.staffId?.slice(-8)} name=${extracted.customerName} reason=${extracted.reason}`);
 
         // Guardar nombre proactivamente aunque la cita aún no esté completa
         if (needsName && extracted.customerName && !extracted.complete) {
@@ -1454,7 +1801,10 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
             : extracted;
 
           this.pendingAppointments.set(conversationId, merged);
-          setTimeout(() => this.pendingAppointments.delete(conversationId), ORDER_GUARD_TTL_MS);
+          setTimeout(() => {
+            this.pendingAppointments.delete(conversationId);
+            this.cancelConfirmReminder(conversationId);
+          }, ORDER_GUARD_TTL_MS);
 
           // Si el merge ahora tiene todos los datos y hay confirmación → crear
           if (
@@ -1466,8 +1816,14 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
             this.logger.log(`[Cita] Merge completo + confirmación para ${conversationId}`);
             extracted = { ...merged, complete: true };
             this.pendingAppointments.delete(conversationId);
+            this.cancelConfirmReminder(conversationId);
           } else {
             extracted = merged;
+            // Si la caché tiene todos los datos pero el cliente aún no confirma,
+            // la IA va a preguntar "¿Confirmamos?" → programar recordatorio automático
+            if (merged.scheduledDate && merged.scheduledTime && (!needsCustomerData || merged.customerName)) {
+              this.scheduleConfirmReminder(conversationId, storeId, customer.phone);
+            }
           }
         }
 
@@ -1486,6 +1842,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
     }
 
     // ── Validación final ───────────────────────────────────────────────────────
+    this.logger.log(`[Cita] PRE-VALID: complete=${extracted?.complete} date=${extracted?.scheduledDate} time=${extracted?.scheduledTime} staffId=${extracted?.staffId?.slice(-8)}`);
     if (!extracted?.complete)     return { created: false };
     if (!extracted.scheduledDate) return { created: false };
     if (!extracted.scheduledTime) return { created: false };
@@ -1525,6 +1882,50 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
       if (isNaN(scheduledAt.getTime())) {
         this.logger.warn(`[Cita] Fecha inválida: ${extracted.scheduledDate}T${extracted.scheduledTime}`);
         return { created: false };
+      }
+
+      // Validar que el barbero/profesional trabaje ese día y en ese horario
+      if (extracted.staffId) {
+        const staffMember = activeStaff.find(s => s.staffId === extracted.staffId);
+        if (staffMember?.schedule) {
+          const dayKey = coDayKey(scheduledAt);
+          const daySched = (staffMember.schedule as any)[dayKey];
+          this.logger.log(`[Cita] SCHED-CHECK staff=${staffMember.name} dayKey=${dayKey} isOpen=${daySched?.isOpen} scheduledAt=${scheduledAt.toISOString()}`);
+
+          if (!daySched?.isOpen) {
+            this.logger.warn(`[Cita] ${staffMember.name} no trabaja el ${dayKey} — limpiando fecha del caché`);
+            // Guardar caché SIN fecha/hora para que el cliente corrija solo el horario
+            const cur = this.pendingAppointments.get(conversationId);
+            if (cur) this.pendingAppointments.set(conversationId, { ...cur, scheduledDate: null, scheduledTime: null, complete: false });
+            this.cancelConfirmReminder(conversationId);
+            return {
+              created: false,
+              message: `Lo siento, ${staffMember.name} no trabaja ese día. ¿Quieres elegir otro día o con otro profesional?`,
+            };
+          }
+
+          // Verificar que la hora caiga dentro de algún turno del día
+          const [hReq, mReq] = extracted.scheduledTime!.split(':').map(Number);
+          const minReq = hReq * 60 + mReq;
+          const inShift = ['shift1', 'shift2'].some(shift => {
+            const s = daySched[shift];
+            if (!s?.open || !s?.close) return false;
+            const [sh, sm] = s.open.split(':').map(Number);
+            const [eh, em] = s.close.split(':').map(Number);
+            return minReq >= sh * 60 + sm && minReq < eh * 60 + em;
+          });
+          if (!inShift) {
+            this.logger.warn(`[Cita] ${extracted.scheduledTime} fuera del turno de ${staffMember.name} el ${dayKey} — limpiando hora del caché`);
+            // Guardar caché SIN hora para que el cliente corrija la hora
+            const cur = this.pendingAppointments.get(conversationId);
+            if (cur) this.pendingAppointments.set(conversationId, { ...cur, scheduledTime: null, complete: false });
+            this.cancelConfirmReminder(conversationId);
+            return {
+              created: false,
+              message: `Lo siento, las ${extracted.scheduledTime} está fuera del horario de ${staffMember.name}. ¿Quieres elegir otra hora dentro de su horario?`,
+            };
+          }
+        }
       }
 
       const durationMinutes = extracted.durationMinutes ?? null;
@@ -1585,7 +1986,55 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
           return appt;
         });
       } else {
+        // Conflict check before transaction to return a proper message
+        if (extracted.staffId) {
+          const slotEnd = endsAt ?? new Date(scheduledAt.getTime() + 30 * 60_000);
+          const preConflict = await this.prisma.appointment.findFirst({
+            where: {
+              staffId: extracted.staffId,
+              status: { in: ['PENDING', 'CONFIRMED', 'IN_PROGRESS'] },
+              AND: [
+                { scheduledAt: { lt: slotEnd } },
+                { OR: [
+                  { endsAt: { gt: scheduledAt } },
+                  { endsAt: null, scheduledAt: { gt: new Date(scheduledAt.getTime() - 30 * 60_000) } },
+                ]},
+              ],
+            },
+          });
+          if (preConflict) {
+            this.pendingAppointments.delete(conversationId);
+            this.cancelConfirmReminder(conversationId);
+            const staffInfo = activeStaff.find(s => s.staffId === extracted.staffId);
+            return {
+              created: false,
+              message: `Lo siento, ese horario ya está ocupado para ${staffInfo?.name ?? 'el profesional'}. Por favor elige otra hora disponible.`,
+            };
+          }
+        }
+
         appointment = await this.prisma.$transaction(async (tx) => {
+          // Guard final dentro de la transacción para evitar doble-booking concurrente
+          if (extracted.staffId) {
+            const slotEnd = endsAt ?? new Date(scheduledAt.getTime() + 30 * 60_000);
+            const conflict = await tx.appointment.findFirst({
+              where: {
+                staffId: extracted.staffId,
+                status: { in: ['PENDING', 'CONFIRMED', 'IN_PROGRESS'] },
+                AND: [
+                  { scheduledAt: { lt: slotEnd } },
+                  {
+                    OR: [
+                      { endsAt: { gt: scheduledAt } },
+                      { endsAt: null, scheduledAt: { gt: new Date(scheduledAt.getTime() - 30 * 60_000) } },
+                    ],
+                  },
+                ],
+              },
+            });
+            if (conflict) throw new Error('Conflicto de horario detectado');
+          }
+
           const appt = await tx.appointment.create({
             data: {
               storeId,
@@ -1622,6 +2071,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
 
       await this.prisma.conversation.update({ where: { conversationId }, data: { status: 'pending_human' } });
       this.pendingAppointments.delete(conversationId);
+      this.cancelConfirmReminder(conversationId);
       this.logger.log(`✅ [Cita] ${appointment.appointmentId} — ${extracted.scheduledDate} ${extracted.scheduledTime}`);
       this.notifications.notifyAppointmentCreated(appointment as any).catch(() => {});
 
@@ -1856,34 +2306,35 @@ PROHIBIDO:
     const staffLabelCap = staffLabel.charAt(0).toUpperCase() + staffLabel.slice(1);
 
     const staffBlock = activeStaff.length > 0
-      ? `\nEQUIPO DISPONIBLE (${staffLabelCap}s):\n${activeStaff.map((s: { staffId: string; name: string }) => `- ${s.name} (id: ${s.staffId})`).join('\n')}\n\nREGLA OBLIGATORIA DE AGENDAMIENTO CON EQUIPO:\n1. SIEMPRE pregunta: "¿Con qué ${staffLabel} quieres tu cita? Tenemos disponibles: ${activeStaff.map((s: { staffId: string; name: string }) => s.name).join(', ')}"\n2. El cliente DEBE elegir un ${staffLabel} antes de confirmar.\n3. Una vez elegido, NO preguntes de nuevo.\n4. Si el ${staffLabel} elegido no está disponible en ese horario, avisa y sugiere otro horario o ${staffLabel} alternativo.`
+      ? `\nEQUIPO DISPONIBLE (${staffLabelCap}s):\n${activeStaff.map((s: { staffId: string; name: string; schedule?: any }) => {
+          const schedLine = s.schedule
+            ? `\n    Horario: ${formatBusinessHoursForAI(s.schedule as any).split('\n').join(', ')}`
+            : '';
+          return `- ${s.name} (id: ${s.staffId})${schedLine}`;
+        }).join('\n')}\n\nREGLA OBLIGATORIA DE AGENDAMIENTO CON EQUIPO:\n1. SIEMPRE pregunta: "¿Con qué ${staffLabel} quieres tu cita? Tenemos disponibles: ${activeStaff.map((s: { staffId: string; name: string }) => s.name).join(', ')}"\n2. El cliente DEBE elegir un ${staffLabel} antes de confirmar.\n3. Una vez elegido, NO preguntes de nuevo.\n4. Si el ${staffLabel} elegido no está disponible en ese horario, avisa y sugiere otro horario o ${staffLabel} alternativo.\n5. Cuando el cliente pregunte por el horario de un ${staffLabel} específico, usa el horario indicado arriba para responderle con precisión.`
       : '';
 
     const agendamientoSection = `FLUJO DE AGENDAMIENTO (CITAS Y SERVICIOS):
 
-Cuando el cliente quiera agendar, necesito:
-  a) Qué necesita (tipo de cita o servicio)
-  b) Fecha (día, mes y año)
-  c) Hora
-  d) Descripción breve
-  e) Dirección (solo si es a domicilio o visita técnica)
-  f) ${clienteDataPendiente ? 'Nombre completo del cliente' : '(nombre ya registrado)'}
-  g) Confirmación explícita
-
-${clienteDataPendiente ? `Si el cliente quiere una cita y no tenemos su nombre, pide:\n"Para agendar necesito tu nombre completo."` : ''}
+REGLA DE EFICIENCIA — MUY IMPORTANTE:
+Cuando el cliente muestre intención de agendar, pide TODA la información en UN solo mensaje.
+${clienteDataPendiente
+  ? `Ejemplo: "Para agendar necesito: ¿qué servicio, con qué ${staffLabel}, para qué día y hora? Y tu nombre completo por favor."`
+  : `Ejemplo: "Para agendar necesito: ¿qué servicio, con qué ${staffLabel}, para qué día y hora?"`
+}
+NO hagas una pregunta por vez. Recoge todo en un solo intercambio para confirmar rápido.
 
 Cuando tengas todo, muestra el resumen y pide confirmación:
-"¿Confirmamos tu cita de [servicio/tipo] para el [fecha] a las [hora]?"
+"¿Confirmamos tu cita de [servicio] con [profesional] para el [fecha] a las [hora]?"
 
 IMPORTANTE:
-- Si el cliente menciona "mañana", calcula la fecha real desde hoy.
-- Si la hora es ambigua (ej: "2"), confirma: "¿A las 2pm o 2am?"
+- Si la hora es ambigua (ej: "3"), pregunta: "¿A las 3pm?"
 - Para servicios VARIABLE, avisa que el precio lo confirma un asesor en la visita.
 ${staffBlock}
 
 CONSULTA DE DISPONIBILIDAD:
 Si el cliente pregunta sobre horarios disponibles y no menciona un día específico,
-pregunta: "¿Para qué día quieres consultar la disponibilidad? (ej: mañana, el lunes, el 15 de junio)"
+pregunta: "¿Para qué día quieres consultar la disponibilidad?"
 `;
 
     // Contexto de conversaciones anteriores (generado por el cleanup nocturno)
@@ -1896,7 +2347,13 @@ pregunta: "¿Para qué día quieres consultar la disponibilidad? (ej: mañana, e
 - Responde de forma natural sin mencionar que hubo un audio, a menos que el contexto lo requiera.
 - Si el cliente pregunta si puedes escuchar audios, dile que sí.`;
 
-    const antiBucleSection = `REGLA ANTI-BUCLE EN CONVERSACIÓN (OBLIGATORIA):
+    const antiBucleSection = `REGLA ANTI-CONFIRMACIÓN FALSA (ABSOLUTA — NUNCA VIOLAR):
+- NUNCA digas "tu cita está confirmada", "cita registrada", "cita agendada", "quedas agendado", "nos vemos el X", "hasta entonces" ni ninguna variante que implique que la cita fue creada.
+- La confirmación REAL la genera el sistema automáticamente con el mensaje "¡Cita agendada! ✅". Si NO ves ese mensaje en la conversación, la cita NO existe en el sistema.
+- Si el cliente dice "sí" confirmando y tú no tienes certeza de que el sistema creó la cita, responde: "Entendido, estoy procesando tu solicitud. Dame un momento."
+- NUNCA inventes una confirmación. Si fallas en crear la cita, pide al cliente que elija otro horario.
+
+REGLA ANTI-BUCLE EN CONVERSACIÓN (OBLIGATORIA):
 - Si ya hiciste una pregunta al cliente y él respondió con algo (aunque no sea la respuesta exacta que esperabas), NO repitas la misma pregunta.
 - Avanza la conversación con lo que el cliente sí dijo. Adapta tu respuesta a su mensaje.
 - Si el cliente hace una nueva pregunta en lugar de responder la tuya, responde su pregunta directamente.

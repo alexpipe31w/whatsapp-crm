@@ -144,3 +144,40 @@ export function getPoolStatus(storeId: string): string {
   if (!pool) return 'no pool';
   return `active=${pool.active.length} unused=${pool.unused.length} exhausted=${pool.exhausted.length}`;
 }
+
+// ── Pool snapshot for frontend monitoring ─────────────────────────────────────
+
+export interface CartridgeSnapshot {
+  provider:  string;
+  maskedKey: string;   // e.g. "...AeW0"
+  model:     string;
+  status:    'active' | 'unused' | 'exhausted';
+}
+
+export interface PoolSnapshot {
+  hasPool:    boolean;
+  cartridges: CartridgeSnapshot[];
+  resetAt:    number | null;  // epoch ms when rate-limit window resets
+}
+
+const maskKey = (key: string): string =>
+  key.length > 4 ? `...${key.slice(-4)}` : '****';
+
+export function getPoolSnapshot(storeId: string): PoolSnapshot {
+  resetIfExpired(storeId);
+  const pool = pools.get(storeId);
+  if (!pool) return { hasPool: false, cartridges: [], resetAt: null };
+
+  const snap = (list: Cartridge[], status: CartridgeSnapshot['status']): CartridgeSnapshot[] =>
+    list.map(c => ({ provider: c.provider, maskedKey: maskKey(c.apiKey), model: c.model, status }));
+
+  return {
+    hasPool:    true,
+    cartridges: [
+      ...snap(pool.active,    'active'),
+      ...snap(pool.unused,    'unused'),
+      ...snap(pool.exhausted, 'exhausted'),
+    ],
+    resetAt: pool.resetAt,
+  };
+}
