@@ -1,963 +1,313 @@
-# 📊 PROYECTO STOCKUP + WHATSAPP CRM - ANÁLISIS COMPLETO
+# STOCKUP MESSAGES — PROJECT SUMMARY
 
-## 🎯 RESUMEN EJECUTIVO
-
-Proyecto **full-stack de CRM integrado con WhatsApp** para pequeños negocios. Sistema de gestión de ventas, inventario, citas y comunicación automática con clientes vía WhatsApp.
-
-**Arquitectura de 2 capas:**
-- **Frontend**: React 19 + TypeScript (stockup-frontend)
-- **Backend**: NestJS + PostgreSQL + Prisma (whatsapp-crm)
+**Última actualización:** 2026-06-05  
+**Estado:** Producción activa
 
 ---
 
-## 📁 ESTRUCTURA DEL PROYECTO
+## RESUMEN EJECUTIVO
 
-```
-stockup-frontend/              # React + TypeScript
-├── src/
-│   ├── pages/                # 12 páginas principales
-│   ├── services/             # API client (Axios)
-│   ├── hooks/                # useAuth hook
-│   ├── App.tsx               # Router principal
-│   └── index.tsx             # Entry point
-├── public/                   # Assets estáticos
-├── build/                    # Producción compilada
-├── package.json              # React: 19.2.4
-├── tsconfig.json             # ES5 target, React JSX
-├── tailwind.config.js        # Estilos TW
-└── vercel.json               # Deploy config
+CRM WhatsApp con IA para barberos, salones y tiendas pequeñas en Latinoamérica.  
+SaaS multi-tenant: cada tienda tiene su propia sesión de WhatsApp, IA, catálogo, citas, staff y analíticas.
 
-whatsapp-crm/                 # NestJS + Prisma
-├── src/
-│   ├── modules/              # 17 módulos de negocio
-│   ├── prisma/               # ORM + schema
-│   ├── config/               # Config + env validation
-│   ├── main.ts               # Bootstrap
-│   └── app.module.ts         # Imports
-├── prisma/
-│   ├── schema.prisma         # 14+ modelos de datos
-│   └── migrations/           # 20+ migraciones
-├── docker-compose.yml        # PostgreSQL + Redis
-├── package.json              # NestJS 11.0.1
-├── tsconfig.json             # ES2021 target
-└── test/                     # Jest + e2e tests
-```
+**Repos:**
+- Backend: `https://github.com/alexpipe31w/whatsapp-crm`
+- Frontend: `https://github.com/alexpipe31w/stockup-frontend`
+
+**URLs producción:**
+- Backend: `https://whatsapp-crm.ash-1.instapods.app` (InstaPods, Always On)
+- Frontend: `https://stockup-frontend.vercel.app` (Vercel, auto-deploy)
+- BD: Neon PostgreSQL (serverless)
 
 ---
 
-## 🛠 TECNOLOGÍAS PRINCIPALES
+## STACK TÉCNICO
 
-### Frontend (stockup-frontend)
+### Frontend (`C:\Users\alexp\Desktop\proyectos\stockup-frontend`)
+- React 19 + TypeScript (CRA / react-scripts 5)
+- Tailwind CSS 3.4 — design system dark mode propio
+- React Router DOM v7
+- Axios + TanStack Query v5
+- lucide-react (iconos), framer-motion (animaciones)
+- socket.io-client, recharts, qrcode.react
+- xlsx / SheetJS 0.18.5 (exportación Excel)
+- Capacitor v8 (Android APK)
 
-| Tecnología | Versión | Propósito |
-|-----------|---------|----------|
-| React | 19.2.4 | Framework UI |
-| TypeScript | 4.9.5 | Type safety |
-| React Router | 7.13.1 | SPA routing |
-| React Query | 5.90.21 | State management + data fetching |
-| Axios | 1.13.6 | HTTP client |
-| Socket.io-client | 4.8.3 | WebSocket real-time |
-| Recharts | 3.8.0 | Gráficos/Analytics |
-| QRCode React | 4.2.0 | Generación QR |
-| Tailwind CSS | Latest | Styling (postcss) |
-| React Scripts | 5.0.1 | Build tool (Create React App) |
-
-**Testing:**
-- Jest
-- React Testing Library
-- React Testing Library DOM
-
----
-
-### Backend (whatsapp-crm)
-
-| Tecnología | Versión | Propósito |
-|-----------|---------|----------|
-| NestJS | 11.0.1 | Framework backend |
-| TypeScript | Latest | Type safety |
-| Prisma | 6.19.2 | ORM + schema migrations |
-| PostgreSQL | 16-alpine | Base de datos |
-| Redis | 7-alpine | Cache/sessions (docker) |
-| Passport.js | 0.7.0 | JWT auth |
-| Baileys | 7.0.0-rc.9 | WhatsApp Web API |
-| Groq SDK | 0.37.0 | LLM (AI integration) |
-| Bcrypt | 6.0.0 | Password hashing |
-| Pino | 10.3.1 | Logging |
-| Zod | 4.3.6 | Schema validation |
-| Class Validator | 0.15.1 | DTO validation |
-
-**Testing & Quality:**
-- Jest
-- ESLint + ESLint JS
-- Prettier
-- E2E tests
+### Backend (`C:\Users\alexp\Desktop\proyectos\whatsapp-crm`)
+- NestJS 11 + TypeScript
+- Prisma 6 + PostgreSQL (Neon)
+- Baileys v7 (WhatsApp Web API)
+- IA multi-provider: Groq / OpenAI / Together / Mistral / Anthropic
+- Groq Whisper (audio → texto)
+- Brevo HTTP API (emails)
+- MercadoPago (suscripciones producción)
+- node-cron (recordatorios, reportes diarios, keepalive)
 
 ---
 
-## 📊 MODELOS DE DATOS (Prisma Schema)
-
-### Entidades Principales
+## SCHEMA PRISMA — MODELOS ACTUALES
 
 ```
-Store (Tienda/Negocio)
-├── Customers (Clientes)
-├── Products (Productos)
-│   └── ProductVariant (Variantes)
-├── Categories (Categorías)
-├── Services (Servicios)
-│   └── ServiceVariant (Variantes)
-├── Orders (Pedidos)
-├── OrderItems (Items de Pedido)
-├── Conversations (Conversaciones WhatsApp)
-├── Messages (Mensajes)
-├── Appointments (Citas/Agendamiento)
-├── Campaigns (Campañas marketing)
-├── Users (Empleados/Agentes)
-├── BlockedContacts (Contactos bloqueados)
-├── WhatsappSession (Sesión activa)
-└── AIConfiguration (Config IA)
+Store
+├── staffLabel String?        // "Barbero", "Estilista", etc.
+├── slug       String? @unique // para calendario público /cal/:slug
+├── businessHours Json?
+├── adminPhone String?
+│
+├── Staff[]                   // equipo de trabajo por tienda
+│   ├── staffId, name, isActive
+│   └── schedule Json?        // null = hereda store.businessHours
+│
+├── Customer[]
+│   ├── phone, name, cedula, city
+│   ├── totalOrders, totalSpent
+│   └── acceptsMarketing
+│
+├── Conversation[]
+│   └── Message[]
+│
+├── Product[] → ProductVariant[]
+├── Category[]
+├── Service[] → ServiceVariant[]
+│
+├── Order[]
+│   ├── type: 'product' | 'food' | 'service'
+│   ├── status: pending|confirmed|packed|shipped|delivered|cancelled
+│   ├── isManual, manualPaymentMethod
+│   ├── appointmentId? @unique  // idempotencia service orders
+│   └── OrderItem[]
+│
+├── Appointment[]
+│   ├── status: PENDING|CONFIRMED|IN_PROGRESS|COMPLETED|CANCELLED|NO_SHOW|RESCHEDULED
+│   ├── priority: LOW|NORMAL|HIGH|URGENT
+│   ├── source: AI|MANUAL|WHATSAPP|API
+│   ├── staffId?               // empleado asignado
+│   ├── paymentStatus, paymentEvidence
+│   └── @@index([storeId, staffId, scheduledAt])
+│
+├── Campaign[]
+├── User[]                    // admins/agentes de la tienda
+├── BlockedContact[]
+├── WhatsappSession
+├── AIConfiguration
+│   └── aiProvider (Groq/OpenAI/Together/Mistral/Anthropic)
+├── Subscription
+├── DailyReport[]
+└── SuperAdmin
 ```
 
-### Modelos Detallados
-
-#### 1. **Store**
-```prisma
-- storeId (PK: UUID)
-- name (varchar 100)
-- phone (unique)
-- ownerName
-- waSessionId (WhatsApp session)
-- isActive (boolean)
-- createdAt, updatedAt
-```
-**Relaciones:** Central hub para todo (customers, orders, products, etc.)
-
-#### 2. **Customer**
-```prisma
-- customerId (PK: UUID)
-- storeId (FK)
-- phone (varchar 20) - Número WhatsApp
-- name, cedula, city
-- createdAt, updatedAt
-- Índices: (storeId, phone) unique, (storeId, createdAt)
-```
-
-#### 3. **Conversation**
-```prisma
-- conversationId (PK)
-- storeId, customerId (FK)
-- status: 'active' | 'closed'
-- startedAt, lastMessageAt, createdAt
-- Índices: (storeId, status), (customerId, status)
-```
-
-#### 4. **Message**
-```prisma
-- messageId (PK)
-- conversationId, storeId (FK)
-- content, type
-- sender: 'customer' | 'business' | 'ai'
-- isAiResponse (boolean)
-- createdAt
-- Índices: (conversationId, createdAt), (storeId, createdAt)
-```
-
-#### 5. **Product**
-```prisma
-- productId (PK)
-- storeId, categoryId (FK)
-- sku (SKU - código producto)
-- name, description
-- salePrice, costPrice, profitMargin (Decimal 10,2)
-- stock, hasVariants
-- imageUrl
-- hasShipping, weight, shippingStandard, shippingExpress
-- isActive, version
-- Índices: (storeId, sku), (storeId, isActive), (storeId, createdAt)
-```
-
-#### 6. **ProductVariant**
-```prisma
-- variantId (PK)
-- productId (FK)
-- name, sku
-- salePrice, costPrice
-- stock, attributes (JSON)
-- imageUrl, weight, sortOrder
-- isActive
-```
-
-#### 7. **Service**
-```prisma
-- serviceId (PK)
-- storeId (FK)
-- name, description, category
-- priceType: FIXED | PER_HOUR | PER_DAY | PER_UNIT | VARIABLE
-- basePrice, minPrice, maxPrice, costPrice
-- hasVariants, estimatedMinutes
-- customFields (JSON)
-```
-
-#### 8. **Order**
-```prisma
-- orderId (PK)
-- storeId, customerId (FK)
-- type: 'product' | 'service'
-- total (Decimal 10,2)
-- status: 'pending' | 'confirmed' | 'packed' | 'shipped' | 'delivered' | 'cancelled'
-- Relación: OrderItem[] (items del pedido)
-```
-
-#### 9. **Appointment (Citas)**
-```prisma
-Enums:
-  - AppointmentStatus: PENDING, CONFIRMED, IN_PROGRESS, COMPLETED, CANCELLED, NO_SHOW, RESCHEDULED
-  - AppointmentPriority: LOW, NORMAL, HIGH, URGENT
-  - AppointmentSource: AI, MANUAL, WHATSAPP, API
-
-- appointmentId (PK)
-- storeId, customerId, serviceId, serviceVariantId (FK)
-- status, priority, source
-- scheduledAt, duration
-- notes, cedula (document ID)
-- createdAt, updatedAt
-```
-
-#### 10. **Campaign**
-```prisma
-- campaignId (PK)
-- storeId (FK)
-- name, description
-- status, type
-- targetCustomers, sendAt
-```
-
-#### 11. **User (Empleados/Agentes)**
-```prisma
-- userId (PK)
-- storeId (FK)
-- email (unique per store)
-- passwordHash
-- name, role
-- roles: admin | superadmin | agent
-```
-
-#### 12. **WhatsappSession**
-```prisma
-- sessionId (PK)
-- storeId (FK)
-- qrCode (para autenticación)
-- isConnected (boolean)
-```
-
-#### 13. **AIConfiguration**
-```prisma
-- configId (PK)
-- storeId (FK, unique)
-- systemPrompt, model
-- temperature, maxTokens
-- enabledFeatures (JSON)
-```
-
-#### 14. **BlockedContact**
-```prisma
-- blockedId (PK)
-- storeId, customerId (FK)
-- reason, blockedAt
-```
+**REGLA CRÍTICA:** `prisma db push --accept-data-loss` SIEMPRE. NUNCA `prisma migrate` ni `prisma migrate reset` — hay drift histórico en Neon.
 
 ---
 
-## 🎨 PÁGINAS DEL FRONTEND (src/pages/)
-
-| Página | Propósito | Ruta | Roles |
-|--------|----------|------|-------|
-| **Login** | Autenticación | `/login` | Público |
-| **Dashboard** | Home/resumen | `/dashboard` | Todos |
-| **Customers** | Gestión clientes | `/customers` | Agentes |
-| **Conversations** | Chat con clientes | `/conversations` | Agentes |
-| **Appointments** | Gestión citas | `/appointments` | Agentes |
-| **Orders** | Gestión pedidos | `/orders` | Agentes |
-| **Products** | Catálogo productos | `/products` | Admin |
-| **Services** | Catálogo servicios | `/services` | Admin |
-| **Campaigns** | Marketing campaigns | `/campaigns` | Admin |
-| **Analytics** | Estadísticas/reportes | `/analytics` | Admin |
-| **Users** | Gestión empleados | `/users` | Admin |
-| **WhatsApp** | Config WhatsApp | `/whatsapp` | Admin |
-| **AiConfig** | Config IA | `/ai-config` | Admin |
-| **Blocked** | Contactos bloqueados | `/blocked` | Admin |
-
-**Sistema de Roles (useAuth hook):**
-```typescript
-- superadmin    → Acceso total
-- admin         → Acceso admin + agentes
-- agent         → Solo conversaciones, órdenes, clientes
-- guest         → Login requerido
-```
-
----
-
-## 🔌 MÓDULOS BACKEND (src/)
-
-### Estructura de Módulos NestJS
+## MÓDULOS BACKEND (`src/`)
 
 ```
 src/
-├── main.ts                    # Bootstrap + CORS + validation pipes
-├── app.module.ts              # Root module (17 submódulos)
-├── app.controller.ts          # Health check
-├── app.service.ts
-│
-├── auth/                      # 🔐 Autenticación
-│   ├── auth.service.ts        # JWT + Passport
-│   ├── auth.controller.ts
-│   ├── jwt.strategy.ts
-│   └── auth.module.ts
-│
-├── config/                    # ⚙️ Configuración
-│   ├── env.validation.ts      # Validación de envs (Zod)
-│   └── config.service.ts
-│
-├── prisma/                    # 🗄️ Base de datos
-│   ├── prisma.service.ts
-│   └── prisma.module.ts
-│
-├── stores/                    # 🏪 Tiendas/Negocios
-│   ├── stores.service.ts
-│   ├── stores.controller.ts
-│   └── stores.module.ts
-│
-├── customers/                 # 👥 Clientes
-│   ├── customers.service.ts
-│   ├── customers.controller.ts
-│   ├── dto/
-│   │   ├── create-customer.dto.ts
-│   │   └── update-customer.dto.ts
-│   └── customers.module.ts
-│
-├── products/                  # 📦 Productos
-│   ├── products.service.ts
-│   ├── products.controller.ts
-│   └── products.module.ts
-│
-├── services/                  # 🛠️ Servicios
-│   ├── services.service.ts
-│   ├── services.controller.ts
-│   └── services.module.ts
-│
-├── orders/                    # 📋 Órdenes/Pedidos
-│   ├── orders.service.ts
-│   ├── orders.controller.ts
-│   ├── dto/
-│   └── orders.module.ts
-│
-├── conversations/             # 💬 Conversaciones WhatsApp
-│   ├── conversations.service.ts
-│   ├── conversations.controller.ts
-│   └── conversations.module.ts
-│
-├── messages/                  # 📨 Mensajes
-│   ├── messages.service.ts
-│   ├── messages.controller.ts
-│   └── messages.module.ts
-│
-├── appointments/              # 📅 Citas/Agendamiento
-│   ├── appointments.service.ts
-│   ├── appointments.controller.ts
-│   ├── dto/
-│   │   ├── create-appointment.dto.ts
-│   │   └── update-appointment.dto.ts
-│   └── appointments.module.ts
-│
-├── campaigns/                 # 📣 Campañas Marketing
-│   ├── campaigns.service.ts
-│   ├── campaigns.controller.ts
-│   └── campaigns.module.ts
-│
-├── analytics/                 # 📊 Estadísticas
-│   ├── analytics.service.ts
-│   ├── analytics.controller.ts
-│   └── analytics.module.ts
-│
-├── dashboard/                 # 📈 Dashboard
-│   ├── dashboard.service.ts
-│   ├── dashboard.controller.ts
-│   └── dashboard.module.ts
-│
-├── whatsapp/                  # 📱 Integración WhatsApp
-│   ├── whatsapp.service.ts    # Baileys integration
-│   ├── whatsapp.controller.ts
-│   ├── strategies/
-│   └── whatsapp.module.ts
-│
-├── ai/                        # 🤖 Integración IA (Groq)
-│   ├── ai.service.ts          # Groq SDK + prompts
-│   ├── ai.controller.ts
-│   └── ai.module.ts
-│
-├── blocked/                   # 🚫 Contactos Bloqueados
-│   ├── blocked.service.ts
-│   ├── blocked.controller.ts
-│   └── blocked.module.ts
-│
-└── generated/                 # 🔧 Generated (Prisma client)
-    └── prisma/
-        └── client.js
+├── ai/                    IA: respuestas, extracción citas, staff catalog,
+│                          disponibilidad real (extractQueryDate + computeSlotsForAI)
+├── admin-assistant/       Asistente IA personal para el dueño vía WhatsApp
+├── analytics/             KPIs, /analytics/summary (períodos), tendencias
+├── appointments/          CRUD citas, conflictos por staff, timeline, stats
+├── auth/                  JWT + Passport, login, me
+├── blocked/               Contactos bloqueados
+├── campaigns/             Mensajería masiva, programada
+├── config/                Validación envs (Zod + passthrough)
+├── conversations/         Conversaciones WhatsApp, takeover, estados
+├── customers/             CRUD clientes, historial, métricas
+├── dashboard/             KPIs dashboard principal
+├── messages/              Mensajes por conversación
+├── notifications/         WhatsApp + email (cita creada/confirmada/recordatorio)
+├── orders/                CRUD órdenes, manual, /store/:id?type=service
+├── prisma/                PrismaService + PrismaModule
+├── products/              CRUD productos + variantes + stock
+├── public/                Endpoints SIN auth para calendario público
+│   ├── GET /public/:slug           info básica tienda
+│   └── GET /public/:slug/availability?date=YYYY-MM-DD
+├── reminders/             Cron 30min: recordatorios 8h/2h/1h antes de cita
+├── reports/               Cron 9pm COL: DailyReport + historial en BD
+├── services/              CRUD servicios + variantes + plantillas
+├── staff/                 CRUD empleados por tienda
+│   └── GET/POST/PATCH/DELETE /staff
+├── stores/                Config tienda, businessHours, slug, staffLabel
+├── subscriptions/         MercadoPago webhooks, estado suscripción
+├── superadmin/            Panel admin global con 2FA email
+└── whatsapp/              Baileys, QR, sesión, envío mensajes
 ```
 
 ---
 
-## 🔄 FLUJO DE DATOS (Arquitectura)
+## FEATURES COMPLETAS
 
-### Frontend → Backend Communication
+### WhatsApp CRM
+- Conexión por QR (Baileys v7) por tienda
+- Conversaciones en tiempo real, estados: active/pending_human/human/closed
+- Takeover manual / release / cierre
+- IA responde automáticamente con prompt configurable
+- Anti-bucle IA, debounce de mensajes
+- Audio → texto (Groq Whisper)
+- Catálogo de productos e IA sabe precios/stock
 
+### Admin Personal Assistant
+- Activado cuando `adminPhone` escribe al propio WhatsApp del negocio
+- Contexto real: citas hoy, ventas, finanzas, catálogo, top clientes
+- Acciones ejecutables desde WA: CREATE_ORDER, CREATE/CANCEL/CONFIRM/COMPLETE_APPOINTMENT, DAILY_REPORT
+- Historial en memoria (2h TTL, 16 mensajes)
+
+### Sistema de Staff / Equipo
+- Múltiples empleados por tienda (barberos, estilistas, técnicos)
+- `schedule null` = hereda `store.businessHours` automáticamente
+- Conflictos independientes por empleado (Carlos lleno no bloquea a Luis)
+- IA pregunta al cliente qué empleado quiere → extrae `staffId`
+- Frontend: tab "Equipo" en Config, filtro en Appointments, columna en lista/calendario
+
+### Citas (Appointments)
+- CRUD completo + timeline de historial
+- Flujo de pago: comprobante vía WA → aprobar/rechazar
+- **Auto-orden de servicio**: al confirmar pago → crea Order(type='service') atómica + actualiza cliente. Idempotente por `appointmentId @unique`
+- Pendientes: cliente solicita cancelar/reagendar → badge en frontend
+
+### Ventas de Productos (`/orders`)
+- Modal con selector de productos del catálogo (auto-rellena precio, descuenta stock)
+- Toggle cliente **existente** / **nuevo** (crea cliente on the fly)
+- Botón Exportar Excel en header
+- Filtro: `type !== 'service'` — service orders no aparecen aquí
+
+### Ventas de Servicios (`/service-orders`)
+- Se generan automáticamente al confirmar pago de citas
+- **Nueva venta manual**: modal con cliente existente/nuevo, descripción, precio, método
+- KPIs: revenue total, hoy, cantidad, métodos de pago
+- Exportar Excel
+
+### Calendario Público (`/cal/:slug`)
+- Sin auth — ruta pública fuera de PrivateRoute
+- Vista de slots disponibles por empleado, navegación por días (hoy +30)
+- Slots calculados en tiempo real: businessHours minus citas PENDING/CONFIRMED/IN_PROGRESS
+- Config: campo slug + preview link + botón copiar
+
+### IA — Disponibilidad en Tiempo Real
+- Regex detecta consultas de disponibilidad en mensaje del cliente
+- `extractQueryDate()`: parsea "hoy", "mañana", "el lunes", "el 10 de junio"
+- `computeSlotsForAI()`: calcula slots reales por empleado y fecha
+- Inyecta bloque de disponibilidad exacta en el system prompt
+- Sin fecha → IA pregunta "¿Para qué día?"
+
+### Analíticas (renovadas)
+- **Tab Dashboard**: ingresos totales, productos vs servicios, distribución %, métodos de pago, top productos, top servicios, rendimiento por profesional
+- **Tab Reportes**: tabla filtrable, totales al pie, export Excel
+- **Períodos**: Hoy / Esta semana / Este mes / Mes anterior
+- Endpoint: `GET /analytics/summary?period=today|week|month|last_month`
+
+### Excel Export (`src/utils/exportExcel.ts`)
+- Incluye TODAS las órdenes con `total > 0` (sin filtrar por status — fix del bug original)
+- Hojas: Resumen, Ventas Productos, Ventas Servicios, Todas las ventas, Citas
+- Columnas numéricas reales (no strings) → sumas automáticas en Excel
+- Fila de totales al final de cada hoja
+
+### Notificaciones Automáticas
+- 6 tipos: citaCreada, citaConfirmada, recordatorio, pendingAction, resuelta, comprobante
+- WhatsApp (Baileys) + email (Brevo) simultáneamente
+- Recordatorios: cron 30min, ventanas 8h/2h/1h antes, dedup atómico
+- DailyReport: cron 9pm Colombia, guardado en BD (upsert por storeId+date)
+
+### Core SaaS
+- Registro público + verificación email (Brevo) + pago MercadoPago
+- JWT + rutas protegidas por suscripción activa
+- Superadmin con 2FA email: `/superadmin/login` → `/superadmin`
+- MercadoPago producción (`APP_USR-...`), webhook HMAC verificado, idempotente
+
+---
+
+## FRONTEND — RUTAS
+
+| Ruta | Componente | Auth requerida |
+|------|-----------|----------------|
+| `/` | Dashboard | Sí |
+| `/whatsapp` | WhatsApp QR | Sí |
+| `/conversations` | Conversations | Sí |
+| `/appointments` | Appointments | Sí |
+| `/campaigns` | Campaigns | Sí |
+| `/products` | Products | Sí |
+| `/services` | Services | Sí |
+| `/orders` | Orders (Ventas Productos) | Sí |
+| `/service-orders` | ServiceOrders (Ventas Servicios) | Sí |
+| `/customers` | Customers | Sí |
+| `/analytics` | Analytics | Sí |
+| `/config` | Config (Negocio/IA/Equipo) | Sí |
+| `/cal/:slug` | PublicCalendar | **No — pública** |
+
+---
+
+## DEPLOY
+
+### Backend (InstaPods — $7/mo, Always On, US-East)
 ```
-Frontend (React)
-    ↓
-axios client (src/services/api.ts)
-    ↓ (HTTP + JWT)
-NestJS API (http://localhost:3000/api)
-    ↓
-Prisma ORM
-    ↓
-PostgreSQL Database
+Build:  npm install && npx prisma db push --accept-data-loss && npx prisma generate && npm run build
+Start:  npm run start:prod
+Envs:   /home/instapod/app/.env  (cargadas por ConfigModule/dotenv — NO son OS vars)
+SSH:    dashboard → Terminal
 ```
 
-### Real-time (Socket.io)
-
+### Frontend (Vercel — auto-deploy desde main)
 ```
-Frontend: socket.io-client
-    ↔ (WebSocket)
-Backend: Socket.io server
-    → Redis (caché)
-    → Database
+CI=true → ESLint warnings = errores de build
+NUNCA Set-Content/Out-File de PowerShell para .tsx/.ts (BOM → unicode-bom error)
 ```
 
-### WhatsApp Integration
-
+### Variables de entorno backend
 ```
-Baileys Library (WhatsApp Web API)
-    ↓
-whatsapp.service.ts
-    ↓
-WhatsappSession model
-    ↓
-Conversations + Messages
-    ↓
-AI processing (Groq SDK)
-    ↓
-Auto-response o agent notification
+DATABASE_URL, GROQ_API_KEY, JWT_SECRET, NODE_ENV=production,
+PORT, WA_SESSION_PATH, MP_ACCESS_TOKEN, MP_SANDBOX=false,
+MP_WEBHOOK_SECRET, APP_URL, FRONTEND_URL, ALLOWED_ORIGINS,
+CRON_SECRET, BREVO_API_KEY, BREVO_SENDER_EMAIL
 ```
 
 ---
 
-## 🗄️ BASE DE DATOS
+## DESIGN SYSTEM (Dark Mode)
 
-### Configuración (docker-compose.yml)
+| Token | Valor |
+|-------|-------|
+| Canvas | `#0A0A0F` |
+| Surface | `#141419` |
+| Surface Elevated | `#1C1C24` |
+| Surface Overlay | `#24242E` |
+| Accent Lima | `#D4FF00` |
+| Accent Dark | `#A3CC00` |
+| Text Primary | `#F0F0F5` |
+| Text Secondary | `#8A8A9A` |
 
-```yaml
-PostgreSQL 16-alpine
-  - Database: whatsapp_crm
-  - User: postgres
-  - Password: dev_password
-  - Port: 5432
-  - Volume: pgdata (persistencia)
-
-Redis 7-alpine
-  - Port: 6379
-  - Para: cache, sessions, pub/sub
-```
-
-### Migrations (20+ en prisma/migrations/)
-- Init schema
-- Add users
-- Add sender to message
-- Add orders
-- Add campaigns
-- Add appointments + cedula
-- Add blocked contacts
-- Add whatsapp sessions
-- Y más...
+- Botones primarios: `gradient-brand` (#D4FF00→#A3CC00) con `text-[#0A0A0F]`
+- Iconos: `lucide-react` — sin emojis en la UI
+- Inputs en modales DEBEN tener: `bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary`
 
 ---
 
-## 🔐 AUTENTICACIÓN & AUTORIZACIÓN
+## ESTÁNDARES DE INGENIERÍA
 
-### JWT Flow
-
-```typescript
-// Login
-POST /api/auth/login
-{ email: string, password: string }
-  ↓
-Generate JWT (sub=userId, role, storeId)
-  ↓
-Response: token, user { userId, email, role, storeId }
-
-// Request posterior
-localStorage.getItem('token')
-  → Authorization: Bearer <JWT>
-  → Passport JWT strategy valida
-  → @UseGuards(JwtAuthGuard)
-
-// Error 401 → Logout automático
-```
-
-### Roles & Permissions (React)
-
-```typescript
-<PrivateRoute>          // token required
-<AdminRoute>            // admin || superadmin
-<AgentRoute>            // admin || superadmin || agent
-
-// useAuth hook
-const { token, user, loginFn, logout } = useAuth()
-```
+- **Multi-tenant:** toda query filtra por `storeId` del JWT, nunca del body
+- **Atomicidad:** operaciones multi-tabla → `prisma.$transaction`
+- **Idempotencia:** webhooks verifican si ya se procesaron; service orders por `appointmentId @unique`
+- **DTOs:** `ValidationPipe` global con `whitelist: true, forbidNonWhitelisted: true`. TODOS los campos del frontend deben estar en el DTO con decoradores
+- **Prisma JSON null:** usar `Prisma.JsonNull` (no `null` plano) en campos `Json?`
+- **PublicModule:** sin `JwtAuthGuard` — módulo separado para endpoints públicos
+- **Staff schedule:** `null` = hereda `store.businessHours`. No asumir que tiene schedule propio.
+- **`createManualOrder`:** acepta `type` ('product' | 'food' | 'service') — default 'product'
 
 ---
 
-## 📡 API ENDPOINTS (Tentativa)
-
-### Auth
-```
-POST   /api/auth/login              Login
-POST   /api/auth/logout             Logout
-GET    /api/auth/me                 Current user
-POST   /api/auth/refresh             Refresh token
-```
-
-### Stores
-```
-GET    /api/stores                  List stores
-POST   /api/stores                  Create store
-GET    /api/stores/{id}             Get store
-PATCH  /api/stores/{id}             Update store
-```
-
-### Customers
-```
-GET    /api/customers               List customers
-POST   /api/customers               Create customer
-GET    /api/customers/{id}          Get customer
-PATCH  /api/customers/{id}          Update customer
-GET    /api/customers/{id}/orders   Customer orders
-GET    /api/customers/{id}/appointments  Customer appointments
-```
-
-### Products
-```
-GET    /api/products                List products
-POST   /api/products                Create product
-GET    /api/products/{id}           Get product
-PATCH  /api/products/{id}           Update product
-DELETE /api/products/{id}           Delete product
-POST   /api/products/{id}/variants  Add variant
-```
-
-### Orders
-```
-GET    /api/orders                  List orders
-POST   /api/orders                  Create order
-GET    /api/orders/{id}             Get order
-PATCH  /api/orders/{id}             Update order status
-POST   /api/orders/{id}/items       Add items
-```
-
-### Conversations & Messages
-```
-GET    /api/conversations           List conversations
-GET    /api/conversations/{id}      Get conversation
-POST   /api/conversations/{id}/messages  Send message
-GET    /api/messages                Get messages
-```
-
-### Appointments
-```
-GET    /api/appointments            List appointments
-POST   /api/appointments            Create appointment
-GET    /api/appointments/{id}       Get appointment
-PATCH  /api/appointments/{id}       Update appointment
-DELETE /api/appointments/{id}       Cancel appointment
-```
-
-### WhatsApp
-```
-POST   /api/whatsapp/session        Create session
-GET    /api/whatsapp/qr             Get QR code
-POST   /api/whatsapp/send           Send message
-```
-
-### AI
-```
-POST   /api/ai/configure            Set AI config
-GET    /api/ai/config               Get AI config
-POST   /api/ai/chat                 Chat with AI
-```
-
-### Analytics
-```
-GET    /api/analytics/dashboard     Dashboard metrics
-GET    /api/analytics/sales         Sales analytics
-GET    /api/analytics/customers     Customer analytics
-GET    /api/analytics/products      Product analytics
-```
-
----
-
-## ⚙️ CONFIGURACIÓN & VARIABLES DE ENTORNO
-
-### Frontend (.env)
-```
-REACT_APP_API_URL=http://localhost:3000/api
-REACT_APP_SOCKET_URL=http://localhost:3000
-```
-
-### Backend (.env)
-```
-# Base de datos
-DATABASE_URL=postgresql://postgres:dev_password@localhost:5432/whatsapp_crm
-
-# JWT
-JWT_SECRET=your-secret-key
-JWT_EXPIRATION=1d
-
-# Server
-PORT=3000
-NODE_ENV=development
-
-# WhatsApp
-WHATSAPP_SESSIONS_PATH=./sessions
-
-# AI (Groq)
-GROQ_API_KEY=your-groq-api-key
-GROQ_MODEL=mixtral-8x7b-32768
-
-# Redis (opcional)
-REDIS_URL=redis://localhost:6379
-```
-
----
-
-## 🚀 COMANDOS PRINCIPALES
-
-### Frontend (stockup-frontend)
-```bash
-# Desarrollo
-npm start                 # SPA en http://localhost:3000
-
-# Producción
-npm run build            # Genera /build (Vercel)
-
-# Testing
-npm test                 # Jest watch mode
-
-# Linting
-npm run lint             # Usando extend: react-app
-```
-
-### Backend (whatsapp-crm)
-```bash
-# Desarrollo
-npm run start:dev        # Nest watch mode (port 3000)
-npm run start:debug      # Debug mode
-
-# Producción
-npm run build            # Compila TypeScript → /dist
-npm run start:prod       # node dist/main.js
-
-# Prisma
-npx prisma migrate dev   # Create migration
-npx prisma generate      # Generate client
-npx prisma seed          # Seed data
-
-# Testing
-npm run test             # Jest unit tests
-npm run test:watch       # Watch mode
-npm run test:cov         # Coverage
-npm run test:e2e         # E2E tests
-
-# Linting & Formatting
-npm run lint             # ESLint fix
-npm run format           # Prettier
-```
-
-### Docker
-```bash
-# Levantar servicios (PostgreSQL + Redis)
-docker-compose up -d     # Backgroundcd
-
-# Bajar servicios
-docker-compose down
-
-# Ver logs
-docker-compose logs -f postgres
-```
-
----
-
-## 📦 DEPENDENCIAS CLAVE
-
-### Frontend
-- **React 19**: Latest React con Suspense & concurrent rendering
-- **React Query 5**: Server state management (caching, fetching)
-- **React Router 7**: SPA routing
-- **Axios**: HTTP client (interceptores para JWT)
-- **Socket.io**: Real-time updates
-- **Recharts**: Charts/gráficos
-- **Tailwind CSS**: Utility-first CSS
-
-### Backend
-- **NestJS 11**: TypeScript framework (controllers, services, guards)
-- **Prisma 6**: TypeScript ORM con migrations
-- **Passport + JWT**: Authentication
-- **Baileys 7**: WhatsApp Web scraping/bot
-- **Groq SDK**: LLM integration (AI responses)
-- **PostgreSQL**: Relational database
-- **Pino**: JSON logging
-- **Zod + Class Validator**: Schema validation
-
----
-
-## 🔍 PATRONES CLAVE
-
-### Frontend Patterns
-
-1. **Context API + Hooks**
-   ```typescript
-   // useAuth.tsx
-   - AuthProvider wrapper
-   - JWT decode (client-side)
-   - localStorage persistence
-   - Auto logout on 401
-   ```
-
-2. **React Query**
-   ```typescript
-   const { data, isLoading, error } = useQuery({
-     queryKey: ['customers'],
-     queryFn: () => api.get('/customers')
-   })
-   ```
-
-3. **Protected Routes**
-   ```typescript
-   <PrivateRoute>
-   <AdminRoute>
-   <AgentRoute>
-   ```
-
-4. **API Client**
-   ```typescript
-   const api = axios.create({...})
-   api.interceptors.request.use(...)
-   api.interceptors.response.use(...)
-   ```
-
-### Backend Patterns
-
-1. **NestJS Module Architecture**
-   ```typescript
-   @Module({
-     imports: [PrismaModule],
-     controllers: [CustomersController],
-     providers: [CustomersService],
-   })
-   export class CustomersModule {}
-   ```
-
-2. **Service Injection**
-   ```typescript
-   @Injectable()
-   export class CustomersService {
-     constructor(private prisma: PrismaService) {}
-   }
-   ```
-
-3. **DTO Validation**
-   ```typescript
-   export class CreateCustomerDto {
-     @IsString() @IsNotEmpty()
-     name: string;
-     
-     @IsPhoneNumber()
-     phone: string;
-   }
-   ```
-
-4. **Guards & Decorators**
-   ```typescript
-   @UseGuards(JwtAuthGuard)
-   @Post('customers')
-   createCustomer(@Body() dto: CreateCustomerDto) {}
-   ```
-
----
-
-## 🎯 FLUJOS PRINCIPALES DE NEGOCIO
-
-### 1. Nuevo Customer Llega por WhatsApp
-
-```
-1. WhatsApp message recibido → Baileys
-2. whatsapp.service examina si es nuevo
-3. Create Customer record en BD
-4. Create Conversation record
-5. Obtener AIConfiguration de Store
-6. Enviar mensaje a Groq LLM
-7. IA genera respuesta contextualizada
-8. Guardar Message (isAiResponse=true)
-9. Enviar respuesta automática por WhatsApp
-10. Real-time update al dashboard (socket.io)
-```
-
-### 2. Customer Agenda Cita
-
-```
-1. Agent/Customer envía cita desde UI o WhatsApp
-2. Validar disponibilidad (Service + Appointments)
-3. Create Appointment record
-4. Store en BD con status=PENDING
-5. Notificar al business (email/SMS/WhatsApp)
-6. Enviar confirmación a customer
-7. Crear reminder automático (48h antes)
-8. Update AppointmentStatus → CONFIRMED
-```
-
-### 3. Order Processing
-
-```
-1. Customer selecciona productos
-2. POST /orders con OrderItems[]
-3. Validar stock
-4. Calcular total + shipping
-5. Create Order (status=pending)
-6. Enviar resumen por WhatsApp
-7. Disponibilizar para pago
-8. Update status → paid/shipped/delivered
-9. Enviar tracking info
-10. Update Analytics/Dashboard
-```
-
-### 4. Marketing Campaign
-
-```
-1. Admin crea Campaign (target customers)
-2. NestJS scheduler o manual trigger
-3. Enviar mensaje a contactos seleccionados vía WhatsApp
-4. Track open/click rates
-5. Update Conversation con campaign_id
-6. Analytics: tasa de conversión
-```
-
----
-
-## 📊 MANEJO DE DATOS & INVERSIÓN
-
-### Estructuras de Datos Principales
-
-**Pagination + Filtering:**
-```typescript
-GET /api/customers?page=1&limit=10&storeId=abc&phone=123
-```
-
-**Real-time Updates:**
-```typescript
-socket.emit('conversation:update', { conversationId, lastMessage })
-socket.on('appointments:new', (appointment) => {})
-```
-
-**Caching Strategy:**
-```
-- Frontend: React Query (5 min)
-- Backend: Redis para sesiones
-- Database: Índices estratégicos
-```
-
----
-
-## 🔧 ARCHIVOS CRÍTICOS PARA ENTENDER
-
-### Frontend
-| Archivo | Propósito | Criticidad |
-|---------|----------|-----------|
-| `src/App.tsx` | Router principal | 🔴 Crítico |
-| `src/hooks/useAuth.tsx` | Auth state | 🔴 Crítico |
-| `src/services/api.ts` | API client | 🔴 Crítico |
-| `src/pages/*.tsx` | Componentes de página | 🟡 Importante |
-| `tailwind.config.js` | Estilos | 🟢 Normal |
-
-### Backend
-| Archivo | Propósito | Criticidad |
-|---------|----------|-----------|
-| `src/main.ts` | Bootstrap app | 🔴 Crítico |
-| `src/app.module.ts` | Inyección de módulos | 🔴 Crítico |
-| `prisma/schema.prisma` | Estructura BD | 🔴 Crítico |
-| `src/{module}/{module}.service.ts` | Lógica de negocio | 🟡 Importante |
-| `src/{module}/{module}.controller.ts` | Endpoints | 🟡 Importante |
-| `src/config/env.validation.ts` | Variables entorno | 🟢 Normal |
-
----
-
-## 🚀 DEPLOYMENT
-
-### Frontend (Vercel)
-```
-vercel.json → Auto deploy on push
-Build: npm run build → /build folder
-Target: Vercel hosting (serverless)
-```
-
-### Backend (Railway / VPS)
-```
-railway.toml → Railway deployment config
-Docker: docker-compose.yml
-Build: npm run build → node dist/main.js
-Port: 3000
-Database: PostgreSQL managed instance
-```
-
----
-
-## 📈 ESCALABILIDAD & PRÓXIMOS PASOS
-
-### Consideraciones
-- **Database**: PostgreSQL índices optimizados
-- **Cache**: Redis para rate-limiting + sessions
-- **Real-time**: Socket.io para conversaciones en vivo
-- **File Upload**: Cloudinary / AWS S3 para imágenes
-- **Payment**: Stripe / Mercado Pago integration
-- **SMS**: Twilio integration para recordatorios
-- **Email**: SendGrid para notificaciones
-
-### Mejoras Potenciales
-1. Add WebSocket gateway para chat real-time
-2. Job Queue (Bull/RabbitMQ) para tareas async
-3. Microservicios para módulos aislados
-4. Cache layer más sofisticado
-5. Analytics mejorados con BI tools
-6. Mobile app (Expo/React Native)
-
----
-
-## 📝 NOTAS IMPORTANTES
-
-✅ **Está bien implementado:**
-- Separación de capas (frontend/backend)
-- TypeScript en ambos
-- Prisma ORM con migrations versionadas
-- JWT auth con roles
-- Docker para desarrollo local
-- ESLint + Prettier para code quality
-
-⚠️ **Áreas a monitorear:**
-- Validación error handling en frontend
-- Rate limiting en backend
-- SQL injection prevention (Prisma lo previene)
-- CORS bien configurado (cualquier origen actualmente)
-- Secrets management en producción
-
----
-
-**Última actualización:** 8 de Abril, 2026
-**Documentación para:** IA + Desarrolladores
-**Versión:** 1.0 - Completo
+## BUGS CRÍTICOS RESUELTOS (histórico)
+
+| Bug | Fix | Commit |
+|-----|-----|--------|
+| Service orders aparecían en Ventas Productos | `filter(o => o.type !== 'service')` | — |
+| Excel vacío (filtro `status=delivered` excluía manual/service) | Incluir todos con `total > 0` | — |
+| Órdenes IA nunca se generaban | Caso 1.5 faltante + caché con items | `ae1d7c7` |
+| Fecha cita año 2028 (LLM alucinaba) | Validación hoy+2años | `ae1d7c7` |
+| Reagendar crea cita duplicada | Buscar PENDING/CONFIRMED en 48h, actualizar | `8f21ece` |
+| Segunda cita sobreescribía la primera | Reagendar solo si `conversationCreatedAppts` vacío | `a9a9fce` |
+| CORS post-migración InstaPods | Zod `.passthrough()` en schema | `b4887ca` |
+| Chat IA color ilegible (blanco sobre lima) | `text-[#0A0A0F]` en burbujas IA | `c584889` |
+
+### Limitación conocida
+- **3+ citas en un solo mensaje:** extractor retorna solo 1 JSON a la vez. Las demás se crean en mensajes sucesivos.
