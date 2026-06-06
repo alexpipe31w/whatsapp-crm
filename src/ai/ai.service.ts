@@ -63,6 +63,25 @@ function coDayKey(d: Date): string {
   return ['sun','mon','tue','wed','thu','fri','sat'][new Date(y, m - 1, dy).getDay()];
 }
 
+// ─── Calendario de referencia para el extractor (evita alucinaciones de fechas) ──
+function buildCalendarioRef(): string {
+  const DIAS = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+  const todayStr = coDateStr();
+  const today = coNoon(todayStr);
+  const todayName = DIAS[today.getUTCDay()];
+  const lines = [`HOY: ${todayName}, ${todayStr} (Colombia — America/Bogota)`];
+  lines.push('PRÓXIMAS FECHAS (usa exactamente estos valores YYYY-MM-DD):');
+  for (let i = 1; i <= 14; i++) {
+    const d = new Date(today.getTime() + i * 86_400_000);
+    const ymd = coDateStr(d);
+    const nombre = DIAS[d.getUTCDay()];
+    const label = i === 1 ? ' ← mañana' : '';
+    lines.push(`  ${nombre}: ${ymd}${label}`);
+  }
+  lines.push('REGLA: "el lunes" = el lunes más cercano en el futuro según la tabla anterior. "la otra semana" = la semana 8-14 días adelante.');
+  return lines.join('\n');
+}
+
 // ─── Parser de fecha en español ───────────────────────────────────────────────
 const SEMANAS_TEXTO: Record<string, number> = { una:1, dos:2, tres:3, cuatro:4, cinco:5, seis:6, siete:7, ocho:8 };
 
@@ -1765,7 +1784,7 @@ ${services.flatMap((s: any) => {
 
       const appointmentPrompt = `Eres un extractor de datos para agendamiento de citas. Lee la conversación y extrae los datos en JSON.
 
-FECHA ACTUAL: ${fechaHoy} (Colombia, zona horaria America/Bogota)
+${buildCalendarioRef()}
 ${alreadyCreatedBlock}
 ${servicesCatalog}
 ${staffCatalog}
@@ -1783,10 +1802,8 @@ REGLAS ESTRICTAS:
    d) Confirmación explícita del cliente (sí, confirmo, listo, dale, ok, etc.)
    e) Si se requiere nombre del cliente: debe estar presente
 2. Si falta CUALQUIER condición → "complete":false
-3. "scheduledDate": formato "YYYY-MM-DD". Calcula fechas relativas desde hoy (${fechaHoy}).
-   - "mañana" = día siguiente
-   - "el martes de la otra semana" = busca el martes de la semana que viene
-   - "el lunes" = próximo lunes
+3. "scheduledDate": formato "YYYY-MM-DD". Usa EXACTAMENTE las fechas del PRÓXIMAS FECHAS del calendario de arriba.
+   NO calcules manualmente — copia el valor de la tabla. Si el cliente dice "el lunes", usa el valor "lunes: YYYY-MM-DD" de la tabla.
 4. "scheduledTime": formato "HH:MM" en 24h. "2pm" → "14:00", "4pm" → "16:00"
 5. "address": SOLO si el cliente da una dirección física real (calle, carrera, barrio + número, ej: "Cra 45 #20-48"). Si la cita es en el local o no hay dirección explícita → null. NUNCA pongas el mensaje del cliente como dirección.
 6. "customerCedula": extrae SOLO si el cliente la mencionó explícitamente. Si no → null.
@@ -1873,6 +1890,14 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
           }
         }
 
+        // Si el caché tiene fecha y el LLM la cambió sin que el mensaje actual mencione una
+        // nueva fecha, restaurar la del caché (evita que Gemini/Groq sobreescriban con datos
+        // mal reextraídos del historial).
+        if (cached?.scheduledDate && extracted.scheduledDate !== cached.scheduledDate && !parseFechaEspanol(latestMessage)) {
+          this.logger.log(`[Cita] LLM cambió fecha sin ref en msg actual (${extracted.scheduledDate}→${cached.scheduledDate}) — restaurando caché`);
+          extracted.scheduledDate = cached.scheduledDate;
+        }
+
         if (!extracted.scheduledDate) {
           const allText = [
             ...history.filter((m: any) => !m.isAiResponse).map((m: any) => m.content),
@@ -1893,6 +1918,12 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
           this.logger.log(`[Cita] Hora LLM (${extracted.scheduledTime}) != TS del mensaje actual (${tsHoraActual}) → usando TS`);
           extracted.scheduledTime = tsHoraActual;
         }
+        // Mismo para la hora: si el caché la tenía y el LLM la cambió sin ref en mensaje actual
+        if (cached?.scheduledTime && extracted.scheduledTime !== cached.scheduledTime && !parseHoraEspanol(latestMessage)) {
+          this.logger.log(`[Cita] LLM cambió hora sin ref en msg actual (${extracted.scheduledTime}→${cached.scheduledTime}) — restaurando caché`);
+          extracted.scheduledTime = cached.scheduledTime;
+        }
+
         if (!extracted.scheduledTime) {
           const allText = [
             ...history.filter((m: any) => !m.isAiResponse).map((m: any) => m.content),
@@ -2620,6 +2651,7 @@ Cuando tengas todo, muestra el resumen y pide confirmación:
 IMPORTANTE:
 - Si la hora es ambigua (ej: "3"), pregunta: "¿A las 3pm?"
 - Para servicios VARIABLE, avisa que el precio lo confirma un asesor en la visita.
+- PRECIO Y DURACIÓN: Mencionarlos UNA sola vez por conversación (al presentar el servicio por primera vez). NO los repitas en confirmaciones, avisos de no disponibilidad ni en mensajes posteriores.
 ${staffBlock}
 
 CONSULTA DE DISPONIBILIDAD:
@@ -2709,7 +2741,7 @@ REGLA ANTI-BUCLE EN CONVERSACIÓN (OBLIGATORIA):
     allSections.push(
       sep, catalogoSection, sep, flujoSection, sep, agendamientoSection, sep,
       audioSection, sep, antiBucleSection, sep, formatoSection, sep,
-      `FECHA Y HORA ACTUAL: ${fechaActual}, ${horaActual} (Colombia).`,
+      `FECHA Y HORA ACTUAL: ${fechaActual}, ${horaActual} (Colombia).\n${buildCalendarioRef()}`,
     );
     const availSection = availabilityBlock ? `\n\n${availabilityBlock}` : '';
     return allSections.join('\n') + availSection;
