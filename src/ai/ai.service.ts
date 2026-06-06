@@ -64,19 +64,28 @@ function coDayKey(d: Date): string {
 }
 
 // ─── Parser de fecha en español ───────────────────────────────────────────────
+const SEMANAS_TEXTO: Record<string, number> = { una:1, dos:2, tres:3, cuatro:4, cinco:5, seis:6, siete:7, ocho:8 };
+
+function parseSemanaOffset(t: string): number {
+  // "dentro de dos semanas" | "en tres semanas"
+  const m = t.match(/\b(?:dentro\s+de|en)\s+(una|dos|tres|cuatro|cinco|seis|siete|ocho|\d+)\s+semanas?\b/);
+  if (!m) return 0;
+  return (SEMANAS_TEXTO[m[1]] ?? parseInt(m[1], 10) ?? 0) * 7;
+}
+
 function parseFechaEspanol(text: string): string | null {
   const t      = text.toLowerCase().trim();
   const hoyStr = coDateStr();            // "2026-06-05" en hora Colombia
   const hoy    = coNoon(hoyStr);         // mediodia Colombia hoy
 
-  // mañana / manana
-  if (/\bma[ñn]ana\b/.test(t)) {
-    const d = new Date(hoy); d.setDate(d.getDate() + 1);
-    return coDateStr(d);
-  }
-  // pasado mañana
+  // pasado mañana (antes de mañana para evitar falso match)
   if (/\bpasado\s+ma[ñn]ana\b/.test(t)) {
     const d = new Date(hoy); d.setDate(d.getDate() + 2);
+    return coDateStr(d);
+  }
+  // mañana — EXCLUIR "de la mañana" / "por la mañana" (AM, no tomorrow)
+  if (/\bma[ñn]ana\b/.test(t) && !/(?:de|por)\s+la\s+ma[ñn]ana/.test(t)) {
+    const d = new Date(hoy); d.setDate(d.getDate() + 1);
     return coDateStr(d);
   }
   // hoy
@@ -110,18 +119,30 @@ function parseFechaEspanol(text: string): string | null {
     }
   }
 
-  // "el lunes" | "el próximo martes" | "este viernes"
-  const hoyDia = hoy.getDay(); // getDay sobre mediodia Colombia es correcto
+  // "el lunes" | "el próximo martes" | "este viernes" | "el lunes dentro de tres semanas"
+  const weekDaysOffset = parseSemanaOffset(t); // 0 si no menciona semanas
+  const refPoint = new Date(hoy);
+  if (weekDaysOffset > 0) {
+    refPoint.setDate(refPoint.getDate() + weekDaysOffset);
+  } else if (/otra\s+semana|pr[oó]xima\s+semana|siguiente\s+semana/.test(t)) {
+    refPoint.setDate(refPoint.getDate() + 7);
+  }
+  const refDia = refPoint.getDay();
+
   for (const [nombre, diaSemana] of Object.entries(DIAS_SEMANA)) {
     const re = new RegExp(`\\b(?:el\\s+)?(?:pr[oó]ximo\\s+|este\\s+|esta\\s+)?${nombre}\\b`);
     if (re.test(t)) {
-      const d = new Date(hoy);
-      let diff = diaSemana - hoyDia;
-      if (diff <= 0) diff += 7;
-      d.setDate(d.getDate() + diff);
-      if (/otra\s+semana|pr[oó]xima\s+semana|siguiente\s+semana/.test(t)) {
-        d.setDate(d.getDate() + 7);
+      const d = new Date(refPoint);
+      let diff = diaSemana - refDia;
+      // Si weekOffset > 0: tomar el día de esa semana (hacia adelante si no coincide)
+      // Si weekOffset = 0: siempre buscar hacia el futuro (nunca hoy)
+      if (weekDaysOffset > 0) {
+        if (diff < 0) diff += 7;
+        // diff=0 significa que refPoint YA ES ese día → usarlo directamente
+      } else {
+        if (diff <= 0) diff += 7;
       }
+      d.setDate(d.getDate() + diff);
       return coDateStr(d);
     }
   }
@@ -138,7 +159,8 @@ function extractQueryDate(message: string, _today: Date, tz = TZ_CO): Date | nul
 
   if (/\bhoy\b/.test(lower)) return hoy;
 
-  if (/\bmañana\b/.test(lower)) {
+  // mañana — EXCLUIR "de la mañana" / "por la mañana" (AM, no tomorrow)
+  if (/\bma[ñn]ana\b/.test(lower) && !/(?:de|por)\s+la\s+ma[ñn]ana/.test(lower)) {
     const d = new Date(hoy); d.setDate(d.getDate() + 1); return d;
   }
 
@@ -146,8 +168,23 @@ function extractQueryDate(message: string, _today: Date, tz = TZ_CO): Date | nul
     domingo:0, lunes:1, martes:2, miércoles:3, miercoles:3,
     jueves:4, viernes:5, sábado:6, sabado:6,
   };
+
+  // Soporte "dentro de N semanas" para avanzar el punto de referencia
+  const weeksOff = parseSemanaOffset(lower);
+  const refDateEQ = new Date(hoy);
+  if (weeksOff > 0) {
+    refDateEQ.setDate(refDateEQ.getDate() + weeksOff);
+  } else if (/otra\s+semana|pr[oó]xima\s+semana|siguiente\s+semana/.test(lower)) {
+    refDateEQ.setDate(refDateEQ.getDate() + 7);
+  }
+  const refDayEQ = refDateEQ.getDay();
+
   for (const [word, target] of Object.entries(DAYS)) {
     if (lower.includes(word)) {
+      if (weeksOff > 0) {
+        const diff = (target - refDayEQ + 7) % 7;
+        const d = new Date(refDateEQ); d.setDate(d.getDate() + diff); return d;
+      }
       const diff = (target - dayOfWeek + 7) % 7 || 7;
       const d = new Date(hoy); d.setDate(d.getDate() + diff); return d;
     }
@@ -1541,7 +1578,20 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
 
     if (cacheHasAllData && CONFIRMATION_RE.test(latestMessage.trim())) {
       this.logger.log(`[Cita] Caso 1 — caché con datos suficientes + confirmación para ${conversationId}`);
-      extracted = { ...cached, complete: true };
+      // Re-parsear hora y fecha del mensaje actual: el cliente puede confirmar Y dar
+      // un horario diferente al del caché (ej: "ok, a las 3 pm"). Siempre el mensaje
+      // actual tiene prioridad sobre el caché.
+      const caso1Hora  = parseHoraEspanol(latestMessage);
+      const caso1Fecha = parseFechaEspanol(latestMessage);
+      extracted = {
+        ...cached,
+        complete: true,
+        ...(caso1Hora  && caso1Hora  !== cached!.scheduledTime && { scheduledTime: caso1Hora }),
+        ...(caso1Fecha && caso1Fecha !== cached!.scheduledDate && { scheduledDate: caso1Fecha }),
+      };
+      if (caso1Hora && caso1Hora !== cached!.scheduledTime) {
+        this.logger.log(`[Cita] Caso 1 — hora actualizada del mensaje: ${cached!.scheduledTime} → ${caso1Hora}`);
+      }
       // NO borramos el caché aquí — se borra al crear exitosamente (línea ~1966)
       // o al detectar conflicto/horario inválido. Así el cliente puede reintentar si falla.
 
