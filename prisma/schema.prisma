@@ -82,6 +82,12 @@ model Store {
   deliveryZone       String?  @map("delivery_zone")
   hasParking         Boolean  @default(false) @map("has_parking")
 
+  // Datos del cliente que la IA debe pedir/guardar — varían según el tipo de negocio
+  // (una barbería no necesita dirección ni cédula; un taller de instalaciones sí).
+  // false = la IA nunca pregunta ni extrae ese dato, sin importar lo que diga el cliente.
+  requiresCustomerAddress Boolean @default(false) @map("requires_customer_address")
+  requiresCustomerCedula  Boolean @default(false) @map("requires_customer_cedula")
+
   // Horarios de atención
   businessHours   Json?    @map("business_hours")
 

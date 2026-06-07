@@ -413,7 +413,8 @@ export const ModelName = {
   WhatsappSession: 'WhatsappSession',
   SubscriptionConfig: 'SubscriptionConfig',
   Subscription: 'Subscription',
-  SubscriptionPayment: 'SubscriptionPayment'
+  SubscriptionPayment: 'SubscriptionPayment',
+  Staff: 'Staff'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -429,7 +430,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "store" | "customer" | "conversation" | "message" | "category" | "product" | "productVariant" | "service" | "serviceVariant" | "order" | "orderItem" | "appointment" | "appointmentTimeline" | "dailyReport" | "aIConfiguration" | "campaign" | "user" | "blockedContact" | "archivedMessage" | "adminAuditLog" | "whatsappSession" | "subscriptionConfig" | "subscription" | "subscriptionPayment"
+    modelProps: "store" | "customer" | "conversation" | "message" | "category" | "product" | "productVariant" | "service" | "serviceVariant" | "order" | "orderItem" | "appointment" | "appointmentTimeline" | "dailyReport" | "aIConfiguration" | "campaign" | "user" | "blockedContact" | "archivedMessage" | "adminAuditLog" | "whatsappSession" | "subscriptionConfig" | "subscription" | "subscriptionPayment" | "staff"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2209,6 +2210,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    Staff: {
+      payload: Prisma.$StaffPayload<ExtArgs>
+      fields: Prisma.StaffFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.StaffFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StaffPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.StaffFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StaffPayload>
+        }
+        findFirst: {
+          args: Prisma.StaffFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StaffPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.StaffFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StaffPayload>
+        }
+        findMany: {
+          args: Prisma.StaffFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StaffPayload>[]
+        }
+        create: {
+          args: Prisma.StaffCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StaffPayload>
+        }
+        createMany: {
+          args: Prisma.StaffCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.StaffCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StaffPayload>[]
+        }
+        delete: {
+          args: Prisma.StaffDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StaffPayload>
+        }
+        update: {
+          args: Prisma.StaffUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StaffPayload>
+        }
+        deleteMany: {
+          args: Prisma.StaffDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.StaffUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.StaffUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StaffPayload>[]
+        }
+        upsert: {
+          args: Prisma.StaffUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StaffPayload>
+        }
+        aggregate: {
+          args: Prisma.StaffAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateStaff>
+        }
+        groupBy: {
+          args: Prisma.StaffGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.StaffGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.StaffCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.StaffCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -2254,7 +2329,31 @@ export const StoreScalarFieldEnum = {
   phone: 'phone',
   ownerName: 'ownerName',
   adminPhone: 'adminPhone',
+  description: 'description',
+  address: 'address',
+  neighborhood: 'neighborhood',
+  directions: 'directions',
+  googleMapsUrl: 'googleMapsUrl',
+  email: 'email',
+  website: 'website',
+  instagram: 'instagram',
+  facebook: 'facebook',
+  tiktok: 'tiktok',
+  paymentMethods: 'paymentMethods',
+  paymentAccount: 'paymentAccount',
+  requiresDeposit: 'requiresDeposit',
+  depositAmount: 'depositAmount',
+  minAdvanceMinutes: 'minAdvanceMinutes',
+  cancellationPolicy: 'cancellationPolicy',
+  hasDelivery: 'hasDelivery',
+  deliveryZone: 'deliveryZone',
+  hasParking: 'hasParking',
+  requiresCustomerAddress: 'requiresCustomerAddress',
+  requiresCustomerCedula: 'requiresCustomerCedula',
+  businessHours: 'businessHours',
   waSessionId: 'waSessionId',
+  staffLabel: 'staffLabel',
+  slug: 'slug',
   isActive: 'isActive',
   primaryColor: 'primaryColor',
   secondaryColor: 'secondaryColor',
@@ -2462,6 +2561,7 @@ export const AppointmentScalarFieldEnum = {
   customerId: 'customerId',
   serviceId: 'serviceId',
   serviceVariantId: 'serviceVariantId',
+  staffId: 'staffId',
   type: 'type',
   status: 'status',
   priority: 'priority',
@@ -2537,7 +2637,8 @@ export const AIConfigurationScalarFieldEnum = {
   model: 'model',
   temperature: 'temperature',
   maxTokens: 'maxTokens',
-  settings: 'settings'
+  settings: 'settings',
+  cartridges: 'cartridges'
 } as const
 
 export type AIConfigurationScalarFieldEnum = (typeof AIConfigurationScalarFieldEnum)[keyof typeof AIConfigurationScalarFieldEnum]
@@ -2657,19 +2758,25 @@ export const SubscriptionPaymentScalarFieldEnum = {
 export type SubscriptionPaymentScalarFieldEnum = (typeof SubscriptionPaymentScalarFieldEnum)[keyof typeof SubscriptionPaymentScalarFieldEnum]
 
 
+export const StaffScalarFieldEnum = {
+  staffId: 'staffId',
+  storeId: 'storeId',
+  name: 'name',
+  isActive: 'isActive',
+  schedule: 'schedule',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type StaffScalarFieldEnum = (typeof StaffScalarFieldEnum)[keyof typeof StaffScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
 } as const
 
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
-
-
-export const JsonNullValueInput = {
-  JsonNull: JsonNull
-} as const
-
-export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
 
 
 export const NullableJsonNullValueInput = {
@@ -2680,20 +2787,19 @@ export const NullableJsonNullValueInput = {
 export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
 
 
+export const JsonNullValueInput = {
+  JsonNull: JsonNull
+} as const
+
+export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
+
+
 export const QueryMode = {
   default: 'default',
   insensitive: 'insensitive'
 } as const
 
 export type QueryMode = (typeof QueryMode)[keyof typeof QueryMode]
-
-
-export const NullsOrder = {
-  first: 'first',
-  last: 'last'
-} as const
-
-export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
 
 
 export const JsonNullValueFilter = {
@@ -2703,6 +2809,14 @@ export const JsonNullValueFilter = {
 } as const
 
 export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter]
+
+
+export const NullsOrder = {
+  first: 'first',
+  last: 'last'
+} as const
+
+export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
 
 
 
@@ -2733,20 +2847,6 @@ export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel,
 
 
 /**
- * Reference to a field of type 'DateTime'
- */
-export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime'>
-    
-
-
-/**
- * Reference to a field of type 'DateTime[]'
- */
-export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime[]'>
-    
-
-
-/**
  * Reference to a field of type 'Int'
  */
 export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
@@ -2761,20 +2861,6 @@ export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel,
 
 
 /**
- * Reference to a field of type 'Decimal'
- */
-export type DecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal'>
-    
-
-
-/**
- * Reference to a field of type 'Decimal[]'
- */
-export type ListDecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal[]'>
-    
-
-
-/**
  * Reference to a field of type 'Json'
  */
 export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
@@ -2785,6 +2871,34 @@ export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'J
  * Reference to a field of type 'QueryMode'
  */
 export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
+    
+
+
+/**
+ * Reference to a field of type 'DateTime'
+ */
+export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime'>
+    
+
+
+/**
+ * Reference to a field of type 'DateTime[]'
+ */
+export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime[]'>
+    
+
+
+/**
+ * Reference to a field of type 'Decimal'
+ */
+export type DecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal'>
+    
+
+
+/**
+ * Reference to a field of type 'Decimal[]'
+ */
+export type ListDecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal[]'>
     
 
 
@@ -2968,6 +3082,7 @@ export type GlobalOmitConfig = {
   subscriptionConfig?: Prisma.SubscriptionConfigOmit
   subscription?: Prisma.SubscriptionOmit
   subscriptionPayment?: Prisma.SubscriptionPaymentOmit
+  staff?: Prisma.StaffOmit
 }
 
 /* Types for Logging */

@@ -67,11 +67,21 @@ export class NotificationsService {
     return store?.adminPhone ?? null;
   }
 
-  private async sendWA(storeId: string, phone: string, msg: string): Promise<void> {
+  private async sendWA(storeId: string, phone: string, msg: string, opts?: { customerFacing?: boolean; appointmentId?: string }): Promise<void> {
     try {
       await this.whatsapp.sendMessage(storeId, phone, msg);
     } catch (err: any) {
-      this.logger.warn(`WA send failed to ${phone}: ${err.message}`);
+      // Una notificación al cliente que falla en silencio deja al negocio creyendo
+      // que el cliente fue avisado cuando no fue así — se eleva a error para que
+      // quede visible en monitoreo, no enterrada como un warning más.
+      if (opts?.customerFacing) {
+        this.logger.error(
+          `[Notif] Cliente NO notificado (store ${storeId}${opts.appointmentId ? `, cita ${opts.appointmentId}` : ''}): ` +
+          `falló envío WA a ${phone} — ${err.message}`,
+        );
+      } else {
+        this.logger.warn(`WA send failed to ${phone}: ${err.message}`);
+      }
     }
   }
 
@@ -90,7 +100,7 @@ export class NotificationsService {
   private async withRetry<T>(fn: () => Promise<T>, attempts = 2): Promise<T | null> {
     for (let i = 0; i < attempts; i++) {
       try { return await fn(); } catch (err: any) {
-        if (i < attempts - 1) await new Promise(r => setTimeout(r, 1000));
+        if (i < attempts - 1) await new Promise(r => setTimeout(r, Math.min(1000 * Math.pow(2, i), 8000)));
         else this.logger.error(`Retry exhausted: ${err.message}`);
       }
     }
@@ -147,7 +157,7 @@ export class NotificationsService {
       (appt.agreedPrice ? `\n💰 Precio: ${this.formatMoney(appt.agreedPrice)}` : '') +
       `\n\n¡Te esperamos! 😊`;
 
-    await this.withRetry(() => this.sendWA(appt.storeId, appt.customer.phone, waMsg));
+    await this.withRetry(() => this.sendWA(appt.storeId, appt.customer.phone, waMsg, { customerFacing: true, appointmentId: appt.appointmentId }));
   }
 
   async notifyReminder(appt: Appt, window: '8h' | '2h' | '1h'): Promise<void> {
@@ -164,7 +174,7 @@ export class NotificationsService {
       (appt.address ? `\n📍 ${appt.address}` : '') +
       `\n\nSi necesitas cancelar o reprogramar, escríbenos con anticipación.`;
 
-    await this.withRetry(() => this.sendWA(appt.storeId, appt.customer.phone, waMsg));
+    await this.withRetry(() => this.sendWA(appt.storeId, appt.customer.phone, waMsg, { customerFacing: true, appointmentId: appt.appointmentId }));
   }
 
   async notifyPendingAction(appt: Appt, action: 'cancel' | 'reschedule'): Promise<void> {
@@ -210,7 +220,7 @@ export class NotificationsService {
         (reason ? `\n\nMotivo: ${reason}` : '') +
         `\n\nContacta directamente si necesitas ayuda.`;
     }
-    await this.withRetry(() => this.sendWA(appt.storeId, appt.customer.phone, waMsg));
+    await this.withRetry(() => this.sendWA(appt.storeId, appt.customer.phone, waMsg, { customerFacing: true, appointmentId: appt.appointmentId }));
   }
 
   async notifyPaymentProofDetected(appt: Appt, proofExcerpt: string): Promise<void> {

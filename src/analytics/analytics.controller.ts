@@ -10,7 +10,6 @@ class ChatMessageDto {
 }
 
 class AiAdvisorDto {
-  @IsString()                storeId:  string;
   @IsString()                context:  string;
   @IsArray()
   @ValidateNested({ each: true })
@@ -22,10 +21,10 @@ class AiAdvisorDto {
 export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 
-  // AI Advisor chat — storeId desde el body (retrocompatible con el frontend actual)
+  // AI Advisor chat — storeId SIEMPRE del JWT, nunca del body (aislamiento multi-tenant)
   @Post('ai-advisor')
-  askAdvisor(@Body() dto: AiAdvisorDto) {
-    return this.analyticsService.askAdvisor(dto.storeId, dto.context, dto.messages);
+  askAdvisor(@Body() dto: AiAdvisorDto, @Request() req: any) {
+    return this.analyticsService.askAdvisor(req.user.storeId, dto.context, dto.messages);
   }
 
   // Análisis de satisfacción desde summaries de conversaciones archivadas

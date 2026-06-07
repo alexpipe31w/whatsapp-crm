@@ -176,34 +176,35 @@ export class AppointmentsService {
       }
     }
 
-    if (dto.staffId) {
-      const newEndsAt = endsAt ?? new Date(scheduledAt.getTime() + 30 * 60_000);
-      const conflict  = await this.prisma.appointment.findFirst({
-        where: {
-          staffId: dto.staffId,
-          status:  { in: [AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED, AppointmentStatus.IN_PROGRESS] },
-          AND: [
-            { scheduledAt: { lt: newEndsAt } },
-            {
-              OR: [
-                { endsAt: { gt: scheduledAt } },
-                {
-                  endsAt:      null,
-                  scheduledAt: { gt: new Date(scheduledAt.getTime() - 30 * 60_000) },
-                },
-              ],
-            },
-          ],
-        },
-      });
-      if (conflict) {
-        throw new BadRequestException(
-          'El profesional ya tiene una cita en ese horario. Elige otro horario o profesional.',
-        );
-      }
-    }
-
     return this.prisma.$transaction(async (tx) => {
+      // Conflict check inside the transaction to prevent double-booking race conditions
+      if (dto.staffId) {
+        const newEndsAt = endsAt ?? new Date(scheduledAt.getTime() + 30 * 60_000);
+        const conflict  = await tx.appointment.findFirst({
+          where: {
+            staffId: dto.staffId,
+            status:  { in: [AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED, AppointmentStatus.IN_PROGRESS] },
+            AND: [
+              { scheduledAt: { lt: newEndsAt } },
+              {
+                OR: [
+                  { endsAt: { gt: scheduledAt } },
+                  {
+                    endsAt:      null,
+                    scheduledAt: { gt: new Date(scheduledAt.getTime() - 30 * 60_000) },
+                  },
+                ],
+              },
+            ],
+          },
+        });
+        if (conflict) {
+          throw new BadRequestException(
+            'El profesional ya tiene una cita en ese horario. Elige otro horario o profesional.',
+          );
+        }
+      }
+
       const appointment = await tx.appointment.create({
         data: {
           storeId,
@@ -296,7 +297,45 @@ export class AppointmentsService {
     );
     const statusTimestamps = this.resolveStatusTimestamps(resolvedStatus, current);
 
+    // Re-validar conflicto de horario cuando el reagendamiento puede crear un doble-booking
+    // (cambia el profesional, la hora de inicio o la de fin respecto a la cita actual).
+    const effectiveStaffId = dto.staffId !== undefined ? dto.staffId : current.staffId;
+    const scheduleChanged =
+      newScheduledAt.getTime() !== current.scheduledAt.getTime() ||
+      (endsAt?.getTime() ?? null) !== (current.endsAt?.getTime() ?? null) ||
+      dto.staffId !== undefined;
+    const willBeCancelled = (resolvedStatus ?? current.status) === AppointmentStatus.CANCELLED;
+
     const appointment = await this.prisma.$transaction(async (tx) => {
+      // Conflict check inside the transaction to prevent double-booking race conditions
+      if (effectiveStaffId && scheduleChanged && !willBeCancelled) {
+        const newEndsAt = endsAt ?? new Date(newScheduledAt.getTime() + 30 * 60_000);
+        const conflict  = await tx.appointment.findFirst({
+          where: {
+            appointmentId: { not: appointmentId },
+            staffId: effectiveStaffId,
+            status:  { in: [AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED, AppointmentStatus.IN_PROGRESS] },
+            AND: [
+              { scheduledAt: { lt: newEndsAt } },
+              {
+                OR: [
+                  { endsAt: { gt: newScheduledAt } },
+                  {
+                    endsAt:      null,
+                    scheduledAt: { gt: new Date(newScheduledAt.getTime() - 30 * 60_000) },
+                  },
+                ],
+              },
+            ],
+          },
+        });
+        if (conflict) {
+          throw new BadRequestException(
+            'El profesional ya tiene una cita en ese horario. Elige otro horario o profesional.',
+          );
+        }
+      }
+
       const updated = await tx.appointment.update({
         where: { appointmentId },
         data: {

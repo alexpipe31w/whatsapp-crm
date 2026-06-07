@@ -231,31 +231,40 @@ Analiza el sentimiento general y los patrones. Devuelve ÚNICAMENTE este JSON (s
   }
 
   async getSummary(storeId: string, period: string) {
-    const now   = new Date();
-    const tz    = 'America/Bogota';
+    const now = new Date();
+    // Colombia = UTC-5. Los límites de día/semana/mes se calculan en hora de Colombia
+    // (no en hora del servidor, normalmente UTC) — si no, entre las 19:00 y medianoche
+    // hora Colombia el servidor ya está "al día siguiente" en UTC y las órdenes de esa
+    // franja caen en el período equivocado del reporte.
+    const tzOffset    = -5 * 60;
+    const localNow    = new Date(now.getTime() + tzOffset * 60 * 1000);
+    const colMidnight = (y: number, m: number, d: number) =>
+      new Date(Date.UTC(y, m, d, 5, 0, 0, 0)); // 00:00 Colombia == 05:00 UTC
+
+    const Y = localNow.getUTCFullYear();
+    const M = localNow.getUTCMonth();
+    const D = localNow.getUTCDate();
+
     let from: Date;
     let to: Date = new Date(now);
 
     switch (period) {
       case 'today':
-        from = new Date(now); from.setHours(0, 0, 0, 0);
-        to   = new Date(now); to.setHours(23, 59, 59, 999);
+        from = colMidnight(Y, M, D);
+        to   = new Date(from.getTime() + 24 * 60 * 60 * 1000 - 1);
         break;
       case 'week': {
-        const day = now.getDay();
-        from = new Date(now);
-        from.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
-        from.setHours(0, 0, 0, 0);
+        const day = localNow.getUTCDay();
+        from = colMidnight(Y, M, D - (day === 0 ? 6 : day - 1));
         break;
       }
-      case 'last_month': {
-        from = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
-        to   = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+      case 'last_month':
+        from = colMidnight(Y, M - 1, 1);
+        to   = new Date(colMidnight(Y, M, 1).getTime() - 1);
         break;
-      }
       case 'month':
       default:
-        from = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+        from = colMidnight(Y, M, 1);
         break;
     }
 

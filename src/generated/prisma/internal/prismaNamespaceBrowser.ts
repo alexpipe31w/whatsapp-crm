@@ -72,7 +72,8 @@ export const ModelName = {
   WhatsappSession: 'WhatsappSession',
   SubscriptionConfig: 'SubscriptionConfig',
   Subscription: 'Subscription',
-  SubscriptionPayment: 'SubscriptionPayment'
+  SubscriptionPayment: 'SubscriptionPayment',
+  Staff: 'Staff'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -97,7 +98,31 @@ export const StoreScalarFieldEnum = {
   phone: 'phone',
   ownerName: 'ownerName',
   adminPhone: 'adminPhone',
+  description: 'description',
+  address: 'address',
+  neighborhood: 'neighborhood',
+  directions: 'directions',
+  googleMapsUrl: 'googleMapsUrl',
+  email: 'email',
+  website: 'website',
+  instagram: 'instagram',
+  facebook: 'facebook',
+  tiktok: 'tiktok',
+  paymentMethods: 'paymentMethods',
+  paymentAccount: 'paymentAccount',
+  requiresDeposit: 'requiresDeposit',
+  depositAmount: 'depositAmount',
+  minAdvanceMinutes: 'minAdvanceMinutes',
+  cancellationPolicy: 'cancellationPolicy',
+  hasDelivery: 'hasDelivery',
+  deliveryZone: 'deliveryZone',
+  hasParking: 'hasParking',
+  requiresCustomerAddress: 'requiresCustomerAddress',
+  requiresCustomerCedula: 'requiresCustomerCedula',
+  businessHours: 'businessHours',
   waSessionId: 'waSessionId',
+  staffLabel: 'staffLabel',
+  slug: 'slug',
   isActive: 'isActive',
   primaryColor: 'primaryColor',
   secondaryColor: 'secondaryColor',
@@ -305,6 +330,7 @@ export const AppointmentScalarFieldEnum = {
   customerId: 'customerId',
   serviceId: 'serviceId',
   serviceVariantId: 'serviceVariantId',
+  staffId: 'staffId',
   type: 'type',
   status: 'status',
   priority: 'priority',
@@ -380,7 +406,8 @@ export const AIConfigurationScalarFieldEnum = {
   model: 'model',
   temperature: 'temperature',
   maxTokens: 'maxTokens',
-  settings: 'settings'
+  settings: 'settings',
+  cartridges: 'cartridges'
 } as const
 
 export type AIConfigurationScalarFieldEnum = (typeof AIConfigurationScalarFieldEnum)[keyof typeof AIConfigurationScalarFieldEnum]
@@ -500,19 +527,25 @@ export const SubscriptionPaymentScalarFieldEnum = {
 export type SubscriptionPaymentScalarFieldEnum = (typeof SubscriptionPaymentScalarFieldEnum)[keyof typeof SubscriptionPaymentScalarFieldEnum]
 
 
+export const StaffScalarFieldEnum = {
+  staffId: 'staffId',
+  storeId: 'storeId',
+  name: 'name',
+  isActive: 'isActive',
+  schedule: 'schedule',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type StaffScalarFieldEnum = (typeof StaffScalarFieldEnum)[keyof typeof StaffScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
 } as const
 
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
-
-
-export const JsonNullValueInput = {
-  JsonNull: JsonNull
-} as const
-
-export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
 
 
 export const NullableJsonNullValueInput = {
@@ -523,20 +556,19 @@ export const NullableJsonNullValueInput = {
 export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
 
 
+export const JsonNullValueInput = {
+  JsonNull: JsonNull
+} as const
+
+export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
+
+
 export const QueryMode = {
   default: 'default',
   insensitive: 'insensitive'
 } as const
 
 export type QueryMode = (typeof QueryMode)[keyof typeof QueryMode]
-
-
-export const NullsOrder = {
-  first: 'first',
-  last: 'last'
-} as const
-
-export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
 
 
 export const JsonNullValueFilter = {
@@ -546,4 +578,12 @@ export const JsonNullValueFilter = {
 } as const
 
 export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter]
+
+
+export const NullsOrder = {
+  first: 'first',
+  last: 'last'
+} as const
+
+export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
 

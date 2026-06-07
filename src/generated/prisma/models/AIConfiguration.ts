@@ -68,6 +68,7 @@ export type AIConfigurationCountAggregateOutputType = {
   temperature: number
   maxTokens: number
   settings: number
+  cartridges: number
   _all: number
 }
 
@@ -114,6 +115,7 @@ export type AIConfigurationCountAggregateInputType = {
   temperature?: true
   maxTokens?: true
   settings?: true
+  cartridges?: true
   _all?: true
 }
 
@@ -213,6 +215,7 @@ export type AIConfigurationGroupByOutputType = {
   temperature: runtime.Decimal
   maxTokens: number
   settings: runtime.JsonValue
+  cartridges: runtime.JsonValue | null
   _count: AIConfigurationCountAggregateOutputType | null
   _avg: AIConfigurationAvgAggregateOutputType | null
   _sum: AIConfigurationSumAggregateOutputType | null
@@ -248,6 +251,7 @@ export type AIConfigurationWhereInput = {
   temperature?: Prisma.DecimalFilter<"AIConfiguration"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   maxTokens?: Prisma.IntFilter<"AIConfiguration"> | number
   settings?: Prisma.JsonFilter<"AIConfiguration">
+  cartridges?: Prisma.JsonNullableFilter<"AIConfiguration">
   store?: Prisma.XOR<Prisma.StoreScalarRelationFilter, Prisma.StoreWhereInput>
 }
 
@@ -261,6 +265,7 @@ export type AIConfigurationOrderByWithRelationInput = {
   temperature?: Prisma.SortOrder
   maxTokens?: Prisma.SortOrder
   settings?: Prisma.SortOrder
+  cartridges?: Prisma.SortOrderInput | Prisma.SortOrder
   store?: Prisma.StoreOrderByWithRelationInput
 }
 
@@ -277,6 +282,7 @@ export type AIConfigurationWhereUniqueInput = Prisma.AtLeast<{
   temperature?: Prisma.DecimalFilter<"AIConfiguration"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   maxTokens?: Prisma.IntFilter<"AIConfiguration"> | number
   settings?: Prisma.JsonFilter<"AIConfiguration">
+  cartridges?: Prisma.JsonNullableFilter<"AIConfiguration">
   store?: Prisma.XOR<Prisma.StoreScalarRelationFilter, Prisma.StoreWhereInput>
 }, "configId" | "storeId">
 
@@ -290,6 +296,7 @@ export type AIConfigurationOrderByWithAggregationInput = {
   temperature?: Prisma.SortOrder
   maxTokens?: Prisma.SortOrder
   settings?: Prisma.SortOrder
+  cartridges?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.AIConfigurationCountOrderByAggregateInput
   _avg?: Prisma.AIConfigurationAvgOrderByAggregateInput
   _max?: Prisma.AIConfigurationMaxOrderByAggregateInput
@@ -310,6 +317,7 @@ export type AIConfigurationScalarWhereWithAggregatesInput = {
   temperature?: Prisma.DecimalWithAggregatesFilter<"AIConfiguration"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   maxTokens?: Prisma.IntWithAggregatesFilter<"AIConfiguration"> | number
   settings?: Prisma.JsonWithAggregatesFilter<"AIConfiguration">
+  cartridges?: Prisma.JsonNullableWithAggregatesFilter<"AIConfiguration">
 }
 
 export type AIConfigurationCreateInput = {
@@ -321,6 +329,7 @@ export type AIConfigurationCreateInput = {
   temperature?: runtime.Decimal | runtime.DecimalJsLike | number | string
   maxTokens?: number
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cartridges?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   store: Prisma.StoreCreateNestedOneWithoutAiConfigInput
 }
 
@@ -334,6 +343,7 @@ export type AIConfigurationUncheckedCreateInput = {
   temperature?: runtime.Decimal | runtime.DecimalJsLike | number | string
   maxTokens?: number
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cartridges?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type AIConfigurationUpdateInput = {
@@ -345,6 +355,7 @@ export type AIConfigurationUpdateInput = {
   temperature?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   maxTokens?: Prisma.IntFieldUpdateOperationsInput | number
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cartridges?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   store?: Prisma.StoreUpdateOneRequiredWithoutAiConfigNestedInput
 }
 
@@ -358,6 +369,7 @@ export type AIConfigurationUncheckedUpdateInput = {
   temperature?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   maxTokens?: Prisma.IntFieldUpdateOperationsInput | number
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cartridges?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type AIConfigurationCreateManyInput = {
@@ -370,6 +382,7 @@ export type AIConfigurationCreateManyInput = {
   temperature?: runtime.Decimal | runtime.DecimalJsLike | number | string
   maxTokens?: number
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cartridges?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type AIConfigurationUpdateManyMutationInput = {
@@ -381,6 +394,7 @@ export type AIConfigurationUpdateManyMutationInput = {
   temperature?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   maxTokens?: Prisma.IntFieldUpdateOperationsInput | number
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cartridges?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type AIConfigurationUncheckedUpdateManyInput = {
@@ -393,6 +407,7 @@ export type AIConfigurationUncheckedUpdateManyInput = {
   temperature?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   maxTokens?: Prisma.IntFieldUpdateOperationsInput | number
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cartridges?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type AIConfigurationNullableScalarRelationFilter = {
@@ -410,6 +425,7 @@ export type AIConfigurationCountOrderByAggregateInput = {
   temperature?: Prisma.SortOrder
   maxTokens?: Prisma.SortOrder
   settings?: Prisma.SortOrder
+  cartridges?: Prisma.SortOrder
 }
 
 export type AIConfigurationAvgOrderByAggregateInput = {
@@ -485,6 +501,7 @@ export type AIConfigurationCreateWithoutStoreInput = {
   temperature?: runtime.Decimal | runtime.DecimalJsLike | number | string
   maxTokens?: number
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cartridges?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type AIConfigurationUncheckedCreateWithoutStoreInput = {
@@ -496,6 +513,7 @@ export type AIConfigurationUncheckedCreateWithoutStoreInput = {
   temperature?: runtime.Decimal | runtime.DecimalJsLike | number | string
   maxTokens?: number
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cartridges?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type AIConfigurationCreateOrConnectWithoutStoreInput = {
@@ -523,6 +541,7 @@ export type AIConfigurationUpdateWithoutStoreInput = {
   temperature?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   maxTokens?: Prisma.IntFieldUpdateOperationsInput | number
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cartridges?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type AIConfigurationUncheckedUpdateWithoutStoreInput = {
@@ -534,6 +553,7 @@ export type AIConfigurationUncheckedUpdateWithoutStoreInput = {
   temperature?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   maxTokens?: Prisma.IntFieldUpdateOperationsInput | number
   settings?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cartridges?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 
@@ -548,6 +568,7 @@ export type AIConfigurationSelect<ExtArgs extends runtime.Types.Extensions.Inter
   temperature?: boolean
   maxTokens?: boolean
   settings?: boolean
+  cartridges?: boolean
   store?: boolean | Prisma.StoreDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["aIConfiguration"]>
 
@@ -561,6 +582,7 @@ export type AIConfigurationSelectCreateManyAndReturn<ExtArgs extends runtime.Typ
   temperature?: boolean
   maxTokens?: boolean
   settings?: boolean
+  cartridges?: boolean
   store?: boolean | Prisma.StoreDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["aIConfiguration"]>
 
@@ -574,6 +596,7 @@ export type AIConfigurationSelectUpdateManyAndReturn<ExtArgs extends runtime.Typ
   temperature?: boolean
   maxTokens?: boolean
   settings?: boolean
+  cartridges?: boolean
   store?: boolean | Prisma.StoreDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["aIConfiguration"]>
 
@@ -587,9 +610,10 @@ export type AIConfigurationSelectScalar = {
   temperature?: boolean
   maxTokens?: boolean
   settings?: boolean
+  cartridges?: boolean
 }
 
-export type AIConfigurationOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"configId" | "storeId" | "aiProvider" | "apiKey" | "systemPrompt" | "model" | "temperature" | "maxTokens" | "settings", ExtArgs["result"]["aIConfiguration"]>
+export type AIConfigurationOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"configId" | "storeId" | "aiProvider" | "apiKey" | "systemPrompt" | "model" | "temperature" | "maxTokens" | "settings" | "cartridges", ExtArgs["result"]["aIConfiguration"]>
 export type AIConfigurationInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   store?: boolean | Prisma.StoreDefaultArgs<ExtArgs>
 }
@@ -615,6 +639,7 @@ export type $AIConfigurationPayload<ExtArgs extends runtime.Types.Extensions.Int
     temperature: runtime.Decimal
     maxTokens: number
     settings: runtime.JsonValue
+    cartridges: runtime.JsonValue | null
   }, ExtArgs["result"]["aIConfiguration"]>
   composites: {}
 }
@@ -1048,6 +1073,7 @@ export interface AIConfigurationFieldRefs {
   readonly temperature: Prisma.FieldRef<"AIConfiguration", 'Decimal'>
   readonly maxTokens: Prisma.FieldRef<"AIConfiguration", 'Int'>
   readonly settings: Prisma.FieldRef<"AIConfiguration", 'Json'>
+  readonly cartridges: Prisma.FieldRef<"AIConfiguration", 'Json'>
 }
     
 

@@ -1,6 +1,11 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { createCompletion, AIProvider } from '../ai/providers';
+import { CustomersService } from '../customers/customers.service';
+import { createCompletion } from '../ai/providers';
+import {
+  buildCartridgeList, ensurePool, getNextCartridge,
+  markExhausted, isRateLimitError, Cartridge,
+} from '../ai/key-pool';
 
 // ── Historial en memoria (TTL 2h por tienda) ──────────────────────────────────
 interface SessionMessage { role: 'user' | 'assistant'; content: string }
@@ -19,7 +24,10 @@ export class AdminAssistantService implements OnModuleDestroy {
   private readonly sessions = new Map<string, Session>();
   private readonly cleanupTimer: ReturnType<typeof setInterval>;
 
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma:    PrismaService,
+    private readonly customers: CustomersService,
+  ) {
     this.cleanupTimer = setInterval(() => this.cleanSessions(), 30 * 60 * 1000);
   }
 
@@ -51,32 +59,36 @@ export class AdminAssistantService implements OnModuleDestroy {
         { role: 'user' as const,      content },
       ];
 
-      // Build ordered candidate list: primary key first, then cartridges
-      const extras: Array<{ provider: string; apiKey: string; model?: string }> =
-        Array.isArray((aiConfig as any).cartridges)
-          ? (aiConfig as any).cartridges
-          : [];
-      const candidates = [
-        { provider: aiConfig.aiProvider as string, apiKey: aiConfig.apiKey, model: aiConfig.model },
-        ...extras.map(c => ({ provider: c.provider, apiKey: c.apiKey, model: c.model ?? aiConfig.model })),
-      ].filter(c => c.apiKey?.trim());
+      // Pool de cartuchos COMPARTIDO con el asistente conversacional (misma key
+      // por storeId): así ambos ven qué llaves ya están agotadas/limitadas y no
+      // las martillan por separado — ahorra tokens y evita la cascada de 401/429.
+      const allCartridges = buildCartridgeList(aiConfig as any);
+      ensurePool(storeId, allCartridges);
 
       let reply = '';
       let lastErr: unknown;
-      for (const cand of candidates) {
+      const triedKeys = new Set<string>();
+      let cur: Cartridge | null = getNextCartridge(storeId) ?? allCartridges[0] ?? null;
+
+      while (cur) {
+        const key = `${cur.provider}:${cur.apiKey}`;
+        if (triedKeys.has(key)) break;
+        triedKeys.add(key);
+        const thisCur = cur;
+
         try {
-          reply = await createCompletion(
-            cand.provider as AIProvider,
-            cand.apiKey,
-            cand.model,
-            messages,
-            0.4,
-            1200,
-          );
+          reply = await createCompletion(thisCur.provider, thisCur.apiKey, thisCur.model, messages, 0.4, 1200);
           break;
         } catch (err: any) {
           lastErr = err;
-          this.logger.warn(`[AdminAssistant] ${storeId}: proveedor ${cand.provider} falló (${err?.status ?? err?.message ?? err}), probando siguiente cartridge...`);
+          const status       = err?.status ?? err?.statusCode ?? err?.response?.status;
+          const isAuthError  = status === 401 || status === 403;
+          this.logger.warn(`[AdminAssistant] ${storeId}: proveedor ${thisCur.provider} falló (${status ?? err?.message ?? err}), probando siguiente cartridge...`);
+          // Solo se exilia del pool compartido si la llave está agotada/limitada o
+          // inválida — un error transitorio no debe condenarla por la próxima hora.
+          if (isRateLimitError(err) || isAuthError) markExhausted(storeId, thisCur);
+          const next = getNextCartridge(storeId);
+          cur = (next && !triedKeys.has(`${next.provider}:${next.apiKey}`)) ? next : null;
         }
       }
       if (!reply) throw lastErr ?? new Error('Todos los cartridges fallaron');
@@ -124,7 +136,7 @@ export class AdminAssistantService implements OnModuleDestroy {
       localNow.getUTCFullYear(), localNow.getUTCMonth(), 1, 5, 0, 0, 0,
     ));
 
-    const [store, apptToday, apptUpcoming, recentOrders, monthOrders, services, customers] =
+    const [store, apptToday, apptUpcoming, recentOrders, monthOrders, services, products, customers] =
       await Promise.all([
         this.prisma.store.findUnique({
           where:  { storeId },
@@ -154,6 +166,12 @@ export class AdminAssistantService implements OnModuleDestroy {
         this.prisma.service.findMany({
           where:   { storeId, isActive: true },
           select:  { serviceId: true, name: true, basePrice: true, priceType: true, estimatedMinutes: true },
+        }),
+        this.prisma.product.findMany({
+          where:   { storeId, isActive: true },
+          select:  { productId: true, name: true, salePrice: true, stock: true },
+          orderBy: { name: 'asc' },
+          take:    50,
         }),
         this.prisma.customer.findMany({
           where:   { storeId },
@@ -214,6 +232,12 @@ export class AdminAssistantService implements OnModuleDestroy {
       return `  • ${s.name} | ${price} | ID: ${s.serviceId}`;
     }).join('\n');
 
+    const productLines = products.length
+      ? products.map(p =>
+          `  • ${p.name} | ${fmtMoney(Number(p.salePrice))} | Stock: ${p.stock} | ID: ${p.productId}`
+        ).join('\n')
+      : '  (sin productos activos)';
+
     const customerLines = customers.slice(0, 10).map(c =>
       `  • ${c.name ?? 'Sin nombre'} | ${c.phone} | ${c.totalOrders} pedidos | ${fmtMoney(Number(c.totalSpent))} | ID: ${c.customerId}`
     ).join('\n');
@@ -250,7 +274,12 @@ ${fmtMoney(todayRevenue)}
 Revenue mes: ${fmtMoney(monthRevenue)} | ${monthOrders.length} pedidos
 
 ━━ CATÁLOGO DE SERVICIOS ACTIVOS ━━
+(Esto son SERVICIOS — citas, cortes, reparaciones, trabajos con cita previa)
 ${serviceLines}
+
+━━ CATÁLOGO DE PRODUCTOS ACTIVOS ━━
+(Esto son PRODUCTOS — artículos físicos que se venden y entregan, NO requieren cita)
+${productLines}
 
 ━━ TOP CLIENTES ━━
 ${customerLines}`;
@@ -268,11 +297,11 @@ ${context}
 ━━ ACCIONES QUE PUEDES EJECUTAR ━━
 Cuando el admin te pida crear o modificar algo, incluye al FINAL de tu respuesta el bloque de acción exactamente así:
 
-Para crear una venta/orden:
-⚡ACTION⚡CREATE_ORDER⚡{"customerId":"<id>","customerPhone":"<telefono>","items":[{"description":"<nombre>","serviceId":"<id_opcional>","quantity":1,"unitPrice":<precio>}],"notes":"<opcional>","paymentMethod":"efectivo"}⚡END⚡
+Para crear una venta/orden (usa "serviceId" si el ítem es del CATÁLOGO DE SERVICIOS, o "productId" si es del CATÁLOGO DE PRODUCTOS — nunca mezcles ambos catálogos):
+⚡ACTION⚡CREATE_ORDER⚡{"customerId":"<id_opcional>","customerPhone":"<telefono>","customerName":"<nombre_opcional_si_es_cliente_nuevo>","items":[{"description":"<nombre>","serviceId":"<id_si_es_servicio>","productId":"<id_si_es_producto>","quantity":1,"unitPrice":<precio>}],"notes":"<opcional>","paymentMethod":"efectivo"}⚡END⚡
 
-Para crear una cita:
-⚡ACTION⚡CREATE_APPOINTMENT⚡{"customerPhone":"<telefono>","serviceId":"<id>","scheduledAt":"<ISO8601 Colombia>","notes":"<opcional>"}⚡END⚡
+Para crear una cita (si el cliente no existe aún, se crea automáticamente con el teléfono — incluye "customerName" si el admin lo menciona):
+⚡ACTION⚡CREATE_APPOINTMENT⚡{"customerPhone":"<telefono>","customerName":"<nombre_opcional_si_es_cliente_nuevo>","serviceId":"<id_del_catalogo_de_servicios>","scheduledAt":"<ISO8601 Colombia>","notes":"<opcional>"}⚡END⚡
 
 Para cancelar una cita:
 ⚡ACTION⚡CANCEL_APPOINTMENT⚡{"appointmentId":"<id>","reason":"<motivo>"}⚡END⚡
@@ -287,11 +316,33 @@ Para reporte del día:
 ⚡ACTION⚡DAILY_REPORT⚡{}⚡END⚡
 
 REGLAS:
-- Si no tienes el ID de algo, búscalo en el contexto o pide confirmación al admin
+- PRODUCTOS y SERVICIOS son catálogos DISTINTOS — revisa el correcto antes de decir "no lo encuentro". Un producto NO aparece en el catálogo de servicios ni viceversa; eso es normal, no es un error.
+- Si no tienes el ID de algo, búscalo en el contexto correspondiente. Si aun así no aparece, dile al admin que no lo encuentras EN ESE catálogo y pregunta si es un producto o un servicio.
 - Para crear citas, la fecha/hora SIEMPRE en ISO8601 con offset Colombia (-05:00)
-- Si el admin pide algo que no está en el contexto, dile que no encuentras esa información
+- Para crear una cita o venta NO necesitas que el cliente ya exista — si el admin te da el teléfono (y opcionalmente el nombre), el sistema lo crea automáticamente. NUNCA te detengas a "registrar primero al cliente": ejecuta la acción directamente con el teléfono que te dieron.
+- Si ya tienes teléfono + servicio/producto + fecha/hora (para citas) o ítems (para ventas), EJECUTA la acción de una vez — no sigas pidiendo confirmación de datos que ya tienes.
+- Si el admin pide algo que claramente no está en el contexto (ni en productos ni en servicios), dile que no encuentras esa información
 - Nunca inventes datos — solo usa lo que está en el contexto
 - Si el admin pregunta algo que puedes responder con el contexto, hazlo SIN usar acción`;
+  }
+
+  // ─── Resolver/crear cliente por teléfono (atómico, tolera formatos) ──────
+  //
+  // Primero busca por coincidencia parcial de los últimos 9 dígitos — tolera que
+  // el admin escriba el número con o sin "+57", espacios, guiones, etc. Si no
+  // existe, lo crea al vuelo vía CustomersService.findOrCreate (upsert atómico,
+  // protegido contra condiciones de carrera) en formato canónico E.164 colombiano,
+  // igual al que produce el flujo de WhatsApp — así no queda duplicado cuando ese
+  // mismo cliente escriba luego al negocio.
+  private async findOrCreateCustomerByPhone(storeId: string, rawPhone: string, name?: string) {
+    const digits   = normalizePhone(rawPhone);
+    const existing = await this.prisma.customer.findFirst({
+      where: { storeId, phone: { contains: digits.slice(-9) } },
+    });
+    if (existing) return existing;
+
+    const canonicalPhone = digits.length === 10 && digits.startsWith('3') ? `+57${digits}` : `+${digits}`;
+    return this.customers.findOrCreate({ storeId, phone: canonicalPhone, name });
   }
 
   // ─── Ejecutar acciones ────────────────────────────────────────────────────
@@ -303,15 +354,13 @@ REGLAS:
       switch (actionType) {
 
         case 'CREATE_ORDER': {
-          // Resolver customerId desde phone si no viene
+          // Resolver customerId desde phone si no viene: primero busca por coincidencia
+          // parcial (tolera formatos distintos al guardado), y si es cliente nuevo lo
+          // crea al vuelo (upsert atómico — ver CustomersService.findOrCreate, evita
+          // duplicados por condición de carrera).
           let customerId = params.customerId;
           if (!customerId && params.customerPhone) {
-            const phone    = params.customerPhone.replace(/\D/g, '');
-            const customer = await this.prisma.customer.findFirst({
-              where: { storeId, phone: { contains: phone.slice(-9) } },
-            });
-            if (!customer) return `❌ No encontré cliente con teléfono ${params.customerPhone}. Regístralo primero.`;
-            customerId = customer.customerId;
+            customerId = (await this.findOrCreateCustomerByPhone(storeId, params.customerPhone, params.customerName)).customerId;
           }
           if (!customerId) return '❌ Necesito el teléfono o ID del cliente para crear la venta.';
 
@@ -320,11 +369,19 @@ REGLAS:
 
           const subtotal = items.reduce((s: number, i: any) => s + (Number(i.unitPrice) * (i.quantity ?? 1)), 0);
 
+          // El tipo de la orden depende de qué cataloga: si TODOS los ítems son
+          // servicios → 'service', si hay algún producto (o ítems libres) → 'product'.
+          // Esto evita que ventas de productos queden mal clasificadas como servicios
+          // (y viceversa) en los reportes y en el contexto del asistente.
+          const hasService  = items.some((i: any) => !!i.serviceId);
+          const hasProduct  = items.some((i: any) => !!i.productId);
+          const orderType   = hasService && !hasProduct ? 'service' : 'product';
+
           const order = await this.prisma.order.create({
             data: {
               storeId,
               customerId,
-              type:       'service',
+              type:       orderType,
               notes:      params.notes ?? 'Creado por asistente admin WA',
               subtotal,
               total:      subtotal,
@@ -336,6 +393,7 @@ REGLAS:
                   quantity:    i.quantity ?? 1,
                   unitPrice:   Number(i.unitPrice),
                   ...(i.serviceId ? { service: { connect: { serviceId: i.serviceId } } } : {}),
+                  ...(i.productId ? { product: { connect: { productId: i.productId } } } : {}),
                 })),
               },
             },
@@ -350,11 +408,7 @@ REGLAS:
           if (!params.customerPhone || !params.serviceId || !params.scheduledAt) {
             return '❌ Faltan datos: necesito teléfono del cliente, ID del servicio y fecha/hora.';
           }
-          const phone    = params.customerPhone.replace(/\D/g, '');
-          const customer = await this.prisma.customer.findFirst({
-            where: { storeId, phone: { contains: phone.slice(-9) } },
-          });
-          if (!customer) return `❌ No encontré cliente con teléfono ${params.customerPhone}.`;
+          const customer = await this.findOrCreateCustomerByPhone(storeId, params.customerPhone, params.customerName);
 
           const service = await this.prisma.service.findUnique({ where: { serviceId: params.serviceId } });
           if (!service) return '❌ Servicio no encontrado.';

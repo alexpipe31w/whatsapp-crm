@@ -20,8 +20,18 @@ export type StoreModel = runtime.Types.Result.DefaultSelection<Prisma.$StorePayl
 
 export type AggregateStore = {
   _count: StoreCountAggregateOutputType | null
+  _avg: StoreAvgAggregateOutputType | null
+  _sum: StoreSumAggregateOutputType | null
   _min: StoreMinAggregateOutputType | null
   _max: StoreMaxAggregateOutputType | null
+}
+
+export type StoreAvgAggregateOutputType = {
+  minAdvanceMinutes: number | null
+}
+
+export type StoreSumAggregateOutputType = {
+  minAdvanceMinutes: number | null
 }
 
 export type StoreMinAggregateOutputType = {
@@ -30,7 +40,29 @@ export type StoreMinAggregateOutputType = {
   phone: string | null
   ownerName: string | null
   adminPhone: string | null
+  description: string | null
+  address: string | null
+  neighborhood: string | null
+  directions: string | null
+  googleMapsUrl: string | null
+  email: string | null
+  website: string | null
+  instagram: string | null
+  facebook: string | null
+  tiktok: string | null
+  paymentAccount: string | null
+  requiresDeposit: boolean | null
+  depositAmount: string | null
+  minAdvanceMinutes: number | null
+  cancellationPolicy: string | null
+  hasDelivery: boolean | null
+  deliveryZone: string | null
+  hasParking: boolean | null
+  requiresCustomerAddress: boolean | null
+  requiresCustomerCedula: boolean | null
   waSessionId: string | null
+  staffLabel: string | null
+  slug: string | null
   isActive: boolean | null
   primaryColor: string | null
   secondaryColor: string | null
@@ -48,7 +80,29 @@ export type StoreMaxAggregateOutputType = {
   phone: string | null
   ownerName: string | null
   adminPhone: string | null
+  description: string | null
+  address: string | null
+  neighborhood: string | null
+  directions: string | null
+  googleMapsUrl: string | null
+  email: string | null
+  website: string | null
+  instagram: string | null
+  facebook: string | null
+  tiktok: string | null
+  paymentAccount: string | null
+  requiresDeposit: boolean | null
+  depositAmount: string | null
+  minAdvanceMinutes: number | null
+  cancellationPolicy: string | null
+  hasDelivery: boolean | null
+  deliveryZone: string | null
+  hasParking: boolean | null
+  requiresCustomerAddress: boolean | null
+  requiresCustomerCedula: boolean | null
   waSessionId: string | null
+  staffLabel: string | null
+  slug: string | null
   isActive: boolean | null
   primaryColor: string | null
   secondaryColor: string | null
@@ -66,7 +120,31 @@ export type StoreCountAggregateOutputType = {
   phone: number
   ownerName: number
   adminPhone: number
+  description: number
+  address: number
+  neighborhood: number
+  directions: number
+  googleMapsUrl: number
+  email: number
+  website: number
+  instagram: number
+  facebook: number
+  tiktok: number
+  paymentMethods: number
+  paymentAccount: number
+  requiresDeposit: number
+  depositAmount: number
+  minAdvanceMinutes: number
+  cancellationPolicy: number
+  hasDelivery: number
+  deliveryZone: number
+  hasParking: number
+  requiresCustomerAddress: number
+  requiresCustomerCedula: number
+  businessHours: number
   waSessionId: number
+  staffLabel: number
+  slug: number
   isActive: number
   primaryColor: number
   secondaryColor: number
@@ -80,13 +158,43 @@ export type StoreCountAggregateOutputType = {
 }
 
 
+export type StoreAvgAggregateInputType = {
+  minAdvanceMinutes?: true
+}
+
+export type StoreSumAggregateInputType = {
+  minAdvanceMinutes?: true
+}
+
 export type StoreMinAggregateInputType = {
   storeId?: true
   name?: true
   phone?: true
   ownerName?: true
   adminPhone?: true
+  description?: true
+  address?: true
+  neighborhood?: true
+  directions?: true
+  googleMapsUrl?: true
+  email?: true
+  website?: true
+  instagram?: true
+  facebook?: true
+  tiktok?: true
+  paymentAccount?: true
+  requiresDeposit?: true
+  depositAmount?: true
+  minAdvanceMinutes?: true
+  cancellationPolicy?: true
+  hasDelivery?: true
+  deliveryZone?: true
+  hasParking?: true
+  requiresCustomerAddress?: true
+  requiresCustomerCedula?: true
   waSessionId?: true
+  staffLabel?: true
+  slug?: true
   isActive?: true
   primaryColor?: true
   secondaryColor?: true
@@ -104,7 +212,29 @@ export type StoreMaxAggregateInputType = {
   phone?: true
   ownerName?: true
   adminPhone?: true
+  description?: true
+  address?: true
+  neighborhood?: true
+  directions?: true
+  googleMapsUrl?: true
+  email?: true
+  website?: true
+  instagram?: true
+  facebook?: true
+  tiktok?: true
+  paymentAccount?: true
+  requiresDeposit?: true
+  depositAmount?: true
+  minAdvanceMinutes?: true
+  cancellationPolicy?: true
+  hasDelivery?: true
+  deliveryZone?: true
+  hasParking?: true
+  requiresCustomerAddress?: true
+  requiresCustomerCedula?: true
   waSessionId?: true
+  staffLabel?: true
+  slug?: true
   isActive?: true
   primaryColor?: true
   secondaryColor?: true
@@ -122,7 +252,31 @@ export type StoreCountAggregateInputType = {
   phone?: true
   ownerName?: true
   adminPhone?: true
+  description?: true
+  address?: true
+  neighborhood?: true
+  directions?: true
+  googleMapsUrl?: true
+  email?: true
+  website?: true
+  instagram?: true
+  facebook?: true
+  tiktok?: true
+  paymentMethods?: true
+  paymentAccount?: true
+  requiresDeposit?: true
+  depositAmount?: true
+  minAdvanceMinutes?: true
+  cancellationPolicy?: true
+  hasDelivery?: true
+  deliveryZone?: true
+  hasParking?: true
+  requiresCustomerAddress?: true
+  requiresCustomerCedula?: true
+  businessHours?: true
   waSessionId?: true
+  staffLabel?: true
+  slug?: true
   isActive?: true
   primaryColor?: true
   secondaryColor?: true
@@ -173,6 +327,18 @@ export type StoreAggregateArgs<ExtArgs extends runtime.Types.Extensions.Internal
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
+   * Select which fields to average
+  **/
+  _avg?: StoreAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: StoreSumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
    * Select which fields to find the minimum value
   **/
   _min?: StoreMinAggregateInputType
@@ -203,6 +369,8 @@ export type StoreGroupByArgs<ExtArgs extends runtime.Types.Extensions.InternalAr
   take?: number
   skip?: number
   _count?: StoreCountAggregateInputType | true
+  _avg?: StoreAvgAggregateInputType
+  _sum?: StoreSumAggregateInputType
   _min?: StoreMinAggregateInputType
   _max?: StoreMaxAggregateInputType
 }
@@ -213,7 +381,31 @@ export type StoreGroupByOutputType = {
   phone: string
   ownerName: string | null
   adminPhone: string | null
+  description: string | null
+  address: string | null
+  neighborhood: string | null
+  directions: string | null
+  googleMapsUrl: string | null
+  email: string | null
+  website: string | null
+  instagram: string | null
+  facebook: string | null
+  tiktok: string | null
+  paymentMethods: string[]
+  paymentAccount: string | null
+  requiresDeposit: boolean
+  depositAmount: string | null
+  minAdvanceMinutes: number | null
+  cancellationPolicy: string | null
+  hasDelivery: boolean
+  deliveryZone: string | null
+  hasParking: boolean
+  requiresCustomerAddress: boolean
+  requiresCustomerCedula: boolean
+  businessHours: runtime.JsonValue | null
   waSessionId: string | null
+  staffLabel: string | null
+  slug: string | null
   isActive: boolean
   primaryColor: string | null
   secondaryColor: string | null
@@ -224,6 +416,8 @@ export type StoreGroupByOutputType = {
   createdAt: Date
   updatedAt: Date
   _count: StoreCountAggregateOutputType | null
+  _avg: StoreAvgAggregateOutputType | null
+  _sum: StoreSumAggregateOutputType | null
   _min: StoreMinAggregateOutputType | null
   _max: StoreMaxAggregateOutputType | null
 }
@@ -252,7 +446,31 @@ export type StoreWhereInput = {
   phone?: Prisma.StringFilter<"Store"> | string
   ownerName?: Prisma.StringNullableFilter<"Store"> | string | null
   adminPhone?: Prisma.StringNullableFilter<"Store"> | string | null
+  description?: Prisma.StringNullableFilter<"Store"> | string | null
+  address?: Prisma.StringNullableFilter<"Store"> | string | null
+  neighborhood?: Prisma.StringNullableFilter<"Store"> | string | null
+  directions?: Prisma.StringNullableFilter<"Store"> | string | null
+  googleMapsUrl?: Prisma.StringNullableFilter<"Store"> | string | null
+  email?: Prisma.StringNullableFilter<"Store"> | string | null
+  website?: Prisma.StringNullableFilter<"Store"> | string | null
+  instagram?: Prisma.StringNullableFilter<"Store"> | string | null
+  facebook?: Prisma.StringNullableFilter<"Store"> | string | null
+  tiktok?: Prisma.StringNullableFilter<"Store"> | string | null
+  paymentMethods?: Prisma.StringNullableListFilter<"Store">
+  paymentAccount?: Prisma.StringNullableFilter<"Store"> | string | null
+  requiresDeposit?: Prisma.BoolFilter<"Store"> | boolean
+  depositAmount?: Prisma.StringNullableFilter<"Store"> | string | null
+  minAdvanceMinutes?: Prisma.IntNullableFilter<"Store"> | number | null
+  cancellationPolicy?: Prisma.StringNullableFilter<"Store"> | string | null
+  hasDelivery?: Prisma.BoolFilter<"Store"> | boolean
+  deliveryZone?: Prisma.StringNullableFilter<"Store"> | string | null
+  hasParking?: Prisma.BoolFilter<"Store"> | boolean
+  requiresCustomerAddress?: Prisma.BoolFilter<"Store"> | boolean
+  requiresCustomerCedula?: Prisma.BoolFilter<"Store"> | boolean
+  businessHours?: Prisma.JsonNullableFilter<"Store">
   waSessionId?: Prisma.StringNullableFilter<"Store"> | string | null
+  staffLabel?: Prisma.StringNullableFilter<"Store"> | string | null
+  slug?: Prisma.StringNullableFilter<"Store"> | string | null
   isActive?: Prisma.BoolFilter<"Store"> | boolean
   primaryColor?: Prisma.StringNullableFilter<"Store"> | string | null
   secondaryColor?: Prisma.StringNullableFilter<"Store"> | string | null
@@ -277,6 +495,7 @@ export type StoreWhereInput = {
   waSession?: Prisma.XOR<Prisma.WhatsappSessionNullableScalarRelationFilter, Prisma.WhatsappSessionWhereInput> | null
   subscription?: Prisma.XOR<Prisma.SubscriptionNullableScalarRelationFilter, Prisma.SubscriptionWhereInput> | null
   dailyReports?: Prisma.DailyReportListRelationFilter
+  staff?: Prisma.StaffListRelationFilter
 }
 
 export type StoreOrderByWithRelationInput = {
@@ -285,7 +504,31 @@ export type StoreOrderByWithRelationInput = {
   phone?: Prisma.SortOrder
   ownerName?: Prisma.SortOrderInput | Prisma.SortOrder
   adminPhone?: Prisma.SortOrderInput | Prisma.SortOrder
+  description?: Prisma.SortOrderInput | Prisma.SortOrder
+  address?: Prisma.SortOrderInput | Prisma.SortOrder
+  neighborhood?: Prisma.SortOrderInput | Prisma.SortOrder
+  directions?: Prisma.SortOrderInput | Prisma.SortOrder
+  googleMapsUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  email?: Prisma.SortOrderInput | Prisma.SortOrder
+  website?: Prisma.SortOrderInput | Prisma.SortOrder
+  instagram?: Prisma.SortOrderInput | Prisma.SortOrder
+  facebook?: Prisma.SortOrderInput | Prisma.SortOrder
+  tiktok?: Prisma.SortOrderInput | Prisma.SortOrder
+  paymentMethods?: Prisma.SortOrder
+  paymentAccount?: Prisma.SortOrderInput | Prisma.SortOrder
+  requiresDeposit?: Prisma.SortOrder
+  depositAmount?: Prisma.SortOrderInput | Prisma.SortOrder
+  minAdvanceMinutes?: Prisma.SortOrderInput | Prisma.SortOrder
+  cancellationPolicy?: Prisma.SortOrderInput | Prisma.SortOrder
+  hasDelivery?: Prisma.SortOrder
+  deliveryZone?: Prisma.SortOrderInput | Prisma.SortOrder
+  hasParking?: Prisma.SortOrder
+  requiresCustomerAddress?: Prisma.SortOrder
+  requiresCustomerCedula?: Prisma.SortOrder
+  businessHours?: Prisma.SortOrderInput | Prisma.SortOrder
   waSessionId?: Prisma.SortOrderInput | Prisma.SortOrder
+  staffLabel?: Prisma.SortOrderInput | Prisma.SortOrder
+  slug?: Prisma.SortOrderInput | Prisma.SortOrder
   isActive?: Prisma.SortOrder
   primaryColor?: Prisma.SortOrderInput | Prisma.SortOrder
   secondaryColor?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -310,18 +553,43 @@ export type StoreOrderByWithRelationInput = {
   waSession?: Prisma.WhatsappSessionOrderByWithRelationInput
   subscription?: Prisma.SubscriptionOrderByWithRelationInput
   dailyReports?: Prisma.DailyReportOrderByRelationAggregateInput
+  staff?: Prisma.StaffOrderByRelationAggregateInput
 }
 
 export type StoreWhereUniqueInput = Prisma.AtLeast<{
   storeId?: string
   phone?: string
   waSessionId?: string
+  slug?: string
   AND?: Prisma.StoreWhereInput | Prisma.StoreWhereInput[]
   OR?: Prisma.StoreWhereInput[]
   NOT?: Prisma.StoreWhereInput | Prisma.StoreWhereInput[]
   name?: Prisma.StringFilter<"Store"> | string
   ownerName?: Prisma.StringNullableFilter<"Store"> | string | null
   adminPhone?: Prisma.StringNullableFilter<"Store"> | string | null
+  description?: Prisma.StringNullableFilter<"Store"> | string | null
+  address?: Prisma.StringNullableFilter<"Store"> | string | null
+  neighborhood?: Prisma.StringNullableFilter<"Store"> | string | null
+  directions?: Prisma.StringNullableFilter<"Store"> | string | null
+  googleMapsUrl?: Prisma.StringNullableFilter<"Store"> | string | null
+  email?: Prisma.StringNullableFilter<"Store"> | string | null
+  website?: Prisma.StringNullableFilter<"Store"> | string | null
+  instagram?: Prisma.StringNullableFilter<"Store"> | string | null
+  facebook?: Prisma.StringNullableFilter<"Store"> | string | null
+  tiktok?: Prisma.StringNullableFilter<"Store"> | string | null
+  paymentMethods?: Prisma.StringNullableListFilter<"Store">
+  paymentAccount?: Prisma.StringNullableFilter<"Store"> | string | null
+  requiresDeposit?: Prisma.BoolFilter<"Store"> | boolean
+  depositAmount?: Prisma.StringNullableFilter<"Store"> | string | null
+  minAdvanceMinutes?: Prisma.IntNullableFilter<"Store"> | number | null
+  cancellationPolicy?: Prisma.StringNullableFilter<"Store"> | string | null
+  hasDelivery?: Prisma.BoolFilter<"Store"> | boolean
+  deliveryZone?: Prisma.StringNullableFilter<"Store"> | string | null
+  hasParking?: Prisma.BoolFilter<"Store"> | boolean
+  requiresCustomerAddress?: Prisma.BoolFilter<"Store"> | boolean
+  requiresCustomerCedula?: Prisma.BoolFilter<"Store"> | boolean
+  businessHours?: Prisma.JsonNullableFilter<"Store">
+  staffLabel?: Prisma.StringNullableFilter<"Store"> | string | null
   isActive?: Prisma.BoolFilter<"Store"> | boolean
   primaryColor?: Prisma.StringNullableFilter<"Store"> | string | null
   secondaryColor?: Prisma.StringNullableFilter<"Store"> | string | null
@@ -346,7 +614,8 @@ export type StoreWhereUniqueInput = Prisma.AtLeast<{
   waSession?: Prisma.XOR<Prisma.WhatsappSessionNullableScalarRelationFilter, Prisma.WhatsappSessionWhereInput> | null
   subscription?: Prisma.XOR<Prisma.SubscriptionNullableScalarRelationFilter, Prisma.SubscriptionWhereInput> | null
   dailyReports?: Prisma.DailyReportListRelationFilter
-}, "storeId" | "phone" | "waSessionId">
+  staff?: Prisma.StaffListRelationFilter
+}, "storeId" | "phone" | "waSessionId" | "slug">
 
 export type StoreOrderByWithAggregationInput = {
   storeId?: Prisma.SortOrder
@@ -354,7 +623,31 @@ export type StoreOrderByWithAggregationInput = {
   phone?: Prisma.SortOrder
   ownerName?: Prisma.SortOrderInput | Prisma.SortOrder
   adminPhone?: Prisma.SortOrderInput | Prisma.SortOrder
+  description?: Prisma.SortOrderInput | Prisma.SortOrder
+  address?: Prisma.SortOrderInput | Prisma.SortOrder
+  neighborhood?: Prisma.SortOrderInput | Prisma.SortOrder
+  directions?: Prisma.SortOrderInput | Prisma.SortOrder
+  googleMapsUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  email?: Prisma.SortOrderInput | Prisma.SortOrder
+  website?: Prisma.SortOrderInput | Prisma.SortOrder
+  instagram?: Prisma.SortOrderInput | Prisma.SortOrder
+  facebook?: Prisma.SortOrderInput | Prisma.SortOrder
+  tiktok?: Prisma.SortOrderInput | Prisma.SortOrder
+  paymentMethods?: Prisma.SortOrder
+  paymentAccount?: Prisma.SortOrderInput | Prisma.SortOrder
+  requiresDeposit?: Prisma.SortOrder
+  depositAmount?: Prisma.SortOrderInput | Prisma.SortOrder
+  minAdvanceMinutes?: Prisma.SortOrderInput | Prisma.SortOrder
+  cancellationPolicy?: Prisma.SortOrderInput | Prisma.SortOrder
+  hasDelivery?: Prisma.SortOrder
+  deliveryZone?: Prisma.SortOrderInput | Prisma.SortOrder
+  hasParking?: Prisma.SortOrder
+  requiresCustomerAddress?: Prisma.SortOrder
+  requiresCustomerCedula?: Prisma.SortOrder
+  businessHours?: Prisma.SortOrderInput | Prisma.SortOrder
   waSessionId?: Prisma.SortOrderInput | Prisma.SortOrder
+  staffLabel?: Prisma.SortOrderInput | Prisma.SortOrder
+  slug?: Prisma.SortOrderInput | Prisma.SortOrder
   isActive?: Prisma.SortOrder
   primaryColor?: Prisma.SortOrderInput | Prisma.SortOrder
   secondaryColor?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -365,8 +658,10 @@ export type StoreOrderByWithAggregationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.StoreCountOrderByAggregateInput
+  _avg?: Prisma.StoreAvgOrderByAggregateInput
   _max?: Prisma.StoreMaxOrderByAggregateInput
   _min?: Prisma.StoreMinOrderByAggregateInput
+  _sum?: Prisma.StoreSumOrderByAggregateInput
 }
 
 export type StoreScalarWhereWithAggregatesInput = {
@@ -378,7 +673,31 @@ export type StoreScalarWhereWithAggregatesInput = {
   phone?: Prisma.StringWithAggregatesFilter<"Store"> | string
   ownerName?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
   adminPhone?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
+  description?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
+  address?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
+  neighborhood?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
+  directions?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
+  googleMapsUrl?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
+  email?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
+  website?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
+  instagram?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
+  facebook?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
+  tiktok?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
+  paymentMethods?: Prisma.StringNullableListFilter<"Store">
+  paymentAccount?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
+  requiresDeposit?: Prisma.BoolWithAggregatesFilter<"Store"> | boolean
+  depositAmount?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
+  minAdvanceMinutes?: Prisma.IntNullableWithAggregatesFilter<"Store"> | number | null
+  cancellationPolicy?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
+  hasDelivery?: Prisma.BoolWithAggregatesFilter<"Store"> | boolean
+  deliveryZone?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
+  hasParking?: Prisma.BoolWithAggregatesFilter<"Store"> | boolean
+  requiresCustomerAddress?: Prisma.BoolWithAggregatesFilter<"Store"> | boolean
+  requiresCustomerCedula?: Prisma.BoolWithAggregatesFilter<"Store"> | boolean
+  businessHours?: Prisma.JsonNullableWithAggregatesFilter<"Store">
   waSessionId?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
+  staffLabel?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
+  slug?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
   isActive?: Prisma.BoolWithAggregatesFilter<"Store"> | boolean
   primaryColor?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
   secondaryColor?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
@@ -396,7 +715,31 @@ export type StoreCreateInput = {
   phone: string
   ownerName?: string | null
   adminPhone?: string | null
+  description?: string | null
+  address?: string | null
+  neighborhood?: string | null
+  directions?: string | null
+  googleMapsUrl?: string | null
+  email?: string | null
+  website?: string | null
+  instagram?: string | null
+  facebook?: string | null
+  tiktok?: string | null
+  paymentMethods?: Prisma.StoreCreatepaymentMethodsInput | string[]
+  paymentAccount?: string | null
+  requiresDeposit?: boolean
+  depositAmount?: string | null
+  minAdvanceMinutes?: number | null
+  cancellationPolicy?: string | null
+  hasDelivery?: boolean
+  deliveryZone?: string | null
+  hasParking?: boolean
+  requiresCustomerAddress?: boolean
+  requiresCustomerCedula?: boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
+  staffLabel?: string | null
+  slug?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -421,6 +764,7 @@ export type StoreCreateInput = {
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
+  staff?: Prisma.StaffCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateInput = {
@@ -429,7 +773,31 @@ export type StoreUncheckedCreateInput = {
   phone: string
   ownerName?: string | null
   adminPhone?: string | null
+  description?: string | null
+  address?: string | null
+  neighborhood?: string | null
+  directions?: string | null
+  googleMapsUrl?: string | null
+  email?: string | null
+  website?: string | null
+  instagram?: string | null
+  facebook?: string | null
+  tiktok?: string | null
+  paymentMethods?: Prisma.StoreCreatepaymentMethodsInput | string[]
+  paymentAccount?: string | null
+  requiresDeposit?: boolean
+  depositAmount?: string | null
+  minAdvanceMinutes?: number | null
+  cancellationPolicy?: string | null
+  hasDelivery?: boolean
+  deliveryZone?: string | null
+  hasParking?: boolean
+  requiresCustomerAddress?: boolean
+  requiresCustomerCedula?: boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
+  staffLabel?: string | null
+  slug?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -454,6 +822,7 @@ export type StoreUncheckedCreateInput = {
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
+  staff?: Prisma.StaffUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUpdateInput = {
@@ -462,7 +831,31 @@ export type StoreUpdateInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  directions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  googleMapsUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  website?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  instagram?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tiktok?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethods?: Prisma.StoreUpdatepaymentMethodsInput | string[]
+  paymentAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  depositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minAdvanceMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  cancellationPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasDelivery?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deliveryZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -487,6 +880,7 @@ export type StoreUpdateInput = {
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
+  staff?: Prisma.StaffUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateInput = {
@@ -495,7 +889,31 @@ export type StoreUncheckedUpdateInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  directions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  googleMapsUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  website?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  instagram?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tiktok?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethods?: Prisma.StoreUpdatepaymentMethodsInput | string[]
+  paymentAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  depositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minAdvanceMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  cancellationPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasDelivery?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deliveryZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -520,6 +938,7 @@ export type StoreUncheckedUpdateInput = {
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
+  staff?: Prisma.StaffUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateManyInput = {
@@ -528,7 +947,31 @@ export type StoreCreateManyInput = {
   phone: string
   ownerName?: string | null
   adminPhone?: string | null
+  description?: string | null
+  address?: string | null
+  neighborhood?: string | null
+  directions?: string | null
+  googleMapsUrl?: string | null
+  email?: string | null
+  website?: string | null
+  instagram?: string | null
+  facebook?: string | null
+  tiktok?: string | null
+  paymentMethods?: Prisma.StoreCreatepaymentMethodsInput | string[]
+  paymentAccount?: string | null
+  requiresDeposit?: boolean
+  depositAmount?: string | null
+  minAdvanceMinutes?: number | null
+  cancellationPolicy?: string | null
+  hasDelivery?: boolean
+  deliveryZone?: string | null
+  hasParking?: boolean
+  requiresCustomerAddress?: boolean
+  requiresCustomerCedula?: boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
+  staffLabel?: string | null
+  slug?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -546,7 +989,31 @@ export type StoreUpdateManyMutationInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  directions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  googleMapsUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  website?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  instagram?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tiktok?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethods?: Prisma.StoreUpdatepaymentMethodsInput | string[]
+  paymentAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  depositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minAdvanceMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  cancellationPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasDelivery?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deliveryZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -564,7 +1031,31 @@ export type StoreUncheckedUpdateManyInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  directions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  googleMapsUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  website?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  instagram?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tiktok?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethods?: Prisma.StoreUpdatepaymentMethodsInput | string[]
+  paymentAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  depositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minAdvanceMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  cancellationPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasDelivery?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deliveryZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -576,13 +1067,45 @@ export type StoreUncheckedUpdateManyInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
+export type StringNullableListFilter<$PrismaModel = never> = {
+  equals?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel> | null
+  has?: string | Prisma.StringFieldRefInput<$PrismaModel> | null
+  hasEvery?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel>
+  hasSome?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel>
+  isEmpty?: boolean
+}
+
 export type StoreCountOrderByAggregateInput = {
   storeId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   phone?: Prisma.SortOrder
   ownerName?: Prisma.SortOrder
   adminPhone?: Prisma.SortOrder
+  description?: Prisma.SortOrder
+  address?: Prisma.SortOrder
+  neighborhood?: Prisma.SortOrder
+  directions?: Prisma.SortOrder
+  googleMapsUrl?: Prisma.SortOrder
+  email?: Prisma.SortOrder
+  website?: Prisma.SortOrder
+  instagram?: Prisma.SortOrder
+  facebook?: Prisma.SortOrder
+  tiktok?: Prisma.SortOrder
+  paymentMethods?: Prisma.SortOrder
+  paymentAccount?: Prisma.SortOrder
+  requiresDeposit?: Prisma.SortOrder
+  depositAmount?: Prisma.SortOrder
+  minAdvanceMinutes?: Prisma.SortOrder
+  cancellationPolicy?: Prisma.SortOrder
+  hasDelivery?: Prisma.SortOrder
+  deliveryZone?: Prisma.SortOrder
+  hasParking?: Prisma.SortOrder
+  requiresCustomerAddress?: Prisma.SortOrder
+  requiresCustomerCedula?: Prisma.SortOrder
+  businessHours?: Prisma.SortOrder
   waSessionId?: Prisma.SortOrder
+  staffLabel?: Prisma.SortOrder
+  slug?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   primaryColor?: Prisma.SortOrder
   secondaryColor?: Prisma.SortOrder
@@ -594,13 +1117,39 @@ export type StoreCountOrderByAggregateInput = {
   updatedAt?: Prisma.SortOrder
 }
 
+export type StoreAvgOrderByAggregateInput = {
+  minAdvanceMinutes?: Prisma.SortOrder
+}
+
 export type StoreMaxOrderByAggregateInput = {
   storeId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   phone?: Prisma.SortOrder
   ownerName?: Prisma.SortOrder
   adminPhone?: Prisma.SortOrder
+  description?: Prisma.SortOrder
+  address?: Prisma.SortOrder
+  neighborhood?: Prisma.SortOrder
+  directions?: Prisma.SortOrder
+  googleMapsUrl?: Prisma.SortOrder
+  email?: Prisma.SortOrder
+  website?: Prisma.SortOrder
+  instagram?: Prisma.SortOrder
+  facebook?: Prisma.SortOrder
+  tiktok?: Prisma.SortOrder
+  paymentAccount?: Prisma.SortOrder
+  requiresDeposit?: Prisma.SortOrder
+  depositAmount?: Prisma.SortOrder
+  minAdvanceMinutes?: Prisma.SortOrder
+  cancellationPolicy?: Prisma.SortOrder
+  hasDelivery?: Prisma.SortOrder
+  deliveryZone?: Prisma.SortOrder
+  hasParking?: Prisma.SortOrder
+  requiresCustomerAddress?: Prisma.SortOrder
+  requiresCustomerCedula?: Prisma.SortOrder
   waSessionId?: Prisma.SortOrder
+  staffLabel?: Prisma.SortOrder
+  slug?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   primaryColor?: Prisma.SortOrder
   secondaryColor?: Prisma.SortOrder
@@ -618,7 +1167,29 @@ export type StoreMinOrderByAggregateInput = {
   phone?: Prisma.SortOrder
   ownerName?: Prisma.SortOrder
   adminPhone?: Prisma.SortOrder
+  description?: Prisma.SortOrder
+  address?: Prisma.SortOrder
+  neighborhood?: Prisma.SortOrder
+  directions?: Prisma.SortOrder
+  googleMapsUrl?: Prisma.SortOrder
+  email?: Prisma.SortOrder
+  website?: Prisma.SortOrder
+  instagram?: Prisma.SortOrder
+  facebook?: Prisma.SortOrder
+  tiktok?: Prisma.SortOrder
+  paymentAccount?: Prisma.SortOrder
+  requiresDeposit?: Prisma.SortOrder
+  depositAmount?: Prisma.SortOrder
+  minAdvanceMinutes?: Prisma.SortOrder
+  cancellationPolicy?: Prisma.SortOrder
+  hasDelivery?: Prisma.SortOrder
+  deliveryZone?: Prisma.SortOrder
+  hasParking?: Prisma.SortOrder
+  requiresCustomerAddress?: Prisma.SortOrder
+  requiresCustomerCedula?: Prisma.SortOrder
   waSessionId?: Prisma.SortOrder
+  staffLabel?: Prisma.SortOrder
+  slug?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   primaryColor?: Prisma.SortOrder
   secondaryColor?: Prisma.SortOrder
@@ -628,6 +1199,10 @@ export type StoreMinOrderByAggregateInput = {
   apiBlocked?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+}
+
+export type StoreSumOrderByAggregateInput = {
+  minAdvanceMinutes?: Prisma.SortOrder
 }
 
 export type StoreScalarRelationFilter = {
@@ -640,6 +1215,10 @@ export type StoreNullableScalarRelationFilter = {
   isNot?: Prisma.StoreWhereInput | null
 }
 
+export type StoreCreatepaymentMethodsInput = {
+  set: string[]
+}
+
 export type StringFieldUpdateOperationsInput = {
   set?: string
 }
@@ -648,8 +1227,21 @@ export type NullableStringFieldUpdateOperationsInput = {
   set?: string | null
 }
 
+export type StoreUpdatepaymentMethodsInput = {
+  set?: string[]
+  push?: string | string[]
+}
+
 export type BoolFieldUpdateOperationsInput = {
   set?: boolean
+}
+
+export type NullableIntFieldUpdateOperationsInput = {
+  set?: number | null
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
 }
 
 export type NullableDateTimeFieldUpdateOperationsInput = {
@@ -872,13 +1464,51 @@ export type StoreUpdateOneRequiredWithoutSubscriptionNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.StoreUpdateToOneWithWhereWithoutSubscriptionInput, Prisma.StoreUpdateWithoutSubscriptionInput>, Prisma.StoreUncheckedUpdateWithoutSubscriptionInput>
 }
 
+export type StoreCreateNestedOneWithoutStaffInput = {
+  create?: Prisma.XOR<Prisma.StoreCreateWithoutStaffInput, Prisma.StoreUncheckedCreateWithoutStaffInput>
+  connectOrCreate?: Prisma.StoreCreateOrConnectWithoutStaffInput
+  connect?: Prisma.StoreWhereUniqueInput
+}
+
+export type StoreUpdateOneRequiredWithoutStaffNestedInput = {
+  create?: Prisma.XOR<Prisma.StoreCreateWithoutStaffInput, Prisma.StoreUncheckedCreateWithoutStaffInput>
+  connectOrCreate?: Prisma.StoreCreateOrConnectWithoutStaffInput
+  upsert?: Prisma.StoreUpsertWithoutStaffInput
+  connect?: Prisma.StoreWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.StoreUpdateToOneWithWhereWithoutStaffInput, Prisma.StoreUpdateWithoutStaffInput>, Prisma.StoreUncheckedUpdateWithoutStaffInput>
+}
+
 export type StoreCreateWithoutCustomersInput = {
   storeId?: string
   name: string
   phone: string
   ownerName?: string | null
   adminPhone?: string | null
+  description?: string | null
+  address?: string | null
+  neighborhood?: string | null
+  directions?: string | null
+  googleMapsUrl?: string | null
+  email?: string | null
+  website?: string | null
+  instagram?: string | null
+  facebook?: string | null
+  tiktok?: string | null
+  paymentMethods?: Prisma.StoreCreatepaymentMethodsInput | string[]
+  paymentAccount?: string | null
+  requiresDeposit?: boolean
+  depositAmount?: string | null
+  minAdvanceMinutes?: number | null
+  cancellationPolicy?: string | null
+  hasDelivery?: boolean
+  deliveryZone?: string | null
+  hasParking?: boolean
+  requiresCustomerAddress?: boolean
+  requiresCustomerCedula?: boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
+  staffLabel?: string | null
+  slug?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -902,6 +1532,7 @@ export type StoreCreateWithoutCustomersInput = {
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
+  staff?: Prisma.StaffCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutCustomersInput = {
@@ -910,7 +1541,31 @@ export type StoreUncheckedCreateWithoutCustomersInput = {
   phone: string
   ownerName?: string | null
   adminPhone?: string | null
+  description?: string | null
+  address?: string | null
+  neighborhood?: string | null
+  directions?: string | null
+  googleMapsUrl?: string | null
+  email?: string | null
+  website?: string | null
+  instagram?: string | null
+  facebook?: string | null
+  tiktok?: string | null
+  paymentMethods?: Prisma.StoreCreatepaymentMethodsInput | string[]
+  paymentAccount?: string | null
+  requiresDeposit?: boolean
+  depositAmount?: string | null
+  minAdvanceMinutes?: number | null
+  cancellationPolicy?: string | null
+  hasDelivery?: boolean
+  deliveryZone?: string | null
+  hasParking?: boolean
+  requiresCustomerAddress?: boolean
+  requiresCustomerCedula?: boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
+  staffLabel?: string | null
+  slug?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -934,6 +1589,7 @@ export type StoreUncheckedCreateWithoutCustomersInput = {
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
+  staff?: Prisma.StaffUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutCustomersInput = {
@@ -958,7 +1614,31 @@ export type StoreUpdateWithoutCustomersInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  directions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  googleMapsUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  website?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  instagram?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tiktok?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethods?: Prisma.StoreUpdatepaymentMethodsInput | string[]
+  paymentAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  depositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minAdvanceMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  cancellationPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasDelivery?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deliveryZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -982,6 +1662,7 @@ export type StoreUpdateWithoutCustomersInput = {
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
+  staff?: Prisma.StaffUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutCustomersInput = {
@@ -990,7 +1671,31 @@ export type StoreUncheckedUpdateWithoutCustomersInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  directions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  googleMapsUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  website?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  instagram?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tiktok?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethods?: Prisma.StoreUpdatepaymentMethodsInput | string[]
+  paymentAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  depositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minAdvanceMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  cancellationPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasDelivery?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deliveryZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1014,6 +1719,7 @@ export type StoreUncheckedUpdateWithoutCustomersInput = {
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
+  staff?: Prisma.StaffUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutConversationsInput = {
@@ -1022,7 +1728,31 @@ export type StoreCreateWithoutConversationsInput = {
   phone: string
   ownerName?: string | null
   adminPhone?: string | null
+  description?: string | null
+  address?: string | null
+  neighborhood?: string | null
+  directions?: string | null
+  googleMapsUrl?: string | null
+  email?: string | null
+  website?: string | null
+  instagram?: string | null
+  facebook?: string | null
+  tiktok?: string | null
+  paymentMethods?: Prisma.StoreCreatepaymentMethodsInput | string[]
+  paymentAccount?: string | null
+  requiresDeposit?: boolean
+  depositAmount?: string | null
+  minAdvanceMinutes?: number | null
+  cancellationPolicy?: string | null
+  hasDelivery?: boolean
+  deliveryZone?: string | null
+  hasParking?: boolean
+  requiresCustomerAddress?: boolean
+  requiresCustomerCedula?: boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
+  staffLabel?: string | null
+  slug?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -1046,6 +1776,7 @@ export type StoreCreateWithoutConversationsInput = {
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
+  staff?: Prisma.StaffCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutConversationsInput = {
@@ -1054,7 +1785,31 @@ export type StoreUncheckedCreateWithoutConversationsInput = {
   phone: string
   ownerName?: string | null
   adminPhone?: string | null
+  description?: string | null
+  address?: string | null
+  neighborhood?: string | null
+  directions?: string | null
+  googleMapsUrl?: string | null
+  email?: string | null
+  website?: string | null
+  instagram?: string | null
+  facebook?: string | null
+  tiktok?: string | null
+  paymentMethods?: Prisma.StoreCreatepaymentMethodsInput | string[]
+  paymentAccount?: string | null
+  requiresDeposit?: boolean
+  depositAmount?: string | null
+  minAdvanceMinutes?: number | null
+  cancellationPolicy?: string | null
+  hasDelivery?: boolean
+  deliveryZone?: string | null
+  hasParking?: boolean
+  requiresCustomerAddress?: boolean
+  requiresCustomerCedula?: boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
+  staffLabel?: string | null
+  slug?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -1078,6 +1833,7 @@ export type StoreUncheckedCreateWithoutConversationsInput = {
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
+  staff?: Prisma.StaffUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutConversationsInput = {
@@ -1102,7 +1858,31 @@ export type StoreUpdateWithoutConversationsInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  directions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  googleMapsUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  website?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  instagram?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tiktok?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethods?: Prisma.StoreUpdatepaymentMethodsInput | string[]
+  paymentAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  depositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minAdvanceMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  cancellationPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasDelivery?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deliveryZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1126,6 +1906,7 @@ export type StoreUpdateWithoutConversationsInput = {
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
+  staff?: Prisma.StaffUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutConversationsInput = {
@@ -1134,7 +1915,31 @@ export type StoreUncheckedUpdateWithoutConversationsInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  directions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  googleMapsUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  website?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  instagram?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tiktok?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethods?: Prisma.StoreUpdatepaymentMethodsInput | string[]
+  paymentAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  depositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minAdvanceMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  cancellationPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasDelivery?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deliveryZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1158,6 +1963,7 @@ export type StoreUncheckedUpdateWithoutConversationsInput = {
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
+  staff?: Prisma.StaffUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutMessagesInput = {
@@ -1166,7 +1972,31 @@ export type StoreCreateWithoutMessagesInput = {
   phone: string
   ownerName?: string | null
   adminPhone?: string | null
+  description?: string | null
+  address?: string | null
+  neighborhood?: string | null
+  directions?: string | null
+  googleMapsUrl?: string | null
+  email?: string | null
+  website?: string | null
+  instagram?: string | null
+  facebook?: string | null
+  tiktok?: string | null
+  paymentMethods?: Prisma.StoreCreatepaymentMethodsInput | string[]
+  paymentAccount?: string | null
+  requiresDeposit?: boolean
+  depositAmount?: string | null
+  minAdvanceMinutes?: number | null
+  cancellationPolicy?: string | null
+  hasDelivery?: boolean
+  deliveryZone?: string | null
+  hasParking?: boolean
+  requiresCustomerAddress?: boolean
+  requiresCustomerCedula?: boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
+  staffLabel?: string | null
+  slug?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -1190,6 +2020,7 @@ export type StoreCreateWithoutMessagesInput = {
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
+  staff?: Prisma.StaffCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutMessagesInput = {
@@ -1198,7 +2029,31 @@ export type StoreUncheckedCreateWithoutMessagesInput = {
   phone: string
   ownerName?: string | null
   adminPhone?: string | null
+  description?: string | null
+  address?: string | null
+  neighborhood?: string | null
+  directions?: string | null
+  googleMapsUrl?: string | null
+  email?: string | null
+  website?: string | null
+  instagram?: string | null
+  facebook?: string | null
+  tiktok?: string | null
+  paymentMethods?: Prisma.StoreCreatepaymentMethodsInput | string[]
+  paymentAccount?: string | null
+  requiresDeposit?: boolean
+  depositAmount?: string | null
+  minAdvanceMinutes?: number | null
+  cancellationPolicy?: string | null
+  hasDelivery?: boolean
+  deliveryZone?: string | null
+  hasParking?: boolean
+  requiresCustomerAddress?: boolean
+  requiresCustomerCedula?: boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
+  staffLabel?: string | null
+  slug?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -1222,6 +2077,7 @@ export type StoreUncheckedCreateWithoutMessagesInput = {
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
+  staff?: Prisma.StaffUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutMessagesInput = {
@@ -1246,7 +2102,31 @@ export type StoreUpdateWithoutMessagesInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  directions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  googleMapsUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  website?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  instagram?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tiktok?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethods?: Prisma.StoreUpdatepaymentMethodsInput | string[]
+  paymentAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  depositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minAdvanceMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  cancellationPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasDelivery?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deliveryZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1270,6 +2150,7 @@ export type StoreUpdateWithoutMessagesInput = {
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
+  staff?: Prisma.StaffUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutMessagesInput = {
@@ -1278,7 +2159,31 @@ export type StoreUncheckedUpdateWithoutMessagesInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  directions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  googleMapsUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  website?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  instagram?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tiktok?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethods?: Prisma.StoreUpdatepaymentMethodsInput | string[]
+  paymentAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  depositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minAdvanceMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  cancellationPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasDelivery?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deliveryZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1302,6 +2207,7 @@ export type StoreUncheckedUpdateWithoutMessagesInput = {
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
+  staff?: Prisma.StaffUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutCategoriesInput = {
@@ -1310,7 +2216,31 @@ export type StoreCreateWithoutCategoriesInput = {
   phone: string
   ownerName?: string | null
   adminPhone?: string | null
+  description?: string | null
+  address?: string | null
+  neighborhood?: string | null
+  directions?: string | null
+  googleMapsUrl?: string | null
+  email?: string | null
+  website?: string | null
+  instagram?: string | null
+  facebook?: string | null
+  tiktok?: string | null
+  paymentMethods?: Prisma.StoreCreatepaymentMethodsInput | string[]
+  paymentAccount?: string | null
+  requiresDeposit?: boolean
+  depositAmount?: string | null
+  minAdvanceMinutes?: number | null
+  cancellationPolicy?: string | null
+  hasDelivery?: boolean
+  deliveryZone?: string | null
+  hasParking?: boolean
+  requiresCustomerAddress?: boolean
+  requiresCustomerCedula?: boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
+  staffLabel?: string | null
+  slug?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -1334,6 +2264,7 @@ export type StoreCreateWithoutCategoriesInput = {
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
+  staff?: Prisma.StaffCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutCategoriesInput = {
@@ -1342,7 +2273,31 @@ export type StoreUncheckedCreateWithoutCategoriesInput = {
   phone: string
   ownerName?: string | null
   adminPhone?: string | null
+  description?: string | null
+  address?: string | null
+  neighborhood?: string | null
+  directions?: string | null
+  googleMapsUrl?: string | null
+  email?: string | null
+  website?: string | null
+  instagram?: string | null
+  facebook?: string | null
+  tiktok?: string | null
+  paymentMethods?: Prisma.StoreCreatepaymentMethodsInput | string[]
+  paymentAccount?: string | null
+  requiresDeposit?: boolean
+  depositAmount?: string | null
+  minAdvanceMinutes?: number | null
+  cancellationPolicy?: string | null
+  hasDelivery?: boolean
+  deliveryZone?: string | null
+  hasParking?: boolean
+  requiresCustomerAddress?: boolean
+  requiresCustomerCedula?: boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
+  staffLabel?: string | null
+  slug?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -1366,6 +2321,7 @@ export type StoreUncheckedCreateWithoutCategoriesInput = {
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
+  staff?: Prisma.StaffUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutCategoriesInput = {
@@ -1390,7 +2346,31 @@ export type StoreUpdateWithoutCategoriesInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  directions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  googleMapsUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  website?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  instagram?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tiktok?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethods?: Prisma.StoreUpdatepaymentMethodsInput | string[]
+  paymentAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  depositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minAdvanceMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  cancellationPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasDelivery?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deliveryZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1414,6 +2394,7 @@ export type StoreUpdateWithoutCategoriesInput = {
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
+  staff?: Prisma.StaffUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutCategoriesInput = {
@@ -1422,7 +2403,31 @@ export type StoreUncheckedUpdateWithoutCategoriesInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  directions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  googleMapsUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  website?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  instagram?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tiktok?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethods?: Prisma.StoreUpdatepaymentMethodsInput | string[]
+  paymentAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  depositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minAdvanceMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  cancellationPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasDelivery?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deliveryZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1446,6 +2451,7 @@ export type StoreUncheckedUpdateWithoutCategoriesInput = {
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
+  staff?: Prisma.StaffUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutProductsInput = {
@@ -1454,7 +2460,31 @@ export type StoreCreateWithoutProductsInput = {
   phone: string
   ownerName?: string | null
   adminPhone?: string | null
+  description?: string | null
+  address?: string | null
+  neighborhood?: string | null
+  directions?: string | null
+  googleMapsUrl?: string | null
+  email?: string | null
+  website?: string | null
+  instagram?: string | null
+  facebook?: string | null
+  tiktok?: string | null
+  paymentMethods?: Prisma.StoreCreatepaymentMethodsInput | string[]
+  paymentAccount?: string | null
+  requiresDeposit?: boolean
+  depositAmount?: string | null
+  minAdvanceMinutes?: number | null
+  cancellationPolicy?: string | null
+  hasDelivery?: boolean
+  deliveryZone?: string | null
+  hasParking?: boolean
+  requiresCustomerAddress?: boolean
+  requiresCustomerCedula?: boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
+  staffLabel?: string | null
+  slug?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -1478,6 +2508,7 @@ export type StoreCreateWithoutProductsInput = {
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
+  staff?: Prisma.StaffCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutProductsInput = {
@@ -1486,7 +2517,31 @@ export type StoreUncheckedCreateWithoutProductsInput = {
   phone: string
   ownerName?: string | null
   adminPhone?: string | null
+  description?: string | null
+  address?: string | null
+  neighborhood?: string | null
+  directions?: string | null
+  googleMapsUrl?: string | null
+  email?: string | null
+  website?: string | null
+  instagram?: string | null
+  facebook?: string | null
+  tiktok?: string | null
+  paymentMethods?: Prisma.StoreCreatepaymentMethodsInput | string[]
+  paymentAccount?: string | null
+  requiresDeposit?: boolean
+  depositAmount?: string | null
+  minAdvanceMinutes?: number | null
+  cancellationPolicy?: string | null
+  hasDelivery?: boolean
+  deliveryZone?: string | null
+  hasParking?: boolean
+  requiresCustomerAddress?: boolean
+  requiresCustomerCedula?: boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
+  staffLabel?: string | null
+  slug?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -1510,6 +2565,7 @@ export type StoreUncheckedCreateWithoutProductsInput = {
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
+  staff?: Prisma.StaffUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutProductsInput = {
@@ -1534,7 +2590,31 @@ export type StoreUpdateWithoutProductsInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  directions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  googleMapsUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  website?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  instagram?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tiktok?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethods?: Prisma.StoreUpdatepaymentMethodsInput | string[]
+  paymentAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  depositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minAdvanceMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  cancellationPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasDelivery?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deliveryZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1558,6 +2638,7 @@ export type StoreUpdateWithoutProductsInput = {
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
+  staff?: Prisma.StaffUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutProductsInput = {
@@ -1566,7 +2647,31 @@ export type StoreUncheckedUpdateWithoutProductsInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  directions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  googleMapsUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  website?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  instagram?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tiktok?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethods?: Prisma.StoreUpdatepaymentMethodsInput | string[]
+  paymentAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  depositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minAdvanceMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  cancellationPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasDelivery?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deliveryZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1590,6 +2695,7 @@ export type StoreUncheckedUpdateWithoutProductsInput = {
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
+  staff?: Prisma.StaffUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutServicesInput = {
@@ -1598,7 +2704,31 @@ export type StoreCreateWithoutServicesInput = {
   phone: string
   ownerName?: string | null
   adminPhone?: string | null
+  description?: string | null
+  address?: string | null
+  neighborhood?: string | null
+  directions?: string | null
+  googleMapsUrl?: string | null
+  email?: string | null
+  website?: string | null
+  instagram?: string | null
+  facebook?: string | null
+  tiktok?: string | null
+  paymentMethods?: Prisma.StoreCreatepaymentMethodsInput | string[]
+  paymentAccount?: string | null
+  requiresDeposit?: boolean
+  depositAmount?: string | null
+  minAdvanceMinutes?: number | null
+  cancellationPolicy?: string | null
+  hasDelivery?: boolean
+  deliveryZone?: string | null
+  hasParking?: boolean
+  requiresCustomerAddress?: boolean
+  requiresCustomerCedula?: boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
+  staffLabel?: string | null
+  slug?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -1622,6 +2752,7 @@ export type StoreCreateWithoutServicesInput = {
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
+  staff?: Prisma.StaffCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutServicesInput = {
@@ -1630,7 +2761,31 @@ export type StoreUncheckedCreateWithoutServicesInput = {
   phone: string
   ownerName?: string | null
   adminPhone?: string | null
+  description?: string | null
+  address?: string | null
+  neighborhood?: string | null
+  directions?: string | null
+  googleMapsUrl?: string | null
+  email?: string | null
+  website?: string | null
+  instagram?: string | null
+  facebook?: string | null
+  tiktok?: string | null
+  paymentMethods?: Prisma.StoreCreatepaymentMethodsInput | string[]
+  paymentAccount?: string | null
+  requiresDeposit?: boolean
+  depositAmount?: string | null
+  minAdvanceMinutes?: number | null
+  cancellationPolicy?: string | null
+  hasDelivery?: boolean
+  deliveryZone?: string | null
+  hasParking?: boolean
+  requiresCustomerAddress?: boolean
+  requiresCustomerCedula?: boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
+  staffLabel?: string | null
+  slug?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -1654,6 +2809,7 @@ export type StoreUncheckedCreateWithoutServicesInput = {
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
+  staff?: Prisma.StaffUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutServicesInput = {
@@ -1678,7 +2834,31 @@ export type StoreUpdateWithoutServicesInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  directions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  googleMapsUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  website?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  instagram?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tiktok?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethods?: Prisma.StoreUpdatepaymentMethodsInput | string[]
+  paymentAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  depositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minAdvanceMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  cancellationPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasDelivery?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deliveryZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1702,6 +2882,7 @@ export type StoreUpdateWithoutServicesInput = {
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
+  staff?: Prisma.StaffUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutServicesInput = {
@@ -1710,7 +2891,31 @@ export type StoreUncheckedUpdateWithoutServicesInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  directions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  googleMapsUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  website?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  instagram?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tiktok?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethods?: Prisma.StoreUpdatepaymentMethodsInput | string[]
+  paymentAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  depositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minAdvanceMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  cancellationPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasDelivery?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deliveryZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1734,6 +2939,7 @@ export type StoreUncheckedUpdateWithoutServicesInput = {
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
+  staff?: Prisma.StaffUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutOrdersInput = {
@@ -1742,7 +2948,31 @@ export type StoreCreateWithoutOrdersInput = {
   phone: string
   ownerName?: string | null
   adminPhone?: string | null
+  description?: string | null
+  address?: string | null
+  neighborhood?: string | null
+  directions?: string | null
+  googleMapsUrl?: string | null
+  email?: string | null
+  website?: string | null
+  instagram?: string | null
+  facebook?: string | null
+  tiktok?: string | null
+  paymentMethods?: Prisma.StoreCreatepaymentMethodsInput | string[]
+  paymentAccount?: string | null
+  requiresDeposit?: boolean
+  depositAmount?: string | null
+  minAdvanceMinutes?: number | null
+  cancellationPolicy?: string | null
+  hasDelivery?: boolean
+  deliveryZone?: string | null
+  hasParking?: boolean
+  requiresCustomerAddress?: boolean
+  requiresCustomerCedula?: boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
+  staffLabel?: string | null
+  slug?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -1766,6 +2996,7 @@ export type StoreCreateWithoutOrdersInput = {
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
+  staff?: Prisma.StaffCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutOrdersInput = {
@@ -1774,7 +3005,31 @@ export type StoreUncheckedCreateWithoutOrdersInput = {
   phone: string
   ownerName?: string | null
   adminPhone?: string | null
+  description?: string | null
+  address?: string | null
+  neighborhood?: string | null
+  directions?: string | null
+  googleMapsUrl?: string | null
+  email?: string | null
+  website?: string | null
+  instagram?: string | null
+  facebook?: string | null
+  tiktok?: string | null
+  paymentMethods?: Prisma.StoreCreatepaymentMethodsInput | string[]
+  paymentAccount?: string | null
+  requiresDeposit?: boolean
+  depositAmount?: string | null
+  minAdvanceMinutes?: number | null
+  cancellationPolicy?: string | null
+  hasDelivery?: boolean
+  deliveryZone?: string | null
+  hasParking?: boolean
+  requiresCustomerAddress?: boolean
+  requiresCustomerCedula?: boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
+  staffLabel?: string | null
+  slug?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -1798,6 +3053,7 @@ export type StoreUncheckedCreateWithoutOrdersInput = {
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
+  staff?: Prisma.StaffUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutOrdersInput = {
@@ -1822,7 +3078,31 @@ export type StoreUpdateWithoutOrdersInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  directions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  googleMapsUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  website?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  instagram?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tiktok?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethods?: Prisma.StoreUpdatepaymentMethodsInput | string[]
+  paymentAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  depositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minAdvanceMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  cancellationPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasDelivery?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deliveryZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1846,6 +3126,7 @@ export type StoreUpdateWithoutOrdersInput = {
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
+  staff?: Prisma.StaffUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutOrdersInput = {
@@ -1854,7 +3135,31 @@ export type StoreUncheckedUpdateWithoutOrdersInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  directions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  googleMapsUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  website?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  instagram?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tiktok?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethods?: Prisma.StoreUpdatepaymentMethodsInput | string[]
+  paymentAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  depositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minAdvanceMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  cancellationPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasDelivery?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deliveryZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1878,6 +3183,7 @@ export type StoreUncheckedUpdateWithoutOrdersInput = {
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
+  staff?: Prisma.StaffUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutAppointmentsInput = {
@@ -1886,7 +3192,31 @@ export type StoreCreateWithoutAppointmentsInput = {
   phone: string
   ownerName?: string | null
   adminPhone?: string | null
+  description?: string | null
+  address?: string | null
+  neighborhood?: string | null
+  directions?: string | null
+  googleMapsUrl?: string | null
+  email?: string | null
+  website?: string | null
+  instagram?: string | null
+  facebook?: string | null
+  tiktok?: string | null
+  paymentMethods?: Prisma.StoreCreatepaymentMethodsInput | string[]
+  paymentAccount?: string | null
+  requiresDeposit?: boolean
+  depositAmount?: string | null
+  minAdvanceMinutes?: number | null
+  cancellationPolicy?: string | null
+  hasDelivery?: boolean
+  deliveryZone?: string | null
+  hasParking?: boolean
+  requiresCustomerAddress?: boolean
+  requiresCustomerCedula?: boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
+  staffLabel?: string | null
+  slug?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -1910,6 +3240,7 @@ export type StoreCreateWithoutAppointmentsInput = {
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
+  staff?: Prisma.StaffCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutAppointmentsInput = {
@@ -1918,7 +3249,31 @@ export type StoreUncheckedCreateWithoutAppointmentsInput = {
   phone: string
   ownerName?: string | null
   adminPhone?: string | null
+  description?: string | null
+  address?: string | null
+  neighborhood?: string | null
+  directions?: string | null
+  googleMapsUrl?: string | null
+  email?: string | null
+  website?: string | null
+  instagram?: string | null
+  facebook?: string | null
+  tiktok?: string | null
+  paymentMethods?: Prisma.StoreCreatepaymentMethodsInput | string[]
+  paymentAccount?: string | null
+  requiresDeposit?: boolean
+  depositAmount?: string | null
+  minAdvanceMinutes?: number | null
+  cancellationPolicy?: string | null
+  hasDelivery?: boolean
+  deliveryZone?: string | null
+  hasParking?: boolean
+  requiresCustomerAddress?: boolean
+  requiresCustomerCedula?: boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
+  staffLabel?: string | null
+  slug?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -1942,6 +3297,7 @@ export type StoreUncheckedCreateWithoutAppointmentsInput = {
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
+  staff?: Prisma.StaffUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutAppointmentsInput = {
@@ -1966,7 +3322,31 @@ export type StoreUpdateWithoutAppointmentsInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  directions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  googleMapsUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  website?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  instagram?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tiktok?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethods?: Prisma.StoreUpdatepaymentMethodsInput | string[]
+  paymentAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  depositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minAdvanceMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  cancellationPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasDelivery?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deliveryZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1990,6 +3370,7 @@ export type StoreUpdateWithoutAppointmentsInput = {
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
+  staff?: Prisma.StaffUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutAppointmentsInput = {
@@ -1998,7 +3379,31 @@ export type StoreUncheckedUpdateWithoutAppointmentsInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  directions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  googleMapsUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  website?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  instagram?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tiktok?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethods?: Prisma.StoreUpdatepaymentMethodsInput | string[]
+  paymentAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  depositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minAdvanceMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  cancellationPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasDelivery?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deliveryZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2022,6 +3427,7 @@ export type StoreUncheckedUpdateWithoutAppointmentsInput = {
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
+  staff?: Prisma.StaffUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutDailyReportsInput = {
@@ -2030,7 +3436,31 @@ export type StoreCreateWithoutDailyReportsInput = {
   phone: string
   ownerName?: string | null
   adminPhone?: string | null
+  description?: string | null
+  address?: string | null
+  neighborhood?: string | null
+  directions?: string | null
+  googleMapsUrl?: string | null
+  email?: string | null
+  website?: string | null
+  instagram?: string | null
+  facebook?: string | null
+  tiktok?: string | null
+  paymentMethods?: Prisma.StoreCreatepaymentMethodsInput | string[]
+  paymentAccount?: string | null
+  requiresDeposit?: boolean
+  depositAmount?: string | null
+  minAdvanceMinutes?: number | null
+  cancellationPolicy?: string | null
+  hasDelivery?: boolean
+  deliveryZone?: string | null
+  hasParking?: boolean
+  requiresCustomerAddress?: boolean
+  requiresCustomerCedula?: boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
+  staffLabel?: string | null
+  slug?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -2054,6 +3484,7 @@ export type StoreCreateWithoutDailyReportsInput = {
   blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
+  staff?: Prisma.StaffCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutDailyReportsInput = {
@@ -2062,7 +3493,31 @@ export type StoreUncheckedCreateWithoutDailyReportsInput = {
   phone: string
   ownerName?: string | null
   adminPhone?: string | null
+  description?: string | null
+  address?: string | null
+  neighborhood?: string | null
+  directions?: string | null
+  googleMapsUrl?: string | null
+  email?: string | null
+  website?: string | null
+  instagram?: string | null
+  facebook?: string | null
+  tiktok?: string | null
+  paymentMethods?: Prisma.StoreCreatepaymentMethodsInput | string[]
+  paymentAccount?: string | null
+  requiresDeposit?: boolean
+  depositAmount?: string | null
+  minAdvanceMinutes?: number | null
+  cancellationPolicy?: string | null
+  hasDelivery?: boolean
+  deliveryZone?: string | null
+  hasParking?: boolean
+  requiresCustomerAddress?: boolean
+  requiresCustomerCedula?: boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
+  staffLabel?: string | null
+  slug?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -2086,6 +3541,7 @@ export type StoreUncheckedCreateWithoutDailyReportsInput = {
   blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
+  staff?: Prisma.StaffUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutDailyReportsInput = {
@@ -2110,7 +3566,31 @@ export type StoreUpdateWithoutDailyReportsInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  directions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  googleMapsUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  website?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  instagram?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tiktok?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethods?: Prisma.StoreUpdatepaymentMethodsInput | string[]
+  paymentAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  depositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minAdvanceMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  cancellationPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasDelivery?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deliveryZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2134,6 +3614,7 @@ export type StoreUpdateWithoutDailyReportsInput = {
   blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
+  staff?: Prisma.StaffUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutDailyReportsInput = {
@@ -2142,7 +3623,31 @@ export type StoreUncheckedUpdateWithoutDailyReportsInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  directions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  googleMapsUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  website?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  instagram?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tiktok?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethods?: Prisma.StoreUpdatepaymentMethodsInput | string[]
+  paymentAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  depositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minAdvanceMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  cancellationPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasDelivery?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deliveryZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2166,6 +3671,7 @@ export type StoreUncheckedUpdateWithoutDailyReportsInput = {
   blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
+  staff?: Prisma.StaffUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutAiConfigInput = {
@@ -2174,7 +3680,31 @@ export type StoreCreateWithoutAiConfigInput = {
   phone: string
   ownerName?: string | null
   adminPhone?: string | null
+  description?: string | null
+  address?: string | null
+  neighborhood?: string | null
+  directions?: string | null
+  googleMapsUrl?: string | null
+  email?: string | null
+  website?: string | null
+  instagram?: string | null
+  facebook?: string | null
+  tiktok?: string | null
+  paymentMethods?: Prisma.StoreCreatepaymentMethodsInput | string[]
+  paymentAccount?: string | null
+  requiresDeposit?: boolean
+  depositAmount?: string | null
+  minAdvanceMinutes?: number | null
+  cancellationPolicy?: string | null
+  hasDelivery?: boolean
+  deliveryZone?: string | null
+  hasParking?: boolean
+  requiresCustomerAddress?: boolean
+  requiresCustomerCedula?: boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
+  staffLabel?: string | null
+  slug?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -2198,6 +3728,7 @@ export type StoreCreateWithoutAiConfigInput = {
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
+  staff?: Prisma.StaffCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutAiConfigInput = {
@@ -2206,7 +3737,31 @@ export type StoreUncheckedCreateWithoutAiConfigInput = {
   phone: string
   ownerName?: string | null
   adminPhone?: string | null
+  description?: string | null
+  address?: string | null
+  neighborhood?: string | null
+  directions?: string | null
+  googleMapsUrl?: string | null
+  email?: string | null
+  website?: string | null
+  instagram?: string | null
+  facebook?: string | null
+  tiktok?: string | null
+  paymentMethods?: Prisma.StoreCreatepaymentMethodsInput | string[]
+  paymentAccount?: string | null
+  requiresDeposit?: boolean
+  depositAmount?: string | null
+  minAdvanceMinutes?: number | null
+  cancellationPolicy?: string | null
+  hasDelivery?: boolean
+  deliveryZone?: string | null
+  hasParking?: boolean
+  requiresCustomerAddress?: boolean
+  requiresCustomerCedula?: boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
+  staffLabel?: string | null
+  slug?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -2230,6 +3785,7 @@ export type StoreUncheckedCreateWithoutAiConfigInput = {
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
+  staff?: Prisma.StaffUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutAiConfigInput = {
@@ -2254,7 +3810,31 @@ export type StoreUpdateWithoutAiConfigInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  directions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  googleMapsUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  website?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  instagram?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tiktok?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethods?: Prisma.StoreUpdatepaymentMethodsInput | string[]
+  paymentAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  depositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minAdvanceMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  cancellationPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasDelivery?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deliveryZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2278,6 +3858,7 @@ export type StoreUpdateWithoutAiConfigInput = {
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
+  staff?: Prisma.StaffUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutAiConfigInput = {
@@ -2286,7 +3867,31 @@ export type StoreUncheckedUpdateWithoutAiConfigInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  directions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  googleMapsUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  website?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  instagram?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tiktok?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethods?: Prisma.StoreUpdatepaymentMethodsInput | string[]
+  paymentAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  depositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minAdvanceMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  cancellationPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasDelivery?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deliveryZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2310,6 +3915,7 @@ export type StoreUncheckedUpdateWithoutAiConfigInput = {
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
+  staff?: Prisma.StaffUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutCampaignsInput = {
@@ -2318,7 +3924,31 @@ export type StoreCreateWithoutCampaignsInput = {
   phone: string
   ownerName?: string | null
   adminPhone?: string | null
+  description?: string | null
+  address?: string | null
+  neighborhood?: string | null
+  directions?: string | null
+  googleMapsUrl?: string | null
+  email?: string | null
+  website?: string | null
+  instagram?: string | null
+  facebook?: string | null
+  tiktok?: string | null
+  paymentMethods?: Prisma.StoreCreatepaymentMethodsInput | string[]
+  paymentAccount?: string | null
+  requiresDeposit?: boolean
+  depositAmount?: string | null
+  minAdvanceMinutes?: number | null
+  cancellationPolicy?: string | null
+  hasDelivery?: boolean
+  deliveryZone?: string | null
+  hasParking?: boolean
+  requiresCustomerAddress?: boolean
+  requiresCustomerCedula?: boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
+  staffLabel?: string | null
+  slug?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -2342,6 +3972,7 @@ export type StoreCreateWithoutCampaignsInput = {
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
+  staff?: Prisma.StaffCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutCampaignsInput = {
@@ -2350,7 +3981,31 @@ export type StoreUncheckedCreateWithoutCampaignsInput = {
   phone: string
   ownerName?: string | null
   adminPhone?: string | null
+  description?: string | null
+  address?: string | null
+  neighborhood?: string | null
+  directions?: string | null
+  googleMapsUrl?: string | null
+  email?: string | null
+  website?: string | null
+  instagram?: string | null
+  facebook?: string | null
+  tiktok?: string | null
+  paymentMethods?: Prisma.StoreCreatepaymentMethodsInput | string[]
+  paymentAccount?: string | null
+  requiresDeposit?: boolean
+  depositAmount?: string | null
+  minAdvanceMinutes?: number | null
+  cancellationPolicy?: string | null
+  hasDelivery?: boolean
+  deliveryZone?: string | null
+  hasParking?: boolean
+  requiresCustomerAddress?: boolean
+  requiresCustomerCedula?: boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
+  staffLabel?: string | null
+  slug?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -2374,6 +4029,7 @@ export type StoreUncheckedCreateWithoutCampaignsInput = {
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
+  staff?: Prisma.StaffUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutCampaignsInput = {
@@ -2398,7 +4054,31 @@ export type StoreUpdateWithoutCampaignsInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  directions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  googleMapsUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  website?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  instagram?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tiktok?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethods?: Prisma.StoreUpdatepaymentMethodsInput | string[]
+  paymentAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  depositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minAdvanceMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  cancellationPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasDelivery?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deliveryZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2422,6 +4102,7 @@ export type StoreUpdateWithoutCampaignsInput = {
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
+  staff?: Prisma.StaffUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutCampaignsInput = {
@@ -2430,7 +4111,31 @@ export type StoreUncheckedUpdateWithoutCampaignsInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  directions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  googleMapsUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  website?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  instagram?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tiktok?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethods?: Prisma.StoreUpdatepaymentMethodsInput | string[]
+  paymentAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  depositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minAdvanceMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  cancellationPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasDelivery?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deliveryZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2454,6 +4159,7 @@ export type StoreUncheckedUpdateWithoutCampaignsInput = {
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
+  staff?: Prisma.StaffUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutUsersInput = {
@@ -2462,7 +4168,31 @@ export type StoreCreateWithoutUsersInput = {
   phone: string
   ownerName?: string | null
   adminPhone?: string | null
+  description?: string | null
+  address?: string | null
+  neighborhood?: string | null
+  directions?: string | null
+  googleMapsUrl?: string | null
+  email?: string | null
+  website?: string | null
+  instagram?: string | null
+  facebook?: string | null
+  tiktok?: string | null
+  paymentMethods?: Prisma.StoreCreatepaymentMethodsInput | string[]
+  paymentAccount?: string | null
+  requiresDeposit?: boolean
+  depositAmount?: string | null
+  minAdvanceMinutes?: number | null
+  cancellationPolicy?: string | null
+  hasDelivery?: boolean
+  deliveryZone?: string | null
+  hasParking?: boolean
+  requiresCustomerAddress?: boolean
+  requiresCustomerCedula?: boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
+  staffLabel?: string | null
+  slug?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -2486,6 +4216,7 @@ export type StoreCreateWithoutUsersInput = {
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
+  staff?: Prisma.StaffCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutUsersInput = {
@@ -2494,7 +4225,31 @@ export type StoreUncheckedCreateWithoutUsersInput = {
   phone: string
   ownerName?: string | null
   adminPhone?: string | null
+  description?: string | null
+  address?: string | null
+  neighborhood?: string | null
+  directions?: string | null
+  googleMapsUrl?: string | null
+  email?: string | null
+  website?: string | null
+  instagram?: string | null
+  facebook?: string | null
+  tiktok?: string | null
+  paymentMethods?: Prisma.StoreCreatepaymentMethodsInput | string[]
+  paymentAccount?: string | null
+  requiresDeposit?: boolean
+  depositAmount?: string | null
+  minAdvanceMinutes?: number | null
+  cancellationPolicy?: string | null
+  hasDelivery?: boolean
+  deliveryZone?: string | null
+  hasParking?: boolean
+  requiresCustomerAddress?: boolean
+  requiresCustomerCedula?: boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
+  staffLabel?: string | null
+  slug?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -2518,6 +4273,7 @@ export type StoreUncheckedCreateWithoutUsersInput = {
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
+  staff?: Prisma.StaffUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutUsersInput = {
@@ -2542,7 +4298,31 @@ export type StoreUpdateWithoutUsersInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  directions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  googleMapsUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  website?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  instagram?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tiktok?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethods?: Prisma.StoreUpdatepaymentMethodsInput | string[]
+  paymentAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  depositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minAdvanceMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  cancellationPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasDelivery?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deliveryZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2566,6 +4346,7 @@ export type StoreUpdateWithoutUsersInput = {
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
+  staff?: Prisma.StaffUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutUsersInput = {
@@ -2574,7 +4355,31 @@ export type StoreUncheckedUpdateWithoutUsersInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  directions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  googleMapsUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  website?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  instagram?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tiktok?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethods?: Prisma.StoreUpdatepaymentMethodsInput | string[]
+  paymentAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  depositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minAdvanceMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  cancellationPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasDelivery?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deliveryZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2598,6 +4403,7 @@ export type StoreUncheckedUpdateWithoutUsersInput = {
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
+  staff?: Prisma.StaffUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutBlockedContactsInput = {
@@ -2606,7 +4412,31 @@ export type StoreCreateWithoutBlockedContactsInput = {
   phone: string
   ownerName?: string | null
   adminPhone?: string | null
+  description?: string | null
+  address?: string | null
+  neighborhood?: string | null
+  directions?: string | null
+  googleMapsUrl?: string | null
+  email?: string | null
+  website?: string | null
+  instagram?: string | null
+  facebook?: string | null
+  tiktok?: string | null
+  paymentMethods?: Prisma.StoreCreatepaymentMethodsInput | string[]
+  paymentAccount?: string | null
+  requiresDeposit?: boolean
+  depositAmount?: string | null
+  minAdvanceMinutes?: number | null
+  cancellationPolicy?: string | null
+  hasDelivery?: boolean
+  deliveryZone?: string | null
+  hasParking?: boolean
+  requiresCustomerAddress?: boolean
+  requiresCustomerCedula?: boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
+  staffLabel?: string | null
+  slug?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -2630,6 +4460,7 @@ export type StoreCreateWithoutBlockedContactsInput = {
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
+  staff?: Prisma.StaffCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutBlockedContactsInput = {
@@ -2638,7 +4469,31 @@ export type StoreUncheckedCreateWithoutBlockedContactsInput = {
   phone: string
   ownerName?: string | null
   adminPhone?: string | null
+  description?: string | null
+  address?: string | null
+  neighborhood?: string | null
+  directions?: string | null
+  googleMapsUrl?: string | null
+  email?: string | null
+  website?: string | null
+  instagram?: string | null
+  facebook?: string | null
+  tiktok?: string | null
+  paymentMethods?: Prisma.StoreCreatepaymentMethodsInput | string[]
+  paymentAccount?: string | null
+  requiresDeposit?: boolean
+  depositAmount?: string | null
+  minAdvanceMinutes?: number | null
+  cancellationPolicy?: string | null
+  hasDelivery?: boolean
+  deliveryZone?: string | null
+  hasParking?: boolean
+  requiresCustomerAddress?: boolean
+  requiresCustomerCedula?: boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
+  staffLabel?: string | null
+  slug?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -2662,6 +4517,7 @@ export type StoreUncheckedCreateWithoutBlockedContactsInput = {
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
+  staff?: Prisma.StaffUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutBlockedContactsInput = {
@@ -2686,7 +4542,31 @@ export type StoreUpdateWithoutBlockedContactsInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  directions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  googleMapsUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  website?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  instagram?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tiktok?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethods?: Prisma.StoreUpdatepaymentMethodsInput | string[]
+  paymentAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  depositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minAdvanceMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  cancellationPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasDelivery?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deliveryZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2710,6 +4590,7 @@ export type StoreUpdateWithoutBlockedContactsInput = {
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
+  staff?: Prisma.StaffUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutBlockedContactsInput = {
@@ -2718,7 +4599,31 @@ export type StoreUncheckedUpdateWithoutBlockedContactsInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  directions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  googleMapsUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  website?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  instagram?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tiktok?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethods?: Prisma.StoreUpdatepaymentMethodsInput | string[]
+  paymentAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  depositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minAdvanceMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  cancellationPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasDelivery?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deliveryZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2742,6 +4647,7 @@ export type StoreUncheckedUpdateWithoutBlockedContactsInput = {
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
+  staff?: Prisma.StaffUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutWaSessionInput = {
@@ -2750,7 +4656,31 @@ export type StoreCreateWithoutWaSessionInput = {
   phone: string
   ownerName?: string | null
   adminPhone?: string | null
+  description?: string | null
+  address?: string | null
+  neighborhood?: string | null
+  directions?: string | null
+  googleMapsUrl?: string | null
+  email?: string | null
+  website?: string | null
+  instagram?: string | null
+  facebook?: string | null
+  tiktok?: string | null
+  paymentMethods?: Prisma.StoreCreatepaymentMethodsInput | string[]
+  paymentAccount?: string | null
+  requiresDeposit?: boolean
+  depositAmount?: string | null
+  minAdvanceMinutes?: number | null
+  cancellationPolicy?: string | null
+  hasDelivery?: boolean
+  deliveryZone?: string | null
+  hasParking?: boolean
+  requiresCustomerAddress?: boolean
+  requiresCustomerCedula?: boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
+  staffLabel?: string | null
+  slug?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -2774,6 +4704,7 @@ export type StoreCreateWithoutWaSessionInput = {
   blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
+  staff?: Prisma.StaffCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutWaSessionInput = {
@@ -2782,7 +4713,31 @@ export type StoreUncheckedCreateWithoutWaSessionInput = {
   phone: string
   ownerName?: string | null
   adminPhone?: string | null
+  description?: string | null
+  address?: string | null
+  neighborhood?: string | null
+  directions?: string | null
+  googleMapsUrl?: string | null
+  email?: string | null
+  website?: string | null
+  instagram?: string | null
+  facebook?: string | null
+  tiktok?: string | null
+  paymentMethods?: Prisma.StoreCreatepaymentMethodsInput | string[]
+  paymentAccount?: string | null
+  requiresDeposit?: boolean
+  depositAmount?: string | null
+  minAdvanceMinutes?: number | null
+  cancellationPolicy?: string | null
+  hasDelivery?: boolean
+  deliveryZone?: string | null
+  hasParking?: boolean
+  requiresCustomerAddress?: boolean
+  requiresCustomerCedula?: boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
+  staffLabel?: string | null
+  slug?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -2806,6 +4761,7 @@ export type StoreUncheckedCreateWithoutWaSessionInput = {
   blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
   subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
+  staff?: Prisma.StaffUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutWaSessionInput = {
@@ -2830,7 +4786,31 @@ export type StoreUpdateWithoutWaSessionInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  directions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  googleMapsUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  website?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  instagram?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tiktok?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethods?: Prisma.StoreUpdatepaymentMethodsInput | string[]
+  paymentAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  depositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minAdvanceMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  cancellationPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasDelivery?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deliveryZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2854,6 +4834,7 @@ export type StoreUpdateWithoutWaSessionInput = {
   blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
+  staff?: Prisma.StaffUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutWaSessionInput = {
@@ -2862,7 +4843,31 @@ export type StoreUncheckedUpdateWithoutWaSessionInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  directions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  googleMapsUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  website?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  instagram?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tiktok?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethods?: Prisma.StoreUpdatepaymentMethodsInput | string[]
+  paymentAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  depositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minAdvanceMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  cancellationPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasDelivery?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deliveryZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2886,6 +4891,7 @@ export type StoreUncheckedUpdateWithoutWaSessionInput = {
   blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
+  staff?: Prisma.StaffUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutSubscriptionInput = {
@@ -2894,7 +4900,31 @@ export type StoreCreateWithoutSubscriptionInput = {
   phone: string
   ownerName?: string | null
   adminPhone?: string | null
+  description?: string | null
+  address?: string | null
+  neighborhood?: string | null
+  directions?: string | null
+  googleMapsUrl?: string | null
+  email?: string | null
+  website?: string | null
+  instagram?: string | null
+  facebook?: string | null
+  tiktok?: string | null
+  paymentMethods?: Prisma.StoreCreatepaymentMethodsInput | string[]
+  paymentAccount?: string | null
+  requiresDeposit?: boolean
+  depositAmount?: string | null
+  minAdvanceMinutes?: number | null
+  cancellationPolicy?: string | null
+  hasDelivery?: boolean
+  deliveryZone?: string | null
+  hasParking?: boolean
+  requiresCustomerAddress?: boolean
+  requiresCustomerCedula?: boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
+  staffLabel?: string | null
+  slug?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -2918,6 +4948,7 @@ export type StoreCreateWithoutSubscriptionInput = {
   blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
+  staff?: Prisma.StaffCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutSubscriptionInput = {
@@ -2926,7 +4957,31 @@ export type StoreUncheckedCreateWithoutSubscriptionInput = {
   phone: string
   ownerName?: string | null
   adminPhone?: string | null
+  description?: string | null
+  address?: string | null
+  neighborhood?: string | null
+  directions?: string | null
+  googleMapsUrl?: string | null
+  email?: string | null
+  website?: string | null
+  instagram?: string | null
+  facebook?: string | null
+  tiktok?: string | null
+  paymentMethods?: Prisma.StoreCreatepaymentMethodsInput | string[]
+  paymentAccount?: string | null
+  requiresDeposit?: boolean
+  depositAmount?: string | null
+  minAdvanceMinutes?: number | null
+  cancellationPolicy?: string | null
+  hasDelivery?: boolean
+  deliveryZone?: string | null
+  hasParking?: boolean
+  requiresCustomerAddress?: boolean
+  requiresCustomerCedula?: boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
+  staffLabel?: string | null
+  slug?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -2950,6 +5005,7 @@ export type StoreUncheckedCreateWithoutSubscriptionInput = {
   blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
+  staff?: Prisma.StaffUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutSubscriptionInput = {
@@ -2974,7 +5030,31 @@ export type StoreUpdateWithoutSubscriptionInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  directions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  googleMapsUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  website?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  instagram?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tiktok?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethods?: Prisma.StoreUpdatepaymentMethodsInput | string[]
+  paymentAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  depositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minAdvanceMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  cancellationPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasDelivery?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deliveryZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2998,6 +5078,7 @@ export type StoreUpdateWithoutSubscriptionInput = {
   blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
+  staff?: Prisma.StaffUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutSubscriptionInput = {
@@ -3006,7 +5087,31 @@ export type StoreUncheckedUpdateWithoutSubscriptionInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  directions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  googleMapsUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  website?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  instagram?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tiktok?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethods?: Prisma.StoreUpdatepaymentMethodsInput | string[]
+  paymentAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  depositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minAdvanceMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  cancellationPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasDelivery?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deliveryZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3030,6 +5135,251 @@ export type StoreUncheckedUpdateWithoutSubscriptionInput = {
   blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
+  staff?: Prisma.StaffUncheckedUpdateManyWithoutStoreNestedInput
+}
+
+export type StoreCreateWithoutStaffInput = {
+  storeId?: string
+  name: string
+  phone: string
+  ownerName?: string | null
+  adminPhone?: string | null
+  description?: string | null
+  address?: string | null
+  neighborhood?: string | null
+  directions?: string | null
+  googleMapsUrl?: string | null
+  email?: string | null
+  website?: string | null
+  instagram?: string | null
+  facebook?: string | null
+  tiktok?: string | null
+  paymentMethods?: Prisma.StoreCreatepaymentMethodsInput | string[]
+  paymentAccount?: string | null
+  requiresDeposit?: boolean
+  depositAmount?: string | null
+  minAdvanceMinutes?: number | null
+  cancellationPolicy?: string | null
+  hasDelivery?: boolean
+  deliveryZone?: string | null
+  hasParking?: boolean
+  requiresCustomerAddress?: boolean
+  requiresCustomerCedula?: boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  waSessionId?: string | null
+  staffLabel?: string | null
+  slug?: string | null
+  isActive?: boolean
+  primaryColor?: string | null
+  secondaryColor?: string | null
+  accentColor?: string | null
+  subscriptionStatus?: string
+  subscriptionEnd?: Date | string | null
+  apiBlocked?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  customers?: Prisma.CustomerCreateNestedManyWithoutStoreInput
+  conversations?: Prisma.ConversationCreateNestedManyWithoutStoreInput
+  messages?: Prisma.MessageCreateNestedManyWithoutStoreInput
+  products?: Prisma.ProductCreateNestedManyWithoutStoreInput
+  categories?: Prisma.CategoryCreateNestedManyWithoutStoreInput
+  users?: Prisma.UserCreateNestedManyWithoutStoreInput
+  services?: Prisma.ServiceCreateNestedManyWithoutStoreInput
+  orders?: Prisma.OrderCreateNestedManyWithoutStoreInput
+  appointments?: Prisma.AppointmentCreateNestedManyWithoutStoreInput
+  campaigns?: Prisma.CampaignCreateNestedManyWithoutStoreInput
+  aiConfig?: Prisma.AIConfigurationCreateNestedOneWithoutStoreInput
+  blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
+  waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
+  subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
+  dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
+}
+
+export type StoreUncheckedCreateWithoutStaffInput = {
+  storeId?: string
+  name: string
+  phone: string
+  ownerName?: string | null
+  adminPhone?: string | null
+  description?: string | null
+  address?: string | null
+  neighborhood?: string | null
+  directions?: string | null
+  googleMapsUrl?: string | null
+  email?: string | null
+  website?: string | null
+  instagram?: string | null
+  facebook?: string | null
+  tiktok?: string | null
+  paymentMethods?: Prisma.StoreCreatepaymentMethodsInput | string[]
+  paymentAccount?: string | null
+  requiresDeposit?: boolean
+  depositAmount?: string | null
+  minAdvanceMinutes?: number | null
+  cancellationPolicy?: string | null
+  hasDelivery?: boolean
+  deliveryZone?: string | null
+  hasParking?: boolean
+  requiresCustomerAddress?: boolean
+  requiresCustomerCedula?: boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  waSessionId?: string | null
+  staffLabel?: string | null
+  slug?: string | null
+  isActive?: boolean
+  primaryColor?: string | null
+  secondaryColor?: string | null
+  accentColor?: string | null
+  subscriptionStatus?: string
+  subscriptionEnd?: Date | string | null
+  apiBlocked?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  customers?: Prisma.CustomerUncheckedCreateNestedManyWithoutStoreInput
+  conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutStoreInput
+  messages?: Prisma.MessageUncheckedCreateNestedManyWithoutStoreInput
+  products?: Prisma.ProductUncheckedCreateNestedManyWithoutStoreInput
+  categories?: Prisma.CategoryUncheckedCreateNestedManyWithoutStoreInput
+  users?: Prisma.UserUncheckedCreateNestedManyWithoutStoreInput
+  services?: Prisma.ServiceUncheckedCreateNestedManyWithoutStoreInput
+  orders?: Prisma.OrderUncheckedCreateNestedManyWithoutStoreInput
+  appointments?: Prisma.AppointmentUncheckedCreateNestedManyWithoutStoreInput
+  campaigns?: Prisma.CampaignUncheckedCreateNestedManyWithoutStoreInput
+  aiConfig?: Prisma.AIConfigurationUncheckedCreateNestedOneWithoutStoreInput
+  blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
+  waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
+  subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
+  dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
+}
+
+export type StoreCreateOrConnectWithoutStaffInput = {
+  where: Prisma.StoreWhereUniqueInput
+  create: Prisma.XOR<Prisma.StoreCreateWithoutStaffInput, Prisma.StoreUncheckedCreateWithoutStaffInput>
+}
+
+export type StoreUpsertWithoutStaffInput = {
+  update: Prisma.XOR<Prisma.StoreUpdateWithoutStaffInput, Prisma.StoreUncheckedUpdateWithoutStaffInput>
+  create: Prisma.XOR<Prisma.StoreCreateWithoutStaffInput, Prisma.StoreUncheckedCreateWithoutStaffInput>
+  where?: Prisma.StoreWhereInput
+}
+
+export type StoreUpdateToOneWithWhereWithoutStaffInput = {
+  where?: Prisma.StoreWhereInput
+  data: Prisma.XOR<Prisma.StoreUpdateWithoutStaffInput, Prisma.StoreUncheckedUpdateWithoutStaffInput>
+}
+
+export type StoreUpdateWithoutStaffInput = {
+  storeId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  directions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  googleMapsUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  website?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  instagram?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tiktok?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethods?: Prisma.StoreUpdatepaymentMethodsInput | string[]
+  paymentAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  depositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minAdvanceMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  cancellationPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasDelivery?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deliveryZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  apiBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  customers?: Prisma.CustomerUpdateManyWithoutStoreNestedInput
+  conversations?: Prisma.ConversationUpdateManyWithoutStoreNestedInput
+  messages?: Prisma.MessageUpdateManyWithoutStoreNestedInput
+  products?: Prisma.ProductUpdateManyWithoutStoreNestedInput
+  categories?: Prisma.CategoryUpdateManyWithoutStoreNestedInput
+  users?: Prisma.UserUpdateManyWithoutStoreNestedInput
+  services?: Prisma.ServiceUpdateManyWithoutStoreNestedInput
+  orders?: Prisma.OrderUpdateManyWithoutStoreNestedInput
+  appointments?: Prisma.AppointmentUpdateManyWithoutStoreNestedInput
+  campaigns?: Prisma.CampaignUpdateManyWithoutStoreNestedInput
+  aiConfig?: Prisma.AIConfigurationUpdateOneWithoutStoreNestedInput
+  blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
+  waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
+  subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
+  dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
+}
+
+export type StoreUncheckedUpdateWithoutStaffInput = {
+  storeId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  directions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  googleMapsUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  website?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  instagram?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tiktok?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethods?: Prisma.StoreUpdatepaymentMethodsInput | string[]
+  paymentAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  depositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minAdvanceMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  cancellationPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasDelivery?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deliveryZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  apiBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  customers?: Prisma.CustomerUncheckedUpdateManyWithoutStoreNestedInput
+  conversations?: Prisma.ConversationUncheckedUpdateManyWithoutStoreNestedInput
+  messages?: Prisma.MessageUncheckedUpdateManyWithoutStoreNestedInput
+  products?: Prisma.ProductUncheckedUpdateManyWithoutStoreNestedInput
+  categories?: Prisma.CategoryUncheckedUpdateManyWithoutStoreNestedInput
+  users?: Prisma.UserUncheckedUpdateManyWithoutStoreNestedInput
+  services?: Prisma.ServiceUncheckedUpdateManyWithoutStoreNestedInput
+  orders?: Prisma.OrderUncheckedUpdateManyWithoutStoreNestedInput
+  appointments?: Prisma.AppointmentUncheckedUpdateManyWithoutStoreNestedInput
+  campaigns?: Prisma.CampaignUncheckedUpdateManyWithoutStoreNestedInput
+  aiConfig?: Prisma.AIConfigurationUncheckedUpdateOneWithoutStoreNestedInput
+  blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
+  waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
+  subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
+  dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 
@@ -3050,6 +5400,7 @@ export type StoreCountOutputType = {
   campaigns: number
   blockedContacts: number
   dailyReports: number
+  staff: number
 }
 
 export type StoreCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -3065,6 +5416,7 @@ export type StoreCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.
   campaigns?: boolean | StoreCountOutputTypeCountCampaignsArgs
   blockedContacts?: boolean | StoreCountOutputTypeCountBlockedContactsArgs
   dailyReports?: boolean | StoreCountOutputTypeCountDailyReportsArgs
+  staff?: boolean | StoreCountOutputTypeCountStaffArgs
 }
 
 /**
@@ -3161,6 +5513,13 @@ export type StoreCountOutputTypeCountDailyReportsArgs<ExtArgs extends runtime.Ty
   where?: Prisma.DailyReportWhereInput
 }
 
+/**
+ * StoreCountOutputType without action
+ */
+export type StoreCountOutputTypeCountStaffArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.StaffWhereInput
+}
+
 
 export type StoreSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   storeId?: boolean
@@ -3168,7 +5527,31 @@ export type StoreSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   phone?: boolean
   ownerName?: boolean
   adminPhone?: boolean
+  description?: boolean
+  address?: boolean
+  neighborhood?: boolean
+  directions?: boolean
+  googleMapsUrl?: boolean
+  email?: boolean
+  website?: boolean
+  instagram?: boolean
+  facebook?: boolean
+  tiktok?: boolean
+  paymentMethods?: boolean
+  paymentAccount?: boolean
+  requiresDeposit?: boolean
+  depositAmount?: boolean
+  minAdvanceMinutes?: boolean
+  cancellationPolicy?: boolean
+  hasDelivery?: boolean
+  deliveryZone?: boolean
+  hasParking?: boolean
+  requiresCustomerAddress?: boolean
+  requiresCustomerCedula?: boolean
+  businessHours?: boolean
   waSessionId?: boolean
+  staffLabel?: boolean
+  slug?: boolean
   isActive?: boolean
   primaryColor?: boolean
   secondaryColor?: boolean
@@ -3193,6 +5576,7 @@ export type StoreSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   waSession?: boolean | Prisma.Store$waSessionArgs<ExtArgs>
   subscription?: boolean | Prisma.Store$subscriptionArgs<ExtArgs>
   dailyReports?: boolean | Prisma.Store$dailyReportsArgs<ExtArgs>
+  staff?: boolean | Prisma.Store$staffArgs<ExtArgs>
   _count?: boolean | Prisma.StoreCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["store"]>
 
@@ -3202,7 +5586,31 @@ export type StoreSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   phone?: boolean
   ownerName?: boolean
   adminPhone?: boolean
+  description?: boolean
+  address?: boolean
+  neighborhood?: boolean
+  directions?: boolean
+  googleMapsUrl?: boolean
+  email?: boolean
+  website?: boolean
+  instagram?: boolean
+  facebook?: boolean
+  tiktok?: boolean
+  paymentMethods?: boolean
+  paymentAccount?: boolean
+  requiresDeposit?: boolean
+  depositAmount?: boolean
+  minAdvanceMinutes?: boolean
+  cancellationPolicy?: boolean
+  hasDelivery?: boolean
+  deliveryZone?: boolean
+  hasParking?: boolean
+  requiresCustomerAddress?: boolean
+  requiresCustomerCedula?: boolean
+  businessHours?: boolean
   waSessionId?: boolean
+  staffLabel?: boolean
+  slug?: boolean
   isActive?: boolean
   primaryColor?: boolean
   secondaryColor?: boolean
@@ -3220,7 +5628,31 @@ export type StoreSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   phone?: boolean
   ownerName?: boolean
   adminPhone?: boolean
+  description?: boolean
+  address?: boolean
+  neighborhood?: boolean
+  directions?: boolean
+  googleMapsUrl?: boolean
+  email?: boolean
+  website?: boolean
+  instagram?: boolean
+  facebook?: boolean
+  tiktok?: boolean
+  paymentMethods?: boolean
+  paymentAccount?: boolean
+  requiresDeposit?: boolean
+  depositAmount?: boolean
+  minAdvanceMinutes?: boolean
+  cancellationPolicy?: boolean
+  hasDelivery?: boolean
+  deliveryZone?: boolean
+  hasParking?: boolean
+  requiresCustomerAddress?: boolean
+  requiresCustomerCedula?: boolean
+  businessHours?: boolean
   waSessionId?: boolean
+  staffLabel?: boolean
+  slug?: boolean
   isActive?: boolean
   primaryColor?: boolean
   secondaryColor?: boolean
@@ -3238,7 +5670,31 @@ export type StoreSelectScalar = {
   phone?: boolean
   ownerName?: boolean
   adminPhone?: boolean
+  description?: boolean
+  address?: boolean
+  neighborhood?: boolean
+  directions?: boolean
+  googleMapsUrl?: boolean
+  email?: boolean
+  website?: boolean
+  instagram?: boolean
+  facebook?: boolean
+  tiktok?: boolean
+  paymentMethods?: boolean
+  paymentAccount?: boolean
+  requiresDeposit?: boolean
+  depositAmount?: boolean
+  minAdvanceMinutes?: boolean
+  cancellationPolicy?: boolean
+  hasDelivery?: boolean
+  deliveryZone?: boolean
+  hasParking?: boolean
+  requiresCustomerAddress?: boolean
+  requiresCustomerCedula?: boolean
+  businessHours?: boolean
   waSessionId?: boolean
+  staffLabel?: boolean
+  slug?: boolean
   isActive?: boolean
   primaryColor?: boolean
   secondaryColor?: boolean
@@ -3250,7 +5706,7 @@ export type StoreSelectScalar = {
   updatedAt?: boolean
 }
 
-export type StoreOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"storeId" | "name" | "phone" | "ownerName" | "adminPhone" | "waSessionId" | "isActive" | "primaryColor" | "secondaryColor" | "accentColor" | "subscriptionStatus" | "subscriptionEnd" | "apiBlocked" | "createdAt" | "updatedAt", ExtArgs["result"]["store"]>
+export type StoreOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"storeId" | "name" | "phone" | "ownerName" | "adminPhone" | "description" | "address" | "neighborhood" | "directions" | "googleMapsUrl" | "email" | "website" | "instagram" | "facebook" | "tiktok" | "paymentMethods" | "paymentAccount" | "requiresDeposit" | "depositAmount" | "minAdvanceMinutes" | "cancellationPolicy" | "hasDelivery" | "deliveryZone" | "hasParking" | "requiresCustomerAddress" | "requiresCustomerCedula" | "businessHours" | "waSessionId" | "staffLabel" | "slug" | "isActive" | "primaryColor" | "secondaryColor" | "accentColor" | "subscriptionStatus" | "subscriptionEnd" | "apiBlocked" | "createdAt" | "updatedAt", ExtArgs["result"]["store"]>
 export type StoreInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   customers?: boolean | Prisma.Store$customersArgs<ExtArgs>
   conversations?: boolean | Prisma.Store$conversationsArgs<ExtArgs>
@@ -3267,6 +5723,7 @@ export type StoreInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   waSession?: boolean | Prisma.Store$waSessionArgs<ExtArgs>
   subscription?: boolean | Prisma.Store$subscriptionArgs<ExtArgs>
   dailyReports?: boolean | Prisma.Store$dailyReportsArgs<ExtArgs>
+  staff?: boolean | Prisma.Store$staffArgs<ExtArgs>
   _count?: boolean | Prisma.StoreCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type StoreIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -3290,6 +5747,7 @@ export type $StorePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     waSession: Prisma.$WhatsappSessionPayload<ExtArgs> | null
     subscription: Prisma.$SubscriptionPayload<ExtArgs> | null
     dailyReports: Prisma.$DailyReportPayload<ExtArgs>[]
+    staff: Prisma.$StaffPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     storeId: string
@@ -3297,7 +5755,31 @@ export type $StorePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     phone: string
     ownerName: string | null
     adminPhone: string | null
+    description: string | null
+    address: string | null
+    neighborhood: string | null
+    directions: string | null
+    googleMapsUrl: string | null
+    email: string | null
+    website: string | null
+    instagram: string | null
+    facebook: string | null
+    tiktok: string | null
+    paymentMethods: string[]
+    paymentAccount: string | null
+    requiresDeposit: boolean
+    depositAmount: string | null
+    minAdvanceMinutes: number | null
+    cancellationPolicy: string | null
+    hasDelivery: boolean
+    deliveryZone: string | null
+    hasParking: boolean
+    requiresCustomerAddress: boolean
+    requiresCustomerCedula: boolean
+    businessHours: runtime.JsonValue | null
     waSessionId: string | null
+    staffLabel: string | null
+    slug: string | null
     isActive: boolean
     primaryColor: string | null
     secondaryColor: string | null
@@ -3716,6 +6198,7 @@ export interface Prisma__StoreClient<T, Null = never, ExtArgs extends runtime.Ty
   waSession<T extends Prisma.Store$waSessionArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Store$waSessionArgs<ExtArgs>>): Prisma.Prisma__WhatsappSessionClient<runtime.Types.Result.GetResult<Prisma.$WhatsappSessionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   subscription<T extends Prisma.Store$subscriptionArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Store$subscriptionArgs<ExtArgs>>): Prisma.Prisma__SubscriptionClient<runtime.Types.Result.GetResult<Prisma.$SubscriptionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   dailyReports<T extends Prisma.Store$dailyReportsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Store$dailyReportsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DailyReportPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  staff<T extends Prisma.Store$staffArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Store$staffArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$StaffPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -3750,7 +6233,31 @@ export interface StoreFieldRefs {
   readonly phone: Prisma.FieldRef<"Store", 'String'>
   readonly ownerName: Prisma.FieldRef<"Store", 'String'>
   readonly adminPhone: Prisma.FieldRef<"Store", 'String'>
+  readonly description: Prisma.FieldRef<"Store", 'String'>
+  readonly address: Prisma.FieldRef<"Store", 'String'>
+  readonly neighborhood: Prisma.FieldRef<"Store", 'String'>
+  readonly directions: Prisma.FieldRef<"Store", 'String'>
+  readonly googleMapsUrl: Prisma.FieldRef<"Store", 'String'>
+  readonly email: Prisma.FieldRef<"Store", 'String'>
+  readonly website: Prisma.FieldRef<"Store", 'String'>
+  readonly instagram: Prisma.FieldRef<"Store", 'String'>
+  readonly facebook: Prisma.FieldRef<"Store", 'String'>
+  readonly tiktok: Prisma.FieldRef<"Store", 'String'>
+  readonly paymentMethods: Prisma.FieldRef<"Store", 'String[]'>
+  readonly paymentAccount: Prisma.FieldRef<"Store", 'String'>
+  readonly requiresDeposit: Prisma.FieldRef<"Store", 'Boolean'>
+  readonly depositAmount: Prisma.FieldRef<"Store", 'String'>
+  readonly minAdvanceMinutes: Prisma.FieldRef<"Store", 'Int'>
+  readonly cancellationPolicy: Prisma.FieldRef<"Store", 'String'>
+  readonly hasDelivery: Prisma.FieldRef<"Store", 'Boolean'>
+  readonly deliveryZone: Prisma.FieldRef<"Store", 'String'>
+  readonly hasParking: Prisma.FieldRef<"Store", 'Boolean'>
+  readonly requiresCustomerAddress: Prisma.FieldRef<"Store", 'Boolean'>
+  readonly requiresCustomerCedula: Prisma.FieldRef<"Store", 'Boolean'>
+  readonly businessHours: Prisma.FieldRef<"Store", 'Json'>
   readonly waSessionId: Prisma.FieldRef<"Store", 'String'>
+  readonly staffLabel: Prisma.FieldRef<"Store", 'String'>
+  readonly slug: Prisma.FieldRef<"Store", 'String'>
   readonly isActive: Prisma.FieldRef<"Store", 'Boolean'>
   readonly primaryColor: Prisma.FieldRef<"Store", 'String'>
   readonly secondaryColor: Prisma.FieldRef<"Store", 'String'>
@@ -4490,6 +6997,30 @@ export type Store$dailyReportsArgs<ExtArgs extends runtime.Types.Extensions.Inte
   take?: number
   skip?: number
   distinct?: Prisma.DailyReportScalarFieldEnum | Prisma.DailyReportScalarFieldEnum[]
+}
+
+/**
+ * Store.staff
+ */
+export type Store$staffArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Staff
+   */
+  select?: Prisma.StaffSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Staff
+   */
+  omit?: Prisma.StaffOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.StaffInclude<ExtArgs> | null
+  where?: Prisma.StaffWhereInput
+  orderBy?: Prisma.StaffOrderByWithRelationInput | Prisma.StaffOrderByWithRelationInput[]
+  cursor?: Prisma.StaffWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.StaffScalarFieldEnum | Prisma.StaffScalarFieldEnum[]
 }
 
 /**

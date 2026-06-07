@@ -16,7 +16,7 @@ export class CustomersService {
       return await this.prisma.customer.upsert({
         where:  { storeId_phone: { storeId, phone: dto.phone } },
         update: {},
-        create: { storeId, phone: dto.phone },
+        create: { storeId, phone: dto.phone, ...(dto.name ? { name: dto.name } : {}) },
       });
     } catch (err: any) {
       // P2002 = unique constraint — otro proceso creó el cliente primero

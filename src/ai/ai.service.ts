@@ -19,15 +19,36 @@ const ORDER_GUARD_TTL_MS   = 10 * 60 * 1000;
 const CONFIRM_REMINDER_MS  =  5 * 60 * 1000; // recordatorio si el cliente no confirma en 5 min
 const MAX_HISTORY_MESSAGES = 8;
 
-const PURCHASE_INTENT_RE = /\b(quiero|deseo|pedir|pido|ordenar|comprar|llevar|encargar|confirm|dale|listo|acepto|perfecto|procede|adelante|claro|exacto|sip|yep|yes|sí|si\b|ok\b|pedido|orden|dirección|entrega|envío|cantidad|unidades?)\b|\[Pedido del catálogo:/i;
+// JS \b NO trata tildes/eñes como caracteres de palabra: "sí" pierde el límite de cierre
+// (falso negativo — el cliente confirma y el sistema no lo detecta) y "cl"/"av" hacen
+// match dentro de "clásico"/"avísame" (falso positivo — se guarda basura como dirección).
+// Estos límites Unicode-aware (\p{L}\p{N}_) resuelven ambos problemas en español.
+const ES_WORD_CHARS = '\\p{L}\\p{N}_';
+function esWord(alternativas: string): string {
+  return `(?<![${ES_WORD_CHARS}])(?:${alternativas})(?![${ES_WORD_CHARS}])`;
+}
+
+const PURCHASE_INTENT_RE = new RegExp(
+  `${esWord('quiero|deseo|pedir|pido|ordenar|comprar|llevar|encargar|confirm|dale|listo|acepto|perfecto|procede|adelante|claro|exacto|sip|yep|yes|s[ií]|ok|pedido|orden|dirección|entrega|envío|cantidad|unidades?')}|\\[Pedido del catálogo:`,
+  'iu',
+);
 const APPOINTMENT_INTENT_RE = /\b(agendar|agenda|cita|visita|visita técnica|técnico|técnica|programar|reservar|reserva|turno|appointment|quiero una cita|necesito una visita|instalar|instalación|mantenimiento|corte|sesión)\b/i;
 
 // Confirmaciones — muy amplio, todas las formas que usan los colombianos
-const CONFIRMATION_RE = /\b(s[ií]|ok|okay|dale|listo|acepto|perfecto|procede|adelante|claro|exacto|sip|yep|yes|confirm|correcto|de acuerdo|está bien|estoy de acuerdo|va|hagale|hádale|marchando|hecho|venga|eso|eso mismo|así es|claro que sí|por supuesto|obvio|chévere|bacano|sale|de una|okey)\b|^(👍|✅|✓)$/i;
+const CONFIRMATION_RE = new RegExp(
+  `${esWord('s[ií]|ok|okay|dale|listo|acepto|perfecto|procede|adelante|claro|exacto|sip|yep|yes|confirm|correcto|de acuerdo|está bien|estoy de acuerdo|va|hagale|hádale|marchando|hecho|venga|eso|eso mismo|así es|claro que sí|por supuesto|obvio|chévere|bacano|sale|de una|okey')}|^(?:👍|✅|✓)$`,
+  'iu',
+);
 
-const ADDRESS_RE = /\b(calle|carrera|cra|cl\b|av\b|avenida|barrio|#|\d{2,}[-–]\d+|diagonal|transversal|manzana|casa|apto|apartamento)\b/i;
+const ADDRESS_RE = new RegExp(
+  `${esWord('calle|carrera|cra|cl|av|avenida|barrio|diagonal|transversal|manzana|casa|apto|apartamento')}|#\\d|\\d{2,}[-–]\\d+`,
+  'iu',
+);
 
-const PAYMENT_PROOF_RE     = /\b(pagu[eé]|transfer[ií]|te mand[eé]|comprobante|transacci[oó]n|consign[eé]|listo el pago|ya pagu[eé]|hice el pago)\b/i;
+const PAYMENT_PROOF_RE = new RegExp(
+  esWord('pagu[eé]|transfer[ií]|te mand[eé]|comprobante|transacci[oó]n|consign[eé]|listo el pago|ya pagu[eé]|hice el pago'),
+  'iu',
+);
 const CANCEL_RESCHEDULE_RE = /\b(cancelar|no puedo ir|no puedo asistir|cambiar la cita|reprogramar|mover la cita|otro d[ií]a|otra hora|posponer|aplazar)\b/i;
 const MIN_ADVANCE_RE       = /m[ií]nimo\s+(\d+)\s*(hora|horas|h\b)/i;
 
@@ -195,6 +216,11 @@ function extractQueryDate(message: string, _today: Date, tz = TZ_CO): Date | nul
 
   if (/\bhoy\b/.test(lower)) return hoy;
 
+  // pasado mañana (antes de "mañana" para evitar el falso match / off-by-one)
+  if (/\bpasado\s+ma[ñn]ana\b/.test(lower)) {
+    const d = new Date(hoy); d.setDate(d.getDate() + 2); return d;
+  }
+
   // mañana — EXCLUIR "de la mañana" / "por la mañana" (AM, no tomorrow)
   if (/\bma[ñn]ana\b/.test(lower) && !/(?:de|por)\s+la\s+ma[ñn]ana/.test(lower)) {
     const d = new Date(hoy); d.setDate(d.getDate() + 1); return d;
@@ -253,8 +279,14 @@ function extractQueryDate(message: string, _today: Date, tz = TZ_CO): Date | nul
     const monthWord = dateMatch[2];
     const month = monthWord ? (MONTHS_NUM[monthWord] ?? hoy.getMonth()) : hoy.getMonth();
     const year  = hoy.getFullYear();
-    const d = new Date(year, month, day);
-    if (!isNaN(d.getTime())) return d;
+    const mm    = String(month + 1).padStart(2, '0');
+    const dd    = String(day).padStart(2, '0');
+    let d = coNoon(`${year}-${mm}-${dd}`);
+    if (!isNaN(d.getTime())) {
+      // Roll-over al año siguiente si la fecha calculada ya pasó (igual que parseFechaEspanol)
+      if (d < hoy) d = coNoon(`${year + 1}-${mm}-${dd}`);
+      return d;
+    }
   }
 
   return null;
@@ -1834,12 +1866,17 @@ REGLAS ESTRICTAS:
    c) Descripción de qué necesita el cliente
    d) Confirmación explícita del cliente (sí, confirmo, listo, dale, ok, etc.)
    e) Si se requiere nombre del cliente: debe estar presente
+   ${store?.requiresCustomerAddress ? 'f) Dirección física del cliente: debe estar presente (este negocio la requiere)' : ''}
 2. Si falta CUALQUIER condición → "complete":false
 3. "scheduledDate": formato "YYYY-MM-DD". Usa EXACTAMENTE las fechas del PRÓXIMAS FECHAS del calendario de arriba.
    NO calcules manualmente — copia el valor de la tabla. Si el cliente dice "el lunes", usa el valor "lunes: YYYY-MM-DD" de la tabla.
 4. "scheduledTime": formato "HH:MM" en 24h. "2pm" → "14:00", "4pm" → "16:00"
-5. "address": SOLO si el cliente da una dirección física real (calle, carrera, barrio + número, ej: "Cra 45 #20-48"). Si la cita es en el local o no hay dirección explícita → null. NUNCA pongas el mensaje del cliente como dirección.
-6. "customerCedula": extrae SOLO si el cliente la mencionó explícitamente. Si no → null.
+5. ${store?.requiresCustomerAddress
+      ? `"address": Este negocio SÍ requiere la dirección del cliente. Extrae SOLO si da una dirección física real (calle, carrera, barrio + número, ej: "Cra 45 #20-48"). Si aún no la ha dado → null (y "complete" debe ser false). NUNCA pongas el mensaje completo del cliente como dirección — solo el fragmento que sea una dirección real.`
+      : `"address": Este negocio NO requiere dirección (el cliente asiste al local). SIEMPRE devuelve null — ignora cualquier texto que parezca dirección, nunca lo guardes ni lo trates como tal.`}
+6. ${store?.requiresCustomerCedula
+      ? `"customerCedula": Este negocio SÍ requiere cédula del cliente. Extrae el número de documento (6-10 dígitos) cuando el cliente lo mencione explícitamente como cédula/documento. Un número de teléfono NO es cédula.`
+      : `"customerCedula": Este negocio NO requiere cédula. SIEMPRE devuelve null — no la pidas (si el cliente la da espontáneamente puedes capturarla, pero nunca la exijas ni la conviertas en requisito).`}
 7. "type": texto libre describiendo la cita (ej: "visita_tecnica", "instalación solar", "corte de cabello").
 8. "staffId": si el cliente eligió un profesional, usa su ID del EQUIPO DISPONIBLE. Si no hay equipo o no eligió → null.
 
@@ -1977,7 +2014,8 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
           let bestPos = -1;
           for (const s of activeStaff) {
             const firstName = s.name.split(' ')[0];
-            const re = new RegExp(`\\b${firstName}\\b`, 'gi');
+            // esWord (no \b) — nombres con tilde ("José", "Andrés") no matchean con \b nativo de JS
+            const re = new RegExp(esWord(firstName), 'giu');
             let m: RegExpExecArray | null;
             while ((m = re.exec(latestMessage)) !== null) {
               if (m.index > bestPos) {
@@ -1993,8 +2031,8 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
           }
         }
 
-        // Dirección (si es visita a domicilio y no vino del LLM)
-        if (!extracted.address && ADDRESS_RE.test(latestMessage)) {
+        // Dirección (si es visita a domicilio y no vino del LLM) — solo si el negocio la requiere
+        if (store?.requiresCustomerAddress && !extracted.address && ADDRESS_RE.test(latestMessage)) {
           const lines = latestMessage.split('\n').map(l => l.trim());
           const addrLine = lines.find(l => ADDRESS_RE.test(l));
           if (addrLine) {
@@ -2665,7 +2703,7 @@ PROHIBIDO:
             ? `\n    Horario: ${formatBusinessHoursForAI(s.schedule as any).split('\n').join(', ')}`
             : '';
           return `- ${s.name} (id: ${s.staffId})${schedLine}`;
-        }).join('\n')}\n\nREGLA OBLIGATORIA DE AGENDAMIENTO CON EQUIPO:\n1. SIEMPRE pregunta: "¿Con qué ${staffLabel} quieres tu cita? Tenemos disponibles: ${activeStaff.map((s: { staffId: string; name: string }) => s.name).join(', ')}"\n2. El cliente DEBE elegir un ${staffLabel} antes de confirmar.\n3. Una vez elegido, NO preguntes de nuevo.\n4. Si el ${staffLabel} elegido no está disponible en ese horario, avisa y sugiere otro horario o ${staffLabel} alternativo.\n5. Cuando el cliente pregunte por el horario de un ${staffLabel} específico, usa el horario indicado arriba para responderle con precisión.`
+        }).join('\n')}\n\nREGLA OBLIGATORIA DE AGENDAMIENTO CON EQUIPO:\n1. SIEMPRE pregunta: "¿Con qué ${staffLabel} quieres tu cita? Tenemos disponibles: ${activeStaff.map((s: { staffId: string; name: string }) => s.name).join(', ')}"\n2. El cliente DEBE elegir un ${staffLabel} antes de confirmar.\n3. Una vez elegido, NO preguntes de nuevo.\n4. ANTES de proponer, dar por agendada o confirmar una fecha con un ${staffLabel}, verifica SIEMPRE su horario (arriba, "Horario: ...") para ese día de la semana específico. Si el horario muestra "Cerrado" o no incluye ese día, el ${staffLabel} NO trabaja ese día — NO lo ofrezcas para esa fecha, NO digas que la cita quedó agendada/confirmada con él, y avísale al cliente de inmediato proponiendo otro día u otro ${staffLabel} que sí esté disponible. Revisa esto ANTES de responder, nunca después de haber prometido algo.\n5. Si el ${staffLabel} elegido no está disponible en ese horario, avisa y sugiere otro horario o ${staffLabel} alternativo — nunca confirmes primero y corrijas después.\n6. Cuando el cliente pregunte por el horario de un ${staffLabel} específico, usa el horario indicado arriba para responderle con precisión.`
       : '';
 
     const agendamientoSection = `FLUJO DE AGENDAMIENTO (CITAS Y SERVICIOS):

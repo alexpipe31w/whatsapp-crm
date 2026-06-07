@@ -742,14 +742,6 @@ export type EnumPriceTypeFieldUpdateOperationsInput = {
   set?: $Enums.PriceType
 }
 
-export type NullableIntFieldUpdateOperationsInput = {
-  set?: number | null
-  increment?: number
-  decrement?: number
-  multiply?: number
-  divide?: number
-}
-
 export type ServiceCreateNestedOneWithoutVariantsInput = {
   create?: Prisma.XOR<Prisma.ServiceCreateWithoutVariantsInput, Prisma.ServiceUncheckedCreateWithoutVariantsInput>
   connectOrCreate?: Prisma.ServiceCreateOrConnectWithoutVariantsInput

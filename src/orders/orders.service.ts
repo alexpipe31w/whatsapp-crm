@@ -41,20 +41,6 @@ export class OrdersService {
       if (existing) return existing;
     }
 
-    // Validar stock antes de crear
-    for (const item of dto.items) {
-      if (item.productId && !item.variantId) {
-        const product = await this.prisma.product.findUnique({ where: { productId: item.productId } });
-        if (product && product.stock < item.quantity)
-          throw new BadRequestException(`Stock insuficiente para "${product.name}" (disponible: ${product.stock})`);
-      }
-      if (item.variantId) {
-        const variant = await this.prisma.productVariant.findUnique({ where: { variantId: item.variantId } });
-        if (variant && variant.stock < item.quantity)
-          throw new BadRequestException(`Stock insuficiente para la variante (disponible: ${variant.stock})`);
-      }
-    }
-
     const subtotal = dto.items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
     const discountAmount = dto.discountPercent ? Math.round(subtotal * (dto.discountPercent / 100) * 100) / 100 : 0;
     const total = subtotal - discountAmount;
@@ -68,8 +54,37 @@ export class OrdersService {
       unitPrice:   item.unitPrice,
     }));
 
-    // Transacción atómica: crear orden + actualizar métricas del cliente
+    // Transacción atómica: validar+descontar stock, crear orden y actualizar métricas del cliente.
+    // El descuento se hace con updateMany + condición stock >= quantity para que la verificación
+    // y la resta ocurran en una sola operación atómica de la BD (evita condiciones de carrera
+    // TOCTOU entre dos pedidos simultáneos por el mismo producto).
     const order = await this.prisma.$transaction(async (tx) => {
+      for (const item of dto.items) {
+        if (item.variantId) {
+          const result = await tx.productVariant.updateMany({
+            where: { variantId: item.variantId, stock: { gte: item.quantity } },
+            data:  { stock: { decrement: item.quantity } },
+          });
+          if (result.count === 0) {
+            const variant = await tx.productVariant.findUnique({ where: { variantId: item.variantId } });
+            throw new BadRequestException(
+              `Stock insuficiente para la variante (disponible: ${variant?.stock ?? 0})`,
+            );
+          }
+        } else if (item.productId) {
+          const result = await tx.product.updateMany({
+            where: { productId: item.productId, stock: { gte: item.quantity } },
+            data:  { stock: { decrement: item.quantity } },
+          });
+          if (result.count === 0) {
+            const product = await tx.product.findUnique({ where: { productId: item.productId } });
+            throw new BadRequestException(
+              `Stock insuficiente para "${product?.name ?? 'producto'}" (disponible: ${product?.stock ?? 0})`,
+            );
+          }
+        }
+      }
+
       const created = await tx.order.create({
         data: {
           storeId:              dto.storeId!,

@@ -155,3 +155,8 @@ export type Subscription = Prisma.SubscriptionModel
  * 
  */
 export type SubscriptionPayment = Prisma.SubscriptionPaymentModel
+/**
+ * Model Staff
+ * 
+ */
+export type Staff = Prisma.StaffModel

@@ -38,6 +38,10 @@ export class CreateStoreDto {
   @IsString() @IsOptional() deliveryZone?: string;
   @IsBoolean() @IsOptional() @Type(() => Boolean) hasParking?: boolean;
 
+  // Datos del cliente que la IA debe pedir/guardar (varían según tipo de negocio)
+  @IsBoolean() @IsOptional() @Type(() => Boolean) requiresCustomerAddress?: boolean;
+  @IsBoolean() @IsOptional() @Type(() => Boolean) requiresCustomerCedula?: boolean;
+
   // Horarios
   @IsObject() @IsOptional() businessHours?: Record<string, any>;
 
