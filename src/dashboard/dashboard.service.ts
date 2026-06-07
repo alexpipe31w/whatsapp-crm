@@ -6,8 +6,20 @@ export class DashboardService {
   constructor(private prisma: PrismaService) {}
 
   async getDashboard(storeId: string) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const now = new Date();
+    // Anclado a medianoche Colombia (mismo patrón que reports.service.ts/
+    // appointments.service.ts.getStats), no a medianoche del proceso:
+    // "today.setHours(0,0,0,0)" opera en hora LOCAL — en producción (UTC, sin
+    // TZ configurado) eso da medianoche UTC, corrida 5h respecto a Colombia.
+    // Entre las 7pm y la medianoche en Colombia, "nuevosHoy" perdía clientes
+    // de hoy (creados en la mañana) y contaba clientes de mañana de la
+    // madrugada como si fueran de hoy.
+    const tzOffset = -5 * 60;
+    const localNow = new Date(now.getTime() + tzOffset * 60 * 1000);
+    const today = new Date(Date.UTC(
+      localNow.getUTCFullYear(), localNow.getUTCMonth(), localNow.getUTCDate(),
+      5, 0, 0, 0,
+    ));
 
     const [
       totalClientes,

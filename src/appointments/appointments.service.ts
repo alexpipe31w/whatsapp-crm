@@ -478,10 +478,21 @@ export class AppointmentsService {
         cancelledTotal: 0, noShowTotal: 0,
       };
     }
-    const now        = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const todayEnd   = new Date(todayStart);
-    todayEnd.setDate(todayEnd.getDate() + 1);
+    const now = new Date();
+    // Anclado a medianoche Colombia (mismo patrón que reports.service.ts), no a
+    // medianoche del proceso: "new Date(now.getFullYear(), now.getMonth(), ...)"
+    // usa getters/constructor LOCALES — en producción (UTC, sin TZ configurado)
+    // eso da medianoche UTC, corrida 5h respecto a medianoche Colombia. Entre
+    // las 7pm y la medianoche en Colombia, "todayCount"/"upcomingWeek" quedaban
+    // mal: se perdían citas de la mañana de hoy y se contaban citas de mañana
+    // de la madrugada como si fueran de hoy.
+    const tzOffset   = -5 * 60;
+    const localNow   = new Date(now.getTime() + tzOffset * 60 * 1000);
+    const todayStart = new Date(Date.UTC(
+      localNow.getUTCFullYear(), localNow.getUTCMonth(), localNow.getUTCDate(),
+      5, 0, 0, 0,
+    ));
+    const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
 
     // FIX: semana empieza el lunes (Colombia), no el domingo
     const weekStart = new Date(todayStart);
