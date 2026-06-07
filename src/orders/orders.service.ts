@@ -60,28 +60,48 @@ export class OrdersService {
     // TOCTOU entre dos pedidos simultáneos por el mismo producto).
     const order = await this.prisma.$transaction(async (tx) => {
       for (const item of dto.items) {
+        // storeId en el filtro de TODOS los lookups/updates de este bloque: igual que
+        // ya se valida `customer.storeId !== dto.storeId` arriba, nunca se debe confiar
+        // en que un productId/variantId/serviceId del request pertenece a esta tienda.
+        // Sin el filtro, un ID de OTRA tienda pasaba el updateMany igual (Prisma no
+        // discrimina dueño), descontando stock ajeno y dejando el orderItem apuntando
+        // a un producto/servicio de otra tienda.
         if (item.variantId) {
           const result = await tx.productVariant.updateMany({
-            where: { variantId: item.variantId, stock: { gte: item.quantity } },
+            where: { variantId: item.variantId, stock: { gte: item.quantity }, product: { storeId: dto.storeId } },
             data:  { stock: { decrement: item.quantity } },
           });
           if (result.count === 0) {
-            const variant = await tx.productVariant.findUnique({ where: { variantId: item.variantId } });
+            const variant = await tx.productVariant.findFirst({
+              where: { variantId: item.variantId, product: { storeId: dto.storeId } },
+            });
+            if (!variant) throw new BadRequestException('La variante de producto seleccionada no existe.');
             throw new BadRequestException(
-              `Stock insuficiente para la variante (disponible: ${variant?.stock ?? 0})`,
+              `Stock insuficiente para la variante (disponible: ${variant.stock})`,
             );
           }
         } else if (item.productId) {
           const result = await tx.product.updateMany({
-            where: { productId: item.productId, stock: { gte: item.quantity } },
+            where: { productId: item.productId, stock: { gte: item.quantity }, storeId: dto.storeId },
             data:  { stock: { decrement: item.quantity } },
           });
           if (result.count === 0) {
-            const product = await tx.product.findUnique({ where: { productId: item.productId } });
+            const product = await tx.product.findFirst({
+              where: { productId: item.productId, storeId: dto.storeId },
+            });
+            if (!product) throw new BadRequestException('El producto seleccionado no existe.');
             throw new BadRequestException(
-              `Stock insuficiente para "${product?.name ?? 'producto'}" (disponible: ${product?.stock ?? 0})`,
+              `Stock insuficiente para "${product.name}" (disponible: ${product.stock})`,
             );
           }
+        }
+
+        if (item.serviceId) {
+          const service = await tx.service.findFirst({
+            where:  { serviceId: item.serviceId, storeId: dto.storeId },
+            select: { serviceId: true },
+          });
+          if (!service) throw new BadRequestException('El servicio seleccionado no existe.');
         }
       }
 
