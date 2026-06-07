@@ -138,4 +138,85 @@ export class ReportsService {
       this.logger.error(`Error reporte tienda ${storeId}: ${err.message}`);
     }
   }
+
+  // ─── Briefing matutino — agenda del día para el admin ───────────────────────
+  // Distinto del reporte de las 9pm (que mira hacia atrás): este mira hacia
+  // adelante, para que el admin arranque el día sabiendo qué citas tiene y
+  // cuáles le faltan por confirmar — sin tener que preguntarle a la IA.
+
+  // 6:30am Colombia = 11:30 UTC
+  @Cron('30 11 * * *', { name: 'admin-morning-briefing', timeZone: 'UTC' })
+  async runMorningBriefings(): Promise<void> {
+    this.logger.log('☀️ Generando briefing matutino para admins...');
+
+    const stores = await this.prisma.store.findMany({
+      where:  { subscriptionStatus: 'active', isActive: true, adminPhone: { not: null } },
+      select: { storeId: true, name: true, adminPhone: true },
+    });
+
+    await Promise.allSettled(stores.map(s => this.sendMorningBriefing(s)));
+  }
+
+  private async sendMorningBriefing(store: { storeId: string; name: string; adminPhone: string | null }): Promise<void> {
+    if (!store.adminPhone) return;
+
+    try {
+      const now        = new Date();
+      const tzOffset   = -5 * 60;
+      const localNow   = new Date(now.getTime() + tzOffset * 60 * 1000);
+      const todayStart = new Date(Date.UTC(
+        localNow.getUTCFullYear(), localNow.getUTCMonth(), localNow.getUTCDate(),
+        5, 0, 0, 0,
+      ));
+      const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+
+      const appointments = await this.prisma.appointment.findMany({
+        where: {
+          storeId:     store.storeId,
+          scheduledAt: { gte: todayStart, lt: todayEnd },
+          status:      { in: ['PENDING', 'CONFIRMED', 'IN_PROGRESS'] },
+        },
+        include: {
+          customer: { select: { name: true } },
+          service:  { select: { name: true } },
+          staff:    { select: { name: true } },
+        },
+        orderBy: { scheduledAt: 'asc' },
+      });
+
+      // Sin citas hoy → no hay nada que avisar; evitamos saturar al admin
+      // con un mensaje vacío cada mañana.
+      if (appointments.length === 0) return;
+
+      const dateStr = localNow.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' });
+      const fmtHora = (d: Date) => d.toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Bogota' });
+      const estadoLabel = (status: string) =>
+        status === 'PENDING' ? '⏳ Pendiente de confirmar' :
+        status === 'CONFIRMED' ? '✅ Confirmada' : '🔵 En curso';
+
+      const lines = appointments.map(a => {
+        const hora   = fmtHora(new Date(a.scheduledAt));
+        const nombre = a.customer?.name ?? 'Cliente';
+        const srv    = a.service?.name ? ` — ${a.service.name}` : '';
+        const staff  = a.staff?.name ? ` (${a.staff.name})` : '';
+        return `  • ${hora} — ${nombre}${srv}${staff} — ${estadoLabel(a.status)}`;
+      });
+
+      const pending = appointments.filter(a => a.status === 'PENDING').length;
+      const nudge = pending > 0
+        ? `\n\n📌 Tienes ${pending} cita${pending > 1 ? 's' : ''} pendiente${pending > 1 ? 's' : ''} de confirmar. Escríbeme algo como "confirma la cita de [nombre]" y te la dejo lista.`
+        : '';
+
+      const plural = appointments.length > 1;
+      const msg = `☀️ *Buenos días — ${store.name}*\n` +
+        `Hoy, ${dateStr}, tienes *${appointments.length}* cita${plural ? 's' : ''} agendada${plural ? 's' : ''}:\n\n` +
+        lines.join('\n') +
+        nudge;
+
+      await this.whatsapp.sendMessage(store.storeId, store.adminPhone, msg);
+      this.logger.log(`☀️ Briefing matutino enviado: ${store.name} (${appointments.length} citas)`);
+    } catch (err: any) {
+      this.logger.error(`Error briefing matutino tienda ${store.storeId}: ${err.message}`);
+    }
+  }
 }
