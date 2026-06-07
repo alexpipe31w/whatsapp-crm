@@ -160,9 +160,18 @@ export class AppointmentsService {
     const [store, staffMember] = await Promise.all([
       this.prisma.store.findUnique({ where: { storeId } }),
       dto.staffId
-        ? this.prisma.staff.findUnique({ where: { staffId: dto.staffId } })
+        ? this.prisma.staff.findFirst({ where: { staffId: dto.staffId, storeId } })
         : Promise.resolve(null),
     ]);
+
+    // Mismo principio multi-tenant que public.service.ts.bookAppointment: nunca confiar
+    // en que un staffId del request pertenece a esta tienda. Sin este chequeo, un staffId
+    // de OTRA tienda pasaba el `findUnique` (sin filtro storeId), se usaba su horario para
+    // validar la cita, y la cita quedaba creada con storeId de esta tienda pero apuntando
+    // al profesional de otra — referencia cruzada inválida entre tiendas.
+    if (dto.staffId && !staffMember) {
+      throw new BadRequestException('El profesional seleccionado no existe.');
+    }
 
     const isAI   = dto.source === AppointmentSource.AI;
     const forced = !!dto.forceSchedule && !isAI;
@@ -265,6 +274,16 @@ export class AppointmentsService {
 
     if (dto.status === AppointmentStatus.CANCELLED && !dto.cancelReason && !current.pendingAction) {
       throw new BadRequestException('Se requiere cancelReason al cancelar una cita');
+    }
+
+    // Mismo chequeo multi-tenant que en `create`: un staffId de OTRA tienda no debe
+    // poder asignarse aquí (el `data` del update lo asigna directo desde el dto, sin
+    // ningún fetch previo que lo hubiera filtrado).
+    if (dto.staffId) {
+      const staffMember = await this.prisma.staff.findFirst({ where: { staffId: dto.staffId, storeId } });
+      if (!staffMember) {
+        throw new BadRequestException('El profesional seleccionado no existe.');
+      }
     }
 
     let resolvedStatus: AppointmentStatus | undefined = dto.status;

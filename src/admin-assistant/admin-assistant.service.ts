@@ -472,7 +472,12 @@ REGLAS:
           }
           const customer = await this.findOrCreateCustomerByPhone(storeId, params.customerPhone, params.customerName);
 
-          const service = await this.prisma.service.findUnique({ where: { serviceId: params.serviceId } });
+          // storeId en el filtro: igual que en el resto de la plataforma, nunca se
+          // confía en que un serviceId (acá viene de lo que extrajo la IA del mensaje
+          // del admin) pertenezca a esta tienda — sin esto, un serviceId de OTRA
+          // tienda pasaría el findUnique y la cita quedaría creada con storeId de
+          // esta tienda pero apuntando al servicio (y precio) de otra.
+          const service = await this.prisma.service.findFirst({ where: { serviceId: params.serviceId, storeId } });
           if (!service) return '❌ Servicio no encontrado.';
 
           const appt = await this.prisma.appointment.create({
