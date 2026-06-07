@@ -249,11 +249,17 @@ export class PublicService {
       }
     }
 
+    const now = new Date();
     return allSlots.filter(slot => {
       const [h, m]    = slot.split(':').map(Number);
       const slotStart = new Date(date);
       slotStart.setUTCHours(h + 5, m, 0, 0); // Colombia UTC-5 → UTC
       const slotEnd   = new Date(slotStart.getTime() + slotMinutes * 60_000);
+
+      // No mostrar horarios que ya pasaron (evita que el cliente elija "hoy 10am"
+      // a las 11pm — AppointmentsService.create lo rechazaría igual, pero es mejor
+      // no ofrecerlo nunca como opción).
+      if (slotStart < now) return false;
 
       return !appointments.some(appt => {
         const s = new Date(appt.scheduledAt);

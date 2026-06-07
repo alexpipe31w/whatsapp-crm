@@ -911,7 +911,15 @@ export class AiService {
       where: { appointmentId, status: { in: ['PENDING', 'CONFIRMED'] } },
       include: { customer: { select: { name: true, phone: true } }, service: { select: { name: true } } },
     });
-    if (!appt) { this.pendingReschedules.delete(conversationId); return null; }
+    if (!appt) {
+      // La cita ya no existe (fue cancelada/procesada mientras esperábamos la nueva
+      // fecha) — el cliente SÍ dio una fecha+hora nuevas (pasó el check de arriba),
+      // así que es una señal de "confirmación" real. Devolver un mensaje honesto en
+      // vez de null evita que el AI libre asuma "listo, quedó reprogramada" sobre
+      // una cita que ya no está activa.
+      this.pendingReschedules.delete(conversationId);
+      return 'Esa cita ya no está activa (fue cancelada o ya se procesó). Si quieres agendar una nueva, cuéntame qué servicio, día y hora te gustaría y con gusto te ayudo. 🙏';
+    }
 
     const newScheduledAt = new Date(`${newDate}T${newTime}:00-05:00`);
 
@@ -1167,6 +1175,19 @@ export class AiService {
           pendingRescheduleApptId, conversationId, userMessage, activeStaff,
         );
         if (rescheduleResult) return rescheduleResult;
+
+        // Guard anti-alucinación: estamos esperando que el cliente diga la nueva
+        // fecha/hora para reprogramar, y su mensaje fue una confirmación ("sí",
+        // "dale", "esa está bien"...) SIN una fecha+hora nuevas y claras (si las
+        // hubiera traído, tryCompleteReschedule ya habría respondido arriba). El AI
+        // libre, viendo en el historial que se ofreció reprogramar, podría inventar
+        // "¡listo, quedó reprogramada!" sin que el sistema haya movido nada — mismo
+        // patrón de alucinación que con citas y pedidos. Pedimos la fecha y hora
+        // exactas en vez de arriesgarnos.
+        if (CONFIRMATION_RE.test(userMessage.trim())) {
+          this.logger.warn(`[Reprogramación] Confirmación sin fecha/hora clara — pidiendo datos exactos (convId=${conversationId.slice(-8)})`);
+          return `Para reprogramar tu cita necesito que me digas el día y la hora exactos a los que la quieres mover (por ejemplo: "el viernes a las 3pm"). ¿Cuál te queda mejor? 🙏`;
+        }
       }
 
       // ── Cancelar / Reprogramar ──────────────────────────────────────────────
@@ -1239,6 +1260,22 @@ export class AiService {
         // Si falló por horario/conflicto hay un mensaje específico — usarlo directamente
         // para evitar que el AI principal genere una confirmación falsa
         if (!apptResult.created && apptResult.message) return apptResult.message;
+
+        // ── Guard anti-alucinación (incidente real en producción, 2026-06-07) ──
+        // Un cliente confirmó su cita ("sí") y el AI principal respondió "¡tu cita
+        // está lista!" cuando NUNCA se creó (el extractor falló en silencio: timeout,
+        // JSON inválido, caché incompleto, rotación de cartuchos bajo carga, etc. —
+        // cualquier camino interno que termine en { created:false } sin mensaje).
+        // Ante esa combinación EXACTA — el cliente está confirmando una cita que ya
+        // se venía conversando, y el sistema no devolvió ni éxito ni un rechazo claro
+        // — JAMÁS dejamos que el AI de respuesta libre continúe: podría inventar un
+        // "quedaste agendado" que no existe. Mejor pedir reconfirmación honesta.
+        if ((hasPendingAppt || hasApptContextHint) && CONFIRMATION_RE.test(userMessage.trim())) {
+          this.logger.warn(
+            `[Cita] Confirmación sin resultado claro del extractor — devolviendo mensaje seguro anti-alucinación (convId=${conversationId.slice(-8)})`,
+          );
+          return `Para dejar tu cita bien registrada necesito reconfirmar los datos: ¿qué servicio, con qué profesional y para qué día y hora la quieres? Así no se nos pierde ningún detalle y queda agendada correctamente. 🙏`;
+        }
       }
 
       // ── Flujo de orden ────────────────────────────────────────────────────────
@@ -1254,6 +1291,24 @@ export class AiService {
           products, services, customer, storeId, conversationId, settings,
         );
         if (orderResult.created) return orderResult.message!;
+        // Mismo principio que en citas: si hay un mensaje específico (ej. "ese
+        // producto no tiene stock"), usarlo directo — nunca dejar que el AI
+        // principal improvise sobre el resultado de una compra.
+        if (orderResult.message) return orderResult.message;
+
+        // ── Guard anti-alucinación para el flujo de venta de productos/servicios ──
+        // Mismo patrón que el de citas (incidente real en producción, 2026-06-07):
+        // si el cliente está confirmando un pedido que ya se venía armando y el
+        // extractor no devolvió ni creación ni un mensaje claro de rechazo (timeout,
+        // JSON inválido, dirección/nombre faltante detectado tarde, etc.), jamás
+        // dejamos que el AI de respuesta libre continúe — podría inventar "¡tu
+        // pedido quedó registrado!" sin que exista ninguna orden real.
+        if (hasPendingOrder && CONFIRMATION_RE.test(userMessage.trim())) {
+          this.logger.warn(
+            `[Orden] Confirmación sin resultado claro del extractor — devolviendo mensaje seguro anti-alucinación (convId=${conversationId.slice(-8)})`,
+          );
+          return `Para dejar tu pedido bien registrado necesito reconfirmar: ¿qué productos o servicios quieres, en qué cantidad, y a qué dirección los enviamos? Así no se nos pierde ningún detalle y queda bien registrado. 🙏`;
+        }
       }
 
       // ── Respuesta principal ───────────────────────────────────────────────────
@@ -1685,7 +1740,14 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
 
       if (orderItemsData.length === 0) {
         this.logger.warn(`[Orden] Sin items válidos`);
-        return { created: false };
+        // Mensaje explícito en vez de { created:false } a secas: el cliente confirmó
+        // ("complete":true exige confirmación) pero ningún item pasó validación
+        // (sin stock, no encontrado, etc.) — decirle la razón real evita que el AI
+        // principal improvise un "tu pedido quedó registrado" que no existe.
+        return {
+          created: false,
+          message: `No pude registrar tu pedido porque ${extracted.items.length === 1 ? 'el producto/servicio que mencionaste ya no está disponible o no tiene stock suficiente' : 'los productos/servicios que mencionaste ya no están disponibles o no tienen stock suficiente'}. ¿Quieres elegir otra opción del catálogo?`,
+        };
       }
 
       const order = await this.prisma.order.create({
@@ -1771,7 +1833,15 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
         this.logger.warn(`[Cita] Caso 1 — slot ${cached!.scheduledDate} ${cached!.scheduledTime} ya fue creado — limpiando caché`);
         this.pendingAppointments.delete(conversationId);
         this.cancelConfirmReminder(conversationId);
-        return { created: false };
+        // Devolvemos un mensaje explícito (no { created:false } a secas): esta cita SÍ
+        // existe de verdad — fue creada minutos atrás en esta misma conversación — así
+        // que confirmar de nuevo aquí es seguro y correcto, no una alucinación.
+        return {
+          created: false,
+          message: `¡Ya quedó registrada! Tu cita para el ${cached!.scheduledDate} a las ${cached!.scheduledTime}` +
+            (cached!.staffName ? ` con ${cached!.staffName}` : '') +
+            ` está confirmada — no necesitas confirmarla otra vez. ¡Te esperamos! 😊`,
+        };
       }
       this.logger.log(`[Cita] Caso 1 — caché con datos suficientes + confirmación para ${conversationId}`);
       // Re-parsear hora y fecha del mensaje actual: el cliente puede confirmar Y dar
@@ -2746,11 +2816,12 @@ pregunta: "¿Para qué día quieres consultar la disponibilidad?"
 - Responde de forma natural sin mencionar que hubo un audio, a menos que el contexto lo requiera.
 - Si el cliente pregunta si puedes escuchar audios, dile que sí.`;
 
-    const antiBucleSection = `REGLA ANTI-CONFIRMACIÓN FALSA (ABSOLUTA — NUNCA VIOLAR):
+    const antiBucleSection = `REGLA ANTI-CONFIRMACIÓN FALSA (ABSOLUTA — NUNCA VIOLAR — un cliente real recibió una confirmación falsa por esto):
 - NUNCA digas "tu cita está confirmada", "cita registrada", "cita agendada", "quedas agendado", "nos vemos el X", "hasta entonces" ni ninguna variante que implique que la cita fue creada.
-- La confirmación REAL la genera el sistema automáticamente con el mensaje "¡Cita agendada! ✅". Si NO ves ese mensaje en la conversación, la cita NO existe en el sistema.
-- Si el cliente dice "sí" confirmando y la cita aún no fue creada, responde con un resumen de los datos recogidos: "¡Perfecto! Para confirmar: [servicio] con [profesional] el [fecha] a las [hora]. ¿Todo correcto?" — NUNCA respondas "dame un momento" ni "estoy procesando" porque el sistema NO enviará un mensaje automático después; el cliente quedaría esperando indefinidamente.
-- NUNCA inventes una confirmación. Si fallas en crear la cita, pide al cliente que elija otro horario.
+- NUNCA digas "tu pedido está registrado", "pedido confirmado", "ya quedó tu pedido", "en camino", "procesando tu compra" ni ninguna variante que implique que la orden/pedido fue creado.
+- La confirmación REAL la genera el sistema automáticamente: para citas con el mensaje "¡Cita agendada! ✅", para pedidos con "¡Pedido registrado! 🎉". Si NO ves exactamente ese mensaje (generado por el sistema, no por ti) en la conversación, la cita o el pedido NO existen en el sistema — sin importar cuántas veces el cliente haya dicho "sí" o "confirmo".
+- Si el cliente dice "sí" confirmando y la cita/pedido aún no fue creado, responde con un resumen de los datos recogidos pidiendo confirmación explícita ("¡Perfecto! Para confirmar: [servicio] con [profesional] el [fecha] a las [hora]. ¿Todo correcto?" / "Para confirmar tu pedido: [items], envío a [dirección]. ¿Todo bien así?") — NUNCA respondas "dame un momento" ni "estoy procesando" porque el sistema NO enviará un mensaje automático después; el cliente quedaría esperando indefinidamente.
+- NUNCA inventes una confirmación de cita NI de pedido. Si el sistema no pudo crearla, pide al cliente que elija otro horario, otro producto, o que reconfirme los datos — pero jamás afirmes un éxito que no puedes garantizar.
 
 REGLA ANTI-BUCLE EN CONVERSACIÓN (OBLIGATORIA):
 - Si ya hiciste una pregunta al cliente y él respondió con algo (aunque no sea la respuesta exacta que esperabas), NO repitas la misma pregunta.

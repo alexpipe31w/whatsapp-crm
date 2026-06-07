@@ -167,6 +167,16 @@ export class AppointmentsService {
     const isAI   = dto.source === AppointmentSource.AI;
     const forced = !!dto.forceSchedule && !isAI;
 
+    // No permitir agendar en una fecha/hora que ya pasó (incidente real en producción:
+    // la IA registró una cita para "hoy 10am" pasadas las 11pm). Aplica a IA, link
+    // público y staff por igual — el staff puede saltarse esto con forceSchedule para
+    // registrar visitas retroactivas, igual que ya hace con el horario laboral.
+    if (scheduledAt.getTime() < Date.now() && !forced) {
+      throw new BadRequestException(
+        'No es posible agendar una cita en una fecha y hora que ya pasó. Por favor elige un horario futuro.',
+      );
+    }
+
     const effectiveHours = (staffMember?.schedule as unknown as BusinessHoursJson | null) ?? store?.businessHours;
     if (effectiveHours && !forced) {
       if (!isWithinBusinessHours(scheduledAt, effectiveHours as unknown as BusinessHoursJson)) {
