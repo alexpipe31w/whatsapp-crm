@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CustomersService } from '../customers/customers.service';
+import { AppointmentStatus } from '../generated/prisma/enums';
 import { createCompletion } from '../ai/providers';
 import {
   buildCartridgeList, ensurePool, getNextCartridge,
@@ -303,14 +304,14 @@ Para crear una venta/orden (usa "serviceId" si el ítem es del CATÁLOGO DE SERV
 Para crear una cita (si el cliente no existe aún, se crea automáticamente con el teléfono — incluye "customerName" si el admin lo menciona):
 ⚡ACTION⚡CREATE_APPOINTMENT⚡{"customerPhone":"<telefono>","customerName":"<nombre_opcional_si_es_cliente_nuevo>","serviceId":"<id_del_catalogo_de_servicios>","scheduledAt":"<ISO8601 Colombia>","notes":"<opcional>"}⚡END⚡
 
-Para cancelar una cita:
-⚡ACTION⚡CANCEL_APPOINTMENT⚡{"appointmentId":"<id>","reason":"<motivo>"}⚡END⚡
+Para cancelar una cita (usa "appointmentId" SOLO si el admin te lo dio explícitamente; si solo mencionó el nombre o teléfono del cliente, manda "customerName"/"customerPhone" y el sistema la busca y la encuentra — si hay varias coincidencias te las lista para que el admin elija):
+⚡ACTION⚡CANCEL_APPOINTMENT⚡{"appointmentId":"<id_opcional>","customerName":"<nombre_opcional>","customerPhone":"<telefono_opcional>","reason":"<motivo>"}⚡END⚡
 
-Para confirmar una cita:
-⚡ACTION⚡CONFIRM_APPOINTMENT⚡{"appointmentId":"<id>"}⚡END⚡
+Para confirmar una cita (mismo criterio de búsqueda que cancelar — ID o nombre/teléfono):
+⚡ACTION⚡CONFIRM_APPOINTMENT⚡{"appointmentId":"<id_opcional>","customerName":"<nombre_opcional>","customerPhone":"<telefono_opcional>"}⚡END⚡
 
-Para completar una cita (marcar como realizada):
-⚡ACTION⚡COMPLETE_APPOINTMENT⚡{"appointmentId":"<id>","paymentAmount":<monto>,"paymentMethod":"efectivo"}⚡END⚡
+Para completar una cita — marcar como realizada (mismo criterio de búsqueda que cancelar):
+⚡ACTION⚡COMPLETE_APPOINTMENT⚡{"appointmentId":"<id_opcional>","customerName":"<nombre_opcional>","customerPhone":"<telefono_opcional>","paymentAmount":<monto>,"paymentMethod":"efectivo"}⚡END⚡
 
 Para reporte del día:
 ⚡ACTION⚡DAILY_REPORT⚡{}⚡END⚡
@@ -321,6 +322,7 @@ REGLAS:
 - Para crear citas, la fecha/hora SIEMPRE en ISO8601 con offset Colombia (-05:00)
 - Para crear una cita o venta NO necesitas que el cliente ya exista — si el admin te da el teléfono (y opcionalmente el nombre), el sistema lo crea automáticamente. NUNCA te detengas a "registrar primero al cliente": ejecuta la acción directamente con el teléfono que te dieron.
 - Si ya tienes teléfono + servicio/producto + fecha/hora (para citas) o ítems (para ventas), EJECUTA la acción de una vez — no sigas pidiendo confirmación de datos que ya tienes.
+- Para confirmar/cancelar/completar citas: NUNCA inventes ni adivines un appointmentId. Si el admin solo dijo el nombre del cliente ("confirma la cita de Juan"), manda "customerName" — el sistema la busca por ti y, si hay varias, te las muestra para que el admin elija. Solo manda "appointmentId" si el admin te dio ese ID explícitamente (por ejemplo, copiado de una respuesta anterior tuya).
 - Si el admin pide algo que claramente no está en el contexto (ni en productos ni en servicios), dile que no encuentras esa información
 - Nunca inventes datos — solo usa lo que está en el contexto
 - Si el admin pregunta algo que puedes responder con el contexto, hazlo SIN usar acción`;
@@ -343,6 +345,66 @@ REGLAS:
 
     const canonicalPhone = digits.length === 10 && digits.startsWith('3') ? `+57${digits}` : `+${digits}`;
     return this.customers.findOrCreate({ storeId, phone: canonicalPhone, name });
+  }
+
+  // ─── Resolver la cita objetivo de confirmar/cancelar/completar ───────────
+  //
+  // El admin casi nunca conoce el appointmentId (UUID) — normalmente dice
+  // "confirma la cita de Juan Pérez". Si no viene un ID explícito, buscamos por
+  // coincidencia parcial (insensible a mayúsculas/tildes vía índice Postgres) del
+  // nombre o teléfono, restringido al estado relevante para esa acción. Con una
+  // sola coincidencia la usamos directo; con varias, devolvemos una lista numerada
+  // (con ID corto) para que el admin desambigüe — JAMÁS adivinamos cuál cita es,
+  // mismo principio anti-alucinación que el resto del sistema: más vale preguntar
+  // que ejecutar la acción equivocada sobre la cita de otro cliente.
+  private async resolveTargetAppointment(
+    storeId: string,
+    params: { appointmentId?: string; customerName?: string; customerPhone?: string },
+    statuses: AppointmentStatus[],
+    actionLabel: string,
+  ): Promise<{ appt: any } | { reply: string }> {
+    if (params.appointmentId) {
+      const appt = await this.prisma.appointment.findFirst({
+        where:   { storeId, appointmentId: { endsWith: params.appointmentId.toLowerCase() }, status: { in: statuses } },
+        include: { customer: { select: { name: true, phone: true } }, service: { select: { name: true } } },
+      });
+      if (!appt) return { reply: `❌ No encontré una cita con ese ID en un estado válido para ${actionLabel}.` };
+      return { appt };
+    }
+
+    const nameOrPhone = params.customerName?.trim() || params.customerPhone?.trim();
+    if (!nameOrPhone) {
+      return { reply: `❌ Necesito el nombre o teléfono del cliente (o el ID de la cita) para ${actionLabel}.` };
+    }
+
+    const matches = await this.prisma.appointment.findMany({
+      where: {
+        storeId,
+        status: { in: statuses },
+        customer: params.customerPhone
+          ? { phone: { contains: normalizePhone(params.customerPhone).slice(-9) } }
+          : { name: { contains: nameOrPhone, mode: 'insensitive' } },
+      },
+      orderBy: { scheduledAt: 'asc' },
+      include: { customer: { select: { name: true, phone: true } }, service: { select: { name: true } } },
+      take: 6,
+    });
+
+    if (matches.length === 0) {
+      return { reply: `❌ No encontré ninguna cita de "${nameOrPhone}" en un estado válido para ${actionLabel}.` };
+    }
+    if (matches.length > 1) {
+      const lines = matches.map((a, i) => {
+        const fecha = a.scheduledAt.toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'America/Bogota' });
+        const hora  = a.scheduledAt.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota' });
+        return `  ${i + 1}. ${a.customer?.name ?? 'Cliente'} — ${a.service?.name ?? 'Sin servicio'} — ${fecha} ${hora} (ID: ...${a.appointmentId.slice(-8)})`;
+      });
+      return {
+        reply: `Encontré ${matches.length} citas que coinciden con "${nameOrPhone}":\n${lines.join('\n')}\n\nDime el ID (los últimos caracteres bastan) para ${actionLabel} la correcta.`,
+      };
+    }
+
+    return { appt: matches[0] };
   }
 
   // ─── Ejecutar acciones ────────────────────────────────────────────────────
@@ -433,12 +495,9 @@ REGLAS:
         }
 
         case 'CANCEL_APPOINTMENT': {
-          if (!params.appointmentId) return '❌ Necesito el ID de la cita.';
-          const appt = await this.prisma.appointment.findFirst({
-            where:   { storeId, appointmentId: { endsWith: params.appointmentId.toLowerCase() } },
-            include: { customer: { select: { name: true } } },
-          });
-          if (!appt) return '❌ Cita no encontrada.';
+          const resolved = await this.resolveTargetAppointment(storeId, params, [AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED], 'cancelar');
+          if ('reply' in resolved) return resolved.reply;
+          const appt = resolved.appt;
           await this.prisma.appointment.update({
             where: { appointmentId: appt.appointmentId },
             data:  { status: 'CANCELLED', cancelReason: params.reason ?? 'Cancelada por admin' },
@@ -447,12 +506,9 @@ REGLAS:
         }
 
         case 'CONFIRM_APPOINTMENT': {
-          if (!params.appointmentId) return '❌ Necesito el ID de la cita.';
-          const appt = await this.prisma.appointment.findFirst({
-            where:   { storeId, appointmentId: { endsWith: params.appointmentId.toLowerCase() } },
-            include: { customer: { select: { name: true } } },
-          });
-          if (!appt) return '❌ Cita no encontrada.';
+          const resolved = await this.resolveTargetAppointment(storeId, params, [AppointmentStatus.PENDING], 'confirmar');
+          if ('reply' in resolved) return resolved.reply;
+          const appt = resolved.appt;
           await this.prisma.appointment.update({
             where: { appointmentId: appt.appointmentId },
             data:  { status: 'CONFIRMED' },
@@ -461,12 +517,9 @@ REGLAS:
         }
 
         case 'COMPLETE_APPOINTMENT': {
-          if (!params.appointmentId) return '❌ Necesito el ID de la cita.';
-          const appt = await this.prisma.appointment.findFirst({
-            where:   { storeId, appointmentId: { endsWith: params.appointmentId.toLowerCase() } },
-            include: { customer: { select: { name: true } } },
-          });
-          if (!appt) return '❌ Cita no encontrada.';
+          const resolved = await this.resolveTargetAppointment(storeId, params, [AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED, AppointmentStatus.IN_PROGRESS], 'completar');
+          if ('reply' in resolved) return resolved.reply;
+          const appt = resolved.appt;
           await this.prisma.appointment.update({
             where: { appointmentId: appt.appointmentId },
             data:  {
