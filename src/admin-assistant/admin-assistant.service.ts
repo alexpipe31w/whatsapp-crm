@@ -429,6 +429,27 @@ REGLAS:
           const items = params.items ?? [];
           if (!items.length) return '❌ La venta necesita al menos un ítem.';
 
+          // Igual que en CREATE_APPOINTMENT (ver más abajo): nunca confiar en que un
+          // serviceId/productId que la IA extrajo del mensaje del admin pertenece a
+          // esta tienda — sin esto, el `connect` de abajo aceptaba igual un ID de
+          // OTRA tienda (Prisma solo valida que el registro EXISTA, no el dueño) y la
+          // venta quedaba con storeId de esta tienda pero apuntando al servicio o
+          // producto (nombre, precio, stock) de otra.
+          for (const i of items) {
+            if (i.serviceId) {
+              const service = await this.prisma.service.findFirst({
+                where: { serviceId: i.serviceId, storeId }, select: { serviceId: true },
+              });
+              if (!service) return `❌ El servicio "${i.description ?? i.serviceId}" no existe en tu catálogo.`;
+            }
+            if (i.productId) {
+              const product = await this.prisma.product.findFirst({
+                where: { productId: i.productId, storeId }, select: { productId: true },
+              });
+              if (!product) return `❌ El producto "${i.description ?? i.productId}" no existe en tu catálogo.`;
+            }
+          }
+
           const subtotal = items.reduce((s: number, i: any) => s + (Number(i.unitPrice) * (i.quantity ?? 1)), 0);
 
           // El tipo de la orden depende de qué cataloga: si TODOS los ítems son
