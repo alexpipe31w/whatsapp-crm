@@ -278,13 +278,13 @@ export class AppointmentsService {
       } else if (current.pendingAction === 'RESCHEDULE_REQUESTED') {
         const data = current.pendingActionData as any;
         if (data?.newDate) {
-          const [year, month, day] = data.newDate.split('-').map(Number);
-          const d = new Date(year, month - 1, day);
-          if (data.newTime) {
-            const [h, m] = data.newTime.split(':').map(Number);
-            d.setHours(h, m, 0, 0);
-          }
-          newScheduledAt = d;
+          // -05:00 explícito (mismo patrón que ai.service.ts al construir newScheduledAt
+          // a partir de newDate/newTime): "new Date(year, month-1, day)" + "setHours()"
+          // operan en la zona horaria DEL PROCESO, no en Colombia. En producción el
+          // server corre en UTC (sin TZ configurado), así que sin el offset la cita
+          // aprobada quedaba guardada 5 horas antes de lo que el cliente pidió
+          // (ej.: pidió 3:00pm y se guardaba como 10:00am).
+          newScheduledAt = new Date(`${data.newDate}T${data.newTime ?? '00:00'}:00-05:00`);
         }
         notificationTrigger = 'action_approved_reschedule';
       }
