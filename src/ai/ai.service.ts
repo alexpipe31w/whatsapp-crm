@@ -999,8 +999,14 @@ export class AiService {
   ): Promise<{ name: string; slots: string[] }[]> {
     const tz = 'America/Bogota';
     const dateStr = date.toLocaleDateString('en-CA', { timeZone: tz }); // YYYY-MM-DD
-    const startOfDay = new Date(`${dateStr}T00:00:00`);
-    const endOfDay   = new Date(`${dateStr}T23:59:59`);
+    // -05:00 explícito (igual que coNoon/computeSlots de public.service.ts): "T00:00:00"
+    // sin offset se interpreta en la zona horaria DEL PROCESO, no en Colombia. En
+    // producción el server corre en UTC (sin TZ configurado en render/railway/nixpacks),
+    // así que sin el offset este rango — y cada slot calculado más abajo — quedaba
+    // corrido 5 horas: la "disponibilidad real" que se le inyecta a la IA marcaba como
+    // libres horarios que ya estaban ocupados (y viceversa).
+    const startOfDay = new Date(`${dateStr}T00:00:00-05:00`);
+    const endOfDay   = new Date(`${dateStr}T23:59:59-05:00`);
 
     const dayKey = coDayKey(date);
 
@@ -1041,7 +1047,7 @@ export class AiService {
         const end = eh * 60 + em;
 
         while (cur + SLOT <= end) {
-          const slotStart = new Date(`${dateStr}T${String(Math.floor(cur/60)).padStart(2,'0')}:${String(cur%60).padStart(2,'0')}:00`);
+          const slotStart = new Date(`${dateStr}T${String(Math.floor(cur/60)).padStart(2,'0')}:${String(cur%60).padStart(2,'0')}:00-05:00`);
           const slotEnd   = new Date(slotStart.getTime() + SLOT * 60000);
 
           const occupied = appts.some(a => {
@@ -1330,8 +1336,12 @@ export class AiService {
       const AVAIL_RE = /horario|disponible|disponibilidad|cuándo puedo|qué hora|hora libre|cuando tiene|qué días|que dias/i;
       let availabilityBlock = '';
 
-      // Calcular disponibilidad tanto cuando preguntan como cuando agenden con fecha específica
-      if ((AVAIL_RE.test(userMessage) || hasAppointmentIntent) && store) {
+      // Calcular disponibilidad tanto cuando preguntan como cuando agenden con fecha específica.
+      // También cuando ya hay una cita en curso (hasPendingAppt/hasApptContextHint): un
+      // mensaje de seguimiento como "¿el viernes a las 3 hay campo?" no contiene "horario"
+      // ni "agendar" — sin esto, la IA respondería sin disponibilidad real inyectada,
+      // confiando solo en el horario general del profesional (no en lo ya ocupado).
+      if ((AVAIL_RE.test(userMessage) || hasAppointmentIntent || hasPendingAppt || hasApptContextHint) && store) {
         const queryDate = extractQueryDate(userMessage, new Date());
         if (queryDate) {
           const slotsData = await this.computeSlotsForAI(
