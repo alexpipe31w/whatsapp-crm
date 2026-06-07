@@ -107,13 +107,18 @@ export class NotificationsService {
     return null;
   }
 
-  async notifyAppointmentCreated(appt: Appt): Promise<void> {
+  async notifyAppointmentCreated(appt: Appt, origin: 'ai' | 'public' = 'ai'): Promise<void> {
     const cliente   = appt.customer.name ?? appt.customer.phone;
     const servicio  = this.serviceName(appt);
     const fecha     = this.formatDate(appt.scheduledAt);
     const hora      = this.formatTime(appt.scheduledAt);
 
-    const waMsg = `📅 *Nueva cita agendada por IA*\n\n` +
+    const titulo = origin === 'public' ? 'Nueva cita agendada desde tu link público' : 'Nueva cita agendada por IA';
+    const origenEmail = origin === 'public'
+      ? 'Nueva cita agendada por el cliente desde el link público de auto-agendamiento.'
+      : 'Nueva cita creada automáticamente por el asistente IA.';
+
+    const waMsg = `📅 *${titulo}*\n\n` +
       `👤 Cliente: ${cliente}\n` +
       `✂️ Servicio: ${servicio}\n` +
       `📆 Fecha: ${fecha}\n` +
@@ -122,7 +127,7 @@ export class NotificationsService {
       (appt.agreedPrice ? `\n💰 Precio: ${this.formatMoney(appt.agreedPrice)}` : '') +
       `\n\nConfirma desde el panel.`;
 
-    const htmlEmail = `<p>Nueva cita creada automáticamente por el asistente IA.</p>
+    const htmlEmail = `<p>${origenEmail}</p>
       <ul>
         <li><b>Cliente:</b> ${cliente}</li>
         <li><b>Servicio:</b> ${servicio}</li>

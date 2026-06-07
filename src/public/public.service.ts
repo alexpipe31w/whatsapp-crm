@@ -1,5 +1,10 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { CustomersService } from '../customers/customers.service';
+import { AppointmentsService } from '../appointments/appointments.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { AppointmentSource } from '../generated/prisma/enums';
+import { PublicBookingDto } from './dto/public-booking.dto';
 
 interface SlotResult {
   staffId: string | null;
@@ -9,9 +14,20 @@ interface SlotResult {
 
 type DayKey = 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat';
 
+// Mismo criterio de normalización de teléfono que admin-assistant.findOrCreateCustomerByPhone:
+// busca por coincidencia parcial (tolera formatos distintos) antes de crear, y canoniza a
+// E.164 colombiano — así un cliente que ya escribió por WhatsApp no queda duplicado al
+// agendar por el link público.
+const normalizePhone = (p: string) => p.replace(/\D/g, '');
+
 @Injectable()
 export class PublicService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma:       PrismaService,
+    private readonly customers:    CustomersService,
+    private readonly appointments: AppointmentsService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   async getStoreBySlug(slug: string) {
     const store = await this.prisma.store.findUnique({
@@ -20,16 +36,119 @@ export class PublicService {
     });
     if (!store) throw new NotFoundException('Negocio no encontrado');
 
-    const staffCount = await this.prisma.staff.count({
-      where: { storeId: store.storeId, isActive: true },
-    });
+    const [staffCount, services] = await Promise.all([
+      this.prisma.staff.count({ where: { storeId: store.storeId, isActive: true } }),
+      this.prisma.service.findMany({
+        where:   { storeId: store.storeId, isActive: true },
+        orderBy: { createdAt: 'asc' },
+        select: {
+          serviceId:        true,
+          name:             true,
+          priceType:        true,
+          basePrice:        true,
+          unitLabel:        true,
+          estimatedMinutes: true,
+          hasVariants:      true,
+          variants: {
+            where:   { isActive: true },
+            orderBy: { sortOrder: 'asc' },
+            select: {
+              variantId:        true,
+              name:             true,
+              priceOverride:    true,
+              estimatedMinutes: true,
+            },
+          },
+        },
+      }),
+    ]);
 
     return {
       name:          store.name,
       staffLabel:    store.staffLabel ?? 'Profesional',
       hasStaff:      staffCount > 0,
       businessHours: store.businessHours,
+      services,
     };
+  }
+
+  // ─── Auto-agendamiento público (plan de emergencia) ────────────────────────
+  // El storeId SIEMPRE se resuelve desde el slug — nunca se confía en datos del
+  // cliente para identificar la tienda (mismo principio multi-tenant que el resto
+  // de la plataforma). La creación real se delega a AppointmentsService.create,
+  // que ya valida horario laboral y conflictos de agenda dentro de una transacción
+  // atómica — así una cita agendada aquí jamás puede chocar con una creada por la
+  // IA o por el staff.
+  async bookAppointment(slug: string, dto: PublicBookingDto) {
+    const store = await this.prisma.store.findUnique({
+      where:  { slug },
+      select: { storeId: true },
+    });
+    if (!store) throw new NotFoundException('Negocio no encontrado');
+    const { storeId } = store;
+
+    const digits = normalizePhone(dto.customerPhone);
+    if (digits.length < 7) {
+      throw new BadRequestException('El número de teléfono no es válido.');
+    }
+
+    const customer = await this.findOrCreateCustomerByPhone(storeId, digits, dto.customerName.trim());
+
+    let durationMinutes: number | undefined;
+    if (dto.serviceVariantId) {
+      const variant = await this.prisma.serviceVariant.findFirst({
+        where:  { variantId: dto.serviceVariantId, service: { storeId } },
+        select: { estimatedMinutes: true },
+      });
+      if (!variant) throw new BadRequestException('La variante de servicio seleccionada no existe.');
+      durationMinutes = variant.estimatedMinutes ?? undefined;
+    } else if (dto.serviceId) {
+      const service = await this.prisma.service.findFirst({
+        where:  { serviceId: dto.serviceId, storeId },
+        select: { estimatedMinutes: true },
+      });
+      if (!service) throw new BadRequestException('El servicio seleccionado no existe.');
+      durationMinutes = service.estimatedMinutes ?? undefined;
+    }
+
+    if (dto.staffId) {
+      const staff = await this.prisma.staff.findFirst({
+        where:  { staffId: dto.staffId, storeId, isActive: true },
+        select: { staffId: true },
+      });
+      if (!staff) throw new BadRequestException('El profesional seleccionado no está disponible.');
+    }
+
+    const appointment = await this.appointments.create(storeId, {
+      customerId:       customer.customerId,
+      serviceId:        dto.serviceId,
+      serviceVariantId: dto.serviceVariantId,
+      staffId:          dto.staffId,
+      scheduledAt:      dto.scheduledAt,
+      durationMinutes,
+      notes:            dto.notes,
+      source:           AppointmentSource.API,
+    });
+
+    this.notifications.notifyAppointmentCreated(appointment as any, 'public').catch(() => {});
+
+    return {
+      appointmentId: appointment.appointmentId,
+      status:        appointment.status,
+      scheduledAt:   appointment.scheduledAt,
+      service:       appointment.service?.name ?? null,
+      staff:         appointment.staff?.name ?? null,
+    };
+  }
+
+  private async findOrCreateCustomerByPhone(storeId: string, digits: string, name: string) {
+    const existing = await this.prisma.customer.findFirst({
+      where: { storeId, phone: { contains: digits.slice(-9) } },
+    });
+    if (existing) return existing;
+
+    const canonicalPhone = digits.length === 10 && digits.startsWith('3') ? `+57${digits}` : `+${digits}`;
+    return this.customers.findOrCreate({ storeId, phone: canonicalPhone, name });
   }
 
   async getAvailability(slug: string, dateStr: string): Promise<{ date: string; dayName: string; staff: SlotResult[] }> {
@@ -56,7 +175,10 @@ export class PublicService {
 
     const results: SlotResult[] = [];
     const startOfDay = new Date(`${dateStr}T05:00:00.000Z`);
-    const endOfDay   = new Date(`${dateStr}T28:59:59.000Z`); // +24h
+    // FIX: "T28:59:59.000Z" no es una hora ISO válida (>23h) → Invalid Date → 500 en Prisma.
+    // Medianoche del día siguiente en hora Colombia = inicio del día + 24h, sin importar
+    // si cruza fin de mes o de año (construir el string a mano no lo manejaba).
+    const endOfDay   = new Date(startOfDay.getTime() + 24 * 60 * 60_000);
 
     if (activeStaff.length === 0) {
       const hours = store.businessHours as Record<string, any> | null;
