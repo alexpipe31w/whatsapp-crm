@@ -1235,7 +1235,23 @@ export class AiService {
       const prevHadApptCtx  = recentHistory.some(
         (m: any) => m.isAiResponse && /cita|agend|barbero|profesional|confirma|horario/i.test(m.content),
       );
-      const hasApptContextHint = APPT_CONTEXT_RE.test(userMessage) && prevHadApptCtx;
+      // Un "sí"/"dale" suelto no matchea APPT_CONTEXT_RE (no menciona día/hora/agend-)
+      // ni APPOINTMENT_INTENT_RE — sin esto, la única puerta de entrada al flujo de
+      // citas era hasPendingAppt. Si el caché no tenía la conversación (TTL, fallo
+      // previo del extractor, etc.), el bloque completo —incluido el guard anti-
+      // alucinación de la línea ~1300— se saltaba entero y la IA principal quedaba
+      // libre, repitiendo su propia "confirmación" inventada en bucle (incidente
+      // real con Duan, 2026-06-07 ~8:14pm: 6 "sí" seguidos sin crear la cita nunca).
+      // Fix: si el ÚLTIMO mensaje de la IA pidió explícitamente confirmar una cita
+      // y el cliente responde con una confirmación, eso también cuenta como hint —
+      // deliberadamente más estrecho que "prevHadApptCtx" (que dispara con solo
+      // mencionar "profesional"/"horario", palabras comunes en cualquier charla de
+      // barbería) para no añadir llamadas de más al extractor ni falsos positivos.
+      const lastAiMsg = [...recentHistory].reverse().find((m: any) => m.isAiResponse);
+      const aiAskedApptConfirmation = !!lastAiMsg && /¿\s*(confirmas?|todo\s+(bien|correcto|ok)|es\s+correcto|procedo)\b|te\s+agendar[ée]|qued[oó]\s+(lista|registrada|agendada|confirmada)/i.test(lastAiMsg.content);
+      const hasApptContextHint =
+        (APPT_CONTEXT_RE.test(userMessage) && prevHadApptCtx) ||
+        (CONFIRMATION_RE.test(userMessage.trim()) && aiAskedApptConfirmation);
 
       // ── Pre-check horario: día cerrado detectado en el mensaje actual ───────────
       // Si el cliente menciona una fecha y ese día está cerrado, avisar de inmediato
