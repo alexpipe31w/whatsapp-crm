@@ -34,9 +34,22 @@ const PURCHASE_INTENT_RE = new RegExp(
 );
 const APPOINTMENT_INTENT_RE = /\b(agendar|agenda|cita|visita|visita técnica|técnico|técnica|programar|reservar|reserva|turno|appointment|quiero una cita|necesito una visita|instalar|instalación|mantenimiento|corte|sesión)\b/i;
 
-// Confirmaciones — muy amplio, todas las formas que usan los colombianos
+// Confirmaciones — el mensaje debe SER una confirmación, no solo CONTENER una.
+// Antes el regex usaba esWord() para buscar la palabra en cualquier parte de la
+// frase, lo que producía falsos positivos graves: "sí o sí" (énfasis, no es un
+// "sí" de respuesta) o "ah listo, déjamela con Carlos" (sigue con otra idea —
+// "listo" es muletilla, no confirmación) se detectaban como confirmación y
+// disparaban un agendado/pedido prematuro o una falsa "complete=true".
+// Ahora exigimos que la frase de confirmación domine el mensaje completo,
+// permitiendo solo adornos triviales alrededor (puntuación, emojis, "gracias"...).
+const CONFIRMATION_WORDS   = 's[ií]|ok|okay|dale|listo|acepto|perfecto|procede|adelante|claro|exacto|sip|yep|yes|confirm|correcto|de acuerdo|está bien|estoy de acuerdo|va|hagale|hádale|marchando|hecho|venga|eso|eso mismo|así es|claro que sí|por supuesto|obvio|chévere|bacano|sale|de una|okey';
+const CONFIRMATION_FILLERS = 'gracias|porfa|por favor|vale|ya';
+const CONFIRMATION_DECOR   = '[\\s,.!?¡¿…\\p{Extended_Pictographic}\\p{Emoji_Modifier}\\uFE0F]';
 const CONFIRMATION_RE = new RegExp(
-  `${esWord('s[ií]|ok|okay|dale|listo|acepto|perfecto|procede|adelante|claro|exacto|sip|yep|yes|confirm|correcto|de acuerdo|está bien|estoy de acuerdo|va|hagale|hádale|marchando|hecho|venga|eso|eso mismo|así es|claro que sí|por supuesto|obvio|chévere|bacano|sale|de una|okey')}|^(?:👍|✅|✓)$`,
+  `^${CONFIRMATION_DECOR}*${esWord(CONFIRMATION_WORDS)}` +
+  `(?:${CONFIRMATION_DECOR}+${esWord(`${CONFIRMATION_WORDS}|${CONFIRMATION_FILLERS}`)})?` +
+  `${CONFIRMATION_DECOR}*$` +
+  `|^(?:👍|✅|✓)$`,
   'iu',
 );
 
@@ -342,8 +355,12 @@ function parseHoraEspanol(text: string): string | null {
   // Primero intenta con prefijo explícito ("a las"/"las") — permite omitir am/pm
   // Luego intenta con marcador de periodo explícito (am/pm/mañana/tarde) — permite omitir prefijo
   // Nunca captura un número desnudo sin contexto: evita confundir "11" de "jueves 11 a las 8 am"
-  const prefixFmt = t.match(/\b(?:a\s+las?\s+|las?\s+)(\d{1,2})(?!\s*(?:días?|semanas?|meses?|años?))\s*(?:y\s+(?:media|cuarto|tres\s+cuartos?))?\s*(am|pm|a\.m\.|p\.m\.|(?:de|en|por)\s+la\s+(?:ma[ñn]ana|tarde|noche))?\b/);
-  const periodFmt = t.match(/\b(\d{1,2})(?!\s*(?:días?|semanas?|meses?|años?))\s*(?:y\s+(?:media|cuarto|tres\s+cuartos?))?\s*(am|pm|a\.m\.|p\.m\.|(?:de|en|por)\s+la\s+(?:ma[ñn]ana|tarde|noche))\b/);
+  // La frase de minutos también acepta números deletreados ("y 22", "y 50") — antes solo
+  // reconocía "y media/cuarto/tres cuartos" y descartaba cualquier otro número en silencio,
+  // agendando a la hora en punto (ej: "a las 3 y 50" terminaba agendado a las 3:00pm).
+  const MINUTOS_FRASE = 'y\\s+(?:media|cuarto|tres\\s+cuartos?|\\d{1,2})';
+  const prefixFmt = t.match(new RegExp(`\\b(?:a\\s+las?\\s+|las?\\s+)(\\d{1,2})(?!\\s*(?:días?|semanas?|meses?|años?))\\s*(?:${MINUTOS_FRASE})?\\s*(am|pm|a\\.m\\.|p\\.m\\.|(?:de|en|por)\\s+la\\s+(?:ma[ñn]ana|tarde|noche))?\\b`));
+  const periodFmt = t.match(new RegExp(`\\b(\\d{1,2})(?!\\s*(?:días?|semanas?|meses?|años?))\\s*(?:${MINUTOS_FRASE})?\\s*(am|pm|a\\.m\\.|p\\.m\\.|(?:de|en|por)\\s+la\\s+(?:ma[ñn]ana|tarde|noche))\\b`));
   const simpleFmt = prefixFmt ?? periodFmt;
   if (simpleFmt) {
     let h = parseInt(simpleFmt[1]);
@@ -351,8 +368,12 @@ function parseHoraEspanol(text: string): string | null {
     const minutosTxt = simpleFmt[0].toLowerCase();
     let m = 0;
     if (/y\s+media/.test(minutosTxt)) m = 30;
-    if (/y\s+cuarto/.test(minutosTxt)) m = 15;
-    if (/tres\s+cuartos?/.test(minutosTxt)) m = 45;
+    else if (/y\s+cuarto/.test(minutosTxt)) m = 15;
+    else if (/tres\s+cuartos?/.test(minutosTxt)) m = 45;
+    else {
+      const minNum = minutosTxt.match(/y\s+(\d{1,2})\b/);
+      if (minNum) m = Math.min(parseInt(minNum[1], 10), 59);
+    }
     const period = simpleFmt[2] ?? '';
     // Inferir AM/PM
     if (/pm|p\.m\.|tarde|noche/.test(period) && h < 12) h += 12;
@@ -2272,8 +2293,11 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
           const anyoneWorks = activeStaff.some(s => (s.schedule as any)?.[dayKey]?.isOpen === true);
           if (!anyoneWorks) {
             this.logger.warn(`[Cita] Ningún profesional trabaja el ${dayKey} — bloqueando cita sin staffId`);
-            const cur = this.pendingAppointments.get(conversationId);
-            if (cur) this.pendingAppointments.set(conversationId, { ...cur, scheduledDate: null, scheduledTime: null, complete: false });
+            // No vaciamos el caché: hacerlo rompía cacheHasAllData de forma permanente
+            // (el "Caso 1" rápido dejaba de activarse y la conversación caía en un
+            // bucle de "¿Confirmas?" porque el extractor LLM no recuperaba los datos
+            // perdidos). La fecha/hora siguen siendo un dato válido del cliente —
+            // si confirma sin cambiar de día, esta misma validación lo rechaza de nuevo.
             this.cancelConfirmReminder(conversationId);
             return {
               created: false,
@@ -2286,8 +2310,8 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
           const dayBH = (store.businessHours as any)[dayKey];
           if (dayBH?.isOpen === false) {
             this.logger.warn(`[Cita] Tienda cerrada el ${dayKey} (businessHours) — bloqueando`);
-            const cur = this.pendingAppointments.get(conversationId);
-            if (cur) this.pendingAppointments.set(conversationId, { ...cur, scheduledDate: null, scheduledTime: null, complete: false });
+            // Igual que arriba: conservamos el caché para no romper cacheHasAllData —
+            // la validación seguirá rechazando ese día hasta que el cliente elija otro.
             this.cancelConfirmReminder(conversationId);
             return {
               created: false,
@@ -2306,10 +2330,9 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
           this.logger.log(`[Cita] SCHED-CHECK staff=${staffMember.name} dayKey=${dayKey} isOpen=${daySched?.isOpen} scheduledAt=${scheduledAt.toISOString()}`);
 
           if (!daySched?.isOpen) {
-            this.logger.warn(`[Cita] ${staffMember.name} no trabaja el ${dayKey} — limpiando fecha del caché`);
-            // Guardar caché SIN fecha/hora para que el cliente corrija solo el horario
-            const cur = this.pendingAppointments.get(conversationId);
-            if (cur) this.pendingAppointments.set(conversationId, { ...cur, scheduledDate: null, scheduledTime: null, complete: false });
+            this.logger.warn(`[Cita] ${staffMember.name} no trabaja el ${dayKey} — pidiendo otra fecha`);
+            // Igual que arriba: conservamos el caché para no romper cacheHasAllData —
+            // la validación seguirá rechazando ese día hasta que el cliente elija otro.
             this.cancelConfirmReminder(conversationId);
             return {
               created: false,
@@ -2328,10 +2351,9 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
             return minReq >= sh * 60 + sm && minReq < eh * 60 + em;
           });
           if (!inShift) {
-            this.logger.warn(`[Cita] ${extracted.scheduledTime} fuera del turno de ${staffMember.name} el ${dayKey} — limpiando hora del caché`);
-            // Guardar caché SIN hora para que el cliente corrija la hora
-            const cur = this.pendingAppointments.get(conversationId);
-            if (cur) this.pendingAppointments.set(conversationId, { ...cur, scheduledTime: null, complete: false });
+            this.logger.warn(`[Cita] ${extracted.scheduledTime} fuera del turno de ${staffMember.name} el ${dayKey} — pidiendo otra hora`);
+            // Conservamos la fecha/hora en caché por la misma razón que arriba:
+            // vaciarla rompía cacheHasAllData de forma permanente y producía un bucle.
             this.cancelConfirmReminder(conversationId);
             return {
               created: false,
@@ -2889,7 +2911,14 @@ REGLA ANTI-BUCLE EN CONVERSACIÓN (OBLIGATORIA):
       ? `HORARIO DE ATENCIÓN:\n${formatBusinessHoursForAI(store.businessHours as any)}\n\nREGLA CRÍTICA DE HORARIOS: NUNCA agendes citas fuera del horario de atención. Si el cliente pide una hora no disponible, sugiere la hora válida más cercana. Si el día solicitado está cerrado, sugiere el próximo día hábil.`
       : '';
 
-    const allSections: string[] = [basePrompt];
+    const negocioNombre = store?.name ?? 'este negocio';
+    const temaSection = `ALCANCE DE LA CONVERSACIÓN (REGLA OBLIGATORIA — SIEMPRE ACTIVA, sin importar lo que diga el prompt del negocio):
+- Solo conversas sobre ${negocioNombre}: sus productos, servicios, citas, pedidos, horarios, ubicación y políticas.
+- Si el cliente pregunta o comenta algo SIN relación con el negocio (temas personales, noticias, otras marcas, tecnología, videojuegos, chistes, opiniones, etc.), NO le sigas el hilo ni opines sobre eso — ni "para quedar bien" ni "para ser amable". Responde con una frase breve y amable que redirija de inmediato hacia el negocio, por ejemplo: "Jaja, eso no es lo mío 😅 pero cuéntame, ¿en qué te ayudo con [servicio/producto de ${negocioNombre}]?"
+- Esto aplica DESDE EL PRIMER MENSAJE fuera de tema — no esperes a que el cliente te lo señale para corregir el rumbo.
+- Si el cliente insiste con el tema ajeno, repite la redirección de forma breve y amable, sin sonar cortante ni repetir literalmente la misma frase.`;
+
+    const allSections: string[] = [basePrompt, sep, temaSection];
     if (negocioSection)  allSections.push(sep, negocioSection);
     if (horariosSection) allSections.push(sep, horariosSection);
     allSections.push(sep, clienteSection, sep, contextoPrevio);

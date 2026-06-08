@@ -535,9 +535,16 @@ export class WhatsappService implements OnModuleInit {
   // ─── Procesamiento de mensajes ──────────────────────────────────────────────
 
   private async processMessage(msg: any, storeId: string, sock: any): Promise<void> {
-    // Ignorar mensajes propios
-    if (msg.key?.fromMe) return;
-    if (!msg.message)    return;
+    if (!msg.message) return;
+
+    // Mensajes propios: el bot los ignora, salvo el comando interno "!stop" que
+    // el dueño escribe dentro del chat del cliente para silenciar al bot ahí.
+    // Baileys reporta esos mensajes como fromMe, así que hay que revisarlos
+    // ANTES de descartarlos (de lo contrario el comando nunca llega a procesarse).
+    if (msg.key?.fromMe) {
+      await this.handleOwnerStopCommand(msg, storeId);
+      return;
+    }
 
     // Deduplicación
     const msgId = msg.key?.id;
@@ -600,6 +607,35 @@ export class WhatsappService implements OnModuleInit {
     this.logger.log(`📩 Mensaje de ${phone}: ${content.slice(0, 100)}${content.length > 100 ? '...' : ''}`);
 
     this.bufferAndProcess(storeId, phone, content, sock);
+  }
+
+  // ─── Comando interno del dueño: !stop dentro del chat del cliente ───────────
+
+  private async handleOwnerStopCommand(msg: any, storeId: string): Promise<void> {
+    const messageType = Object.keys(msg.message ?? {})[0];
+    if (!messageType || IGNORED_TYPES.has(messageType) || MEDIA_TYPES.has(messageType)) return;
+
+    const rawContent = extractTextContent(msg.message);
+    if (!rawContent) return;
+    if (sanitizeContent(rawContent).trim().toLowerCase() !== '!stop') return;
+
+    const jid = resolveJid(msg.key);
+    if (!jid || jid.endsWith('@g.us') || jid.endsWith('@broadcast')) return;
+
+    const phone = phoneFromJid(jid);
+    if (!phone) return;
+
+    const conversation = await this.prisma.conversation.findFirst({
+      where:   { storeId, customer: { phone } },
+      orderBy: { lastMessageAt: 'desc' },
+    });
+    if (!conversation || conversation.status === 'human' || conversation.status === 'closed') return;
+
+    await this.prisma.conversation.update({
+      where: { conversationId: conversation.conversationId },
+      data:  { status: 'human' },
+    });
+    this.logger.log(`🛑 !stop del dueño en chat de ${phone} — bot silenciado`);
   }
 
   // ─── Debounce + cola secuencial ──────────────────────────────────────────────

@@ -14,7 +14,17 @@ interface Session { messages: SessionMessage[]; lastActivity: number }
 
 const SESSION_TTL_MS    = 2 * 60 * 60 * 1000; // 2h
 const MAX_HISTORY       = 16;
-const ACTION_RE         = /⚡ACTION⚡([A-Z_]+)⚡({[\s\S]*?})⚡END⚡/;
+const ACTION_RE         = /⚡ACTION⚡([A-Z_]+)⚡({[\s\S]*?})⚡END⚡/g;
+
+const APPT_STATUS_LABEL: Record<string, string> = {
+  PENDING:     'pendiente',
+  CONFIRMED:   'confirmada',
+  IN_PROGRESS: 'en curso',
+  COMPLETED:   'completada',
+  CANCELLED:   'cancelada',
+  NO_SHOW:     'marcada como no-show',
+  RESCHEDULED: 'reagendada',
+};
 
 // ── Formato de número ─────────────────────────────────────────────────────────
 const normalizePhone = (p: string) => p.replace(/\D/g, '');
@@ -94,17 +104,23 @@ export class AdminAssistantService implements OnModuleDestroy {
       }
       if (!reply) throw lastErr ?? new Error('Todos los cartridges fallaron');
 
-      // ── Detectar y ejecutar acción ─────────────────────────────────────────
-      const actionMatch = ACTION_RE.exec(reply);
-      if (actionMatch) {
-        const actionType   = actionMatch[1];
-        let   actionParams: any = {};
-        try { actionParams = JSON.parse(actionMatch[2]); } catch { /* ignore */ }
+      // ── Detectar y ejecutar acción(es) ─────────────────────────────────────
+      // El LLM puede emitir varias acciones en una sola respuesta (ej: confirmar
+      // una cita y cancelar otra), así que hay que procesar TODAS las coincidencias
+      // — no solo la primera — y quitarlas todas del texto visible.
+      const actionMatches = [...reply.matchAll(ACTION_RE)];
+      if (actionMatches.length > 0) {
+        const visibleText = reply.replace(ACTION_RE, '').trim();
 
-        const visibleText  = reply.replace(ACTION_RE, '').trim();
-        const actionResult = await this.executeAction(storeId, actionType, actionParams);
+        const actionResults: string[] = [];
+        for (const match of actionMatches) {
+          const actionType = match[1];
+          let   actionParams: any = {};
+          try { actionParams = JSON.parse(match[2]); } catch { /* ignore */ }
+          actionResults.push(await this.executeAction(storeId, actionType, actionParams));
+        }
 
-        reply = [visibleText, actionResult].filter(Boolean).join('\n\n');
+        reply = [visibleText, ...actionResults].filter(Boolean).join('\n\n');
       }
 
       // Guardar en historial
@@ -391,7 +407,24 @@ REGLAS:
     });
 
     if (matches.length === 0) {
-      return { reply: `❌ No encontré ninguna cita de "${nameOrPhone}" en un estado válido para ${actionLabel}.` };
+      // La cita puede existir pero ya estar en el estado al que se quería llevar
+      // (ej: "confirma la cita de Rosal" cuando ya está CONFIRMED) — en ese caso
+      // "no encontré ninguna cita" confunde al admin; le avisamos del estado real.
+      const anyMatch = await this.prisma.appointment.findFirst({
+        where: {
+          storeId,
+          customer: params.customerPhone
+            ? { phone: { contains: normalizePhone(params.customerPhone).slice(-9) } }
+            : { name: { contains: nameOrPhone, mode: 'insensitive' } },
+        },
+        orderBy: { scheduledAt: 'desc' },
+        include: { customer: { select: { name: true } } },
+      });
+      if (anyMatch) {
+        const label = APPT_STATUS_LABEL[anyMatch.status] ?? anyMatch.status.toLowerCase();
+        return { reply: `ℹ️ La cita de ${anyMatch.customer?.name ?? nameOrPhone} ya está ${label} — no hay nada que ${actionLabel}.` };
+      }
+      return { reply: `❌ No encontré ninguna cita de "${nameOrPhone}".` };
     }
     if (matches.length > 1) {
       const lines = matches.map((a, i) => {
