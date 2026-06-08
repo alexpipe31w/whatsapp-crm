@@ -251,6 +251,12 @@ function extractQueryDate(message: string, _today: Date, tz = TZ_CO): Date | nul
     if (n > 0) { const d = new Date(hoy); d.setDate(d.getDate() + n); return d; }
   }
 
+  // Jerga colombiana: "el finde" / "este finde" / "fin de semana" → el próximo sábado
+  if (/\b(el|este)\s+finde\b|\bfin\s+de\s+semana\b/.test(lower)) {
+    const diff = (6 - dayOfWeek + 7) % 7 || 7;
+    const d = new Date(hoy); d.setDate(d.getDate() + diff); return d;
+  }
+
   const DAYS: Record<string, number> = {
     domingo:0, lunes:1, martes:2, miércoles:3, miercoles:3,
     jueves:4, viernes:5, sábado:6, sabado:6,
@@ -359,7 +365,11 @@ function parseHoraEspanol(text: string): string | null {
   // reconocía "y media/cuarto/tres cuartos" y descartaba cualquier otro número en silencio,
   // agendando a la hora en punto (ej: "a las 3 y 50" terminaba agendado a las 3:00pm).
   const MINUTOS_FRASE = 'y\\s+(?:media|cuarto|tres\\s+cuartos?|\\d{1,2})';
-  const prefixFmt = t.match(new RegExp(`\\b(?:a\\s+las?\\s+|las?\\s+)(\\d{1,2})(?!\\s*(?:días?|semanas?|meses?|años?))\\s*(?:${MINUTOS_FRASE})?\\s*(am|pm|a\\.m\\.|p\\.m\\.|(?:de|en|por)\\s+la\\s+(?:ma[ñn]ana|tarde|noche))?\\b`));
+  // Jerga colombiana para introducir una hora aproximada: "a eso de las 3", "como a las 3",
+  // "por ahí a las 3", "más o menos a las 3" — todas equivalen a "a las 3". Todas exigen
+  // la palabra "las" explícita para no confundir con otros usos de "como"/"tipo"/"por ahí".
+  const PREFIJO_HORA = 'a\\s+eso\\s+de\\s+las?\\s+|como\\s+a\\s+las?\\s+|por\\s+ah[ií]\\s+a\\s+las?\\s+|m[aá]s\\s+o\\s+menos\\s+a\\s+las?\\s+|a\\s+las?\\s+|las?\\s+';
+  const prefixFmt = t.match(new RegExp(`\\b(?:${PREFIJO_HORA})(\\d{1,2})(?!\\s*(?:días?|semanas?|meses?|años?))\\s*(?:${MINUTOS_FRASE})?\\s*(am|pm|a\\.m\\.|p\\.m\\.|(?:de|en|por)\\s+la\\s+(?:ma[ñn]ana|tarde|noche))?\\b`));
   const periodFmt = t.match(new RegExp(`\\b(\\d{1,2})(?!\\s*(?:días?|semanas?|meses?|años?))\\s*(?:${MINUTOS_FRASE})?\\s*(am|pm|a\\.m\\.|p\\.m\\.|(?:de|en|por)\\s+la\\s+(?:ma[ñn]ana|tarde|noche))\\b`));
   const simpleFmt = prefixFmt ?? periodFmt;
   if (simpleFmt) {
@@ -412,6 +422,7 @@ function parseNombreCliente(text: string, conversationLines: string[] = []): str
     // Partículas / conectores frecuentes al inicio de mensajes
     'para','por','con','sin','una','unos','unas','los','las','del','sobre',
     'entre','desde','hasta','durante','también','tampoco','solo','sólo',
+    'en','la','el','lo','un','uno','y','o','de','al','se','te','le','su',
     'me','mi','mis','sus','tu','tus','nos','les',
     'que','qué','como','cómo','cuando','cuándo','donde','dónde',
     'cuanto','cuánto','cuantos','cuántos','cual','cuál','cuales','cuáles',
@@ -511,6 +522,17 @@ function parseNombreCliente(text: string, conversationLines: string[] = []): str
   }
 
   return null;
+}
+
+// Detecta cuando el extractor LLM devolvió una frase-placeholder en vez de un
+// nombre real (ej: "Cliente no registrado", "el cliente no mencionó su nombre").
+// Estas frases pasan los regex de "dos palabras capitalizadas" y terminan
+// guardándose como si fueran el nombre del cliente.
+const PLACEHOLDER_NAME_RE = /no\s+(registrad|proporcion|mencion|dij|especific|indic|dio|tiene)|sin\s+nombre|nombre\s+(desconocido|no\s)|cliente\s+(an[oó]nimo|desconocido)|desconocid/i;
+
+function isPlaceholderName(name: string | null | undefined): boolean {
+  if (!name) return true;
+  return PLACEHOLDER_NAME_RE.test(name);
 }
 
 // ─── Merge robusto de datos de cita ──────────────────────────────────────────
@@ -1017,7 +1039,7 @@ export class AiService {
     date: Date,
     activeStaff: { staffId: string; name: string; schedule: any }[],
     store: { businessHours: any },
-  ): Promise<{ name: string; slots: string[] }[]> {
+  ): Promise<{ name: string; slots: string[]; occupied: string[] }[]> {
     const tz = 'America/Bogota';
     const dateStr = date.toLocaleDateString('en-CA', { timeZone: tz }); // YYYY-MM-DD
     // -05:00 explícito (igual que coNoon/computeSlots de public.service.ts): "T00:00:00"
@@ -1031,7 +1053,7 @@ export class AiService {
 
     const dayKey = coDayKey(date);
 
-    const results: { name: string; slots: string[] }[] = [];
+    const results: { name: string; slots: string[]; occupied: string[] }[] = [];
 
     const members = activeStaff.length > 0
       ? activeStaff
@@ -1039,10 +1061,10 @@ export class AiService {
 
     for (const member of members) {
       const effectiveHours = member.schedule ?? store.businessHours;
-      if (!effectiveHours) { results.push({ name: member.name, slots: [] }); continue; }
+      if (!effectiveHours) { results.push({ name: member.name, slots: [], occupied: [] }); continue; }
 
       const daySchedule = (effectiveHours as any)[dayKey];
-      if (!daySchedule?.isOpen) { results.push({ name: member.name, slots: [] }); continue; }
+      if (!daySchedule?.isOpen) { results.push({ name: member.name, slots: [], occupied: [] }); continue; }
 
       const whereClause: any = {
         storeId,
@@ -1057,6 +1079,7 @@ export class AiService {
       });
 
       const slots: string[] = [];
+      const occupiedSlots: string[] = [];
       const SLOT = 30;
 
       for (const shift of ['shift1', 'shift2'] as const) {
@@ -1076,14 +1099,17 @@ export class AiService {
             return a.scheduledAt < slotEnd && aEnd > slotStart;
           });
 
-          if (!occupied) {
-            slots.push(`${String(Math.floor(cur/60)).padStart(2,'0')}:${String(cur%60).padStart(2,'0')}`);
+          const label = `${String(Math.floor(cur/60)).padStart(2,'0')}:${String(cur%60).padStart(2,'0')}`;
+          if (occupied) {
+            occupiedSlots.push(label);
+          } else {
+            slots.push(label);
           }
           cur += SLOT;
         }
       }
 
-      results.push({ name: member.name, slots });
+      results.push({ name: member.name, slots, occupied: occupiedSlots });
     }
 
     return results;
@@ -1389,17 +1415,25 @@ export class AiService {
           );
           const dayName = queryDate.toLocaleDateString('es-CO', { weekday: 'long', timeZone: 'America/Bogota' });
           const dateLabel = queryDate.toLocaleDateString('es-CO', { day: 'numeric', month: 'long', timeZone: 'America/Bogota' });
-          // Incluir slots libres y quién no trabaja ese día
+          // Incluir AGENDA COMPLETA del día (libres Y ocupados, en orden cronológico) —
+          // así la IA puede mostrarla proactivamente apenas el cliente menciona el día
+          // ("3:00 libre, 3:30 libre, 4:00 ocupado...") en vez de proponer una hora a la
+          // vez y descubrir recién al final que estaba ocupada (eso alargaba la conversación
+          // y cansaba al cliente).
           const lines: string[] = [];
           for (const s of slotsData) {
-            if (s.slots.length > 0) {
-              lines.push(`- ${s.name}: ${s.slots.join(', ')}`);
-            } else {
+            if (s.slots.length === 0 && s.occupied.length === 0) {
               lines.push(`- ${s.name}: NO DISPONIBLE ese día`);
+              continue;
             }
+            const merged = [
+              ...s.slots.map(t => ({ t, label: 'libre' })),
+              ...s.occupied.map(t => ({ t, label: 'ocupado' })),
+            ].sort((a, b) => a.t.localeCompare(b.t));
+            lines.push(`- ${s.name}: ${merged.map(m => `${m.t} ${m.label}`).join(', ')}`);
           }
           if (lines.some(l => !l.includes('NO DISPONIBLE'))) {
-            availabilityBlock = `\nDISPONIBILIDAD REAL PARA EL ${dayName.toUpperCase()} ${dateLabel}:\n${lines.join('\n')}\n\nREGLA CRÍTICA: Usa SOLO estos horarios para ese día. Si el cliente pide un horario que no aparece en la lista o dice "NO DISPONIBLE", dile claramente que no hay disponibilidad y ofrece las horas que SÍ están en la lista.`;
+            availabilityBlock = `\nAGENDA REAL DEL ${dayName.toUpperCase()} ${dateLabel} (hora: estado — "libre" = disponible para agendar, "ocupado" = ya tiene cita):\n${lines.join('\n')}\n\nREGLA CRÍTICA — MUESTRA LA AGENDA PROACTIVAMENTE: en cuanto el cliente diga o confirme el día que quiere, muéstrale de una vez el listado completo de horarios de ese día (libres Y ocupados, ej: "3:00 libre, 3:30 libre, 4:00 ocupado, 4:30 libre...") para que elija directamente una hora libre — NO le propongas una hora a la vez ni esperes a que pida una hora ocupada para recién ahí decirle que no hay campo; eso alarga la conversación innecesariamente. Usa SOLO estos horarios para ese día — son los reales y verificados, no inventes ni calcules otros.\nREGLA — HORA QUE NO ENCAJA EN LA GRILLA: los horarios están en bloques de 30 minutos según la duración del servicio. Si el cliente pide una hora que NO aparece en la lista (ej. pide "3:40" y la lista solo tiene "3:30" y "4:00"), NO la agendes ni la trates como válida — explícale brevemente que el servicio dura bloques de 30 min y por eso no puedes agendar a esa hora exacta, y ofrécele de una vez el horario LIBRE más cercano de la lista (ej. "no te puedo agendar a las 3:40 porque el servicio dura 30 min, ¿te sirve a las 3:30?").`;
           } else {
             availabilityBlock = `\nDISPONIBILIDAD PARA EL ${dayName.toUpperCase()} ${dateLabel}: Ningún profesional disponible ese día.`;
           }
@@ -2032,7 +2066,12 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
 
         // ── Fallbacks TypeScript — aplican cuando el LLM devuelve null ──────────
 
-        // Nombre
+        // Nombre — si el LLM devolvió una frase-placeholder ("Cliente no registrado",
+        // "el cliente no mencionó su nombre"), tratarla como si no hubiera devuelto nada
+        if (extracted.customerName && isPlaceholderName(extracted.customerName)) {
+          this.logger.warn(`[Cita] Nombre placeholder descartado del LLM: "${extracted.customerName}"`);
+          extracted.customerName = null;
+        }
         if (!extracted.customerName && needsName) {
           const historyClientLines = history
             .filter((m: any) => !m.isAiResponse)
@@ -2870,6 +2909,7 @@ pregunta: "¿Para qué día quieres consultar la disponibilidad?"
 - La confirmación REAL la genera el sistema automáticamente: para citas con el mensaje "¡Cita agendada! ✅", para pedidos con "¡Pedido registrado! 🎉". Si NO ves exactamente ese mensaje (generado por el sistema, no por ti) en la conversación, la cita o el pedido NO existen en el sistema — sin importar cuántas veces el cliente haya dicho "sí" o "confirmo".
 - Si el cliente dice "sí" confirmando y la cita/pedido aún no fue creado, responde con un resumen de los datos recogidos pidiendo confirmación explícita ("¡Perfecto! Para confirmar: [servicio] con [profesional] el [fecha] a las [hora]. ¿Todo correcto?" / "Para confirmar tu pedido: [items], envío a [dirección]. ¿Todo bien así?") — NUNCA respondas "dame un momento" ni "estoy procesando" porque el sistema NO enviará un mensaje automático después; el cliente quedaría esperando indefinidamente.
 - NUNCA inventes una confirmación de cita NI de pedido. Si el sistema no pudo crearla, pide al cliente que elija otro horario, otro producto, o que reconfirme los datos — pero jamás afirmes un éxito que no puedes garantizar.
+- REGLA INVERSA — NUNCA vuelvas a pedir confirmación de algo que el sistema YA confirmó: si en el historial ya aparece "¡Cita agendada! ✅" o "¡Pedido registrado! 🎉", esa cita/pedido YA quedó creada — no preguntes de nuevo "¿es correcto?", "¿confirmas la cita?" ni repitas el resumen de los datos. Si el cliente responde algo como "ok gracias", "listo", "perfecto" después de esa confirmación, simplemente agradece o despídete brevemente (ej. "¡De nada! Cualquier cosa me avisas 😊"); NUNCA reabras la confirmación de una cita/pedido ya creado.
 
 REGLA ANTI-BUCLE EN CONVERSACIÓN (OBLIGATORIA):
 - Si ya hiciste una pregunta al cliente y él respondió con algo (aunque no sea la respuesta exacta que esperabas), NO repitas la misma pregunta.

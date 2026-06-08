@@ -338,6 +338,7 @@ REGLAS:
 - Para crear citas, la fecha/hora SIEMPRE en ISO8601 con offset Colombia (-05:00)
 - Para crear una cita o venta NO necesitas que el cliente ya exista — si el admin te da el teléfono (y opcionalmente el nombre), el sistema lo crea automáticamente. NUNCA te detengas a "registrar primero al cliente": ejecuta la acción directamente con el teléfono que te dieron.
 - Si ya tienes teléfono + servicio/producto + fecha/hora (para citas) o ítems (para ventas), EJECUTA la acción de una vez — no sigas pidiendo confirmación de datos que ya tienes.
+- CADA venta o cita es de un cliente independiente — NUNCA reutilices el teléfono/nombre/customerId del cliente de una venta o cita anterior en esta conversación para una nueva, aunque el admin no lo repita. Si el admin pide registrar "otra venta" o "una cita más" sin decir de quién es, PREGÚNTALE primero: "¿Es para el mismo cliente (nombre/teléfono) o uno nuevo?" — solo continúa con el cliente anterior si el admin lo confirma explícitamente.
 - Para confirmar/cancelar/completar citas: NUNCA inventes ni adivines un appointmentId. Si el admin solo dijo el nombre del cliente ("confirma la cita de Juan"), manda "customerName" — el sistema la busca por ti y, si hay varias, te las muestra para que el admin elija. Solo manda "appointmentId" si el admin te dio ese ID explícitamente (por ejemplo, copiado de una respuesta anterior tuya).
 - Si el admin pide algo que claramente no está en el contexto (ni en productos ni en servicios), dile que no encuentras esa información
 - Nunca inventes datos — solo usa lo que está en el contexto
@@ -453,7 +454,17 @@ REGLAS:
           // parcial (tolera formatos distintos al guardado), y si es cliente nuevo lo
           // crea al vuelo (upsert atómico — ver CustomersService.findOrCreate, evita
           // duplicados por condición de carrera).
-          let customerId = params.customerId;
+          // Igual que con serviceId/productId más abajo: nunca confiar en que un
+          // customerId que la IA extrajo (o alucinó) pertenece a esta tienda — si no
+          // se valida, Prisma deja crear la orden con un FK roto o de otro storeId,
+          // y la creación revienta con "Foreign key constraint violated on orders_customer_id_fkey".
+          let customerId: string | undefined;
+          if (params.customerId) {
+            const owned = await this.prisma.customer.findFirst({
+              where: { customerId: params.customerId, storeId }, select: { customerId: true },
+            });
+            if (owned) customerId = owned.customerId;
+          }
           if (!customerId && params.customerPhone) {
             customerId = (await this.findOrCreateCustomerByPhone(storeId, params.customerPhone, params.customerName)).customerId;
           }
