@@ -405,4 +405,167 @@ Analiza el sentimiento general y los patrones. Devuelve ÚNICAMENTE este JSON (s
       recentOrders,
     };
   }
+
+  // ─── Insights profundos: tendencias, comparativas, patrones, embudo ──────────
+  // Endpoint separado de getSummary (no toca lo que ya funciona en producción).
+  async getInsights(storeId: string, period: string) {
+    const now         = new Date();
+    const tzOffset    = -5 * 60; // Colombia = UTC-5, sin DST
+    const localNow    = new Date(now.getTime() + tzOffset * 60 * 1000);
+    const colMidnight = (y: number, m: number, d: number) =>
+      new Date(Date.UTC(y, m, d, 5, 0, 0, 0)); // 00:00 Colombia == 05:00 UTC
+    const dayKeyCol = (d: Date) =>
+      new Date(d.getTime() + tzOffset * 60 * 1000).toISOString().slice(0, 10);
+
+    const Y = localNow.getUTCFullYear();
+    const M = localNow.getUTCMonth();
+    const D = localNow.getUTCDate();
+
+    let from: Date;
+    let to: Date = new Date(now);
+
+    switch (period) {
+      case 'today':
+        from = colMidnight(Y, M, D);
+        to   = new Date(from.getTime() + 24 * 60 * 60 * 1000 - 1);
+        break;
+      case 'week': {
+        const day = localNow.getUTCDay();
+        from = colMidnight(Y, M, D - (day === 0 ? 6 : day - 1));
+        break;
+      }
+      case 'last_month':
+        from = colMidnight(Y, M - 1, 1);
+        to   = new Date(colMidnight(Y, M, 1).getTime() - 1);
+        break;
+      case 'month':
+      default:
+        from = colMidnight(Y, M, 1);
+        break;
+    }
+
+    // Período anterior equivalente: mismo tamaño (en ms), justo antes de "from".
+    // Así "esta semana" (lun-hoy) se compara contra los mismos N días de la
+    // semana pasada, no contra la semana completa — comparación justa.
+    const spanMs   = to.getTime() - from.getTime();
+    const prevTo   = new Date(from.getTime() - 1);
+    const prevFrom = new Date(prevTo.getTime() - spanMs);
+
+    const [orders, appointments, conversations, prevOrders, prevApptCount, prevCustomerCount, newCustomerCount] =
+      await Promise.all([
+        this.prisma.order.findMany({
+          where:  { storeId, createdAt: { gte: from, lte: to }, status: { not: 'cancelled' } },
+          select: { total: true, createdAt: true, customerId: true },
+        }),
+        this.prisma.appointment.findMany({
+          where:  { storeId, createdAt: { gte: from, lte: to } },
+          select: { createdAt: true, scheduledAt: true, customerId: true },
+        }),
+        this.prisma.conversation.findMany({
+          where:  { storeId, startedAt: { gte: from, lte: to } },
+          select: { startedAt: true, customerId: true },
+        }),
+        this.prisma.order.findMany({
+          where:  { storeId, createdAt: { gte: prevFrom, lte: prevTo }, status: { not: 'cancelled' } },
+          select: { total: true },
+        }),
+        this.prisma.appointment.count({
+          where: { storeId, createdAt: { gte: prevFrom, lte: prevTo } },
+        }),
+        this.prisma.customer.count({
+          where: { storeId, createdAt: { gte: prevFrom, lte: prevTo } },
+        }),
+        this.prisma.customer.count({
+          where: { storeId, createdAt: { gte: from, lte: to } },
+        }),
+      ]);
+
+    // ── Serie diaria: revenue / citas creadas / conversaciones iniciadas ───────
+    // Se inicializan todos los días del rango en cero para que el gráfico de
+    // tendencia no tenga huecos en días sin actividad.
+    const days: string[] = [];
+    for (let t = from.getTime(); t <= to.getTime(); t += 24 * 60 * 60 * 1000) {
+      days.push(dayKeyCol(new Date(t)));
+    }
+    const seriesMap: Record<string, { revenue: number; appointments: number; conversations: number }> = {};
+    for (const day of days) seriesMap[day] = { revenue: 0, appointments: 0, conversations: 0 };
+
+    let currentRevenue = 0;
+    for (const o of orders) {
+      currentRevenue += Number(o.total);
+      const key = dayKeyCol(o.createdAt);
+      if (seriesMap[key]) seriesMap[key].revenue += Number(o.total);
+    }
+    for (const a of appointments) {
+      const key = dayKeyCol(a.createdAt);
+      if (seriesMap[key]) seriesMap[key].appointments += 1;
+    }
+    for (const c of conversations) {
+      const key = dayKeyCol(c.startedAt);
+      if (seriesMap[key]) seriesMap[key].conversations += 1;
+    }
+    const series = days.map(date => ({ date, ...seriesMap[date] }));
+
+    // ── Comparación contra el período anterior equivalente ─────────────────────
+    const pctChange = (current: number, previous: number): number => {
+      if (previous === 0) return current > 0 ? 100 : 0; // evita Infinity/NaN
+      return Math.round(((current - previous) / previous) * 1000) / 10; // 1 decimal
+    };
+    const prevRevenue = prevOrders.reduce((s, o) => s + Number(o.total), 0);
+    const comparison = {
+      revenue: {
+        current: currentRevenue, previous: prevRevenue,
+        pctChange: pctChange(currentRevenue, prevRevenue),
+      },
+      appointments: {
+        current: appointments.length, previous: prevApptCount,
+        pctChange: pctChange(appointments.length, prevApptCount),
+      },
+      customers: {
+        current: newCustomerCount, previous: prevCustomerCount,
+        pctChange: pctChange(newCustomerCount, prevCustomerCount),
+      },
+    };
+
+    // ── Patrones de actividad por hora del día / día de la semana (hora Colombia) ─
+    // Órdenes por createdAt (cuándo compran), citas por scheduledAt (cuándo atienden)
+    const byHour    = new Array(24).fill(0);
+    const byWeekday = new Array(7).fill(0);
+    const trackActivity = (d: Date) => {
+      const local = new Date(d.getTime() + tzOffset * 60 * 1000);
+      byHour[local.getUTCHours()]  += 1;
+      byWeekday[local.getUTCDay()] += 1;
+    };
+    for (const o of orders)       trackActivity(o.createdAt);
+    for (const a of appointments) trackActivity(a.scheduledAt ?? a.createdAt);
+
+    // ── Embudo IA → venta, aproximado por cliente ──────────────────────────────
+    // El schema no liga Order/Appointment directo a Conversation (solo comparten
+    // customerId), así que aproximamos: de los clientes que escribieron en el
+    // período, cuántos también agendaron y cuántos también compraron.
+    const conversationCustomerIds = new Set(conversations.map(c => c.customerId));
+    const appointmentCustomerIds  = new Set(appointments.map(a => a.customerId));
+    const purchaseCustomerIds     = new Set(orders.map(o => o.customerId));
+
+    let withAppointment = 0;
+    let withPurchase    = 0;
+    for (const id of conversationCustomerIds) {
+      if (appointmentCustomerIds.has(id)) withAppointment += 1;
+      if (purchaseCustomerIds.has(id))    withPurchase    += 1;
+    }
+
+    return {
+      period,
+      from: from.toISOString().slice(0, 10),
+      to:   to.toISOString().slice(0, 10),
+      series,
+      comparison,
+      patterns: { byHour, byWeekday },
+      funnel: {
+        conversations: conversationCustomerIds.size,
+        withAppointment,
+        withPurchase,
+      },
+    };
+  }
 }

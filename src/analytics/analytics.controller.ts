@@ -45,4 +45,12 @@ export class AnalyticsController {
   getSummary(@Request() req: any, @Query('period') period?: string) {
     return this.analyticsService.getSummary(req.user.storeId, period ?? 'month');
   }
+
+  // Insights profundos: serie diaria, comparación vs período anterior,
+  // patrones de actividad por hora/día y embudo IA→venta.
+  // Endpoint separado de /summary — no comparte cálculo, se piden en paralelo.
+  @Get('insights')
+  getInsights(@Request() req: any, @Query('period') period?: string) {
+    return this.analyticsService.getInsights(req.user.storeId, period ?? 'month');
+  }
 }
