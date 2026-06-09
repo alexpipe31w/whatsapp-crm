@@ -4,6 +4,15 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateStaffDto } from './dto/create-staff.dto';
 import { UpdateStaffDto } from './dto/update-staff.dto';
 
+const STAFF_SELECT = {
+  staffId:              true,
+  name:                 true,
+  isActive:             true,
+  schedule:             true,
+  commissionPercentage: true,
+  createdAt:            true,
+} as const;
+
 @Injectable()
 export class StaffService {
   constructor(private readonly prisma: PrismaService) {}
@@ -12,7 +21,7 @@ export class StaffService {
     return this.prisma.staff.findMany({
       where:   { storeId, isActive: true },
       orderBy: { createdAt: 'asc' },
-      select:  { staffId: true, name: true, isActive: true, schedule: true, createdAt: true },
+      select:  STAFF_SELECT,
     });
   }
 
@@ -20,10 +29,11 @@ export class StaffService {
     return this.prisma.staff.create({
       data: {
         storeId,
-        name:     dto.name,
-        schedule: dto.schedule ?? Prisma.JsonNull,
+        name:                 dto.name,
+        schedule:             dto.schedule ?? Prisma.JsonNull,
+        commissionPercentage: dto.commissionPercentage ?? null,
       },
-      select: { staffId: true, name: true, isActive: true, schedule: true, createdAt: true },
+      select: STAFF_SELECT,
     });
   }
 
@@ -32,11 +42,12 @@ export class StaffService {
     return this.prisma.staff.update({
       where: { staffId },
       data:  {
-        ...(dto.name     !== undefined && { name:     dto.name }),
-        ...(dto.isActive !== undefined && { isActive: dto.isActive }),
-        ...(dto.schedule !== undefined && { schedule: dto.schedule ?? Prisma.JsonNull }),
+        ...(dto.name                 !== undefined && { name:                 dto.name }),
+        ...(dto.isActive             !== undefined && { isActive:             dto.isActive }),
+        ...(dto.schedule             !== undefined && { schedule:             dto.schedule ?? Prisma.JsonNull }),
+        ...(dto.commissionPercentage !== undefined && { commissionPercentage: dto.commissionPercentage }),
       },
-      select: { staffId: true, name: true, isActive: true, schedule: true, createdAt: true },
+      select: STAFF_SELECT,
     });
   }
 

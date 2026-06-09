@@ -20,8 +20,18 @@ export type StaffModel = runtime.Types.Result.DefaultSelection<Prisma.$StaffPayl
 
 export type AggregateStaff = {
   _count: StaffCountAggregateOutputType | null
+  _avg: StaffAvgAggregateOutputType | null
+  _sum: StaffSumAggregateOutputType | null
   _min: StaffMinAggregateOutputType | null
   _max: StaffMaxAggregateOutputType | null
+}
+
+export type StaffAvgAggregateOutputType = {
+  commissionPercentage: number | null
+}
+
+export type StaffSumAggregateOutputType = {
+  commissionPercentage: number | null
 }
 
 export type StaffMinAggregateOutputType = {
@@ -29,6 +39,7 @@ export type StaffMinAggregateOutputType = {
   storeId: string | null
   name: string | null
   isActive: boolean | null
+  commissionPercentage: number | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -38,6 +49,7 @@ export type StaffMaxAggregateOutputType = {
   storeId: string | null
   name: string | null
   isActive: boolean | null
+  commissionPercentage: number | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -48,17 +60,27 @@ export type StaffCountAggregateOutputType = {
   name: number
   isActive: number
   schedule: number
+  commissionPercentage: number
   createdAt: number
   updatedAt: number
   _all: number
 }
 
 
+export type StaffAvgAggregateInputType = {
+  commissionPercentage?: true
+}
+
+export type StaffSumAggregateInputType = {
+  commissionPercentage?: true
+}
+
 export type StaffMinAggregateInputType = {
   staffId?: true
   storeId?: true
   name?: true
   isActive?: true
+  commissionPercentage?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -68,6 +90,7 @@ export type StaffMaxAggregateInputType = {
   storeId?: true
   name?: true
   isActive?: true
+  commissionPercentage?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -78,6 +101,7 @@ export type StaffCountAggregateInputType = {
   name?: true
   isActive?: true
   schedule?: true
+  commissionPercentage?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -121,6 +145,18 @@ export type StaffAggregateArgs<ExtArgs extends runtime.Types.Extensions.Internal
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
+   * Select which fields to average
+  **/
+  _avg?: StaffAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: StaffSumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
    * Select which fields to find the minimum value
   **/
   _min?: StaffMinAggregateInputType
@@ -151,6 +187,8 @@ export type StaffGroupByArgs<ExtArgs extends runtime.Types.Extensions.InternalAr
   take?: number
   skip?: number
   _count?: StaffCountAggregateInputType | true
+  _avg?: StaffAvgAggregateInputType
+  _sum?: StaffSumAggregateInputType
   _min?: StaffMinAggregateInputType
   _max?: StaffMaxAggregateInputType
 }
@@ -161,9 +199,12 @@ export type StaffGroupByOutputType = {
   name: string
   isActive: boolean
   schedule: runtime.JsonValue | null
+  commissionPercentage: number | null
   createdAt: Date
   updatedAt: Date
   _count: StaffCountAggregateOutputType | null
+  _avg: StaffAvgAggregateOutputType | null
+  _sum: StaffSumAggregateOutputType | null
   _min: StaffMinAggregateOutputType | null
   _max: StaffMaxAggregateOutputType | null
 }
@@ -192,6 +233,7 @@ export type StaffWhereInput = {
   name?: Prisma.StringFilter<"Staff"> | string
   isActive?: Prisma.BoolFilter<"Staff"> | boolean
   schedule?: Prisma.JsonNullableFilter<"Staff">
+  commissionPercentage?: Prisma.FloatNullableFilter<"Staff"> | number | null
   createdAt?: Prisma.DateTimeFilter<"Staff"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Staff"> | Date | string
   store?: Prisma.XOR<Prisma.StoreScalarRelationFilter, Prisma.StoreWhereInput>
@@ -204,6 +246,7 @@ export type StaffOrderByWithRelationInput = {
   name?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   schedule?: Prisma.SortOrderInput | Prisma.SortOrder
+  commissionPercentage?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   store?: Prisma.StoreOrderByWithRelationInput
@@ -219,6 +262,7 @@ export type StaffWhereUniqueInput = Prisma.AtLeast<{
   name?: Prisma.StringFilter<"Staff"> | string
   isActive?: Prisma.BoolFilter<"Staff"> | boolean
   schedule?: Prisma.JsonNullableFilter<"Staff">
+  commissionPercentage?: Prisma.FloatNullableFilter<"Staff"> | number | null
   createdAt?: Prisma.DateTimeFilter<"Staff"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Staff"> | Date | string
   store?: Prisma.XOR<Prisma.StoreScalarRelationFilter, Prisma.StoreWhereInput>
@@ -231,11 +275,14 @@ export type StaffOrderByWithAggregationInput = {
   name?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   schedule?: Prisma.SortOrderInput | Prisma.SortOrder
+  commissionPercentage?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.StaffCountOrderByAggregateInput
+  _avg?: Prisma.StaffAvgOrderByAggregateInput
   _max?: Prisma.StaffMaxOrderByAggregateInput
   _min?: Prisma.StaffMinOrderByAggregateInput
+  _sum?: Prisma.StaffSumOrderByAggregateInput
 }
 
 export type StaffScalarWhereWithAggregatesInput = {
@@ -247,6 +294,7 @@ export type StaffScalarWhereWithAggregatesInput = {
   name?: Prisma.StringWithAggregatesFilter<"Staff"> | string
   isActive?: Prisma.BoolWithAggregatesFilter<"Staff"> | boolean
   schedule?: Prisma.JsonNullableWithAggregatesFilter<"Staff">
+  commissionPercentage?: Prisma.FloatNullableWithAggregatesFilter<"Staff"> | number | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Staff"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Staff"> | Date | string
 }
@@ -256,6 +304,7 @@ export type StaffCreateInput = {
   name: string
   isActive?: boolean
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  commissionPercentage?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   store: Prisma.StoreCreateNestedOneWithoutStaffInput
@@ -268,6 +317,7 @@ export type StaffUncheckedCreateInput = {
   name: string
   isActive?: boolean
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  commissionPercentage?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   appointments?: Prisma.AppointmentUncheckedCreateNestedManyWithoutStaffInput
@@ -278,6 +328,7 @@ export type StaffUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  commissionPercentage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   store?: Prisma.StoreUpdateOneRequiredWithoutStaffNestedInput
@@ -290,6 +341,7 @@ export type StaffUncheckedUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  commissionPercentage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   appointments?: Prisma.AppointmentUncheckedUpdateManyWithoutStaffNestedInput
@@ -301,6 +353,7 @@ export type StaffCreateManyInput = {
   name: string
   isActive?: boolean
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  commissionPercentage?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -310,6 +363,7 @@ export type StaffUpdateManyMutationInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  commissionPercentage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -320,6 +374,7 @@ export type StaffUncheckedUpdateManyInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  commissionPercentage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -345,8 +400,13 @@ export type StaffCountOrderByAggregateInput = {
   name?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   schedule?: Prisma.SortOrder
+  commissionPercentage?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+}
+
+export type StaffAvgOrderByAggregateInput = {
+  commissionPercentage?: Prisma.SortOrder
 }
 
 export type StaffMaxOrderByAggregateInput = {
@@ -354,6 +414,7 @@ export type StaffMaxOrderByAggregateInput = {
   storeId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
+  commissionPercentage?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -363,8 +424,13 @@ export type StaffMinOrderByAggregateInput = {
   storeId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
+  commissionPercentage?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+}
+
+export type StaffSumOrderByAggregateInput = {
+  commissionPercentage?: Prisma.SortOrder
 }
 
 export type StaffCreateNestedManyWithoutStoreInput = {
@@ -425,11 +491,20 @@ export type StaffUpdateOneWithoutAppointmentsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.StaffUpdateToOneWithWhereWithoutAppointmentsInput, Prisma.StaffUpdateWithoutAppointmentsInput>, Prisma.StaffUncheckedUpdateWithoutAppointmentsInput>
 }
 
+export type NullableFloatFieldUpdateOperationsInput = {
+  set?: number | null
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
+}
+
 export type StaffCreateWithoutStoreInput = {
   staffId?: string
   name: string
   isActive?: boolean
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  commissionPercentage?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   appointments?: Prisma.AppointmentCreateNestedManyWithoutStaffInput
@@ -440,6 +515,7 @@ export type StaffUncheckedCreateWithoutStoreInput = {
   name: string
   isActive?: boolean
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  commissionPercentage?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   appointments?: Prisma.AppointmentUncheckedCreateNestedManyWithoutStaffInput
@@ -480,6 +556,7 @@ export type StaffScalarWhereInput = {
   name?: Prisma.StringFilter<"Staff"> | string
   isActive?: Prisma.BoolFilter<"Staff"> | boolean
   schedule?: Prisma.JsonNullableFilter<"Staff">
+  commissionPercentage?: Prisma.FloatNullableFilter<"Staff"> | number | null
   createdAt?: Prisma.DateTimeFilter<"Staff"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Staff"> | Date | string
 }
@@ -489,6 +566,7 @@ export type StaffCreateWithoutAppointmentsInput = {
   name: string
   isActive?: boolean
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  commissionPercentage?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   store: Prisma.StoreCreateNestedOneWithoutStaffInput
@@ -500,6 +578,7 @@ export type StaffUncheckedCreateWithoutAppointmentsInput = {
   name: string
   isActive?: boolean
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  commissionPercentage?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -525,6 +604,7 @@ export type StaffUpdateWithoutAppointmentsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  commissionPercentage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   store?: Prisma.StoreUpdateOneRequiredWithoutStaffNestedInput
@@ -536,6 +616,7 @@ export type StaffUncheckedUpdateWithoutAppointmentsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  commissionPercentage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -545,6 +626,7 @@ export type StaffCreateManyStoreInput = {
   name: string
   isActive?: boolean
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  commissionPercentage?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -554,6 +636,7 @@ export type StaffUpdateWithoutStoreInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  commissionPercentage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   appointments?: Prisma.AppointmentUpdateManyWithoutStaffNestedInput
@@ -564,6 +647,7 @@ export type StaffUncheckedUpdateWithoutStoreInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  commissionPercentage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   appointments?: Prisma.AppointmentUncheckedUpdateManyWithoutStaffNestedInput
@@ -574,6 +658,7 @@ export type StaffUncheckedUpdateManyWithoutStoreInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   schedule?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  commissionPercentage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -615,6 +700,7 @@ export type StaffSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   name?: boolean
   isActive?: boolean
   schedule?: boolean
+  commissionPercentage?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   store?: boolean | Prisma.StoreDefaultArgs<ExtArgs>
@@ -628,6 +714,7 @@ export type StaffSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   name?: boolean
   isActive?: boolean
   schedule?: boolean
+  commissionPercentage?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   store?: boolean | Prisma.StoreDefaultArgs<ExtArgs>
@@ -639,6 +726,7 @@ export type StaffSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   name?: boolean
   isActive?: boolean
   schedule?: boolean
+  commissionPercentage?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   store?: boolean | Prisma.StoreDefaultArgs<ExtArgs>
@@ -650,11 +738,12 @@ export type StaffSelectScalar = {
   name?: boolean
   isActive?: boolean
   schedule?: boolean
+  commissionPercentage?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type StaffOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"staffId" | "storeId" | "name" | "isActive" | "schedule" | "createdAt" | "updatedAt", ExtArgs["result"]["staff"]>
+export type StaffOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"staffId" | "storeId" | "name" | "isActive" | "schedule" | "commissionPercentage" | "createdAt" | "updatedAt", ExtArgs["result"]["staff"]>
 export type StaffInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   store?: boolean | Prisma.StoreDefaultArgs<ExtArgs>
   appointments?: boolean | Prisma.Staff$appointmentsArgs<ExtArgs>
@@ -679,6 +768,7 @@ export type $StaffPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     name: string
     isActive: boolean
     schedule: runtime.JsonValue | null
+    commissionPercentage: number | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["staff"]>
@@ -1111,6 +1201,7 @@ export interface StaffFieldRefs {
   readonly name: Prisma.FieldRef<"Staff", 'String'>
   readonly isActive: Prisma.FieldRef<"Staff", 'Boolean'>
   readonly schedule: Prisma.FieldRef<"Staff", 'Json'>
+  readonly commissionPercentage: Prisma.FieldRef<"Staff", 'Float'>
   readonly createdAt: Prisma.FieldRef<"Staff", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Staff", 'DateTime'>
 }

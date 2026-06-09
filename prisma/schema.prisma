@@ -745,7 +745,9 @@ model Staff {
 
   // null = hereda store.businessHours
   // Shape: { mon: { isOpen, shift1, shift2 }, tue: ..., ... }
-  schedule  Json?    @map("schedule")
+  schedule             Json?  @map("schedule")
+
+  commissionPercentage Float? @map("commission_percentage")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt      @map("updated_at")

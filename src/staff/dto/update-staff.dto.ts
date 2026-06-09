@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsObject, IsBoolean, MaxLength } from 'class-validator';
+import { IsString, IsOptional, IsObject, IsBoolean, IsNumber, Min, Max, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class UpdateStaffDto {
@@ -15,4 +15,10 @@ export class UpdateStaffDto {
   @IsObject()
   @IsOptional()
   schedule?: Record<string, any> | null;
+
+  @IsNumber()
+  @IsOptional()
+  @Min(0)
+  @Max(100)
+  commissionPercentage?: number | null;
 }

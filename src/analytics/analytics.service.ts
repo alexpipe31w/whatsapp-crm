@@ -292,7 +292,7 @@ Analiza el sentimiento general y los patrones. Devuelve ÚNICAMENTE este JSON (s
       }),
       this.prisma.staff.findMany({
         where:  { storeId, isActive: true },
-        select: { staffId: true, name: true },
+        select: { staffId: true, name: true, commissionPercentage: true },
       }),
     ]);
 
@@ -344,7 +344,7 @@ Analiza el sentimiento general y los patrones. Devuelve ÚNICAMENTE este JSON (s
     const topServices = Object.values(serviceQty).sort((a, b) => b.quantity - a.quantity).slice(0, 5);
 
     // By staff: count appointments + revenue from service orders linked via appointmentId
-    const byStaff: { staffId: string; name: string; appointments: number; revenue: number }[] = [];
+    const byStaff: { staffId: string; name: string; appointments: number; revenue: number; commissionPercentage: number | null; commission: number }[] = [];
     if (staffList.length > 0) {
       const staffAppts = await this.prisma.appointment.findMany({
         where: {
@@ -359,11 +359,15 @@ Analiza el sentimiento general y los patrones. Devuelve ÚNICAMENTE este JSON (s
       for (const member of staffList) {
         const memberAppts = staffAppts.filter(a => a.staffId === member.staffId);
         const revenue     = memberAppts.reduce((s, a) => s + (a.agreedPrice ? Number(a.agreedPrice) : 0), 0);
+        const pct         = member.commissionPercentage;
+        const commission  = pct != null ? Math.round(revenue * pct / 100) : 0;
         byStaff.push({
-          staffId:      member.staffId,
-          name:         member.name,
-          appointments: memberAppts.length,
+          staffId:              member.staffId,
+          name:                 member.name,
+          appointments:         memberAppts.length,
           revenue,
+          commissionPercentage: pct,
+          commission,
         });
       }
       byStaff.sort((a, b) => b.appointments - a.appointments);

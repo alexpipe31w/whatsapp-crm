@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsObject, MaxLength } from 'class-validator';
+import { IsString, IsOptional, IsObject, IsNumber, Min, Max, MaxLength } from 'class-validator';
 
 export class CreateStaffDto {
   @IsString()
@@ -8,4 +8,10 @@ export class CreateStaffDto {
   @IsObject()
   @IsOptional()
   schedule?: Record<string, any> | null;
+
+  @IsNumber()
+  @IsOptional()
+  @Min(0)
+  @Max(100)
+  commissionPercentage?: number | null;
 }
