@@ -360,6 +360,9 @@ export class WhatsappService implements OnModuleInit {
     this.aiService.setSendFn((storeId, phone, message) =>
       this.sendMessage(storeId, phone, message),
     );
+    this.adminAssistant.setNotifyFn((storeId, phone, message) =>
+      this.sendMessage(storeId, phone, message),
+    );
 
     try {
       const sessions = await this.prisma.whatsappSession.findMany({

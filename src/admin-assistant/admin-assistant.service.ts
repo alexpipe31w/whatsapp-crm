@@ -16,6 +16,17 @@ const SESSION_TTL_MS    = 2 * 60 * 60 * 1000; // 2h
 const MAX_HISTORY       = 16;
 const ACTION_RE         = /⚡ACTION⚡([A-Z_]+)⚡({[\s\S]*?})⚡END⚡/g;
 
+function fmtApptDate(scheduledAt: Date): string {
+  return scheduledAt.toLocaleDateString('es-CO', {
+    weekday: 'long', day: 'numeric', month: 'long', timeZone: 'America/Bogota',
+  });
+}
+function fmtApptTime(scheduledAt: Date): string {
+  return scheduledAt.toLocaleTimeString('es-CO', {
+    hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota',
+  });
+}
+
 const APPT_STATUS_LABEL: Record<string, string> = {
   PENDING:     'pendiente',
   CONFIRMED:   'confirmada',
@@ -34,6 +45,11 @@ export class AdminAssistantService implements OnModuleDestroy {
   private readonly logger   = new Logger(AdminAssistantService.name);
   private readonly sessions = new Map<string, Session>();
   private readonly cleanupTimer: ReturnType<typeof setInterval>;
+  private notifyFn?: (storeId: string, phone: string, message: string) => Promise<void>;
+
+  setNotifyFn(fn: (storeId: string, phone: string, message: string) => Promise<void>): void {
+    this.notifyFn = fn;
+  }
 
   constructor(
     private readonly prisma:    PrismaService,
@@ -572,6 +588,14 @@ REGLAS:
             where: { appointmentId: appt.appointmentId },
             data:  { status: 'CANCELLED', cancelReason: params.reason ?? 'Cancelada por admin' },
           });
+          if (this.notifyFn && appt.customer?.phone) {
+            const msg = `❌ *Tu cita fue cancelada*\n\n` +
+              `📆 ${fmtApptDate(appt.scheduledAt)}\n` +
+              `🕐 ${fmtApptTime(appt.scheduledAt)}` +
+              (params.reason ? `\n\n📝 Motivo: ${params.reason}` : '') +
+              `\n\nSi quieres reagendar, escríbenos cuando gustes.`;
+            this.notifyFn(storeId, appt.customer.phone, msg).catch(() => {});
+          }
           return `✅ Cita de ${appt.customer?.name ?? 'cliente'} cancelada correctamente.`;
         }
 
@@ -583,6 +607,15 @@ REGLAS:
             where: { appointmentId: appt.appointmentId },
             data:  { status: 'CONFIRMED' },
           });
+          if (this.notifyFn && appt.customer?.phone) {
+            const msg = `✅ *¡Tu cita está confirmada!*\n\n` +
+              (appt.service?.name ? `✂️ ${appt.service.name}\n` : '') +
+              `📆 ${fmtApptDate(appt.scheduledAt)}\n` +
+              `🕐 ${fmtApptTime(appt.scheduledAt)}` +
+              (appt.agreedPrice ? `\n💰 Precio: $${Math.round(Number(appt.agreedPrice)).toLocaleString('es-CO')}` : '') +
+              `\n\n¡Te esperamos! 😊`;
+            this.notifyFn(storeId, appt.customer.phone, msg).catch(() => {});
+          }
           return `✅ Cita de ${appt.customer?.name ?? 'cliente'} confirmada.`;
         }
 

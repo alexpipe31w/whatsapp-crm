@@ -247,24 +247,30 @@ Analiza el sentimiento general y los patrones. Devuelve ÚNICAMENTE este JSON (s
 
     let from: Date;
     let to: Date = new Date(now);
+    // endOfPeriod: límite superior del período completo — incluye citas futuras dentro del mes/semana
+    let endOfPeriod: Date = to;
 
     switch (period) {
       case 'today':
         from = colMidnight(Y, M, D);
         to   = new Date(from.getTime() + 24 * 60 * 60 * 1000 - 1);
+        endOfPeriod = to;
         break;
       case 'week': {
         const day = localNow.getUTCDay();
         from = colMidnight(Y, M, D - (day === 0 ? 6 : day - 1));
+        endOfPeriod = new Date(from.getTime() + 7 * 24 * 60 * 60 * 1000 - 1);
         break;
       }
       case 'last_month':
         from = colMidnight(Y, M - 1, 1);
         to   = new Date(colMidnight(Y, M, 1).getTime() - 1);
+        endOfPeriod = to;
         break;
       case 'month':
       default:
         from = colMidnight(Y, M, 1);
+        endOfPeriod = new Date(colMidnight(Y, M + 1, 1).getTime() - 1);
         break;
     }
 
@@ -344,8 +350,8 @@ Analiza el sentimiento general y los patrones. Devuelve ÚNICAMENTE este JSON (s
         where: {
           storeId,
           staffId:     { in: staffList.map(s => s.staffId) },
-          scheduledAt: { gte: from, lte: to },
-          status:      { in: ['CONFIRMED', 'IN_PROGRESS', 'COMPLETED'] },
+          scheduledAt: { gte: from, lte: endOfPeriod },
+          status:      { in: ['CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'PENDING'] },
         },
         select: { staffId: true, agreedPrice: true },
       });

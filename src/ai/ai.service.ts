@@ -42,11 +42,13 @@ const APPOINTMENT_INTENT_RE = /\b(agendar|agenda|cita|visita|visita técnica|té
 // disparaban un agendado/pedido prematuro o una falsa "complete=true".
 // Ahora exigimos que la frase de confirmación domine el mensaje completo,
 // permitiendo solo adornos triviales alrededor (puntuación, emojis, "gracias"...).
-const CONFIRMATION_WORDS   = 's[ií]|ok|okay|dale|listo|acepto|perfecto|procede|adelante|claro|exacto|sip|yep|yes|confirm|correcto|de acuerdo|está bien|estoy de acuerdo|va|hagale|hádale|marchando|hecho|venga|eso|eso mismo|así es|claro que sí|por supuesto|obvio|chévere|bacano|sale|de una|okey';
+const CONFIRMATION_WORDS   = 's[ií]|ok|okay|dale|listo|acepto|perfecto|procede|adelante|claro|exacto|sip|yep|yes|confirm|correcto|de acuerdo|está bien|estoy de acuerdo|va|hagale|hádale|marchando|hecho|venga|eso|eso mismo|así es|claro que sí|por supuesto|obvio|chévere|bacano|sale|de una|okey|sisas';
 const CONFIRMATION_FILLERS = 'gracias|porfa|por favor|vale|ya';
 const CONFIRMATION_DECOR   = '[\\s,.!?¡¿…\\p{Extended_Pictographic}\\p{Emoji_Modifier}\\uFE0F]';
+// "pues sí", "bueno sí", etc. — prefijo opcional de 1-2 palabras antes de la confirmación
+const CONFIRMATION_PREFIX  = '(?:(?:pues|bueno|o sea|claro que|la verdad)\\s+)?';
 const CONFIRMATION_RE = new RegExp(
-  `^${CONFIRMATION_DECOR}*${esWord(CONFIRMATION_WORDS)}` +
+  `^${CONFIRMATION_DECOR}*${CONFIRMATION_PREFIX}${esWord(CONFIRMATION_WORDS)}` +
   `(?:${CONFIRMATION_DECOR}+${esWord(`${CONFIRMATION_WORDS}|${CONFIRMATION_FILLERS}`)})?` +
   `${CONFIRMATION_DECOR}*$` +
   `|^(?:👍|✅|✓)$`,
@@ -1433,7 +1435,7 @@ export class AiService {
             lines.push(`- ${s.name}: ${merged.map(m => `${m.t} ${m.label}`).join(', ')}`);
           }
           if (lines.some(l => !l.includes('NO DISPONIBLE'))) {
-            availabilityBlock = `\nAGENDA REAL DEL ${dayName.toUpperCase()} ${dateLabel} (hora: estado — "libre" = disponible para agendar, "ocupado" = ya tiene cita):\n${lines.join('\n')}\n\nREGLA CRÍTICA — MUESTRA LA AGENDA PROACTIVAMENTE: en cuanto el cliente diga o confirme el día que quiere, muéstrale de una vez el listado completo de horarios de ese día (libres Y ocupados, ej: "3:00 libre, 3:30 libre, 4:00 ocupado, 4:30 libre...") para que elija directamente una hora libre — NO le propongas una hora a la vez ni esperes a que pida una hora ocupada para recién ahí decirle que no hay campo; eso alarga la conversación innecesariamente. Usa SOLO estos horarios para ese día — son los reales y verificados, no inventes ni calcules otros.\nREGLA — HORA QUE NO ENCAJA EN LA GRILLA: los horarios están en bloques de 30 minutos según la duración del servicio. Si el cliente pide una hora que NO aparece en la lista (ej. pide "3:40" y la lista solo tiene "3:30" y "4:00"), NO la agendes ni la trates como válida — explícale brevemente que el servicio dura bloques de 30 min y por eso no puedes agendar a esa hora exacta, y ofrécele de una vez el horario LIBRE más cercano de la lista (ej. "no te puedo agendar a las 3:40 porque el servicio dura 30 min, ¿te sirve a las 3:30?").`;
+            availabilityBlock = `\nAGENDA REAL DEL ${dayName.toUpperCase()} ${dateLabel} (hora: estado — "libre" = disponible para agendar, "ocupado" = ya tiene cita):\n${lines.join('\n')}\n\nREGLA CRÍTICA — MUESTRA LA AGENDA PROACTIVAMENTE: en cuanto el cliente diga o confirme el día que quiere, muéstrale de una vez el listado completo de horarios de ese día (libres Y ocupados, ej: "3:00 libre, 3:30 libre, 4:00 ocupado, 4:30 libre...") para que elija directamente una hora libre — NO le propongas una hora a la vez ni esperes a que pida una hora ocupada para recién ahí decirle que no hay campo; eso alarga la conversación innecesariamente. Usa SOLO estos horarios para ese día — son los reales y verificados, no inventes ni calcules otros.\nREGLA — HORA QUE NO ENCAJA EN LA GRILLA: los horarios están en bloques de 30 minutos según la duración del servicio. Si el cliente pide una hora que NO aparece en la lista (ej. pide "3:40" y la lista solo tiene "3:30" y "4:00"), NO la agendes ni la trates como válida — explícale brevemente que el servicio dura bloques de 30 min y por eso no puedes agendar a esa hora exacta, y ofrécele de una vez el horario LIBRE más cercano de la lista (ej. "no te puedo agendar a las 3:40 porque el servicio dura 30 min, ¿te sirve a las 3:30?").\nREGLA — CUALQUIER PROFESIONAL: si el cliente dice "con cualquier barbero/profesional/el que esté disponible" y pide una hora específica, busca en la AGENDA REAL quién tiene ESA HORA como "libre" y responde con el nombre de ese profesional — NUNCA digas que alguien está disponible a una hora que NO aparece en su lista como "libre".`;
           } else {
             availabilityBlock = `\nDISPONIBILIDAD PARA EL ${dayName.toUpperCase()} ${dateLabel}: Ningún profesional disponible ese día.`;
           }
@@ -2342,21 +2344,41 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
       // Validar horario aunque no se haya seleccionado un profesional específico
       if (!extracted.staffId) {
         const dayKey = coDayKey(scheduledAt);
+        const [hReq, mReq] = (extracted.scheduledTime ?? '00:00').split(':').map(Number);
+        const minReq = hReq * 60 + mReq;
         const DAY_NAMES: Record<string, string> = { sun:'domingos', mon:'lunes', tue:'martes', wed:'miércoles', thu:'jueves', fri:'viernes', sat:'sábados' };
-        // Con staff activo: bloquear si ninguno trabaja ese día
+        const staffLabel = (store as any)?.staffLabel ?? 'profesional';
+
         if (activeStaff.length > 0) {
-          const anyoneWorks = activeStaff.some(s => (s.schedule as any)?.[dayKey]?.isOpen === true);
-          if (!anyoneWorks) {
-            this.logger.warn(`[Cita] Ningún profesional trabaja el ${dayKey} — bloqueando cita sin staffId`);
-            // No vaciamos el caché: hacerlo rompía cacheHasAllData de forma permanente
-            // (el "Caso 1" rápido dejaba de activarse y la conversación caía en un
-            // bucle de "¿Confirmas?" porque el extractor LLM no recuperaba los datos
-            // perdidos). La fecha/hora siguen siendo un dato válido del cliente —
-            // si confirma sin cambiar de día, esta misma validación lo rechaza de nuevo.
+          // Buscar staff disponible exactamente a la hora pedida
+          const availableAtTime = activeStaff.filter(s => {
+            const daySched = (s.schedule as any)?.[dayKey];
+            if (!daySched?.isOpen) return false;
+            return ['shift1', 'shift2'].some(shift => {
+              const sh = daySched[shift];
+              if (!sh?.open || !sh?.close) return false;
+              const [shH, shM] = sh.open.split(':').map(Number);
+              const [ehH, ehM] = sh.close.split(':').map(Number);
+              return minReq >= shH * 60 + shM && minReq < ehH * 60 + ehM;
+            });
+          });
+
+          if (availableAtTime.length > 0) {
+            // Auto-asignar el primer disponible a esa hora
+            extracted.staffId = availableAtTime[0].staffId;
+            this.logger.log(`[Cita] Auto-asignado ${availableAtTime[0].name} para las ${extracted.scheduledTime} (cualquier barbero)`);
+          } else {
+            const anyoneWorks = activeStaff.some(s => (s.schedule as any)?.[dayKey]?.isOpen === true);
             this.cancelConfirmReminder(conversationId);
+            if (!anyoneWorks) {
+              return {
+                created: false,
+                message: `Lo siento, no tenemos disponibilidad los ${DAY_NAMES[dayKey] ?? dayKey}. ¿Quieres elegir otro día? 😊`,
+              };
+            }
             return {
               created: false,
-              message: `Lo siento, no tenemos disponibilidad los ${DAY_NAMES[dayKey] ?? dayKey}. ¿Quieres elegir otro día? 😊`,
+              message: `Lo siento, ningún ${staffLabel} está disponible a las ${extracted.scheduledTime}. ¿Quieres elegir otra hora?`,
             };
           }
         }
@@ -2364,9 +2386,6 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
         else if (store?.businessHours) {
           const dayBH = (store.businessHours as any)[dayKey];
           if (dayBH?.isOpen === false) {
-            this.logger.warn(`[Cita] Tienda cerrada el ${dayKey} (businessHours) — bloqueando`);
-            // Igual que arriba: conservamos el caché para no romper cacheHasAllData —
-            // la validación seguirá rechazando ese día hasta que el cliente elija otro.
             this.cancelConfirmReminder(conversationId);
             return {
               created: false,
@@ -2904,7 +2923,7 @@ pregunta: "¿Para qué día quieres consultar la disponibilidad?"
 - Si el cliente pregunta si puedes escuchar audios, dile que sí.`;
 
     const antiBucleSection = `REGLA ANTI-CONFIRMACIÓN FALSA (ABSOLUTA — NUNCA VIOLAR — un cliente real recibió una confirmación falsa por esto):
-- NUNCA digas "tu cita está confirmada", "cita registrada", "cita agendada", "quedas agendado", "nos vemos el X", "hasta entonces" ni ninguna variante que implique que la cita fue creada.
+- NUNCA digas "tu cita está confirmada", "cita registrada", "cita agendada", "quedas agendado", "nos vemos el X", "hasta entonces", "tu cita está lista", "ya quedó tu cita", "cita lista", "ya está" ni ninguna variante que implique que la cita fue creada.
 - NUNCA digas "tu pedido está registrado", "pedido confirmado", "ya quedó tu pedido", "en camino", "procesando tu compra" ni ninguna variante que implique que la orden/pedido fue creado.
 - La confirmación REAL la genera el sistema automáticamente: para citas con el mensaje "¡Cita agendada! ✅", para pedidos con "¡Pedido registrado! 🎉". Si NO ves exactamente ese mensaje (generado por el sistema, no por ti) en la conversación, la cita o el pedido NO existen en el sistema — sin importar cuántas veces el cliente haya dicho "sí" o "confirmo".
 - Si el cliente dice "sí" confirmando y la cita/pedido aún no fue creado, responde con un resumen de los datos recogidos pidiendo confirmación explícita ("¡Perfecto! Para confirmar: [servicio] con [profesional] el [fecha] a las [hora]. ¿Todo correcto?" / "Para confirmar tu pedido: [items], envío a [dirección]. ¿Todo bien así?") — NUNCA respondas "dame un momento" ni "estoy procesando" porque el sistema NO enviará un mensaje automático después; el cliente quedaría esperando indefinidamente.
