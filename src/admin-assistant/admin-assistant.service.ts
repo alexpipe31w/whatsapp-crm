@@ -348,6 +348,16 @@ Para completar una cita — marcar como realizada (mismo criterio de búsqueda q
 Para reporte del día:
 ⚡ACTION⚡DAILY_REPORT⚡{}⚡END⚡
 
+Para enviar un mensaje de WhatsApp directo a un cliente (mensaje libre, NO generado por IA sin aprobación):
+⚡ACTION⚡SEND_CUSTOMER_MESSAGE⚡{"customerName":"<nombre_del_cliente>","customerPhone":"<telefono_si_lo_tienes>","message":"<texto_exacto_que_recibirá_el_cliente>"}⚡END⚡
+
+REGLAS para SEND_CUSTOMER_MESSAGE:
+- El campo "message" es el texto EXACTO que recibirá el cliente en su WhatsApp — redáctalo como un mensaje natural y amable de la tienda.
+- En tu respuesta VISIBLE al admin, muestra siempre el mensaje que vas a mandar antes de enviarlo: "Le enviaré esto a [nombre]: '[mensaje]'"
+- Si el admin NO especificó qué decir (ej: solo dijo "escríbele a Felipe"), pregúntale primero: "¿Qué quieres que le diga exactamente?" — nunca inventes ni asumas el contenido del mensaje.
+- Si el admin sí especificó el texto (entre comillas, o después de "dile:", "escríbele:", "mándale:"), úsalo tal cual sin modificar.
+- No incluyas en el mensaje datos inventados (citas, precios, fechas) que no estén en el contexto real.
+
 REGLAS:
 - PRODUCTOS y SERVICIOS son catálogos DISTINTOS — revisa el correcto antes de decir "no lo encuentro". Un producto NO aparece en el catálogo de servicios ni viceversa; eso es normal, no es un error.
 - Si no tienes el ID de algo, búscalo en el contexto correspondiente. Si aun así no aparece, dile al admin que no lo encuentras EN ESE catálogo y pregunta si es un producto o un servicio.
@@ -638,6 +648,53 @@ REGLAS:
 
         case 'DAILY_REPORT': {
           return await this.buildDailyReportText(storeId);
+        }
+
+        case 'SEND_CUSTOMER_MESSAGE': {
+          const { customerName, customerPhone, message } = params as {
+            customerName?: string;
+            customerPhone?: string;
+            message?: string;
+          };
+
+          if (!message?.trim()) {
+            return '❌ No hay texto para enviar. Dime qué quieres que le diga al cliente.';
+          }
+
+          // Resolver teléfono destino
+          let targetPhone: string | null = customerPhone?.trim() ?? null;
+
+          if (!targetPhone && customerName?.trim()) {
+            const matches = await this.prisma.customer.findMany({
+              where:  { storeId, name: { contains: customerName.trim(), mode: 'insensitive' } },
+              select: { name: true, phone: true },
+              take:   5,
+            });
+
+            if (matches.length === 0) {
+              return `❌ No encontré ningún cliente llamado "${customerName}". ¿Tienes su número de teléfono?`;
+            }
+            if (matches.length > 1) {
+              const lines = matches
+                .map((c, i) => `  ${i + 1}. ${c.name ?? 'Sin nombre'} — ${c.phone}`)
+                .join('\n');
+              return `Encontré ${matches.length} clientes con nombre similar a "${customerName}":\n${lines}\n\nDime el teléfono del que quieres para enviárselo.`;
+            }
+            targetPhone = matches[0].phone;
+          }
+
+          if (!targetPhone) {
+            return '❌ Necesito el nombre o el teléfono del cliente para enviar el mensaje.';
+          }
+
+          if (!this.notifyFn) {
+            return '❌ El servicio de mensajería no está disponible ahora mismo.';
+          }
+
+          await this.notifyFn(storeId, targetPhone, message.trim());
+
+          const displayName = customerName?.trim() ?? targetPhone;
+          return `✅ Mensaje enviado a *${displayName}*:\n_"${message.trim()}"_`;
         }
 
         default:
