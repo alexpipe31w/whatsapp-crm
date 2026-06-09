@@ -4,15 +4,6 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateStaffDto } from './dto/create-staff.dto';
 import { UpdateStaffDto } from './dto/update-staff.dto';
 
-const STAFF_SELECT = {
-  staffId:              true,
-  name:                 true,
-  isActive:             true,
-  schedule:             true,
-  commissionPercentage: true,
-  createdAt:            true,
-} as const;
-
 @Injectable()
 export class StaffService {
   constructor(private readonly prisma: PrismaService) {}
@@ -21,7 +12,14 @@ export class StaffService {
     return this.prisma.staff.findMany({
       where:   { storeId, isActive: true },
       orderBy: { createdAt: 'asc' },
-      select:  STAFF_SELECT,
+      select: {
+        staffId:              true,
+        name:                 true,
+        isActive:             true,
+        schedule:             true,
+        commissionPercentage: true,
+        createdAt:            true,
+      },
     });
   }
 
@@ -33,7 +31,14 @@ export class StaffService {
         schedule:             dto.schedule ?? Prisma.JsonNull,
         commissionPercentage: dto.commissionPercentage ?? null,
       },
-      select: STAFF_SELECT,
+      select: {
+        staffId:              true,
+        name:                 true,
+        isActive:             true,
+        schedule:             true,
+        commissionPercentage: true,
+        createdAt:            true,
+      },
     });
   }
 
@@ -47,7 +52,14 @@ export class StaffService {
         ...(dto.schedule             !== undefined && { schedule:             dto.schedule ?? Prisma.JsonNull }),
         ...(dto.commissionPercentage !== undefined && { commissionPercentage: dto.commissionPercentage }),
       },
-      select: STAFF_SELECT,
+      select: {
+        staffId:              true,
+        name:                 true,
+        isActive:             true,
+        schedule:             true,
+        commissionPercentage: true,
+        createdAt:            true,
+      },
     });
   }
 

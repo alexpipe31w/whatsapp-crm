@@ -1281,6 +1281,23 @@ export class AiService {
         (APPT_CONTEXT_RE.test(userMessage) && prevHadApptCtx) ||
         (CONFIRMATION_RE.test(userMessage.trim()) && aiAskedApptConfirmation);
 
+      // ── Consulta pura de horario → link de reservas ─────────────────────────
+      // Solo cuando el cliente pregunta por disponibilidad/horario sin intención
+      // activa de agendar: se le manda el link público para que elija él mismo.
+      const SCHEDULE_QUERY_RE = /\b(horario[s]?|disponible|disponibilidad|cu[aá]ndo\s+(pueden?|tienen?|atienden?)|qu[eé]\s+hora[s]?|hora[s]?\s+libre[s]?|cu[aá]ndo\s+tienen?|qu[eé]\s+d[ií]as?)\b/i;
+      if (
+        SCHEDULE_QUERY_RE.test(userMessage) &&
+        !hasAppointmentIntent && !hasPendingAppt && !hasApptContextHint &&
+        store?.slug
+      ) {
+        const frontendUrl = (process.env.FRONTEND_URL ?? '').replace(/\/$/, '');
+        if (frontendUrl) {
+          const publicLink = `${frontendUrl}/cal/${store.slug}`;
+          const staffLabelPublic = ((store as any).staffLabel ?? 'profesional').toLowerCase();
+          return `Para ver los horarios disponibles y agendar tu cita, entra a nuestro link 📅\n\n${publicLink}\n\nAllí puedes elegir el ${staffLabelPublic}, el servicio y el horario que más te quede. ¡Es muy fácil! 😊`;
+        }
+      }
+
       // ── Pre-check horario: día cerrado detectado en el mensaje actual ───────────
       // Si el cliente menciona una fecha y ese día está cerrado, avisar de inmediato
       // antes de llamar al extractor o al LLM principal (evita que el LLM pida
@@ -1558,7 +1575,14 @@ export class AiService {
 
       if (reply === undefined) {
         this.logger.error(`[Pool] Todos los cartuchos agotados para store ${storeId}`);
-        reply = '⚠️ El asistente está temporalmente sin disponibilidad. Por favor intenta en unos minutos.';
+        const frontendUrl = (process.env.FRONTEND_URL ?? '').replace(/\/$/, '');
+        if (store?.slug && frontendUrl) {
+          const publicLink   = `${frontendUrl}/cal/${store.slug}`;
+          const staffLbl     = ((store as any).staffLabel ?? 'asistente').toLowerCase();
+          reply = `Hola 👋, en este momento nuestro ${staffLbl} virtual no se encuentra disponible, pero puedes agendar tu cita directamente aquí:\n\n📅 ${publicLink}\n\nElige el servicio y el horario disponible. ¡Te esperamos!`;
+        } else {
+          reply = '⚠️ El asistente está temporalmente sin disponibilidad. Por favor intenta en unos minutos.';
+        }
       }
 
       return reply ?? null;

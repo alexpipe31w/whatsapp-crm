@@ -45,8 +45,11 @@ export class PublicService {
         select: {
           serviceId:        true,
           name:             true,
+          description:      true,
           priceType:        true,
           basePrice:        true,
+          minPrice:         true,
+          maxPrice:         true,
           unitLabel:        true,
           estimatedMinutes: true,
           hasVariants:      true,
