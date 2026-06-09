@@ -510,12 +510,13 @@ export class WhatsappService implements OnModuleInit {
 
     if (this.reconnecting.has(storeId)) return;
 
-    // Código 408 = QR expiró sin ser escaneado. Limitar intentos para no hacer loop eterno.
-    if (statusCode === 408) {
+    // Código 408 = QR expiró. Código undefined = WS cerrado sin frame (sesión corrupta / protocolo desactualizado).
+    // Ambos casos cuentan como QR attempt fallido para evitar loop eterno.
+    if (statusCode === 408 || statusCode === undefined) {
       const attempts = (this.qrAttempts.get(storeId) ?? 0) + 1;
       this.qrAttempts.set(storeId, attempts);
       if (attempts >= MAX_QR_ATTEMPTS) {
-        this.logger.warn(`Store ${storeId}: QR ignorado ${attempts} veces — deteniendo reconexión automática. Usa /connect para reintentar.`);
+        this.logger.warn(`Store ${storeId}: QR sin conexión ${attempts} veces (código: ${statusCode}) — deteniendo reconexión automática. Usa /connect para reintentar.`);
         this.qrAttempts.delete(storeId);
         this.sockets.delete(storeId);
         this.qrCodes.delete(storeId);
