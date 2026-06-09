@@ -45,10 +45,10 @@ export class ReportsService {
       ));
       const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
 
-      const [appointments, newCustomers, store] = await Promise.all([
+      const [appointments, newCustomers, store, orders] = await Promise.all([
         this.prisma.appointment.findMany({
           where:  { storeId, scheduledAt: { gte: todayStart, lt: todayEnd } },
-          select: { status: true, paymentStatus: true, paymentMethod: true, paymentAmount: true },
+          select: { status: true },
         }),
         this.prisma.customer.findMany({
           where:  { storeId, createdAt: { gte: todayStart, lt: todayEnd } },
@@ -57,6 +57,15 @@ export class ReportsService {
         this.prisma.store.findUnique({
           where:  { storeId },
           select: { name: true, adminPhone: true },
+        }),
+        this.prisma.order.findMany({
+          where: {
+            storeId,
+            createdAt: { gte: todayStart, lt: todayEnd },
+            status:    { not: 'CANCELLED' },
+            total:     { gt: 0 },
+          },
+          select: { type: true, total: true, manualPaymentMethod: true },
         }),
       ]);
 
@@ -71,21 +80,28 @@ export class ReportsService {
         pending:   appointments.filter(a => a.status === 'PENDING').length,
       };
 
-      const paidAppts = appointments.filter(a => a.paymentStatus === 'PAID');
+      // Revenue desde Orders (fuente de verdad: incluye ventas auto-generadas de citas + manuales)
+      const serviceOrders = orders.filter(o => o.type === 'service');
+      const productOrders = orders.filter(o => o.type === 'product' || o.type === 'food');
+      const totalServices = serviceOrders.reduce((s, o) => s + Number(o.total ?? 0), 0);
+      const totalProducts = productOrders.reduce((s, o) => s + Number(o.total ?? 0), 0);
+      const totalRevenue  = totalServices + totalProducts;
+
+      // Desglose por método de pago (solo órdenes con método registrado; el resto van a "otros")
       const byMethod: Record<string, number> = {};
-      let totalConfirmed = 0;
-      for (const a of paidAppts) {
-        const amt = Number(a.paymentAmount ?? 0);
-        totalConfirmed += amt;
-        const m = a.paymentMethod ?? 'otro';
+      for (const o of orders) {
+        const m   = (o.manualPaymentMethod ?? 'OTROS').toLowerCase();
+        const amt = Number(o.total ?? 0);
         byMethod[m] = (byMethod[m] ?? 0) + amt;
       }
-      const pendingPayment = appointments
-        .filter(a => a.status === 'COMPLETED' && a.paymentStatus !== 'PAID')
-        .reduce((sum, a) => sum + Number(a.paymentAmount ?? 0), 0);
 
-      const paymentsData = { confirmed: totalConfirmed, pending: pendingPayment, byMethod };
-      const clientsData  = { new: newCustomers.length, recurring: apptData.total - newCustomers.length };
+      const clientsData = { new: newCustomers.length };
+      const paymentsData = {
+        confirmed: totalRevenue,
+        byMethod,
+        services: { count: serviceOrders.length, total: totalServices },
+        products: { count: productOrders.length, total: totalProducts },
+      };
 
       await this.prisma.dailyReport.upsert({
         where:  { storeId_date: { storeId, date: todayStart } },
@@ -94,30 +110,61 @@ export class ReportsService {
       });
 
       const fmt      = (n: number) => n.toLocaleString('es-CO');
-      const fmtMoney = (n: number) => `$${fmt(n)}`;
+      const fmtMoney = (n: number) => `$${fmt(Math.round(n))}`;
 
-      const waMsg = `📊 *Reporte del día — ${store.name}*\n\n` +
-        `📅 *CITAS*\n` +
-        `Total: ${apptData.total}  |  ✅ ${apptData.completed}  |  📅 ${apptData.confirmed}\n` +
-        `❌ Canceladas: ${apptData.cancelled}  |  👻 No show: ${apptData.noShow}\n\n` +
-        `💳 *PAGOS*\n` +
-        `Confirmados: ${fmtMoney(totalConfirmed)}\n` +
-        (byMethod['efectivo']      ? `  • Efectivo: ${fmtMoney(byMethod['efectivo'])}\n`           : '') +
-        (byMethod['transferencia'] ? `  • Transferencia: ${fmtMoney(byMethod['transferencia'])}\n` : '') +
-        (byMethod['nequi']         ? `  • Nequi: ${fmtMoney(byMethod['nequi'])}\n`                 : '') +
-        (byMethod['daviplata']     ? `  • Daviplata: ${fmtMoney(byMethod['daviplata'])}\n`         : '') +
-        `Pendientes: ${fmtMoney(pendingPayment)}\n\n` +
-        `👥 *CLIENTES*\nNuevos hoy: ${clientsData.new}`;
+      // Bloque de ventas — solo si hubo algo
+      const methodLines = Object.entries(byMethod)
+        .filter(([, v]) => v > 0)
+        .sort(([, a], [, b]) => b - a)
+        .map(([m, v]) => `  • ${m.charAt(0).toUpperCase() + m.slice(1)}: ${fmtMoney(v)}`)
+        .join('\n');
+
+      const ventasBlock = totalRevenue > 0
+        ? `💰 *VENTAS DEL DÍA*\n` +
+          (serviceOrders.length > 0 ? `🔧 Servicios: ${serviceOrders.length}  —  ${fmtMoney(totalServices)}\n` : '') +
+          (productOrders.length > 0  ? `📦 Productos: ${productOrders.length}  —  ${fmtMoney(totalProducts)}\n`  : '') +
+          `*Total: ${fmtMoney(totalRevenue)}*\n` +
+          (methodLines ? methodLines + '\n' : '')
+        : `💰 *VENTAS DEL DÍA*\nSin ventas registradas hoy.\n`;
+
+      const apptPlural = apptData.total !== 1;
+      const citasBlock = apptData.total > 0
+        ? `📅 *CITAS*\n` +
+          `Total: ${apptData.total}  |  ✅ ${apptData.completed} completada${apptData.completed !== 1 ? 's' : ''}  |  📅 ${apptData.confirmed} confirmada${apptData.confirmed !== 1 ? 's' : ''}\n` +
+          (apptData.cancelled + apptData.noShow > 0
+            ? `❌ ${apptData.cancelled} cancelada${apptData.cancelled !== 1 ? 's' : ''}  |  👻 ${apptData.noShow} no show\n`
+            : ``)
+        : `📅 *CITAS*\nSin citas hoy.\n`;
+
+      const pendingAppts = apptData.pending > 0
+        ? `\n⏳ ${apptData.pending} cita${apptData.pending !== 1 ? 's' : ''} sigue${apptData.pending === 1 ? '' : 'n'} pendiente${apptData.pending !== 1 ? 's' : ''} de confirmar — escríbeme "confirma la cita de [nombre]" si quieres gestionarla por aquí.`
+        : '';
+
+      const dateStr = localNow.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' });
+      const waMsg =
+        `📊 *Reporte del día — ${store.name}*\n` +
+        `_${dateStr.charAt(0).toUpperCase() + dateStr.slice(1)}_\n\n` +
+        ventasBlock + '\n' +
+        citasBlock + '\n' +
+        `👥 *CLIENTES*\nNuevos hoy: ${clientsData.new}` +
+        pendingAppts;
 
       const htmlEmail = `<h2>Reporte del día — ${store.name}</h2>
+        <p><em>${dateStr}</em></p>
+        <h3>Ventas del día</h3>
+        <ul>
+          ${serviceOrders.length > 0 ? `<li>Servicios: ${serviceOrders.length} — ${fmtMoney(totalServices)}</li>` : ''}
+          ${productOrders.length  > 0 ? `<li>Productos: ${productOrders.length} — ${fmtMoney(totalProducts)}</li>`  : ''}
+          <li><strong>Total: ${fmtMoney(totalRevenue)}</strong></li>
+        </ul>
+        ${methodLines ? `<h4>Por método de pago</h4><ul>${Object.entries(byMethod).filter(([,v])=>v>0).map(([m,v])=>`<li>${m}: ${fmtMoney(v)}</li>`).join('')}</ul>` : ''}
         <h3>Citas</h3><ul>
-          <li>Total: ${apptData.total}</li><li>Completadas: ${apptData.completed}</li>
-          <li>Confirmadas: ${apptData.confirmed}</li><li>Canceladas: ${apptData.cancelled}</li>
+          <li>Total: ${apptData.total}</li>
+          <li>Completadas: ${apptData.completed}</li>
+          <li>Confirmadas: ${apptData.confirmed}</li>
+          <li>Canceladas: ${apptData.cancelled}</li>
           <li>No show: ${apptData.noShow}</li>
         </ul>
-        <h3>Pagos confirmados: ${fmtMoney(totalConfirmed)}</h3>
-        <ul>${Object.entries(byMethod).map(([m, v]) => `<li>${m}: ${fmtMoney(v)}</li>`).join('')}</ul>
-        <p>Pagos pendientes: ${fmtMoney(pendingPayment)}</p>
         <h3>Clientes nuevos hoy: ${clientsData.new}</h3>`;
 
       const adminEmail = await this.prisma.user
