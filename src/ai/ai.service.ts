@@ -2371,14 +2371,30 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
             const anyoneWorks = activeStaff.some(s => (s.schedule as any)?.[dayKey]?.isOpen === true);
             this.cancelConfirmReminder(conversationId);
             if (!anyoneWorks) {
+              const workDays = Object.entries(DAY_NAMES)
+                .filter(([k]) => activeStaff.some(s => (s.schedule as any)?.[k]?.isOpen === true))
+                .map(([, v]) => v);
+              const daySugg = workDays.length > 0 ? ` Atendemos los ${workDays.join(', ')}.` : '';
               return {
                 created: false,
-                message: `Lo siento, no tenemos disponibilidad los ${DAY_NAMES[dayKey] ?? dayKey}. ¿Quieres elegir otro día? 😊`,
+                message: `Lo siento, no tenemos disponibilidad los ${DAY_NAMES[dayKey] ?? dayKey}.${daySugg} ¿Quieres elegir otro día? 😊`,
               };
             }
+            // Recopilar ventanas horarias de todos los staff que trabajan ese día
+            const availWindows: string[] = [];
+            for (const s of activeStaff) {
+              const ds = (s.schedule as any)?.[dayKey];
+              if (!ds?.isOpen) continue;
+              for (const sh of ['shift1', 'shift2']) {
+                const t = ds[sh];
+                if (t?.open && t?.close) availWindows.push(`${t.open}–${t.close}`);
+              }
+            }
+            const uniqueWindows = [...new Set(availWindows)];
+            const hourSugg = uniqueWindows.length > 0 ? ` Atendemos de ${uniqueWindows.join(' y ')}.` : '';
             return {
               created: false,
-              message: `Lo siento, ningún ${staffLabel} está disponible a las ${extracted.scheduledTime}. ¿Quieres elegir otra hora?`,
+              message: `Lo siento, ningún ${staffLabel} está disponible a las ${extracted.scheduledTime}.${hourSugg} ¿Quieres elegir otra hora? 😊`,
             };
           }
         }
@@ -2405,12 +2421,15 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
 
           if (!daySched?.isOpen) {
             this.logger.warn(`[Cita] ${staffMember.name} no trabaja el ${dayKey} — pidiendo otra fecha`);
-            // Igual que arriba: conservamos el caché para no romper cacheHasAllData —
-            // la validación seguirá rechazando ese día hasta que el cliente elija otro.
             this.cancelConfirmReminder(conversationId);
+            const DN: Record<string, string> = { sun:'domingos', mon:'lunes', tue:'martes', wed:'miércoles', thu:'jueves', fri:'viernes', sat:'sábados' };
+            const workDays = Object.entries(DN)
+              .filter(([k]) => (staffMember.schedule as any)?.[k]?.isOpen === true)
+              .map(([, v]) => v);
+            const daySugg = workDays.length > 0 ? ` ${staffMember.name} trabaja los ${workDays.join(', ')}.` : '';
             return {
               created: false,
-              message: `Lo siento, ${staffMember.name} no trabaja ese día. ¿Quieres elegir otro día o con otro profesional?`,
+              message: `Lo siento, ${staffMember.name} no trabaja ese día.${daySugg} ¿Quieres elegir otro día o con otro profesional?`,
             };
           }
 
@@ -2426,12 +2445,16 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
           });
           if (!inShift) {
             this.logger.warn(`[Cita] ${extracted.scheduledTime} fuera del turno de ${staffMember.name} el ${dayKey} — pidiendo otra hora`);
-            // Conservamos la fecha/hora en caché por la misma razón que arriba:
-            // vaciarla rompía cacheHasAllData de forma permanente y producía un bucle.
             this.cancelConfirmReminder(conversationId);
+            const shiftWindows: string[] = [];
+            for (const sh of ['shift1', 'shift2']) {
+              const t = daySched[sh];
+              if (t?.open && t?.close) shiftWindows.push(`${t.open}–${t.close}`);
+            }
+            const hourSugg = shiftWindows.length > 0 ? ` Hoy atiende de ${shiftWindows.join(' y ')}.` : '';
             return {
               created: false,
-              message: `Lo siento, las ${extracted.scheduledTime} está fuera del horario de ${staffMember.name}. ¿Quieres elegir otra hora dentro de su horario?`,
+              message: `Lo siento, las ${extracted.scheduledTime} está fuera del horario de ${staffMember.name}.${hourSugg} ¿Quieres elegir otra hora? 😊`,
             };
           }
         }
