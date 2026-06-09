@@ -1327,7 +1327,23 @@ export class AiService {
           extractorC.provider, extractorC.apiKey, extractorC.model, history, userMessage,
           customer, storeId, conversationId, services, activeStaff, store,
         );
-        if (apptResult.created) return apptResult.message!;
+        if (apptResult.created) {
+          const firstMsg = apptResult.message!;
+          // Si el mismo mensaje sugiere UNA SEGUNDA cita ("y también para mi hijo a las 12:30")
+          // correr el extractor de nuevo — conversationCreatedAppts ya incluye la primera
+          // así que el LLM no la re-extrae y busca el slot diferente en el mensaje.
+          const MULTI_APPT_HINT_RE = /\b(?:también|otra|y\s+(?:una|otro|para|quiero|agend[ae])|además|aparte|y\s+también)\b/i;
+          if (MULTI_APPT_HINT_RE.test(userMessage) && !this.appointmentInProgress.has(conversationId)) {
+            const extractorC2 = getNextCartridge(storeId) ?? cartridge;
+            const apptResult2 = await this.tryExtractAndCreateAppointment(
+              extractorC2.provider, extractorC2.apiKey, extractorC2.model, history, userMessage,
+              customer, storeId, conversationId, services, activeStaff, store,
+            );
+            if (apptResult2.created) return firstMsg + '\n\n' + apptResult2.message!;
+            if (apptResult2.message) return firstMsg + '\n\n' + apptResult2.message;
+          }
+          return firstMsg;
+        }
         // Si falló por horario/conflicto hay un mensaje específico — usarlo directamente
         // para evitar que el AI principal genere una confirmación falsa
         if (!apptResult.created && apptResult.message) return apptResult.message;
