@@ -15,6 +15,7 @@ interface PoolState {
   cursor:     number;
   resetAt:    number;
   configHash: string;
+  useCounts:  Map<string, number>; // `${provider}:${apiKey}` → uses since last reset
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -39,6 +40,8 @@ function resetIfExpired(storeId: string): void {
   }
 }
 
+const useCountKey = (c: Cartridge) => `${c.provider}:${c.apiKey}`;
+
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 /**
@@ -60,6 +63,7 @@ export function ensurePool(storeId: string, cartridges: Cartridge[]): void {
       cursor:     0,
       resetAt:    Date.now() + POOL_RESET_MS,
       configHash: hash,
+      useCounts:  new Map(),
     });
   }
 }
@@ -73,6 +77,8 @@ export function getNextCartridge(storeId: string): Cartridge | null {
   if (!pool?.active.length) return null;
   const cartridge = pool.active[pool.cursor % pool.active.length];
   pool.cursor++;
+  const k = useCountKey(cartridge);
+  pool.useCounts.set(k, (pool.useCounts.get(k) ?? 0) + 1);
   return cartridge;
 }
 
@@ -149,15 +155,17 @@ export function getPoolStatus(storeId: string): string {
 
 export interface CartridgeSnapshot {
   provider:  string;
-  maskedKey: string;   // e.g. "...AeW0"
+  maskedKey: string;
   model:     string;
   status:    'active' | 'unused' | 'exhausted';
+  useCount:  number;
 }
 
 export interface PoolSnapshot {
   hasPool:    boolean;
   cartridges: CartridgeSnapshot[];
-  resetAt:    number | null;  // epoch ms when rate-limit window resets
+  resetAt:    number | null;
+  totalUses:  number;
 }
 
 const maskKey = (key: string): string =>
@@ -166,18 +174,27 @@ const maskKey = (key: string): string =>
 export function getPoolSnapshot(storeId: string): PoolSnapshot {
   resetIfExpired(storeId);
   const pool = pools.get(storeId);
-  if (!pool) return { hasPool: false, cartridges: [], resetAt: null };
+  if (!pool) return { hasPool: false, cartridges: [], resetAt: null, totalUses: 0 };
 
   const snap = (list: Cartridge[], status: CartridgeSnapshot['status']): CartridgeSnapshot[] =>
-    list.map(c => ({ provider: c.provider, maskedKey: maskKey(c.apiKey), model: c.model, status }));
+    list.map(c => ({
+      provider:  c.provider,
+      maskedKey: maskKey(c.apiKey),
+      model:     c.model,
+      status,
+      useCount:  pool.useCounts.get(useCountKey(c)) ?? 0,
+    }));
+
+  const all = [
+    ...snap(pool.active,    'active'),
+    ...snap(pool.unused,    'unused'),
+    ...snap(pool.exhausted, 'exhausted'),
+  ];
 
   return {
     hasPool:    true,
-    cartridges: [
-      ...snap(pool.active,    'active'),
-      ...snap(pool.unused,    'unused'),
-      ...snap(pool.exhausted, 'exhausted'),
-    ],
-    resetAt: pool.resetAt,
+    cartridges: all,
+    resetAt:    pool.resetAt,
+    totalUses:  all.reduce((s, c) => s + c.useCount, 0),
   };
 }
