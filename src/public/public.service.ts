@@ -10,6 +10,7 @@ interface SlotResult {
   staffId: string | null;
   name: string;
   slots: string[];
+  occupiedSlots: string[];
 }
 
 type DayKey = 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat';
@@ -194,7 +195,8 @@ export class PublicService {
         select: { scheduledAt: true, endsAt: true },
       });
 
-      results.push({ staffId: null, name: store.name, slots: this.computeSlots(date, hours, appts) });
+      const { available, occupied } = this.computeSlots(date, hours, appts);
+      results.push({ staffId: null, name: store.name, slots: available, occupiedSlots: occupied });
     } else {
       for (const member of activeStaff) {
         const hours = (member.schedule ?? store.businessHours) as Record<string, any> | null;
@@ -208,10 +210,14 @@ export class PublicService {
           select: { scheduledAt: true, endsAt: true },
         });
 
+        const { available, occupied } = hours
+          ? this.computeSlots(date, hours, appts)
+          : { available: [], occupied: [] };
         results.push({
-          staffId: member.staffId,
-          name:    member.name,
-          slots:   hours ? this.computeSlots(date, hours, appts) : [],
+          staffId:      member.staffId,
+          name:         member.name,
+          slots:        available,
+          occupiedSlots: occupied,
         });
       }
     }
@@ -224,12 +230,12 @@ export class PublicService {
     hours: Record<string, any>,
     appointments: { scheduledAt: Date; endsAt: Date | null }[],
     slotMinutes = 30,
-  ): string[] {
+  ): { available: string[]; occupied: string[] } {
     const DAY_KEYS: DayKey[] = ['sun','mon','tue','wed','thu','fri','sat'];
     const dayKey    = DAY_KEYS[date.getDay()];
     const daySchedule = hours[dayKey];
 
-    if (!daySchedule?.isOpen) return [];
+    if (!daySchedule?.isOpen) return { available: [], occupied: [] };
 
     const shifts: { open: string; close: string }[] =
       [daySchedule.shift1, daySchedule.shift2].filter(Boolean);
@@ -250,22 +256,27 @@ export class PublicService {
     }
 
     const now = new Date();
-    return allSlots.filter(slot => {
+    const available: string[] = [];
+    const occupied: string[] = [];
+
+    for (const slot of allSlots) {
       const [h, m]    = slot.split(':').map(Number);
       const slotStart = new Date(date);
       slotStart.setUTCHours(h + 5, m, 0, 0); // Colombia UTC-5 → UTC
       const slotEnd   = new Date(slotStart.getTime() + slotMinutes * 60_000);
 
-      // No mostrar horarios que ya pasaron (evita que el cliente elija "hoy 10am"
-      // a las 11pm — AppointmentsService.create lo rechazaría igual, pero es mejor
-      // no ofrecerlo nunca como opción).
-      if (slotStart < now) return false;
+      if (slotStart < now) continue; // slots pasados no se muestran
 
-      return !appointments.some(appt => {
+      const isBusy = appointments.some(appt => {
         const s = new Date(appt.scheduledAt);
         const e = appt.endsAt ? new Date(appt.endsAt) : new Date(s.getTime() + 30 * 60_000);
         return s < slotEnd && e > slotStart;
       });
-    });
+
+      if (isBusy) occupied.push(slot);
+      else available.push(slot);
+    }
+
+    return { available, occupied };
   }
 }

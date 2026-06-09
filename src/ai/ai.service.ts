@@ -1588,8 +1588,9 @@ export class AiService {
     const cached            = this.pendingExtractions.get(conversationId);
     let extracted: ExtractionResult;
 
-    // Para órdenes solo se requiere nombre (cédula es opcional)
-    const needsCustomerData = !customer.name;
+    // Para órdenes el nombre del cliente es opcional — se usa "Cliente general" si no hay
+    const needsName = !customer.name;
+    const needsCustomerData = false;
 
     // ── Caso 1: extracción completa cacheada + cliente confirma ───────────────
     if (
@@ -1654,12 +1655,12 @@ export class AiService {
         `Cliente: ${latestMessage}`,
       ].join('\n');
 
-      const customerDataInstruction = needsCustomerData
-        ? `DATOS DEL CLIENTE REQUERIDOS:
-El cliente aún no tiene nombre registrado. Extráelo si fue mencionado.
-La cédula es opcional — extráela si el cliente la menciona, pero NO es obligatoria.
-Si el nombre no aparece → null. La orden NO puede ser "complete":true si falta el nombre.`
-        : `DATOS DEL CLIENTE: Ya registrados. No es necesario extraerlos.`;
+      const customerDataInstruction = needsName
+        ? `DATOS DEL CLIENTE (OPCIONAL):
+Si el cliente mencionó su nombre en la conversación, extráelo en "customerName". Si no lo mencionó, deja null.
+El nombre NO es requisito para "complete":true — la orden se puede crear sin él.
+La cédula es opcional — extráela SOLO si el cliente la menciona explícitamente.`
+        : `DATOS DEL CLIENTE: Nombre ya registrado (${customer.name}).`;
 
       const extractorPrompt = `Eres un extractor de datos de órdenes de compra. Tu única tarea es leer la conversación y extraer los datos del pedido en JSON.
 
@@ -1730,7 +1731,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
         this.logger.log(`[Orden] Extracción: complete=${extracted.complete} reason=${extracted.reason}`);
 
         // Guardar nombre del cliente proactivamente aunque la orden aún no esté completa
-        if (needsCustomerData && extracted.customerName && !extracted.complete) {
+        if (needsName && extracted.customerName && !extracted.complete) {
           this.prisma.customer.update({
             where: { customerId: customer.customerId },
             data: {
@@ -1769,7 +1770,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
 
     try {
       // Actualizar datos del cliente si se recopilaron ahora
-      if (needsCustomerData && extracted.customerName) {
+      if (needsName && extracted.customerName) {
         await this.prisma.customer.update({
           where: { customerId: customer.customerId },
           data: {
@@ -1908,7 +1909,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
     // Para citas: solo se requiere nombre (la cédula es opcional — no siempre aplica)
     const needsName    = !customer.name;
     const needsCedula  = !customer.cedula;
-    const needsCustomerData = needsName; // solo bloquea si no hay nombre
+    const needsCustomerData = false; // nombre no bloquea la creación de citas
 
     // ── FIX CASO 1: no esperamos complete=true del caché ─────────────────────
     // Si el caché tiene fecha, hora y nombre (si aplica) Y el cliente confirma
@@ -1968,8 +1969,8 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
       ].join('\n');
 
       const customerDataInstruction = needsName
-        ? `DATOS DEL CLIENTE REQUERIDOS:
-El cliente no tiene nombre registrado. Extráelo de la conversación.
+        ? `DATOS DEL CLIENTE (OPCIONAL):
+Si el cliente mencionó su nombre en la conversación, extráelo en "customerName". El nombre NO es requisito para "complete":true.
 
 IMPORTANTE — EXTRACCIÓN DE NOMBRE SIN ETIQUETAS:
 Los clientes frecuentemente envían todos sus datos juntos en un mensaje sin etiquetas, por ejemplo:
@@ -1984,9 +1985,8 @@ En ese caso:
 - Una línea con Cra/Calle/# = dirección, NO es nombre
 - La frase con fecha/hora = scheduledDate y scheduledTime
 
-La cita NO puede ser "complete":true si no logras identificar el nombre.
 La cédula es OPCIONAL — extráela SOLO si el cliente mencionó explícitamente un número de 6-10 dígitos como cédula. Un teléfono NO es cédula.`
-        : `DATOS DEL CLIENTE: Nombre ya registrado (${customer.name}). No es necesario pedirlo.`;
+        : `DATOS DEL CLIENTE: Nombre ya registrado (${customer.name}).`;
 
       const servicesCatalog = services.length > 0
         ? `CATÁLOGO DE SERVICIOS DISPONIBLES:
@@ -2034,8 +2034,7 @@ REGLAS ESTRICTAS:
    b) Hora específica
    c) Descripción de qué necesita el cliente
    d) Confirmación explícita del cliente (sí, confirmo, listo, dale, ok, etc.)
-   e) Si se requiere nombre del cliente: debe estar presente
-   ${store?.requiresCustomerAddress ? 'f) Dirección física del cliente: debe estar presente (este negocio la requiere)' : ''}
+   ${store?.requiresCustomerAddress ? 'e) Dirección física del cliente: debe estar presente (este negocio la requiere)' : ''}
 2. Si falta CUALQUIER condición → "complete":false
 3. "scheduledDate": formato "YYYY-MM-DD". Usa EXACTAMENTE las fechas del PRÓXIMAS FECHAS del calendario de arriba.
    NO calcules manualmente — copia el valor de la tabla. Si el cliente dice "el lunes", usa el valor "lunes: YYYY-MM-DD" de la tabla.
@@ -2186,15 +2185,26 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
         if (activeStaff.length > 0) {
           let bestStaff: { staffId: string; name: string } | null = null;
           let bestPos = -1;
+          // Buscar en el mensaje actual Y en el historial reciente para capturar
+          // menciones de staff de mensajes anteriores (ej: "con Andrés" en msg 1,
+          // cliente da nombre propio en msg 2 sin repetir el barbero)
+          const searchContext = [
+            latestMessage,
+            ...history.filter((m: any) => !m.isAiResponse).slice(-4).map((m: any) => m.content),
+          ].join(' ');
           for (const s of activeStaff) {
-            const firstName = s.name.split(' ')[0];
-            // esWord (no \b) — nombres con tilde ("José", "Andrés") no matchean con \b nativo de JS
-            const re = new RegExp(esWord(firstName), 'giu');
-            let m: RegExpExecArray | null;
-            while ((m = re.exec(latestMessage)) !== null) {
-              if (m.index > bestPos) {
-                bestPos = m.index;
-                bestStaff = s;
+            // Buscar todas las palabras del nombre (>2 chars) para manejar nombres
+            // compuestos como "Asesor de imagen Andrés" donde split(' ')[0] = "Asesor"
+            const nameWords = s.name.split(/\s+/).filter((w: string) => w.length > 2);
+            for (const word of nameWords) {
+              // esWord (no \b) — nombres con tilde ("José", "Andrés") no matchean con \b nativo de JS
+              const re = new RegExp(esWord(word), 'giu');
+              let m: RegExpExecArray | null;
+              while ((m = re.exec(searchContext)) !== null) {
+                if (m.index > bestPos) {
+                  bestPos = m.index;
+                  bestStaff = s;
+                }
               }
             }
           }
@@ -2257,7 +2267,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
         }
 
         // Guardar en caché incluso si no está completo — acumula datos entre mensajes
-        if (extracted.scheduledDate || extracted.description || extracted.serviceId || extracted.customerName) {
+        if (extracted.scheduledDate || extracted.description || extracted.serviceId || extracted.customerName || extracted.staffId) {
           // Merge robusto con caché previo
           const merged: AppointmentExtractionResult = cached
             ? mergeAppt(cached, extracted)
