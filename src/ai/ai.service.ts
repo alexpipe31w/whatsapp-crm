@@ -1383,10 +1383,14 @@ export class AiService {
       }
 
       // ── Flujo de orden ────────────────────────────────────────────────────────
+      // Si hay una cita en progreso (hasPendingAppt), hasPendingOrder no dispara
+      // el flujo de orden — el mensaje actual podría ser el nombre del barbero u
+      // otro dato de la cita, no del pedido. Solo un intento de compra explícito
+      // (hasPurchaseIntent) puede coexistir con una cita en curso.
       const shouldTryOrder =
         hasCatalog &&
         history.length >= 2 &&
-        (hasPurchaseIntent || hasPendingOrder) &&
+        (hasPurchaseIntent || (hasPendingOrder && !hasPendingAppt)) &&
         !this.orderInProgress.has(conversationId);
 
       if (shouldTryOrder) {
