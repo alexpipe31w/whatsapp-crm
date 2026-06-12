@@ -7,6 +7,8 @@ import { PrismaClient } from '../generated/prisma/client';
 // Solo operaciones ADD COLUMN IF NOT EXISTS — idempotentes, nunca destruyen datos.
 const STARTUP_MIGRATIONS = [
   `ALTER TABLE staff ADD COLUMN IF NOT EXISTS commission_percentage DOUBLE PRECISION`,
+  `ALTER TABLE staff ADD COLUMN IF NOT EXISTS suspended_from TIMESTAMP`,
+  `ALTER TABLE staff ADD COLUMN IF NOT EXISTS suspended_until TIMESTAMP`,
 ];
 
 @Injectable()
