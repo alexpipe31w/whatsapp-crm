@@ -788,9 +788,10 @@ export class WhatsappService implements OnModuleInit {
       }
 
       // ── 5. Transcribir con Whisper — intentar candidatos en orden ───────
+      const whisperPrompt = await this.buildWhisperPrompt(storeId);
       let rawTranscription: string | null = null;
       for (const cand of whisperCandidates) {
-        rawTranscription = await this.transcribeAudio(buffer, ext, cand.apiKey, cand.provider);
+        rawTranscription = await this.transcribeAudio(buffer, ext, cand.apiKey, cand.provider, whisperPrompt);
         if (rawTranscription !== null) break;
         this.logger.debug(`[Audio] ${phone}: clave ${cand.provider} falló, probando siguiente...`);
       }
@@ -815,11 +816,47 @@ export class WhatsappService implements OnModuleInit {
     }
   }
 
+  // Caché del prompt de vocabulario por tienda (10 min) — evita consultar el catálogo en cada audio
+  private readonly whisperPromptCache = new Map<string, { prompt: string; expiresAt: number }>();
+
+  // Construye un "prompt" para Whisper con el vocabulario del negocio (nombres de
+  // productos/servicios + términos colombianos). Whisper lo usa para sesgar la
+  // transcripción hacia esas palabras → agarra mucho mejor nombres propios, marcas
+  // y jerga local que de otro modo confunde.
+  private async buildWhisperPrompt(storeId: string): Promise<string> {
+    const cached = this.whisperPromptCache.get(storeId);
+    if (cached && cached.expiresAt > Date.now()) return cached.prompt;
+
+    let names: string[] = [];
+    let storeName = '';
+    try {
+      const [store, products, services] = await Promise.all([
+        this.prisma.store.findUnique({ where: { storeId }, select: { name: true } }),
+        this.prisma.product.findMany({ where: { storeId, isActive: true }, select: { name: true }, take: 30, orderBy: { name: 'asc' } }),
+        this.prisma.service.findMany({ where: { storeId, isActive: true }, select: { name: true }, take: 30, orderBy: { name: 'asc' } }),
+      ]);
+      storeName = store?.name ?? '';
+      names = [...products, ...services].map(x => x.name).filter(Boolean);
+    } catch {
+      /* si falla la consulta, igual devolvemos el prompt base */
+    }
+
+    const base = 'Mensaje de voz en español de Colombia. Términos: Nequi, Daviplata, Bancolombia, transferencia, efectivo, cita, agendar, pedido, domicilio, factura.';
+    let prompt = (storeName ? `${storeName}. ` : '') + base;
+    if (names.length) prompt += ` Catálogo: ${names.join(', ')}.`;
+    // Whisper acota el prompt (~224 tokens) — recortamos para no desperdiciar ni que lo ignore
+    if (prompt.length > 800) prompt = prompt.slice(0, 800);
+
+    this.whisperPromptCache.set(storeId, { prompt, expiresAt: Date.now() + 10 * 60 * 1000 });
+    return prompt;
+  }
+
   private async transcribeAudio(
     buffer:   Buffer,
     ext:      string,
     apiKey:   string,
     provider: string,
+    prompt?:  string,
   ): Promise<string | null> {
     // Whisper solo disponible en Groq y OpenAI
     const whisperBaseURL = provider === 'openai'
@@ -845,6 +882,8 @@ export class WhatsappService implements OnModuleInit {
       formData.append('model',           WHISPER_MODEL);
       formData.append('language',        'es');
       formData.append('response_format', 'text');
+      formData.append('temperature',     '0');
+      if (prompt) formData.append('prompt', prompt);
 
       const res = await Promise.race([
         fetch(`${whisperBaseURL}/audio/transcriptions`, {
