@@ -2765,6 +2765,8 @@ export const StaffScalarFieldEnum = {
   isActive: 'isActive',
   schedule: 'schedule',
   commissionPercentage: 'commissionPercentage',
+  suspendedFrom: 'suspendedFrom',
+  suspendedUntil: 'suspendedUntil',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
