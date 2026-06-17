@@ -40,6 +40,11 @@ const APPT_STATUS_LABEL: Record<string, string> = {
 // ── Formato de número ─────────────────────────────────────────────────────────
 const normalizePhone = (p: string) => p.replace(/\D/g, '');
 
+// Cliente genérico para "ventas rápidas" sin cliente identificado (uno por tienda).
+// El teléfono es un centinela sin dígitos → nunca colisiona ni matchea búsquedas por número real.
+const QUICK_SALE_PHONE = 'venta-rapida';
+const QUICK_SALE_NAME  = 'Venta rápida';
+
 @Injectable()
 export class AdminAssistantService implements OnModuleDestroy {
   private readonly logger   = new Logger(AdminAssistantService.name);
@@ -330,8 +335,8 @@ ${context}
 ━━ ACCIONES QUE PUEDES EJECUTAR ━━
 Cuando el admin te pida crear o modificar algo, incluye al FINAL de tu respuesta el bloque de acción exactamente así:
 
-Para crear una venta/orden (usa "serviceId" si el ítem es del CATÁLOGO DE SERVICIOS, o "productId" si es del CATÁLOGO DE PRODUCTOS — nunca mezcles ambos catálogos):
-⚡ACTION⚡CREATE_ORDER⚡{"customerId":"<id_opcional>","customerPhone":"<telefono>","customerName":"<nombre_opcional_si_es_cliente_nuevo>","items":[{"description":"<nombre>","serviceId":"<id_si_es_servicio>","productId":"<id_si_es_producto>","quantity":1,"unitPrice":<precio>}],"notes":"<opcional>","paymentMethod":"efectivo"}⚡END⚡
+Para crear una venta/orden — el CLIENTE es OPCIONAL: si el admin NO menciona cliente, NO lo pidas; omite customerPhone/customerName y se registra como "Venta rápida". Para cada ítem: si reconoces el producto/servicio en el catálogo manda su "serviceId" (CATÁLOGO DE SERVICIOS) o "productId" (CATÁLOGO DE PRODUCTOS) — nunca mezcles ambos. Si NO estás seguro del ID, manda solo "description" (y "unitPrice" si lo sabes): el sistema busca el más parecido o te sugiere opciones, no inventes IDs:
+⚡ACTION⚡CREATE_ORDER⚡{"customerPhone":"<telefono_opcional>","customerName":"<nombre_opcional>","items":[{"description":"<nombre>","serviceId":"<id_si_lo_sabes>","productId":"<id_si_lo_sabes>","quantity":1,"unitPrice":<precio>}],"notes":"<opcional>","paymentMethod":"efectivo"}⚡END⚡
 
 Para crear una cita (si el cliente no existe aún, se crea automáticamente con el teléfono — incluye "customerName" si el admin lo menciona):
 ⚡ACTION⚡CREATE_APPOINTMENT⚡{"customerPhone":"<telefono>","customerName":"<nombre_opcional_si_es_cliente_nuevo>","serviceId":"<id_del_catalogo_de_servicios>","scheduledAt":"<ISO8601 Colombia>","notes":"<opcional>"}⚡END⚡
@@ -362,9 +367,11 @@ REGLAS:
 - PRODUCTOS y SERVICIOS son catálogos DISTINTOS — revisa el correcto antes de decir "no lo encuentro". Un producto NO aparece en el catálogo de servicios ni viceversa; eso es normal, no es un error.
 - Si no tienes el ID de algo, búscalo en el contexto correspondiente. Si aun así no aparece, dile al admin que no lo encuentras EN ESE catálogo y pregunta si es un producto o un servicio.
 - Para crear citas, la fecha/hora SIEMPRE en ISO8601 con offset Colombia (-05:00)
-- Para crear una cita o venta NO necesitas que el cliente ya exista — si el admin te da el teléfono (y opcionalmente el nombre), el sistema lo crea automáticamente. NUNCA te detengas a "registrar primero al cliente": ejecuta la acción directamente con el teléfono que te dieron.
-- Si ya tienes teléfono + servicio/producto + fecha/hora (para citas) o ítems (para ventas), EJECUTA la acción de una vez — no sigas pidiendo confirmación de datos que ya tienes.
-- CADA venta o cita es de un cliente independiente — NUNCA reutilices el teléfono/nombre/customerId del cliente de una venta o cita anterior en esta conversación para una nueva, aunque el admin no lo repita. Si el admin pide registrar "otra venta" o "una cita más" sin decir de quién es, PREGÚNTALE primero: "¿Es para el mismo cliente (nombre/teléfono) o uno nuevo?" — solo continúa con el cliente anterior si el admin lo confirma explícitamente.
+- VENTA RÁPIDA (productos/servicios): registra de inmediato. El cliente es OPCIONAL — si el admin no lo menciona, NO preguntes por nombre ni teléfono; ejecuta CREATE_ORDER sin cliente y queda como "Venta rápida". Si el admin manda un audio o un mensaje corto tipo "registra venta de corte 20mil" o "vendí 2 ceras a 15 mil", ejecuta YA con lo que tienes; solo pregunta si falta el PRECIO o si de plano no se entiende qué producto/servicio es.
+- Si NO reconoces con certeza el producto/servicio, NO inventes el ID: manda solo "description" (y "unitPrice" si lo sabes) y deja que el sistema busque el más parecido. Si el sistema te devuelve opciones para elegir, muéstraselas al admin tal cual y espera que elija — no asumas.
+- Para CITAS sí necesitas identificar al cliente: si el admin te da el teléfono (y opcionalmente el nombre) el sistema lo crea solo. NUNCA te detengas a "registrar primero al cliente".
+- Si ya tienes lo necesario (ítems + precio para ventas; o teléfono + servicio + fecha/hora para citas), EJECUTA de una vez — no repreguntes datos que ya tienes.
+- NUNCA reutilices el cliente de una venta/cita anterior de esta conversación para una nueva. Para CITAS, si el admin pide "otra cita" sin decir de quién es, pregúntale. Para VENTAS, si no menciona cliente, simplemente usa "Venta rápida" (no preguntes).
 - Para confirmar/cancelar/completar citas: NUNCA inventes ni adivines un appointmentId. Si el admin solo dijo el nombre del cliente ("confirma la cita de Juan"), manda "customerName" — el sistema la busca por ti y, si hay varias, te las muestra para que el admin elija. Solo manda "appointmentId" si el admin te dio ese ID explícitamente (por ejemplo, copiado de una respuesta anterior tuya).
 - Si el admin pide algo que claramente no está en el contexto (ni en productos ni en servicios), dile que no encuentras esa información
 - Nunca inventes datos — solo usa lo que está en el contexto
@@ -388,6 +395,57 @@ REGLAS:
 
     const canonicalPhone = digits.length === 10 && digits.startsWith('3') ? `+57${digits}` : `+${digits}`;
     return this.customers.findOrCreate({ storeId, phone: canonicalPhone, name });
+  }
+
+  // ─── Cliente genérico "Venta rápida" (uno por tienda, idempotente) ───────────
+  private async getOrCreateQuickSaleCustomer(storeId: string) {
+    return this.customers.findOrCreate({ storeId, phone: QUICK_SALE_PHONE, name: QUICK_SALE_NAME });
+  }
+
+  // ─── Matching difuso contra el catálogo (productos + servicios) ──────────────
+  // Normaliza (minúsculas, sin tildes ni signos) y puntúa por: igualdad > inclusión
+  // > solapamiento de palabras (Jaccard). Sirve cuando la IA manda solo la
+  // descripción del ítem (o un ID que no existe) — recupera el más parecido o
+  // devuelve opciones para sugerir, en vez de fallar en seco.
+  private normalizeText(s: string): string {
+    return (s ?? '')
+      .toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  private async findCatalogMatches(
+    storeId: string,
+    query: string,
+  ): Promise<Array<{ type: 'product' | 'service'; id: string; name: string; price: number; score: number }>> {
+    const q = this.normalizeText(query);
+    if (!q) return [];
+    const qWords = new Set(q.split(' ').filter(w => w.length > 1));
+
+    const [products, services] = await Promise.all([
+      this.prisma.product.findMany({ where: { storeId, isActive: true }, select: { productId: true, name: true, salePrice: true } }),
+      this.prisma.service.findMany({ where: { storeId, isActive: true }, select: { serviceId: true, name: true, basePrice: true } }),
+    ]);
+
+    const score = (name: string): number => {
+      const n = this.normalizeText(name);
+      if (!n) return 0;
+      if (n === q) return 1;
+      if (n.includes(q) || q.includes(n)) return 0.85;
+      const nWords = new Set(n.split(' ').filter(w => w.length > 1));
+      let inter = 0;
+      qWords.forEach(w => { if (nWords.has(w)) inter++; });
+      const union = new Set([...qWords, ...nWords]).size || 1;
+      return inter / union;
+    };
+
+    const items = [
+      ...products.map(p => ({ type: 'product' as const, id: p.productId, name: p.name, price: Number(p.salePrice ?? 0), score: score(p.name) })),
+      ...services.map(s => ({ type: 'service' as const, id: s.serviceId, name: s.name, price: Number(s.basePrice ?? 0), score: score(s.name) })),
+    ];
+    return items.filter(i => i.score >= 0.34).sort((a, b) => b.score - a.score).slice(0, 3);
   }
 
   // ─── Resolver la cita objetivo de confirmar/cancelar/completar ───────────
@@ -476,14 +534,10 @@ REGLAS:
       switch (actionType) {
 
         case 'CREATE_ORDER': {
-          // Resolver customerId desde phone si no viene: primero busca por coincidencia
-          // parcial (tolera formatos distintos al guardado), y si es cliente nuevo lo
-          // crea al vuelo (upsert atómico — ver CustomersService.findOrCreate, evita
-          // duplicados por condición de carrera).
-          // Igual que con serviceId/productId más abajo: nunca confiar en que un
-          // customerId que la IA extrajo (o alucinó) pertenece a esta tienda — si no
-          // se valida, Prisma deja crear la orden con un FK roto o de otro storeId,
-          // y la creación revienta con "Foreign key constraint violated on orders_customer_id_fkey".
+          // ── Cliente: OPCIONAL. Venta rápida sin fricción ───────────────────────
+          // Si el admin no identifica cliente, la venta se registra a un cliente
+          // genérico "Venta rápida" (uno por tienda). Nunca confiar en un customerId
+          // que la IA extrajo: validarlo contra el storeId (evita FK roto / cross-tenant).
           let customerId: string | undefined;
           if (params.customerId) {
             const owned = await this.prisma.customer.findFirst({
@@ -494,41 +548,71 @@ REGLAS:
           if (!customerId && params.customerPhone) {
             customerId = (await this.findOrCreateCustomerByPhone(storeId, params.customerPhone, params.customerName)).customerId;
           }
-          if (!customerId) return '❌ Necesito el teléfono o ID del cliente para crear la venta.';
-
-          const items = params.items ?? [];
-          if (!items.length) return '❌ La venta necesita al menos un ítem.';
-
-          // Igual que en CREATE_APPOINTMENT (ver más abajo): nunca confiar en que un
-          // serviceId/productId que la IA extrajo del mensaje del admin pertenece a
-          // esta tienda — sin esto, el `connect` de abajo aceptaba igual un ID de
-          // OTRA tienda (Prisma solo valida que el registro EXISTA, no el dueño) y la
-          // venta quedaba con storeId de esta tienda pero apuntando al servicio o
-          // producto (nombre, precio, stock) de otra.
-          for (const i of items) {
-            if (i.serviceId) {
-              const service = await this.prisma.service.findFirst({
-                where: { serviceId: i.serviceId, storeId }, select: { serviceId: true },
-              });
-              if (!service) return `❌ El servicio "${i.description ?? i.serviceId}" no existe en tu catálogo.`;
-            }
-            if (i.productId) {
-              const product = await this.prisma.product.findFirst({
-                where: { productId: i.productId, storeId }, select: { productId: true },
-              });
-              if (!product) return `❌ El producto "${i.description ?? i.productId}" no existe en tu catálogo.`;
-            }
+          if (!customerId) {
+            customerId = (await this.getOrCreateQuickSaleCustomer(storeId)).customerId;
           }
 
-          const subtotal = items.reduce((s: number, i: any) => s + (Number(i.unitPrice) * (i.quantity ?? 1)), 0);
+          const rawItems = params.items ?? [];
+          if (!rawItems.length) return '❌ ¿Qué se vendió? Dime el producto o servicio y el precio.';
 
-          // El tipo de la orden depende de qué cataloga: si TODOS los ítems son
-          // servicios → 'service', si hay algún producto (o ítems libres) → 'product'.
-          // Esto evita que ventas de productos queden mal clasificadas como servicios
-          // (y viceversa) en los reportes y en el contexto del asistente.
-          const hasService  = items.some((i: any) => !!i.serviceId);
-          const hasProduct  = items.some((i: any) => !!i.productId);
-          const orderType   = hasService && !hasProduct ? 'service' : 'product';
+          // ── Resolver cada ítem contra el catálogo (multi-tenant: siempre validar
+          // por storeId). Si la IA no mandó un ID válido, se busca el más parecido por
+          // nombre: match fuerte → se usa y se autocompleta el precio; ambiguo → se
+          // sugieren opciones al admin; sin coincidencia → se registra como ítem libre.
+          const resolvedItems: Array<{ serviceId?: string; productId?: string; description: string; quantity: number; unitPrice: number }> = [];
+          for (const i of rawItems) {
+            let serviceId: string | undefined = i.serviceId || undefined;
+            let productId: string | undefined = i.productId || undefined;
+            let description: string = (i.description ?? '').trim();
+            let unitPrice: number | undefined = i.unitPrice != null ? Number(i.unitPrice) : undefined;
+            const quantity = Number(i.quantity) > 0 ? Number(i.quantity) : 1;
+
+            if (serviceId) {
+              const svc = await this.prisma.service.findFirst({
+                where: { serviceId, storeId }, select: { serviceId: true, name: true, basePrice: true },
+              });
+              if (!svc) { serviceId = undefined; }
+              else { if (!description) description = svc.name; if (unitPrice == null) unitPrice = Number(svc.basePrice ?? 0); }
+            }
+            if (productId) {
+              const prod = await this.prisma.product.findFirst({
+                where: { productId, storeId }, select: { productId: true, name: true, salePrice: true },
+              });
+              if (!prod) { productId = undefined; }
+              else { if (!description) description = prod.name; if (unitPrice == null) unitPrice = Number(prod.salePrice ?? 0); }
+            }
+
+            // Sin ID válido todavía → buscar por nombre en el catálogo
+            if (!serviceId && !productId) {
+              if (!description) return '❌ ¿Qué producto o servicio se vendió?';
+              const matches = await this.findCatalogMatches(storeId, description);
+              const top = matches[0];
+              const confident = !!top && top.score >= 0.6 && (matches.length === 1 || top.score - matches[1].score >= 0.2);
+              if (confident) {
+                if (top.type === 'service') serviceId = top.id; else productId = top.id;
+                description = top.name;
+                if (unitPrice == null || unitPrice <= 0) unitPrice = top.price;
+              } else if (matches.length) {
+                const opts = matches.map(m =>
+                  `• ${m.name} (${m.type === 'service' ? 'servicio' : 'producto'}) — $${Math.round(m.price).toLocaleString('es-CO')}`
+                ).join('\n');
+                return `🤔 No encontré exactamente "${description}". ¿Cuál de estos es?\n${opts}\n\nDime cuál (o el precio si es uno nuevo) y lo registro.`;
+              }
+              // sin coincidencias → se registra como ítem libre (description + precio)
+            }
+
+            if (unitPrice == null || unitPrice <= 0) {
+              return `❌ ¿A qué precio registro "${description || 'el ítem'}"? Dime el valor y lo guardo.`;
+            }
+            resolvedItems.push({ serviceId, productId, description: description || 'Ítem', quantity, unitPrice });
+          }
+
+          const subtotal = resolvedItems.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
+
+          // Tipo de orden: 'service' solo si TODOS los ítems son servicios del catálogo;
+          // cualquier producto o ítem libre la marca como 'product' (igual que antes).
+          const allServices = resolvedItems.every(i => !!i.serviceId);
+          const orderType   = allServices ? 'service' : 'product';
 
           const order = await this.prisma.order.create({
             data: {
@@ -540,11 +624,12 @@ REGLAS:
               total:      subtotal,
               isManual:   true,
               status:     'delivered',
+              manualPaymentMethod: params.paymentMethod ?? 'efectivo',
               orderItems: {
-                create: items.map((i: any) => ({
+                create: resolvedItems.map(i => ({
                   description: i.description,
-                  quantity:    i.quantity ?? 1,
-                  unitPrice:   Number(i.unitPrice),
+                  quantity:    i.quantity,
+                  unitPrice:   i.unitPrice,
                   ...(i.serviceId ? { service: { connect: { serviceId: i.serviceId } } } : {}),
                   ...(i.productId ? { product: { connect: { productId: i.productId } } } : {}),
                 })),
@@ -554,7 +639,10 @@ REGLAS:
           });
 
           const fmt = (n: number) => `$${Math.round(n).toLocaleString('es-CO')}`;
-          return `✅ *Venta registrada exitosamente*\nCliente: ${order.customer?.name ?? 'desconocido'}\nTotal: ${fmt(subtotal)}\nID: ${order.orderId.slice(-8).toUpperCase()}`;
+          const itemsTxt = resolvedItems.map(i =>
+            `• ${i.description}${i.quantity > 1 ? ` x${i.quantity}` : ''} — ${fmt(i.unitPrice * i.quantity)}`
+          ).join('\n');
+          return `✅ *Venta registrada*\n${itemsTxt}\nTotal: ${fmt(subtotal)}\nCliente: ${order.customer?.name ?? QUICK_SALE_NAME}\nPago: ${params.paymentMethod ?? 'efectivo'}\nID: ${order.orderId.slice(-8).toUpperCase()}`;
         }
 
         case 'CREATE_APPOINTMENT': {
