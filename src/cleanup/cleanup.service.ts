@@ -3,10 +3,8 @@ import { Cron } from '@nestjs/schedule';
 import { createCompletion, PROVIDER_CONFIG, AIProvider } from '../ai/providers';
 import { PrismaService } from '../prisma/prisma.service';
 
-// Conversaciones que llevan +24h sin actividad y no están en manos de un asesor
-const ARCHIVE_AFTER_HOURS   = 24;
-// Mensajes archivados con más de N días se eliminan definitivamente
-const PURGE_ARCHIVED_DAYS   = 90;
+// Conversaciones que llevan +24h sin actividad se borran (cualquier estado)
+const CLEANUP_AFTER_HOURS   = 24;
 // Tamaño de lote para no saturar la BD
 const BATCH_SIZE            = 20;
 const SUMMARY_MAX_TOKENS = 200;
@@ -20,12 +18,12 @@ export class CleanupService {
 
   // ─── Cron: medianoche Colombia (UTC-5 = 05:00 UTC) ──────────────────────────
   // "0 5 * * *" = las 5:00 AM UTC = medianoche hora Colombia
-  @Cron('0 5 * * *', { name: 'daily-archive', timeZone: 'UTC' })
-  async runDailyArchive(): Promise<void> {
+  @Cron('0 5 * * *', { name: 'daily-cleanup', timeZone: 'UTC' })
+  async runDailyCleanup(): Promise<void> {
     this.logger.log('🧹 Iniciando limpieza nocturna de conversaciones...');
     const start = Date.now();
 
-    const cutoff = new Date(Date.now() - ARCHIVE_AFTER_HOURS * 60 * 60 * 1000);
+    const cutoff = new Date(Date.now() - CLEANUP_AFTER_HOURS * 60 * 60 * 1000);
 
     // Cargar todas las configuraciones de IA (para generar resúmenes)
     const aiConfigs = await this.prisma.aIConfiguration.findMany({
@@ -35,16 +33,19 @@ export class CleanupService {
       aiConfigs.map(c => [c.storeId, { provider: c.aiProvider as AIProvider, apiKey: c.apiKey }])
     );
 
-    let totalArchived = 0;
-    let offset = 0;
+    let totalDeleted = 0;
+    let totalMsgs    = 0;
+    // IDs que fallaron: se excluyen del query para no reprocesarlos en bucle
+    // (ya no se usa `skip` porque cada lote se BORRA — el siguiente findMany trae los siguientes)
+    const failedIds: string[] = [];
 
     while (true) {
       const conversations = await this.prisma.conversation.findMany({
         where: {
           lastMessageAt: { lt: cutoff },
-          status: { notIn: ['closed', 'archived', 'human'] },
-          // Solo archivar si tienen mensajes
+          // Cualquier estado, incluidos closed/human — solo importa que esté inactiva +24h
           messages: { some: {} },
+          ...(failedIds.length ? { conversationId: { notIn: failedIds } } : {}),
         },
         select: {
           conversationId: true,
@@ -64,39 +65,47 @@ export class CleanupService {
           },
         },
         take: BATCH_SIZE,
-        skip: offset,
       });
 
       if (conversations.length === 0) break;
 
       for (const conv of conversations) {
         try {
-          await this.archiveConversation(conv, aiConfigMap);
-          totalArchived++;
+          const n = await this.purgeConversation(conv, aiConfigMap);
+          totalDeleted++;
+          totalMsgs += n;
         } catch (err: any) {
-          this.logger.error(`Error archivando conv ${conv.conversationId}: ${err.message}`);
+          failedIds.push(conv.conversationId);
+          this.logger.error(`Error borrando conv ${conv.conversationId}: ${err.message}`);
         }
       }
 
-      offset += BATCH_SIZE;
-      // Pequeña pausa entre lotes para no saturar Neon con escrituras
+      // Pequeña pausa entre lotes para no saturar la BD con escrituras
       await new Promise(r => setTimeout(r, 200));
     }
 
-    // Purgar ArchivedMessages muy antiguos para mantener la tabla pequeña
-    const purgeBefore = new Date(Date.now() - PURGE_ARCHIVED_DAYS * 24 * 60 * 60 * 1000);
-    const { count: purged } = await this.prisma.archivedMessage.deleteMany({
-      where: { archivedAt: { lt: purgeBefore } },
+    // Legado: drenar lo que dejó el antiguo archivado (tabla archived_messages + conversaciones marcadas 'archived' sin mensajes)
+    const { count: purgedArchived } = await this.prisma.archivedMessage.deleteMany({});
+    const { count: purgedLegacyConvs } = await this.prisma.conversation.deleteMany({
+      where: { status: 'archived', messages: { none: {} } },
     });
 
     const elapsed = ((Date.now() - start) / 1000).toFixed(1);
     this.logger.log(
       `✅ Limpieza completada en ${elapsed}s — ` +
-      `${totalArchived} conversaciones archivadas, ${purged} mensajes purgados`
+      `${totalDeleted} conversaciones y ${totalMsgs} mensajes borrados` +
+      (purgedArchived || purgedLegacyConvs
+        ? ` (legado: ${purgedArchived} archived_messages + ${purgedLegacyConvs} conv archivadas)`
+        : '')
     );
   }
 
-  private async archiveConversation(
+  /**
+   * Genera el resumen IA de la conversación (lo guarda en el cliente) y luego
+   * BORRA definitivamente sus mensajes y la conversación. Nunca toca clientes
+   * (salvo el resumen) ni ventas. Devuelve cuántos mensajes se borraron.
+   */
+  private async purgeConversation(
     conv: {
       conversationId: string;
       storeId: string;
@@ -108,10 +117,10 @@ export class CleanupService {
       }>;
     },
     aiConfigMap: Map<string, { provider: AIProvider; apiKey: string }>,
-  ): Promise<void> {
+  ): Promise<number> {
     const { conversationId, storeId, customerId, messages } = conv;
 
-    // 1. Generar resumen del cliente si hay API key disponible
+    // 1. Generar y guardar el resumen del cliente (se conserva tras borrar la conversación)
     const aiInfo = aiConfigMap.get(storeId);
     if (aiInfo && messages.length >= 2) {
       try {
@@ -127,38 +136,14 @@ export class CleanupService {
       }
     }
 
-    // 2. Mover mensajes a archived_messages + eliminar de messages (transacción)
+    // 2. Borrado definitivo: mensajes primero (FK), luego la conversación (transacción atómica)
     await this.prisma.$transaction(async (tx) => {
-      // Insertar en archived_messages
-      if (messages.length > 0) {
-        await tx.archivedMessage.createMany({
-          data: messages.map(m => ({
-            messageId:     m.messageId,
-            conversationId,
-            storeId,
-            content:       m.content,
-            type:          m.type,
-            sender:        m.sender,
-            isAiResponse:  m.isAiResponse,
-            createdAt:     m.createdAt,
-          })),
-          skipDuplicates: true,
-        });
-
-        // Eliminar de messages
-        await tx.message.deleteMany({
-          where: { conversationId },
-        });
-      }
-
-      // Marcar conversación como archivada
-      await tx.conversation.update({
-        where: { conversationId },
-        data:  { status: 'archived', archivedAt: new Date() },
-      });
+      await tx.message.deleteMany({ where: { conversationId } });
+      await tx.conversation.delete({ where: { conversationId } });
     });
 
-    this.logger.debug(`📦 Conv ${conversationId} archivada (${messages.length} msgs)`);
+    this.logger.debug(`🗑️ Conv ${conversationId} borrada (${messages.length} msgs)`);
+    return messages.length;
   }
 
   private async generateSummary(
@@ -204,7 +189,7 @@ Responde SOLO con el resumen, sin encabezados ni puntos.`;
 
   // ─── Endpoint manual para forzar cleanup (útil para testing) ─────────────────
   async runManual(): Promise<{ message: string }> {
-    this.runDailyArchive().catch(err =>
+    this.runDailyCleanup().catch(err =>
       this.logger.error(`Error en cleanup manual: ${err.message}`)
     );
     return { message: 'Cleanup iniciado en segundo plano' };
