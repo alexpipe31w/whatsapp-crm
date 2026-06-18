@@ -1217,7 +1217,10 @@ export class AiService {
             storeId,
             customer: { conversations: { some: { conversationId } } },
             status:   { in: ['PENDING', 'CONFIRMED', 'IN_PROGRESS'] },
-            scheduledAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
+            // Inicio del día en hora Colombia (no usar setHours local: en prod el
+            // proceso corre en UTC y daría medianoche UTC, corrida 5h). Colombia
+            // no tiene DST → offset fijo -05:00, consistente con coNoon().
+            scheduledAt: { gte: new Date(`${coDateStr()}T00:00:00-05:00`) },
           },
           orderBy: { scheduledAt: 'asc' },
           include: {
