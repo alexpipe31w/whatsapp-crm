@@ -130,6 +130,10 @@ Riesgo de callar de más: mitigado porque las coordinaciones de cita activa cuen
 - Anti-alucinación preservado: la cita solo se crea tras la confirmación corta.
 - Sin horarios trucados: el quick-book solo propone slots de la disponibilidad real del asesor y crea vía `AppointmentsService.create()` (candado atómico anti-doble-booking). Si hay conflicto al confirmar, se ofrece el siguiente libre — nunca se fuerza la creación.
 
+## Restricción dura (no romper lo que funciona)
+
+La lógica actual de disponibilidad y anti-doble-booking **funciona bien hoy** (si un cliente agendó a las 2pm, ese slot queda ocupado y no se le asigna otro cliente a esa hora con el mismo asesor). El Spec **NO modifica ni refactoriza** esa lógica: solo la **reutiliza** vía `AppointmentsService.create()` y `computeSlotsForAI`. Cualquier cambio en el flujo de quick-book debe apoyarse en esos componentes existentes — nunca crear una ruta paralela de creación o de cálculo de slots.
+
 ## Deploy
 
 - `npx prisma db push` (NUNCA `migrate reset` — drift histórico).
