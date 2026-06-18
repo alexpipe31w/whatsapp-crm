@@ -2755,6 +2755,134 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
       const durationMinutes = extracted.durationMinutes ?? null;
       const endsAt          = durationMinutes ? new Date(scheduledAt.getTime() + durationMinutes * 60_000) : null;
 
+      // ─── Rama de GRUPO (acompañantes): N citas back-to-back, mismo barbero/servicio ───
+      const partySize = Math.trunc(extracted.partySize ?? 1);
+      if (partySize > 1) {
+        const N = partySize;
+        const GROUP_CAP = 4;
+        const staffLabel = (store as any)?.staffLabel ?? 'profesional';
+
+        // Cap: grupos grandes → no auto-agendar, derivar a asesor
+        if (N > GROUP_CAP) {
+          this.cancelConfirmReminder(conversationId);
+          this.pendingAppointments.delete(conversationId);
+          return {
+            created: false,
+            message: `Para grupos de más de ${GROUP_CAP} personas prefiero que un asesor te coordine directamente para no dejarte mal con los horarios. Te contacta en breve. 🙌`,
+          };
+        }
+
+        // Requiere barbero elegido si hay equipo (las N van con el mismo)
+        if (activeStaff.length > 0 && !extracted.staffId) {
+          this.cancelConfirmReminder(conversationId);
+          return {
+            created: false,
+            message: `Para agendar a las ${N} personas necesito que elijas con qué ${staffLabel} las atendemos (van todas con el mismo): ${activeStaff.map(s => s.name).join(', ')}.`,
+          };
+        }
+
+        const groupStaffId = extracted.staffId ?? activeStaff[0]?.staffId ?? null;
+        const staffInfoG   = activeStaff.find(s => s.staffId === groupStaffId);
+        const svcG         = services.find((s: any) => s.serviceId === extracted.serviceId);
+        const D            = durationMinutes ?? svcG?.estimatedMinutes ?? 30;
+
+        const to12 = (min: number): string => {
+          const h = Math.floor(min / 60), m = min % 60;
+          const period = h < 12 ? 'a. m.' : 'p. m.';
+          const h12 = h % 12 === 0 ? 12 : h % 12;
+          return `${h12}:${String(m).padStart(2, '0')} ${period}`;
+        };
+
+        // Slots libres del barbero ese día (solo lectura)
+        let libresG: string[] = [];
+        try {
+          const slotsData = await this.computeSlotsForAI(storeId, scheduledAt, activeStaff as any, store as any);
+          libresG = slotsData.find(s => s.name === staffInfoG?.name)?.slots ?? [];
+        } catch (e: any) {
+          this.logger.warn(`[Cita][Grupo] No se pudo computar slots: ${e?.message}`);
+        }
+
+        const [bh, bm] = extracted.scheduledTime!.split(':').map(Number);
+        const baseMin  = bh * 60 + bm;
+        const blockStart = this.findConsecutiveBlock(libresG, baseMin, N, D);
+
+        if (!blockStart) {
+          this.cancelConfirmReminder(conversationId);
+          this.pendingAppointments.delete(conversationId);
+          return {
+            created: false,
+            message: `Uy, no tengo ${N} turnos seguidos con ${staffInfoG?.name ?? 'ese profesional'} ese día. ¿Quieres mirar otro día u otro ${staffLabel}?`,
+          };
+        }
+
+        const blockMin = (() => { const [h, m] = blockStart.split(':').map(Number); return h * 60 + m; })();
+
+        // Si el bloque libre no arranca en la hora pedida, ofrecerlo y esperar confirmación
+        if (blockMin !== baseMin) {
+          this.cancelConfirmReminder(conversationId);
+          return {
+            created: false,
+            message: `A las ${to12(baseMin)} no me caben los ${N} seguidos con ${staffInfoG?.name}. ¿Te sirve arrancando ${to12(blockMin)}? Los dejo back-to-back. 💈`,
+          };
+        }
+
+        // Crear N citas back-to-back desde la hora pedida
+        const createdGroup: any[] = [];
+        for (let k = 0; k < N; k++) {
+          const at   = new Date(scheduledAt.getTime() + k * D * 60_000);
+          const ends = new Date(at.getTime() + D * 60_000);
+          try {
+            const appt = await this.insertAiAppointment(
+              storeId, customer.customerId, groupStaffId, at, ends, D, extracted, `Persona ${k + 1} de ${N}`,
+            );
+            createdGroup.push({ appt, at });
+            this.notifications.notifyAppointmentCreated(appt as any).catch(() => {});
+          } catch (e: any) {
+            this.logger.warn(`[Cita][Grupo] Falló la cita ${k + 1}/${N}: ${e?.message}`);
+            break; // no revertir las ya creadas (mismo criterio que citas múltiples actuales)
+          }
+        }
+
+        this.cancelConfirmReminder(conversationId);
+        this.pendingAppointments.delete(conversationId);
+
+        if (createdGroup.length === 0) {
+          return {
+            created: false,
+            message: `Uy, no pude dejar los turnos (alguien tomó ese horario). ¿Probamos otra hora?`,
+          };
+        }
+
+        // Registrar para que el extractor no re-extraiga el grupo
+        const reg = this.conversationCreatedAppts.get(conversationId) ?? [];
+        for (const g of createdGroup) {
+          reg.push({
+            scheduledDate: extracted.scheduledDate!,
+            scheduledTime: `${String(g.at.getHours()).padStart(2, '0')}:${String(g.at.getMinutes()).padStart(2, '0')}`,
+            type: extracted.type ?? 'cita',
+          });
+        }
+        this.conversationCreatedAppts.set(conversationId, reg);
+        setTimeout(() => this.conversationCreatedAppts.delete(conversationId), ORDER_GUARD_TTL_MS);
+
+        await this.prisma.conversation.update({ where: { conversationId }, data: { status: 'pending_human' } });
+
+        const horas = createdGroup
+          .map(g => g.at.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota' }))
+          .join(', ');
+        const fechaG = scheduledAt.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'America/Bogota' });
+        const profLine = staffInfoG?.name ? ` con ${staffInfoG.name}` : '';
+        const faltaron = createdGroup.length < N
+          ? `\n\n(Solo pude dejar ${createdGroup.length} de ${N}; para el resto te contacta un asesor.)`
+          : '';
+
+        this.logger.log(`✅ [Cita][Grupo] ${createdGroup.length}/${N} citas — ${extracted.scheduledDate} desde ${extracted.scheduledTime}`);
+        return {
+          created: true,
+          message: `¡Listo! ✅ Dejé ${createdGroup.length} turno${createdGroup.length > 1 ? 's' : ''}${profLine} el ${fechaG}: ${horas}.${faltaron}\n\nUn asesor confirma pronto. ¡Gracias! 😊`,
+        };
+      }
+
       // Reagendar solo si NO se ha creado ninguna cita en esta conversación aún.
       // Si ya hay citas creadas (múltiples citas en una misma conversación), siempre crear nueva.
       const alreadyCreatedInSession = (this.conversationCreatedAppts.get(conversationId) ?? []).length;
