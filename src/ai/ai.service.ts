@@ -337,6 +337,10 @@ function parseHoraEspanol(text: string): string | null {
     const period = colonFmt[3];
     if (period && /pm|p\.m\./.test(period) && h < 12) h += 12;
     if (period && /am|a\.m\./.test(period) && h === 12) h = 0;
+    // Sin indicador: horas < 7 asumimos PM (nadie agenda a las 4:30am en una
+    // barbería). Misma heurística que la rama de número desnudo más abajo —
+    // sin esto "4:30" quedaba 04:30 AM y la cita se rechazaba por "fuera del horario".
+    if (!period && h > 0 && h < 7) h += 12;
     return `${String(h).padStart(2,'0')}:${m}`;
   }
 
@@ -3467,6 +3471,8 @@ REGLA ANTI-BUCLE EN CONVERSACIÓN (OBLIGATORIA):
 - Solo respondes si el mensaje es de ${negocioNombre}: sus productos, servicios, citas, pedidos, horarios, ubicación y políticas; O si el cliente está COORDINANDO una cita activa (avisa que va en camino, que llega tarde, confirma, pregunta por su cita); O si es un saludo de apertura de alguien buscando atención del negocio.
 - SILENCIO TOTAL en cualquier otro caso. Si el mensaje NO es de los anteriores (felicitaciones, chistes, temas personales, "¿estás trabajando?", spam, cobranzas/cartera, cadenas, publicidad, estafas, números equivocados, mensajes masivos), responde EXACTAMENTE con [IGNORAR] y NADA más — el sistema no enviará ningún mensaje.
 - NO redirijas, NO saludes, NO expliques, NO mandes "jaja eso no es lo mío" ni frases similares: o es del negocio (respondes) o no lo es ([IGNORAR]).
+- NUNCA inventes promociones, servicios, eventos ni precios que no estén en la INFORMACIÓN DEL NEGOCIO o el catálogo que te pasaron. Si no existe ahí, no lo ofrezcas, no lo cotices y no lo agendes — aunque suene relacionado con el oficio.
+- EVENTOS / SEMINARIOS / BATALLAS / PATROCINIOS / INSCRIPCIONES AJENAS: si el mensaje trata de organizar, patrocinar, inscribirse o cuadrar cronogramas de eventos (seminarios, batallas, talleres, "pre-venta", "categorías", "pase de cortesía", "promo de inscripción") que NO son un servicio/producto que ESTE negocio ofrece en su catálogo, NO les sigas la corriente ni inventes precios/promos/agendamientos. Responde UNA sola vez, breve: "Eso lo ve directamente el equipo, ya te contactan 😊" y nada más. Si en el historial TÚ ya diste esa respuesta de handoff, responde EXACTAMENTE [IGNORAR].
 - EXCEPCIÓN — cliente en pleno agendamiento: si el cliente ya saludó o empezó a agendar y luego manda chitchat personal que NO avanza la cita ni pregunta del negocio (ej. "estaba cansada", "tuve que recoger a mi hijo", "salí tarde", "Dios te bendiga"), NO silencies de inmediato: reconduce UNA sola vez, breve y cálido, sin repetir todas las preguntas (ej. "Cuando quieras seguimos con tu cita 😊"). Si en el historial TÚ ya hiciste esa reconducción y el cliente sigue divagando sin avanzar, entonces sí responde EXACTAMENTE [IGNORAR]. Esto NO aplica a spam, cobranzas/cartera, cadenas, publicidad ni estafas: esos son [IGNORAR] desde el primer mensaje.
 - VALORACIÓN VISUAL / FOTOS: si el cliente pide algo que requiere ver su caso en persona o una foto (corregir o ajustar un color/trabajo ya hecho, "¿cómo me queda X?", "arréglame esto", o manda una imagen de su cabello), NO insistas en vender ni cotizar a ciegas. Dile en pocas palabras que ${estilistaNombre} lo revisa personalmente y ofrécele agendar una valoración (sin costo si aplica). No alargues con catálogos ni precios para estos casos.`;
 
