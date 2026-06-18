@@ -1146,6 +1146,42 @@ export class AiService {
     });
   }
 
+  // Dada la lista de slots libres de 30 min ("HH:MM") de un profesional ese día,
+  // devuelve la hora "HH:MM" del primer bloque donde caben `n` citas de `durationMin`
+  // consecutivas, buscando primero desde `fromMin` y, si no hay, en todo el día.
+  // Devuelve null si no existe ningún bloque consecutivo de ese tamaño.
+  private findConsecutiveBlock(
+    freeSlots: string[],
+    fromMin: number,
+    n: number,
+    durationMin: number,
+  ): string | null {
+    const SLOT = 30;
+    const slotsPerPerson = Math.max(1, Math.ceil(durationMin / SLOT));
+    const need = slotsPerPerson * n; // # de slots de 30 min requeridos en total
+    const freeSet = new Set(
+      freeSlots.map(t => { const [h, m] = t.split(':').map(Number); return h * 60 + m; }),
+    );
+    const fits = (start: number): boolean => {
+      for (let i = 0; i < need; i++) {
+        if (!freeSet.has(start + i * SLOT)) return false;
+      }
+      return true;
+    };
+    const toLabel = (min: number) =>
+      `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
+
+    // 1) primero desde la hora pedida en adelante
+    const fromHere = [...freeSet].filter(min => min >= fromMin).sort((a, b) => a - b);
+    for (const start of fromHere) if (fits(start)) return toLabel(start);
+
+    // 2) si no hay, la ventana consecutiva más cercana del día (cualquier hora)
+    const all = [...freeSet].sort((a, b) => a - b);
+    for (const start of all) if (fits(start)) return toLabel(start);
+
+    return null;
+  }
+
   private async computeSlotsForAI(
     storeId: string,
     date: Date,
