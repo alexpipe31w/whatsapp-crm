@@ -410,6 +410,34 @@ function parseHoraEspanol(text: string): string | null {
   return null;
 }
 
+// ─── Parser de cantidad de personas (acompañantes) ───────────────────────────
+// Heurística de respaldo: el LLM es la fuente primaria de partySize; esto cubre
+// los casos en que devuelve null. Devuelve null si no detecta un grupo.
+export function parsePartySize(text: string): number | null {
+  const t = (text || '').toLowerCase();
+  const WORD: Record<string, number> = { un: 1, una: 1, uno: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6 };
+
+  // "somos 3", "venimos 2", "vamos 4", "para 3"
+  const digitVerb = t.match(/\b(?:somos|venimos|ser[ií]amos|vamos|llevamos|para)\s+(\d{1,2})\b/);
+  if (digitVerb) { const n = parseInt(digitVerb[1], 10); if (n >= 1 && n <= 20) return n; }
+
+  // "3 personas", "2 cupos", "4 turnos"
+  const digitNoun = t.match(/\b(\d{1,2})\s+(?:personas?|cupos?|turnos?|citas?)\b/);
+  if (digitNoun) { const n = parseInt(digitNoun[1], 10); if (n >= 1 && n <= 20) return n; }
+
+  // en palabras: "somos tres", "venimos dos", "tres personas"
+  const wordVerb = t.match(/\b(?:somos|venimos|ser[ií]amos|vamos)\s+(un|una|uno|dos|tres|cuatro|cinco|seis)\b/);
+  if (wordVerb) return WORD[wordVerb[1]];
+  const wordNoun = t.match(/\b(dos|tres|cuatro|cinco|seis)\s+(?:personas?|cupos?|turnos?|citas?)\b/);
+  if (wordNoun) return WORD[wordNoun[1]];
+
+  // acompañante implícito: "yo y mi hijo", "con mi esposa", "y mi novia" → 2
+  if (/\b(?:yo\s+y\s+mi|con\s+mi|y\s+mi)\s+(hij[oa]|espos[oa]|novi[oa]|amig[oa]|herman[oa]|pap[aá]|mam[aá]|pareja|cu[ñn]ad[oa]|primo|prima)\b/.test(t)) {
+    return 2;
+  }
+  return null;
+}
+
 // ─── Parser de nombre robusto ─────────────────────────────────────────────────
 function parseNombreCliente(text: string, conversationLines: string[] = []): string | null {
   const allText = [text, ...conversationLines].join('\n');
@@ -627,6 +655,7 @@ interface AppointmentExtractionResult {
   customerCedula: string | null;
   staffId: string | null;
   staffName: string | null;
+  partySize?: number;
 }
 
 interface StoreSettings {
@@ -2151,6 +2180,7 @@ REGLAS ESTRICTAS:
       : `"customerCedula": Este negocio NO requiere cédula. SIEMPRE devuelve null — no la pidas (si el cliente la da espontáneamente puedes capturarla, pero nunca la exijas ni la conviertas en requisito).`}
 7. "type": texto libre describiendo la cita (ej: "visita_tecnica", "instalación solar", "corte de cabello").
 8. "staffId": si el cliente eligió un profesional, usa su ID del EQUIPO DISPONIBLE. Si no hay equipo o no eligió → null.
+9. "partySize": número de personas que serán atendidas en esta solicitud (el cliente + sus acompañantes). Detéctalo de frases como "venimos 3", "somos 2", "yo y mi hijo" (=2), "para mí y mi novia" (=2), "3 personas". Si el cliente NO menciona acompañantes, devuelve 1. Todas las personas del grupo van con el MISMO servicio y el MISMO profesional.
 
 Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
 {
@@ -2169,7 +2199,8 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
   "customerName": "nombre completo o null",
   "customerCedula": "número de cédula o null (solo si fue mencionado)",
   "staffId": "uuid del profesional elegido o null",
-  "staffName": "nombre del profesional elegido o null"
+  "staffName": "nombre del profesional elegido o null",
+  "partySize": number (1 si no hay acompañantes)
 }`;
 
       try {
@@ -2184,6 +2215,22 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
         if (!jsonMatch) return { created: false };
 
         extracted = JSON.parse(jsonMatch[0]);
+
+        // ── partySize: normalizar a entero ≥ 1; fallback TS si el LLM no lo dio ──
+        let partySize = typeof extracted.partySize === 'number' && Number.isFinite(extracted.partySize) ? Math.trunc(extracted.partySize) : 1;
+        if (partySize < 1) partySize = 1;
+        if (partySize === 1) {
+          const allClientText = [
+            ...history.filter((m: any) => !m.isAiResponse).map((m: any) => m.content),
+            latestMessage,
+          ].join(' ');
+          const tsParty = parsePartySize(allClientText);
+          if (tsParty && tsParty > 1) {
+            this.logger.log(`[Cita] partySize fallback TS: ${tsParty}`);
+            partySize = tsParty;
+          }
+        }
+        extracted.partySize = partySize;
 
         // ── Fallbacks TypeScript — aplican cuando el LLM devuelve null ──────────
 
