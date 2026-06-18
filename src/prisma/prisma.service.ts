@@ -9,6 +9,7 @@ const STARTUP_MIGRATIONS = [
   `ALTER TABLE staff ADD COLUMN IF NOT EXISTS commission_percentage DOUBLE PRECISION`,
   `ALTER TABLE staff ADD COLUMN IF NOT EXISTS suspended_from TIMESTAMP`,
   `ALTER TABLE staff ADD COLUMN IF NOT EXISTS suspended_until TIMESTAMP`,
+  `ALTER TABLE stores ADD COLUMN IF NOT EXISTS default_service_id TEXT`,
 ];
 
 @Injectable()

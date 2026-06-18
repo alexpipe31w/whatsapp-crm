@@ -67,6 +67,17 @@ export class StoresService {
     }
     await this.findOne(storeId);
 
+    // Si se setea un servicio predeterminado, validar que pertenezca a esta tienda
+    if (dto.defaultServiceId) {
+      const svc = await this.prisma.service.findFirst({
+        where:  { serviceId: dto.defaultServiceId, storeId },
+        select: { serviceId: true },
+      });
+      if (!svc) {
+        throw new ForbiddenException('El servicio predeterminado no pertenece a esta tienda');
+      }
+    }
+
     // Excluir storeId del update por seguridad
     const { storeId: _ignored, ...safeData } = dto as any;
     return this.prisma.store.update({

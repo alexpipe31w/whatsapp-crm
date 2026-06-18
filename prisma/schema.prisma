@@ -94,6 +94,7 @@ model Store {
   waSessionId String?  @unique @map("wa_session_id") @db.VarChar(50)
   staffLabel  String?  @default("Profesional") @map("staff_label") @db.VarChar(50)
   slug        String?  @unique @map("slug") @db.VarChar(100)
+  defaultServiceId String? @map("default_service_id")  // servicio usado cuando el cliente no especifica
   isActive    Boolean  @default(true) @map("is_active")
 
   // Paleta de colores personalizable por tienda

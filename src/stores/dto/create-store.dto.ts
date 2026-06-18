@@ -51,4 +51,6 @@ export class CreateStoreDto {
   @IsOptional()
   @Matches(/^[a-z0-9-]{3,100}$/, { message: 'Slug: solo minúsculas, números y guiones (3-100 chars)' })
   slug?: string;
+
+  @IsString() @IsOptional() defaultServiceId?: string;
 }

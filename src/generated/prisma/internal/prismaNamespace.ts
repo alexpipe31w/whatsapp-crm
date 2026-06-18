@@ -2354,6 +2354,7 @@ export const StoreScalarFieldEnum = {
   waSessionId: 'waSessionId',
   staffLabel: 'staffLabel',
   slug: 'slug',
+  defaultServiceId: 'defaultServiceId',
   isActive: 'isActive',
   primaryColor: 'primaryColor',
   secondaryColor: 'secondaryColor',

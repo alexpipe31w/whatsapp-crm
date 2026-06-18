@@ -63,6 +63,7 @@ export type StoreMinAggregateOutputType = {
   waSessionId: string | null
   staffLabel: string | null
   slug: string | null
+  defaultServiceId: string | null
   isActive: boolean | null
   primaryColor: string | null
   secondaryColor: string | null
@@ -103,6 +104,7 @@ export type StoreMaxAggregateOutputType = {
   waSessionId: string | null
   staffLabel: string | null
   slug: string | null
+  defaultServiceId: string | null
   isActive: boolean | null
   primaryColor: string | null
   secondaryColor: string | null
@@ -145,6 +147,7 @@ export type StoreCountAggregateOutputType = {
   waSessionId: number
   staffLabel: number
   slug: number
+  defaultServiceId: number
   isActive: number
   primaryColor: number
   secondaryColor: number
@@ -195,6 +198,7 @@ export type StoreMinAggregateInputType = {
   waSessionId?: true
   staffLabel?: true
   slug?: true
+  defaultServiceId?: true
   isActive?: true
   primaryColor?: true
   secondaryColor?: true
@@ -235,6 +239,7 @@ export type StoreMaxAggregateInputType = {
   waSessionId?: true
   staffLabel?: true
   slug?: true
+  defaultServiceId?: true
   isActive?: true
   primaryColor?: true
   secondaryColor?: true
@@ -277,6 +282,7 @@ export type StoreCountAggregateInputType = {
   waSessionId?: true
   staffLabel?: true
   slug?: true
+  defaultServiceId?: true
   isActive?: true
   primaryColor?: true
   secondaryColor?: true
@@ -406,6 +412,7 @@ export type StoreGroupByOutputType = {
   waSessionId: string | null
   staffLabel: string | null
   slug: string | null
+  defaultServiceId: string | null
   isActive: boolean
   primaryColor: string | null
   secondaryColor: string | null
@@ -471,6 +478,7 @@ export type StoreWhereInput = {
   waSessionId?: Prisma.StringNullableFilter<"Store"> | string | null
   staffLabel?: Prisma.StringNullableFilter<"Store"> | string | null
   slug?: Prisma.StringNullableFilter<"Store"> | string | null
+  defaultServiceId?: Prisma.StringNullableFilter<"Store"> | string | null
   isActive?: Prisma.BoolFilter<"Store"> | boolean
   primaryColor?: Prisma.StringNullableFilter<"Store"> | string | null
   secondaryColor?: Prisma.StringNullableFilter<"Store"> | string | null
@@ -529,6 +537,7 @@ export type StoreOrderByWithRelationInput = {
   waSessionId?: Prisma.SortOrderInput | Prisma.SortOrder
   staffLabel?: Prisma.SortOrderInput | Prisma.SortOrder
   slug?: Prisma.SortOrderInput | Prisma.SortOrder
+  defaultServiceId?: Prisma.SortOrderInput | Prisma.SortOrder
   isActive?: Prisma.SortOrder
   primaryColor?: Prisma.SortOrderInput | Prisma.SortOrder
   secondaryColor?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -590,6 +599,7 @@ export type StoreWhereUniqueInput = Prisma.AtLeast<{
   requiresCustomerCedula?: Prisma.BoolFilter<"Store"> | boolean
   businessHours?: Prisma.JsonNullableFilter<"Store">
   staffLabel?: Prisma.StringNullableFilter<"Store"> | string | null
+  defaultServiceId?: Prisma.StringNullableFilter<"Store"> | string | null
   isActive?: Prisma.BoolFilter<"Store"> | boolean
   primaryColor?: Prisma.StringNullableFilter<"Store"> | string | null
   secondaryColor?: Prisma.StringNullableFilter<"Store"> | string | null
@@ -648,6 +658,7 @@ export type StoreOrderByWithAggregationInput = {
   waSessionId?: Prisma.SortOrderInput | Prisma.SortOrder
   staffLabel?: Prisma.SortOrderInput | Prisma.SortOrder
   slug?: Prisma.SortOrderInput | Prisma.SortOrder
+  defaultServiceId?: Prisma.SortOrderInput | Prisma.SortOrder
   isActive?: Prisma.SortOrder
   primaryColor?: Prisma.SortOrderInput | Prisma.SortOrder
   secondaryColor?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -698,6 +709,7 @@ export type StoreScalarWhereWithAggregatesInput = {
   waSessionId?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
   staffLabel?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
   slug?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
+  defaultServiceId?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
   isActive?: Prisma.BoolWithAggregatesFilter<"Store"> | boolean
   primaryColor?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
   secondaryColor?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
@@ -740,6 +752,7 @@ export type StoreCreateInput = {
   waSessionId?: string | null
   staffLabel?: string | null
   slug?: string | null
+  defaultServiceId?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -798,6 +811,7 @@ export type StoreUncheckedCreateInput = {
   waSessionId?: string | null
   staffLabel?: string | null
   slug?: string | null
+  defaultServiceId?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -856,6 +870,7 @@ export type StoreUpdateInput = {
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -914,6 +929,7 @@ export type StoreUncheckedUpdateInput = {
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -972,6 +988,7 @@ export type StoreCreateManyInput = {
   waSessionId?: string | null
   staffLabel?: string | null
   slug?: string | null
+  defaultServiceId?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -1014,6 +1031,7 @@ export type StoreUpdateManyMutationInput = {
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1056,6 +1074,7 @@ export type StoreUncheckedUpdateManyInput = {
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1106,6 +1125,7 @@ export type StoreCountOrderByAggregateInput = {
   waSessionId?: Prisma.SortOrder
   staffLabel?: Prisma.SortOrder
   slug?: Prisma.SortOrder
+  defaultServiceId?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   primaryColor?: Prisma.SortOrder
   secondaryColor?: Prisma.SortOrder
@@ -1150,6 +1170,7 @@ export type StoreMaxOrderByAggregateInput = {
   waSessionId?: Prisma.SortOrder
   staffLabel?: Prisma.SortOrder
   slug?: Prisma.SortOrder
+  defaultServiceId?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   primaryColor?: Prisma.SortOrder
   secondaryColor?: Prisma.SortOrder
@@ -1190,6 +1211,7 @@ export type StoreMinOrderByAggregateInput = {
   waSessionId?: Prisma.SortOrder
   staffLabel?: Prisma.SortOrder
   slug?: Prisma.SortOrder
+  defaultServiceId?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   primaryColor?: Prisma.SortOrder
   secondaryColor?: Prisma.SortOrder
@@ -1509,6 +1531,7 @@ export type StoreCreateWithoutCustomersInput = {
   waSessionId?: string | null
   staffLabel?: string | null
   slug?: string | null
+  defaultServiceId?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -1566,6 +1589,7 @@ export type StoreUncheckedCreateWithoutCustomersInput = {
   waSessionId?: string | null
   staffLabel?: string | null
   slug?: string | null
+  defaultServiceId?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -1639,6 +1663,7 @@ export type StoreUpdateWithoutCustomersInput = {
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1696,6 +1721,7 @@ export type StoreUncheckedUpdateWithoutCustomersInput = {
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1753,6 +1779,7 @@ export type StoreCreateWithoutConversationsInput = {
   waSessionId?: string | null
   staffLabel?: string | null
   slug?: string | null
+  defaultServiceId?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -1810,6 +1837,7 @@ export type StoreUncheckedCreateWithoutConversationsInput = {
   waSessionId?: string | null
   staffLabel?: string | null
   slug?: string | null
+  defaultServiceId?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -1883,6 +1911,7 @@ export type StoreUpdateWithoutConversationsInput = {
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1940,6 +1969,7 @@ export type StoreUncheckedUpdateWithoutConversationsInput = {
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1997,6 +2027,7 @@ export type StoreCreateWithoutMessagesInput = {
   waSessionId?: string | null
   staffLabel?: string | null
   slug?: string | null
+  defaultServiceId?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -2054,6 +2085,7 @@ export type StoreUncheckedCreateWithoutMessagesInput = {
   waSessionId?: string | null
   staffLabel?: string | null
   slug?: string | null
+  defaultServiceId?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -2127,6 +2159,7 @@ export type StoreUpdateWithoutMessagesInput = {
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2184,6 +2217,7 @@ export type StoreUncheckedUpdateWithoutMessagesInput = {
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2241,6 +2275,7 @@ export type StoreCreateWithoutCategoriesInput = {
   waSessionId?: string | null
   staffLabel?: string | null
   slug?: string | null
+  defaultServiceId?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -2298,6 +2333,7 @@ export type StoreUncheckedCreateWithoutCategoriesInput = {
   waSessionId?: string | null
   staffLabel?: string | null
   slug?: string | null
+  defaultServiceId?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -2371,6 +2407,7 @@ export type StoreUpdateWithoutCategoriesInput = {
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2428,6 +2465,7 @@ export type StoreUncheckedUpdateWithoutCategoriesInput = {
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2485,6 +2523,7 @@ export type StoreCreateWithoutProductsInput = {
   waSessionId?: string | null
   staffLabel?: string | null
   slug?: string | null
+  defaultServiceId?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -2542,6 +2581,7 @@ export type StoreUncheckedCreateWithoutProductsInput = {
   waSessionId?: string | null
   staffLabel?: string | null
   slug?: string | null
+  defaultServiceId?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -2615,6 +2655,7 @@ export type StoreUpdateWithoutProductsInput = {
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2672,6 +2713,7 @@ export type StoreUncheckedUpdateWithoutProductsInput = {
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2729,6 +2771,7 @@ export type StoreCreateWithoutServicesInput = {
   waSessionId?: string | null
   staffLabel?: string | null
   slug?: string | null
+  defaultServiceId?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -2786,6 +2829,7 @@ export type StoreUncheckedCreateWithoutServicesInput = {
   waSessionId?: string | null
   staffLabel?: string | null
   slug?: string | null
+  defaultServiceId?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -2859,6 +2903,7 @@ export type StoreUpdateWithoutServicesInput = {
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2916,6 +2961,7 @@ export type StoreUncheckedUpdateWithoutServicesInput = {
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2973,6 +3019,7 @@ export type StoreCreateWithoutOrdersInput = {
   waSessionId?: string | null
   staffLabel?: string | null
   slug?: string | null
+  defaultServiceId?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -3030,6 +3077,7 @@ export type StoreUncheckedCreateWithoutOrdersInput = {
   waSessionId?: string | null
   staffLabel?: string | null
   slug?: string | null
+  defaultServiceId?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -3103,6 +3151,7 @@ export type StoreUpdateWithoutOrdersInput = {
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3160,6 +3209,7 @@ export type StoreUncheckedUpdateWithoutOrdersInput = {
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3217,6 +3267,7 @@ export type StoreCreateWithoutAppointmentsInput = {
   waSessionId?: string | null
   staffLabel?: string | null
   slug?: string | null
+  defaultServiceId?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -3274,6 +3325,7 @@ export type StoreUncheckedCreateWithoutAppointmentsInput = {
   waSessionId?: string | null
   staffLabel?: string | null
   slug?: string | null
+  defaultServiceId?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -3347,6 +3399,7 @@ export type StoreUpdateWithoutAppointmentsInput = {
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3404,6 +3457,7 @@ export type StoreUncheckedUpdateWithoutAppointmentsInput = {
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3461,6 +3515,7 @@ export type StoreCreateWithoutDailyReportsInput = {
   waSessionId?: string | null
   staffLabel?: string | null
   slug?: string | null
+  defaultServiceId?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -3518,6 +3573,7 @@ export type StoreUncheckedCreateWithoutDailyReportsInput = {
   waSessionId?: string | null
   staffLabel?: string | null
   slug?: string | null
+  defaultServiceId?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -3591,6 +3647,7 @@ export type StoreUpdateWithoutDailyReportsInput = {
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3648,6 +3705,7 @@ export type StoreUncheckedUpdateWithoutDailyReportsInput = {
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3705,6 +3763,7 @@ export type StoreCreateWithoutAiConfigInput = {
   waSessionId?: string | null
   staffLabel?: string | null
   slug?: string | null
+  defaultServiceId?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -3762,6 +3821,7 @@ export type StoreUncheckedCreateWithoutAiConfigInput = {
   waSessionId?: string | null
   staffLabel?: string | null
   slug?: string | null
+  defaultServiceId?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -3835,6 +3895,7 @@ export type StoreUpdateWithoutAiConfigInput = {
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3892,6 +3953,7 @@ export type StoreUncheckedUpdateWithoutAiConfigInput = {
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3949,6 +4011,7 @@ export type StoreCreateWithoutCampaignsInput = {
   waSessionId?: string | null
   staffLabel?: string | null
   slug?: string | null
+  defaultServiceId?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -4006,6 +4069,7 @@ export type StoreUncheckedCreateWithoutCampaignsInput = {
   waSessionId?: string | null
   staffLabel?: string | null
   slug?: string | null
+  defaultServiceId?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -4079,6 +4143,7 @@ export type StoreUpdateWithoutCampaignsInput = {
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4136,6 +4201,7 @@ export type StoreUncheckedUpdateWithoutCampaignsInput = {
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4193,6 +4259,7 @@ export type StoreCreateWithoutUsersInput = {
   waSessionId?: string | null
   staffLabel?: string | null
   slug?: string | null
+  defaultServiceId?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -4250,6 +4317,7 @@ export type StoreUncheckedCreateWithoutUsersInput = {
   waSessionId?: string | null
   staffLabel?: string | null
   slug?: string | null
+  defaultServiceId?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -4323,6 +4391,7 @@ export type StoreUpdateWithoutUsersInput = {
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4380,6 +4449,7 @@ export type StoreUncheckedUpdateWithoutUsersInput = {
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4437,6 +4507,7 @@ export type StoreCreateWithoutBlockedContactsInput = {
   waSessionId?: string | null
   staffLabel?: string | null
   slug?: string | null
+  defaultServiceId?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -4494,6 +4565,7 @@ export type StoreUncheckedCreateWithoutBlockedContactsInput = {
   waSessionId?: string | null
   staffLabel?: string | null
   slug?: string | null
+  defaultServiceId?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -4567,6 +4639,7 @@ export type StoreUpdateWithoutBlockedContactsInput = {
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4624,6 +4697,7 @@ export type StoreUncheckedUpdateWithoutBlockedContactsInput = {
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4681,6 +4755,7 @@ export type StoreCreateWithoutWaSessionInput = {
   waSessionId?: string | null
   staffLabel?: string | null
   slug?: string | null
+  defaultServiceId?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -4738,6 +4813,7 @@ export type StoreUncheckedCreateWithoutWaSessionInput = {
   waSessionId?: string | null
   staffLabel?: string | null
   slug?: string | null
+  defaultServiceId?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -4811,6 +4887,7 @@ export type StoreUpdateWithoutWaSessionInput = {
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4868,6 +4945,7 @@ export type StoreUncheckedUpdateWithoutWaSessionInput = {
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4925,6 +5003,7 @@ export type StoreCreateWithoutSubscriptionInput = {
   waSessionId?: string | null
   staffLabel?: string | null
   slug?: string | null
+  defaultServiceId?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -4982,6 +5061,7 @@ export type StoreUncheckedCreateWithoutSubscriptionInput = {
   waSessionId?: string | null
   staffLabel?: string | null
   slug?: string | null
+  defaultServiceId?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -5055,6 +5135,7 @@ export type StoreUpdateWithoutSubscriptionInput = {
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -5112,6 +5193,7 @@ export type StoreUncheckedUpdateWithoutSubscriptionInput = {
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -5169,6 +5251,7 @@ export type StoreCreateWithoutStaffInput = {
   waSessionId?: string | null
   staffLabel?: string | null
   slug?: string | null
+  defaultServiceId?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -5226,6 +5309,7 @@ export type StoreUncheckedCreateWithoutStaffInput = {
   waSessionId?: string | null
   staffLabel?: string | null
   slug?: string | null
+  defaultServiceId?: string | null
   isActive?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
@@ -5299,6 +5383,7 @@ export type StoreUpdateWithoutStaffInput = {
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -5356,6 +5441,7 @@ export type StoreUncheckedUpdateWithoutStaffInput = {
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -5552,6 +5638,7 @@ export type StoreSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   waSessionId?: boolean
   staffLabel?: boolean
   slug?: boolean
+  defaultServiceId?: boolean
   isActive?: boolean
   primaryColor?: boolean
   secondaryColor?: boolean
@@ -5611,6 +5698,7 @@ export type StoreSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   waSessionId?: boolean
   staffLabel?: boolean
   slug?: boolean
+  defaultServiceId?: boolean
   isActive?: boolean
   primaryColor?: boolean
   secondaryColor?: boolean
@@ -5653,6 +5741,7 @@ export type StoreSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   waSessionId?: boolean
   staffLabel?: boolean
   slug?: boolean
+  defaultServiceId?: boolean
   isActive?: boolean
   primaryColor?: boolean
   secondaryColor?: boolean
@@ -5695,6 +5784,7 @@ export type StoreSelectScalar = {
   waSessionId?: boolean
   staffLabel?: boolean
   slug?: boolean
+  defaultServiceId?: boolean
   isActive?: boolean
   primaryColor?: boolean
   secondaryColor?: boolean
@@ -5706,7 +5796,7 @@ export type StoreSelectScalar = {
   updatedAt?: boolean
 }
 
-export type StoreOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"storeId" | "name" | "phone" | "ownerName" | "adminPhone" | "description" | "address" | "neighborhood" | "directions" | "googleMapsUrl" | "email" | "website" | "instagram" | "facebook" | "tiktok" | "paymentMethods" | "paymentAccount" | "requiresDeposit" | "depositAmount" | "minAdvanceMinutes" | "cancellationPolicy" | "hasDelivery" | "deliveryZone" | "hasParking" | "requiresCustomerAddress" | "requiresCustomerCedula" | "businessHours" | "waSessionId" | "staffLabel" | "slug" | "isActive" | "primaryColor" | "secondaryColor" | "accentColor" | "subscriptionStatus" | "subscriptionEnd" | "apiBlocked" | "createdAt" | "updatedAt", ExtArgs["result"]["store"]>
+export type StoreOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"storeId" | "name" | "phone" | "ownerName" | "adminPhone" | "description" | "address" | "neighborhood" | "directions" | "googleMapsUrl" | "email" | "website" | "instagram" | "facebook" | "tiktok" | "paymentMethods" | "paymentAccount" | "requiresDeposit" | "depositAmount" | "minAdvanceMinutes" | "cancellationPolicy" | "hasDelivery" | "deliveryZone" | "hasParking" | "requiresCustomerAddress" | "requiresCustomerCedula" | "businessHours" | "waSessionId" | "staffLabel" | "slug" | "defaultServiceId" | "isActive" | "primaryColor" | "secondaryColor" | "accentColor" | "subscriptionStatus" | "subscriptionEnd" | "apiBlocked" | "createdAt" | "updatedAt", ExtArgs["result"]["store"]>
 export type StoreInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   customers?: boolean | Prisma.Store$customersArgs<ExtArgs>
   conversations?: boolean | Prisma.Store$conversationsArgs<ExtArgs>
@@ -5780,6 +5870,7 @@ export type $StorePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     waSessionId: string | null
     staffLabel: string | null
     slug: string | null
+    defaultServiceId: string | null
     isActive: boolean
     primaryColor: string | null
     secondaryColor: string | null
@@ -6258,6 +6349,7 @@ export interface StoreFieldRefs {
   readonly waSessionId: Prisma.FieldRef<"Store", 'String'>
   readonly staffLabel: Prisma.FieldRef<"Store", 'String'>
   readonly slug: Prisma.FieldRef<"Store", 'String'>
+  readonly defaultServiceId: Prisma.FieldRef<"Store", 'String'>
   readonly isActive: Prisma.FieldRef<"Store", 'Boolean'>
   readonly primaryColor: Prisma.FieldRef<"Store", 'String'>
   readonly secondaryColor: Prisma.FieldRef<"Store", 'String'>
