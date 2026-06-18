@@ -3063,7 +3063,7 @@ PROHIBIDO:
             ? `\n    Horario: ${formatBusinessHoursForAI(s.schedule as any).split('\n').join(', ')}`
             : '';
           return `- ${s.name} (id: ${s.staffId})${schedLine}`;
-        }).join('\n')}\n\nREGLA OBLIGATORIA DE AGENDAMIENTO CON EQUIPO:\n1. SIEMPRE pregunta: "¿Con qué ${staffLabel} quieres tu cita? Tenemos disponibles: ${activeStaff.map((s: { staffId: string; name: string }) => s.name).join(', ')}"\n2. El cliente DEBE elegir un ${staffLabel} antes de confirmar.\n3. Una vez elegido, NO preguntes de nuevo.\n4. ANTES de proponer, dar por agendada o confirmar una fecha con un ${staffLabel}, verifica SIEMPRE su horario (arriba, "Horario: ...") para ese día de la semana específico. Si el horario muestra "Cerrado" o no incluye ese día, el ${staffLabel} NO trabaja ese día — NO lo ofrezcas para esa fecha, NO digas que la cita quedó agendada/confirmada con él, y avísale al cliente de inmediato proponiendo otro día u otro ${staffLabel} que sí esté disponible. Revisa esto ANTES de responder, nunca después de haber prometido algo.\n5. Si el ${staffLabel} elegido no está disponible en ese horario, avisa y sugiere otro horario o ${staffLabel} alternativo — nunca confirmes primero y corrijas después.\n6. Cuando el cliente pregunte por el horario de un ${staffLabel} específico, usa el horario indicado arriba para responderle con precisión.`
+        }).join('\n')}\n\nREGLA OBLIGATORIA DE AGENDAMIENTO CON EQUIPO:\n1. SIEMPRE pregunta: "¿Con qué ${staffLabel} quieres tu cita? Tenemos disponibles: ${activeStaff.map((s: { staffId: string; name: string }) => s.name).join(', ')}"\n2. El cliente DEBE elegir un ${staffLabel} antes de confirmar.\n3. Una vez elegido, NO preguntes de nuevo.\n4. ANTES de proponer, dar por agendada o confirmar una fecha con un ${staffLabel}, verifica SIEMPRE su horario (arriba, "Horario: ...") para ese día de la semana específico. Si el horario muestra "Cerrado" o no incluye ese día, el ${staffLabel} NO trabaja ese día — NO lo ofrezcas para esa fecha, NO digas que la cita quedó agendada/confirmada con él, y avísale al cliente de inmediato proponiendo otro día u otro ${staffLabel} que sí esté disponible. Revisa esto ANTES de responder, nunca después de haber prometido algo.\n5. Si el ${staffLabel} elegido no está disponible en ese horario, avisa y sugiere otro horario o ${staffLabel} alternativo — nunca confirmes primero y corrijas después.\n6. Cuando el cliente pregunte por el horario de un ${staffLabel} específico, usa el horario indicado arriba para responderle con precisión.\n7. NUNCA nombres a un ${staffLabel} como elegido, asignado o confirmado si el cliente no lo eligió EXPLÍCITAMENTE en sus propios mensajes. Si todavía no eligió, pregúntale con cuál prefiere — jamás asumas o inventes uno. OJO: el nombre del propio cliente (su nombre de WhatsApp) NO es una elección de ${staffLabel}; aunque se parezca al de alguien del equipo, no lo tomes como su elección.`
       : '';
 
     const defaultSvc = store?.defaultServiceId
@@ -3075,17 +3075,35 @@ PROHIBIDO:
     const horaVagaRule =
       `\nHORA VAGA: si el cliente da una hora imprecisa ("desde las 8", "en la mañana", "lo más temprano", "por ahí a las 7"), NO preguntes una y otra vez: ofrece el horario libre real más cercano de la AGENDA REAL que te paso y pide UNA confirmación. Nunca inventes una hora que no esté libre.`;
 
+    // Saludo personalizado: si ya conocemos el nombre (p. ej. por pushName de WhatsApp),
+    // saluda por el primer nombre en el primer mensaje.
+    const saludoNombre = customer.name ? ` ${customer.name.split(' ')[0]}` : '';
+    // Datos a pedir en el primer mensaje. Si hay servicio predeterminado, NO se pide el servicio.
+    const primerMsgAsks = [
+      defaultSvc ? null : `   - ¿Qué servicio desea?`,
+      activeStaff.length > 0 ? `   - ¿Con qué ${staffLabel} prefiere? (${activeStaff.map((s: { name: string }) => s.name).join(', ')})` : null,
+      `   - ¿Qué día y hora prefiere?`,
+      clienteDataPendiente ? `   - Su nombre completo.` : null,
+    ].filter(Boolean).join('\n');
+    const ejemploAsks = [
+      defaultSvc ? null : `qué servicio deseas`,
+      activeStaff.length > 0 ? `con quién prefieres (${activeStaff.map((s: { name: string }) => s.name).join(' o ')})` : null,
+      `para qué día y hora`,
+    ].filter(Boolean).join(', ');
+    const defaultSvcNota = defaultSvc
+      ? `\n   (NO preguntes el servicio: por defecto es "${defaultSvc.name}". Solo pregúntalo si el cliente claramente pide algo distinto.)`
+      : '';
+
     const agendamientoSection = `FLUJO DE AGENDAMIENTO (CITAS Y SERVICIOS):
 
 PRIMER MENSAJE — REGLA CRÍTICA:
 Cuando el cliente muestre intención de agendar (o simplemente salude en un negocio orientado a citas), en TU PRIMER MENSAJE debes:
-1. Dar un saludo breve y amable.
+1. Dar un saludo breve y amable${saludoNombre ? `, llamándolo por su nombre (${saludoNombre.trim()})` : ''}.
 2. Preguntar TODO lo que necesitas en ESE MISMO mensaje, sin esperar la respuesta del cliente para pedir el siguiente dato:
-   - ¿Qué servicio desea?${activeStaff.length > 0 ? `\n   - ¿Con qué ${staffLabel} prefiere? (${activeStaff.map((s: { name: string }) => s.name).join(', ')})` : ''}
-   - ¿Qué día y hora prefiere?${clienteDataPendiente ? `\n   - Su nombre completo.` : ''}
+${primerMsgAsks}${defaultSvcNota}
 
 Ejemplo de primer mensaje ideal:
-"¡Hola! 👋 Para agendar tu cita necesito: ¿qué servicio deseas${activeStaff.length > 0 ? `, con quién prefieres (${activeStaff.map((s: { name: string }) => s.name).join(' o ')})` : ''}, y para qué día y hora?${clienteDataPendiente ? ' También tu nombre completo.' : ''}"
+"¡Hola${saludoNombre}! 👋 Para agendar tu cita necesito: ${ejemploAsks}?${clienteDataPendiente ? ' También tu nombre completo.' : ''}"
 
 ESTA REGLA ES PARA CUALQUIER TIPO DE NEGOCIO — no solo barberías. Aplica igual para salones de belleza, talleres, consultorios, reparaciones, y cualquier servicio con citas. Usa términos genéricos: "${staffLabel}", "servicio", "cita".
 
@@ -3189,6 +3207,7 @@ REGLA ANTI-BUCLE EN CONVERSACIÓN (OBLIGATORIA):
 - Solo respondes si el mensaje es de ${negocioNombre}: sus productos, servicios, citas, pedidos, horarios, ubicación y políticas; O si el cliente está COORDINANDO una cita activa (avisa que va en camino, que llega tarde, confirma, pregunta por su cita); O si es un saludo de apertura de alguien buscando atención del negocio.
 - SILENCIO TOTAL en cualquier otro caso. Si el mensaje NO es de los anteriores (felicitaciones, chistes, temas personales, "¿estás trabajando?", spam, cobranzas/cartera, cadenas, publicidad, estafas, números equivocados, mensajes masivos), responde EXACTAMENTE con [IGNORAR] y NADA más — el sistema no enviará ningún mensaje.
 - NO redirijas, NO saludes, NO expliques, NO mandes "jaja eso no es lo mío" ni frases similares: o es del negocio (respondes) o no lo es ([IGNORAR]).
+- EXCEPCIÓN — cliente en pleno agendamiento: si el cliente ya saludó o empezó a agendar y luego manda chitchat personal que NO avanza la cita ni pregunta del negocio (ej. "estaba cansada", "tuve que recoger a mi hijo", "salí tarde", "Dios te bendiga"), NO silencies de inmediato: reconduce UNA sola vez, breve y cálido, sin repetir todas las preguntas (ej. "Cuando quieras seguimos con tu cita 😊"). Si en el historial TÚ ya hiciste esa reconducción y el cliente sigue divagando sin avanzar, entonces sí responde EXACTAMENTE [IGNORAR]. Esto NO aplica a spam, cobranzas/cartera, cadenas, publicidad ni estafas: esos son [IGNORAR] desde el primer mensaje.
 - VALORACIÓN VISUAL / FOTOS: si el cliente pide algo que requiere ver su caso en persona o una foto (corregir o ajustar un color/trabajo ya hecho, "¿cómo me queda X?", "arréglame esto", o manda una imagen de su cabello), NO insistas en vender ni cotizar a ciegas. Dile en pocas palabras que ${estilistaNombre} lo revisa personalmente y ofrécele agendar una valoración (sin costo si aplica). No alargues con catálogos ni precios para estos casos.`;
 
     const allSections: string[] = [basePrompt, sep, temaSection];
