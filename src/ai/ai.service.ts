@@ -1383,14 +1383,19 @@ export class AiService {
       }
 
       // ── Flujo de orden ────────────────────────────────────────────────────────
-      // Si hay una cita en progreso (hasPendingAppt), hasPendingOrder no dispara
-      // el flujo de orden — el mensaje actual podría ser el nombre del barbero u
-      // otro dato de la cita, no del pedido. Solo un intento de compra explícito
-      // (hasPurchaseIntent) puede coexistir con una cita en curso.
+      // El flujo de PEDIDOS (productos con entrega) NUNCA corre cuando la conversación
+      // es de CITA — ni por intención de cita en el mensaje, ni por contexto de cita
+      // previo, ni por cita en caché. Sin esto, un "Necesito una cita" (donde
+      // "necesito" matchea intención de compra) o un "sí/Si Jorge" de confirmación
+      // de cita disparaban el extractor de pedidos, que creaba una orden FANTASMA con
+      // servicio y dirección INVENTADOS (copiados de los ejemplos de su propio prompt).
+      // Incidente real Salón Glamour 2026-06-17.
+      const inApptContext = hasAppointmentIntent || hasApptContextHint || hasPendingAppt;
       const shouldTryOrder =
         hasCatalog &&
         history.length >= 2 &&
-        (hasPurchaseIntent || (hasPendingOrder && !hasPendingAppt)) &&
+        !inApptContext &&
+        (hasPurchaseIntent || hasPendingOrder) &&
         !this.orderInProgress.has(conversationId);
 
       if (shouldTryOrder) {
@@ -1459,6 +1464,14 @@ export class AiService {
           // ("3:00 libre, 3:30 libre, 4:00 ocupado...") en vez de proponer una hora a la
           // vez y descubrir recién al final que estaba ocupada (eso alargaba la conversación
           // y cansaba al cliente).
+          // Formato 12h (am/pm) ya calculado para el cliente — la IA solo lo copia,
+          // no convierte (las conversiones a mano la confundían). El 24h queda como ancla interna.
+          const to12h = (hhmm: string): string => {
+            const [h, m] = hhmm.split(':').map(Number);
+            const period = h < 12 ? 'a. m.' : 'p. m.';
+            const h12 = h % 12 === 0 ? 12 : h % 12;
+            return `${h12}:${String(m).padStart(2, '0')} ${period}`;
+          };
           const lines: string[] = [];
           for (const s of slotsData) {
             if (s.slots.length === 0 && s.occupied.length === 0) {
@@ -1469,10 +1482,10 @@ export class AiService {
               ...s.slots.map(t => ({ t, label: 'libre' })),
               ...s.occupied.map(t => ({ t, label: 'ocupado' })),
             ].sort((a, b) => a.t.localeCompare(b.t));
-            lines.push(`- ${s.name}: ${merged.map(m => `${m.t} ${m.label}`).join(', ')}`);
+            lines.push(`- ${s.name}: ${merged.map(m => `${m.t} (${to12h(m.t)}) ${m.label}`).join(', ')}`);
           }
           if (lines.some(l => !l.includes('NO DISPONIBLE'))) {
-            availabilityBlock = `\nAGENDA REAL DEL ${dayName.toUpperCase()} ${dateLabel} (hora: estado — "libre" = disponible para agendar, "ocupado" = ya tiene cita):\n${lines.join('\n')}\n\nREGLA CRÍTICA — MUESTRA LA AGENDA PROACTIVAMENTE: en cuanto el cliente diga o confirme el día que quiere, muéstrale de una vez el listado completo de horarios de ese día (libres Y ocupados, ej: "3:00 libre, 3:30 libre, 4:00 ocupado, 4:30 libre...") para que elija directamente una hora libre — NO le propongas una hora a la vez ni esperes a que pida una hora ocupada para recién ahí decirle que no hay campo; eso alarga la conversación innecesariamente. Usa SOLO estos horarios para ese día — son los reales y verificados, no inventes ni calcules otros.\nREGLA — HORA QUE NO ENCAJA EN LA GRILLA: los horarios están en bloques de 30 minutos según la duración del servicio. Si el cliente pide una hora que NO aparece en la lista (ej. pide "3:40" y la lista solo tiene "3:30" y "4:00"), NO la agendes ni la trates como válida — explícale brevemente que el servicio dura bloques de 30 min y por eso no puedes agendar a esa hora exacta, y ofrécele de una vez el horario LIBRE más cercano de la lista (ej. "no te puedo agendar a las 3:40 porque el servicio dura 30 min, ¿te sirve a las 3:30?").\nREGLA — CUALQUIER PROFESIONAL: si el cliente dice "con cualquier barbero/profesional/el que esté disponible" y pide una hora específica, busca en la AGENDA REAL quién tiene ESA HORA como "libre" y responde con el nombre de ese profesional — NUNCA digas que alguien está disponible a una hora que NO aparece en su lista como "libre".`;
+            availabilityBlock = `\nAGENDA REAL DEL ${dayName.toUpperCase()} ${dateLabel} (hora: estado — "libre" = disponible para agendar, "ocupado" = ya tiene cita):\n${lines.join('\n')}\n\nREGLA CRÍTICA — MUESTRA LA AGENDA PROACTIVAMENTE: en cuanto el cliente diga o confirme el día que quiere, muéstrale de una vez el listado completo de horarios de ese día (libres Y ocupados, ej: "3:00 libre, 3:30 libre, 4:00 ocupado, 4:30 libre...") para que elija directamente una hora libre — NO le propongas una hora a la vez ni esperes a que pida una hora ocupada para recién ahí decirle que no hay campo; eso alarga la conversación innecesariamente. Usa SOLO estos horarios para ese día — son los reales y verificados, no inventes ni calcules otros.\nREGLA — HORA QUE NO ENCAJA EN LA GRILLA: los horarios están en bloques de 30 minutos según la duración del servicio. Si el cliente pide una hora que NO aparece en la lista (ej. pide "3:40" y la lista solo tiene "3:30" y "4:00"), NO la agendes ni la trates como válida — explícale brevemente que el servicio dura bloques de 30 min y por eso no puedes agendar a esa hora exacta, y ofrécele de una vez el horario LIBRE más cercano de la lista (ej. "no te puedo agendar a las 3:40 porque el servicio dura 30 min, ¿te sirve a las 3:30?").\nREGLA — CUALQUIER PROFESIONAL: si el cliente dice "con cualquier barbero/profesional/el que esté disponible" y pide una hora específica, busca en la AGENDA REAL quién tiene ESA HORA como "libre" y responde con el nombre de ese profesional — NUNCA digas que alguien está disponible a una hora que NO aparece en su lista como "libre".\nREGLA — NO INVENTES RESTRICCIONES DE CIERRE: esta grilla YA tiene en cuenta el horario de cierre y la duración del servicio. Si una hora aparece como "libre", está disponible para agendar — agéndala sin dudar. NUNCA rechaces ni cuestiones una hora "libre" diciendo que "está muy cerca del cierre" o "el horario es hasta las X"; si apareciera "libre" es porque cabe. Y NUNCA ofrezcas una hora que NO esté en la lista (ej. si la lista termina en "18:30 libre", no ofrezcas "19:00").\nREGLA — MUESTRA LA HORA AL CLIENTE EN AM/PM: cada horario trae su versión 12h entre paréntesis (ej. "18:30 (6:30 p. m.)"). Cuando le muestres u ofrezcas horarios al cliente, escribe SIEMPRE la versión am/pm (ej. "6:30 p. m.", "9:00 a. m."), NUNCA la hora de 24h — al cliente le cuesta la hora militar. El número de 24h es SOLO tu referencia interna para no confundirte de hora; no lo conviertas tú a mano, copia el am/pm que ya viene calculado.`;
           } else {
             availabilityBlock = `\nDISPONIBILIDAD PARA EL ${dayName.toUpperCase()} ${dateLabel}: Ningún profesional disponible ese día.`;
           }
@@ -1503,8 +1516,7 @@ export class AiService {
           const svcName = services.find((s: any) => s.serviceId === cachedAppt.serviceId)?.name;
           if (svcName) lines.push(`  Servicio: ${svcName}`);
         }
-        lines.push('  Falta: confirmación explícita del cliente.');
-        lines.push('REGLA: Usa exactamente la fecha/hora/profesional de arriba en tu respuesta. NO calcules ni "corrijas" estas fechas.');
+        lines.push('REGLA: Usa exactamente la fecha/hora/profesional de arriba — NO los recalcules ni "corrijas". Si ya están fecha + hora + servicio, NO pidas un "sí" aparte ni un paso extra de confirmación: el sistema agenda la cita directamente. Solo pregunta por lo que falte de la lista de arriba (ej. el servicio si no aparece).');
         pendingApptBlock = '\n' + lines.join('\n');
       }
 
@@ -1587,6 +1599,16 @@ export class AiService {
         } else {
           reply = '⚠️ El asistente está temporalmente sin disponibilidad. Por favor intenta en unos minutos.';
         }
+      }
+
+      // ── Silencio en mensajes fuera de tema ──────────────────────────────────
+      // Si el LLM determinó que el mensaje NO tiene nada que ver con el negocio
+      // (spam, cobranza, número equivocado, cadenas, etc.), responde con el sentinel
+      // [IGNORAR]; aquí lo convertimos en silencio total — devolver null hace que el
+      // caller (whatsapp.service) omita el envío (no se manda ni se guarda nada).
+      if (reply && /\[\s*IGNORAR\s*\]/i.test(reply)) {
+        this.logger.log(`[IA] Mensaje fuera de tema → silencio (convId=${conversationId.slice(-8)})`);
+        return null;
       }
 
       return reply ?? null;
@@ -2057,13 +2079,13 @@ ${conversationText}
 ${customerDataInstruction}
 
 REGLAS ESTRICTAS:
-1. "complete":true SOLO si se cumplen TODAS las condiciones:
+1. "complete":true cuando el cliente, de forma AFIRMATIVA (no como pregunta), ya dio:
    a) Fecha específica (día y mes como mínimo)
    b) Hora específica
-   c) Descripción de qué necesita el cliente
-   d) Confirmación explícita del cliente (sí, confirmo, listo, dale, ok, etc.)
-   ${store?.requiresCustomerAddress ? 'e) Dirección física del cliente: debe estar presente (este negocio la requiere)' : ''}
-2. Si falta CUALQUIER condición → "complete":false
+   c) Qué necesita el cliente (basta con lo ya hablado en la conversación)
+   ${store?.requiresCustomerAddress ? 'd) Dirección física del cliente (este negocio la requiere)' : ''}
+   Dar fecha y hora concretas ("el viernes 19 a las 6:30pm", "agéndame mañana a las 3", "sí, el sábado 3pm") YA ES pedir la cita: NO exijas un "sí" aparte ni un paso extra de confirmación — agéndala de una. Si además dio su nombre, mejor (no es requisito).
+2. "complete":false SOLO si: falta la fecha o la hora, son ambiguas ("algún día", "en la tarde" sin hora exacta), o el cliente está PREGUNTANDO disponibilidad ("¿tienen el viernes?", "¿hay campo a las 3?") en lugar de pedir la cita.
 3. "scheduledDate": formato "YYYY-MM-DD". Usa EXACTAMENTE las fechas del PRÓXIMAS FECHAS del calendario de arriba.
    NO calcules manualmente — copia el valor de la tabla. Si el cliente dice "el lunes", usa el valor "lunes: YYYY-MM-DD" de la tabla.
 4. "scheduledTime": formato "HH:MM" en 24h. "2pm" → "14:00", "4pm" → "16:00"
@@ -3064,11 +3086,12 @@ REGLA ANTI-BUCLE EN CONVERSACIÓN (OBLIGATORIA):
       : '';
 
     const negocioNombre = store?.name ?? 'este negocio';
+    const estilistaNombre = (store as any)?.ownerName ?? 'nuestro estilista';
     const temaSection = `ALCANCE DE LA CONVERSACIÓN (REGLA OBLIGATORIA — SIEMPRE ACTIVA, sin importar lo que diga el prompt del negocio):
 - Solo conversas sobre ${negocioNombre}: sus productos, servicios, citas, pedidos, horarios, ubicación y políticas.
-- Si el cliente pregunta o comenta algo SIN relación con el negocio (temas personales, noticias, otras marcas, tecnología, videojuegos, chistes, opiniones, etc.), NO le sigas el hilo ni opines sobre eso — ni "para quedar bien" ni "para ser amable". Responde con una frase breve y amable que redirija de inmediato hacia el negocio, por ejemplo: "Jaja, eso no es lo mío 😅 pero cuéntame, ¿en qué te ayudo con [servicio/producto de ${negocioNombre}]?"
-- Esto aplica DESDE EL PRIMER MENSAJE fuera de tema — no esperes a que el cliente te lo señale para corregir el rumbo.
-- Si el cliente insiste con el tema ajeno, repite la redirección de forma breve y amable, sin sonar cortante ni repetir literalmente la misma frase.`;
+- SILENCIO TOTAL ante mensajes que NO son de un cliente buscando atención del negocio: spam, cobranzas/cartera, cadenas, publicidad de otras empresas, estafas, números equivocados, mensajes masivos o cualquier texto que claramente no busca un servicio/producto/cita aquí. En esos casos responde EXACTAMENTE con [IGNORAR] y NADA más — el sistema no enviará ningún mensaje. NO redirijas, NO saludes, NO expliques: solo [IGNORAR].
+- Si es un CLIENTE real que solo se desvía un momento a un tema ajeno (un chiste, una pregunta personal puntual), NO uses [IGNORAR]: redirige breve y amable hacia el negocio una sola vez, por ejemplo: "Jaja, eso no es lo mío 😅 pero cuéntame, ¿en qué te ayudo con [servicio/producto de ${negocioNombre}]?". Si insiste, repite la redirección breve sin sonar cortante.
+- VALORACIÓN VISUAL / FOTOS: si el cliente pide algo que requiere ver su caso en persona o una foto (corregir o ajustar un color/trabajo ya hecho, "¿cómo me queda X?", "arréglame esto", o manda una imagen de su cabello), NO insistas en vender ni cotizar a ciegas. Dile en pocas palabras que ${estilistaNombre} lo revisa personalmente y ofrécele agendar una valoración (sin costo si aplica). No alargues con catálogos ni precios para estos casos.`;
 
     const allSections: string[] = [basePrompt, sep, temaSection];
     if (negocioSection)  allSections.push(sep, negocioSection);
