@@ -966,18 +966,18 @@ export class WhatsappService implements OnModuleInit {
       return `¡Hola! 😊 Por el momento no puedo escuchar audios. ¿Puedes contarme en texto qué necesitas? Si prefieres hablar con un asesor, dímelo y te conecto ahora mismo.`;
     }
     if (messageType === 'imageMessage') {
-      return `¡Gracias por escribirnos! 😊 No puedo ver imágenes por este canal automático, pero un asesor puede ayudarte de inmediato. ¿Te conecto?`;
+      return `¡Gracias por tu foto! 😊 En un momento un asesor te responde personalmente para revisar tu caso. 🙌`;
     }
     if (messageType === 'videoMessage') {
-      return `¡Hola! 😊 No puedo ver videos por este canal, pero con gusto te atiendo por texto o te conecto con un asesor. ¿Qué prefieres?`;
+      return `¡Gracias por tu video! 😊 En un momento un asesor te responde personalmente. 🙌`;
     }
     if (messageType === 'documentMessage') {
-      return `¡Gracias! 😊 No puedo abrir documentos por este canal automático. Un asesor puede revisarlo de inmediato. ¿Te conecto?`;
+      return `¡Gracias! 😊 En un momento un asesor revisa tu documento y te responde personalmente. 🙌`;
     }
     if (messageType === 'stickerMessage') {
       return null as any; // Ignorar stickers completamente
     }
-    return `¡Hola! 😊 Recibí tu archivo pero no puedo procesarlo por este canal. ¿Te conecto con un asesor?`;
+    return `¡Gracias por tu mensaje! 😊 En un momento un asesor te responde personalmente. 🙌`;
   }
 
   // ─── Mensajes de texto ──────────────────────────────────────────────────────
