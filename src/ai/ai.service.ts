@@ -1077,6 +1077,75 @@ export class AiService {
     return `✅ ¡Tu cita fue reprogramada!\n\n📆 *Nueva fecha:* ${fechaFormateada}\n🕐 *Nueva hora:* ${horaFormateada}\n\nUn asesor confirmará el cambio. ¡Gracias! 😊`;
   }
 
+  // Inserta UNA cita de la IA: guard final de conflicto dentro de la transacción
+  // (anti-doble-booking) + creación + timeline. Reutilizado por el path single y el
+  // de grupo (acompañantes). `descriptionOverride` permite marcar "Persona k de N".
+  private async insertAiAppointment(
+    storeId: string,
+    customerId: string,
+    resolvedStaffId: string | null,
+    scheduledAt: Date,
+    endsAt: Date | null,
+    durationMinutes: number | null,
+    extracted: any,
+    descriptionOverride?: string | null,
+  ): Promise<any> {
+    return this.prisma.$transaction(async (tx) => {
+      // Guard final dentro de la transacción para evitar doble-booking concurrente
+      if (resolvedStaffId) {
+        const slotEnd = endsAt ?? new Date(scheduledAt.getTime() + 30 * 60_000);
+        const conflict = await tx.appointment.findFirst({
+          where: {
+            staffId: resolvedStaffId,
+            status: { in: ['PENDING', 'CONFIRMED', 'IN_PROGRESS'] },
+            AND: [
+              { scheduledAt: { lt: slotEnd } },
+              {
+                OR: [
+                  { endsAt: { gt: scheduledAt } },
+                  { endsAt: null, scheduledAt: { gt: new Date(scheduledAt.getTime() - 30 * 60_000) } },
+                ],
+              },
+            ],
+          },
+        });
+        if (conflict) throw new Error('Conflicto de horario detectado');
+      }
+
+      const appt = await tx.appointment.create({
+        data: {
+          storeId,
+          customerId,
+          serviceId:        extracted.serviceId        ?? null,
+          serviceVariantId: extracted.serviceVariantId ?? null,
+          type:             extracted.type             ?? 'cita',
+          status:           'PENDING',
+          priority:         'NORMAL',
+          source:           'AI',
+          scheduledAt,
+          endsAt,
+          durationMinutes,
+          description:  descriptionOverride !== undefined ? descriptionOverride : (extracted.description ?? null),
+          address:      extracted.address     ?? null,
+          notes:        extracted.notes       ?? null,
+          agreedPrice:  extracted.agreedPrice ?? null,
+          staffId:      resolvedStaffId,
+        },
+      });
+      await tx.appointmentTimeline.create({
+        data: {
+          appointmentId: appt.appointmentId,
+          action:        'CREATED',
+          newStatus:     'PENDING',
+          note:          'Cita creada automáticamente por el asistente de WhatsApp',
+          isPublic:      true,
+          performedById: null,
+        },
+      });
+      return appt;
+    });
+  }
+
   private async computeSlotsForAI(
     storeId: string,
     date: Date,
@@ -2804,60 +2873,15 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
           }
         }
 
-        appointment = await this.prisma.$transaction(async (tx) => {
-          // Guard final dentro de la transacción para evitar doble-booking concurrente
-          if (resolvedStaffId) {
-            const slotEnd = endsAt ?? new Date(scheduledAt.getTime() + 30 * 60_000);
-            const conflict = await tx.appointment.findFirst({
-              where: {
-                staffId: resolvedStaffId,
-                status: { in: ['PENDING', 'CONFIRMED', 'IN_PROGRESS'] },
-                AND: [
-                  { scheduledAt: { lt: slotEnd } },
-                  {
-                    OR: [
-                      { endsAt: { gt: scheduledAt } },
-                      { endsAt: null, scheduledAt: { gt: new Date(scheduledAt.getTime() - 30 * 60_000) } },
-                    ],
-                  },
-                ],
-              },
-            });
-            if (conflict) throw new Error('Conflicto de horario detectado');
-          }
-
-          const appt = await tx.appointment.create({
-            data: {
-              storeId,
-              customerId:       customer.customerId,
-              serviceId:        extracted.serviceId        ?? null,
-              serviceVariantId: extracted.serviceVariantId ?? null,
-              type:             extracted.type             ?? 'cita',
-              status:           'PENDING',
-              priority:         'NORMAL',
-              source:           'AI',
-              scheduledAt,
-              endsAt,
-              durationMinutes,
-              description:  extracted.description ?? null,
-              address:      extracted.address     ?? null,
-              notes:        extracted.notes       ?? null,
-              agreedPrice:  extracted.agreedPrice ?? null,
-              staffId:      resolvedStaffId,
-            },
-          });
-          await tx.appointmentTimeline.create({
-            data: {
-              appointmentId: appt.appointmentId,
-              action:        'CREATED',
-              newStatus:     'PENDING',
-              note:          'Cita creada automáticamente por el asistente de WhatsApp',
-              isPublic:      true,
-              performedById: null,
-            },
-          });
-          return appt;
-        });
+        appointment = await this.insertAiAppointment(
+          storeId,
+          customer.customerId,
+          resolvedStaffId,
+          scheduledAt,
+          endsAt,
+          durationMinutes,
+          extracted,
+        );
       }
 
       await this.prisma.conversation.update({ where: { conversationId }, data: { status: 'pending_human' } });
