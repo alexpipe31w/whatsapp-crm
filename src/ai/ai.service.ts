@@ -17,7 +17,7 @@ const AI_TIMEOUT_MAIN_MS = 30_000;
 const AI_TIMEOUT_EXT_MS  = 20_000;
 const ORDER_GUARD_TTL_MS   = 10 * 60 * 1000;
 const CONFIRM_REMINDER_MS  =  5 * 60 * 1000; // recordatorio si el cliente no confirma en 5 min
-const MAX_HISTORY_MESSAGES = 8;
+const MAX_HISTORY_MESSAGES = 14;
 
 // JS \b NO trata tildes/eñes como caracteres de palabra: "sí" pierde el límite de cierre
 // (falso negativo — el cliente confirma y el sistema no lo detecta) y "cl"/"av" hacen
@@ -53,6 +53,18 @@ const CONFIRMATION_RE = new RegExp(
   `${CONFIRMATION_DECOR}*$` +
   `|^(?:👍|✅|✓)$`,
   'iu',
+);
+
+// Mensajes donde el cliente coordina/avisa sobre una cita YA existente
+// ("ya voy", "llegando", "ya le llego", "confírmamela", "voy en camino").
+const ARRIVAL_COORD_RE = new RegExp(
+  '\\b(' +
+  'ya\\s+(voy|vamos|le\\s+lleg|llegu|estamos|casi)|' +
+  'voy\\s+(en\\s+camino|saliendo|para\\s+all|llegando)|' +
+  'en\\s+camino|llegando|ya\\s+casi|estoy\\s+llegando|' +
+  'conf[ií]rma(mela|r)?|confirmad[ao]|sigue\\s+en\\s+pie' +
+  ')\\b',
+  'i',
 );
 
 const ADDRESS_RE = new RegExp(
@@ -1152,7 +1164,7 @@ export class AiService {
       }
       const { products, services } = catalog;
 
-      const [conversationRow, orders, appointments, history, store, activeStaff] = await Promise.all([
+      const [conversationRow, orders, appointments, history, store, activeStaff, activeAppt] = await Promise.all([
         this.prisma.conversation.findFirst({
           where:   { conversationId, storeId },
           include: {
@@ -1200,6 +1212,20 @@ export class AiService {
               return list;
             });
         })(),
+        this.prisma.appointment.findFirst({
+          where: {
+            storeId,
+            customer: { conversations: { some: { conversationId } } },
+            status:   { in: ['PENDING', 'CONFIRMED', 'IN_PROGRESS'] },
+            scheduledAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
+          },
+          orderBy: { scheduledAt: 'asc' },
+          include: {
+            service:        { select: { name: true } },
+            serviceVariant: { select: { name: true } },
+            staff:          { select: { name: true } },
+          },
+        }),
       ]);
 
       if (!conversationRow) {
@@ -1250,6 +1276,30 @@ export class AiService {
         storeId, customer.customerId, conversationId, userMessage, config.systemPrompt, activeStaff,
       );
       if (cancelRescheduleReply) return cancelRescheduleReply;
+
+      // ── Guard: el cliente coordina/avisa sobre una cita YA existente ───────────
+      // Si tiene una cita activa en BD y su mensaje es de llegada/coordinación
+      // (o un "sí" suelto) SIN una nueva fecha/hora concreta, NUNCA dejamos que el
+      // extractor/AI libre diga "no tienes cita" o intente re-agendar. Respondemos
+      // con la cita real. Fuente de verdad = BD. (Bug real Next Level, 2026-06-17.)
+      if (
+        activeAppt &&
+        !this.appointmentInProgress.has(conversationId) &&
+        (ARRIVAL_COORD_RE.test(userMessage) || CONFIRMATION_RE.test(userMessage.trim())) &&
+        parseFechaEspanol(userMessage) === null &&
+        parseHoraEspanol(userMessage) === null
+      ) {
+        const f = new Date(activeAppt.scheduledAt).toLocaleDateString('es-CO', {
+          weekday: 'long', day: 'numeric', month: 'long', timeZone: 'America/Bogota',
+        });
+        const h = new Date(activeAppt.scheduledAt).toLocaleTimeString('es-CO', {
+          hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota',
+        });
+        const svc   = (activeAppt as any).service?.name ? ` de ${(activeAppt as any).service.name}` : '';
+        const prof  = (activeAppt as any).staff?.name ? ` con ${(activeAppt as any).staff.name}` : '';
+        this.logger.log(`[Cita] Coordinación sobre cita activa (convId=${conversationId.slice(-8)}) → respuesta segura desde BD`);
+        return `¡Tranquilo! Tu cita${svc}${prof} sigue en pie para el ${f} a las ${h}. Aquí te esperamos. 😊`;
+      }
 
       const hasCatalog           = products.length > 0 || services.length > 0;
       const hasPurchaseIntent    = PURCHASE_INTENT_RE.test(userMessage);
@@ -1529,6 +1579,7 @@ export class AiService {
         activeStaff,
         availabilityBlock,
         includeCatalog,
+        activeAppt,
       );
 
       const messages: any[] = [
@@ -2791,6 +2842,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
     activeStaff: Array<{ staffId: string; name: string; schedule?: any }> = [],
     availabilityBlock = '',
     includeCatalog = true,
+    activeAppt: any = null,
   ): string {
     const sep           = '\n===================================================\n';
     const nombreCliente = customer.name ?? null;
@@ -2867,6 +2919,26 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
         );
       }).join('\n\n');
       citasSection = `CITAS/AGENDAMIENTOS:\n${textoCitas}`;
+    }
+
+    let citaActivaSection = '';
+    if (activeAppt) {
+      const f = new Date(activeAppt.scheduledAt).toLocaleDateString('es-CO', {
+        weekday: 'long', day: 'numeric', month: 'long', timeZone: 'America/Bogota',
+      });
+      const h = new Date(activeAppt.scheduledAt).toLocaleTimeString('es-CO', {
+        hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota',
+      });
+      const svc  = activeAppt.service?.name
+        ? `${activeAppt.service.name}${activeAppt.serviceVariant ? ` (${activeAppt.serviceVariant.name})` : ''}`
+        : 'servicio';
+      const prof = activeAppt.staff?.name ? ` con ${activeAppt.staff.name}` : '';
+      citaActivaSection =
+        `⚠️ CITA ACTIVA DE ESTE CLIENTE (fuente de verdad — NO la ignores):\n` +
+        `- ${svc}${prof} — ${f} a las ${h} — Estado: ${APPT_STATUS_LABELS[activeAppt.status] ?? activeAppt.status}\n` +
+        `REGLAS:\n` +
+        `- Este cliente YA tiene una cita. NO agendes otra salvo que pida explícitamente una distinta.\n` +
+        `- Si dice que va en camino / llega tarde / "ya le llego" / "confírmamela" → confírmale que su cita SIGUE EN PIE con esos datos. NUNCA digas que no tiene cita.`;
     }
 
     const hasItems = products.length > 0 || services.length > 0;
@@ -3094,6 +3166,7 @@ REGLA ANTI-BUCLE EN CONVERSACIÓN (OBLIGATORIA):
 - VALORACIÓN VISUAL / FOTOS: si el cliente pide algo que requiere ver su caso en persona o una foto (corregir o ajustar un color/trabajo ya hecho, "¿cómo me queda X?", "arréglame esto", o manda una imagen de su cabello), NO insistas en vender ni cotizar a ciegas. Dile en pocas palabras que ${estilistaNombre} lo revisa personalmente y ofrécele agendar una valoración (sin costo si aplica). No alargues con catálogos ni precios para estos casos.`;
 
     const allSections: string[] = [basePrompt, sep, temaSection];
+    if (citaActivaSection) allSections.push(sep, citaActivaSection);
     if (negocioSection)  allSections.push(sep, negocioSection);
     if (horariosSection) allSections.push(sep, horariosSection);
     allSections.push(sep, clienteSection, sep, contextoPrevio);
