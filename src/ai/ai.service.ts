@@ -2428,6 +2428,16 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
       extracted = { ...extracted, complete: false };
     }
 
+    // Fallback de servicio: si el cliente no especificó y la tienda tiene un
+    // servicio predeterminado configurado, usarlo (evita alargar la conversación).
+    if (extracted && !extracted.serviceId && store?.defaultServiceId) {
+      const def = services.find((s: any) => s.serviceId === store.defaultServiceId);
+      if (def) {
+        extracted.serviceId = def.serviceId;
+        this.logger.log(`[Cita] Servicio predeterminado aplicado: ${def.name} (convId=${conversationId.slice(-8)})`);
+      }
+    }
+
     // ── Validación final ───────────────────────────────────────────────────────
     this.logger.log(`[Cita] PRE-VALID: complete=${extracted?.complete} date=${extracted?.scheduledDate} time=${extracted?.scheduledTime} staffId=${extracted?.staffId?.slice(-8)}`);
     if (!extracted?.complete)     return { created: false };
@@ -3056,6 +3066,15 @@ PROHIBIDO:
         }).join('\n')}\n\nREGLA OBLIGATORIA DE AGENDAMIENTO CON EQUIPO:\n1. SIEMPRE pregunta: "¿Con qué ${staffLabel} quieres tu cita? Tenemos disponibles: ${activeStaff.map((s: { staffId: string; name: string }) => s.name).join(', ')}"\n2. El cliente DEBE elegir un ${staffLabel} antes de confirmar.\n3. Una vez elegido, NO preguntes de nuevo.\n4. ANTES de proponer, dar por agendada o confirmar una fecha con un ${staffLabel}, verifica SIEMPRE su horario (arriba, "Horario: ...") para ese día de la semana específico. Si el horario muestra "Cerrado" o no incluye ese día, el ${staffLabel} NO trabaja ese día — NO lo ofrezcas para esa fecha, NO digas que la cita quedó agendada/confirmada con él, y avísale al cliente de inmediato proponiendo otro día u otro ${staffLabel} que sí esté disponible. Revisa esto ANTES de responder, nunca después de haber prometido algo.\n5. Si el ${staffLabel} elegido no está disponible en ese horario, avisa y sugiere otro horario o ${staffLabel} alternativo — nunca confirmes primero y corrijas después.\n6. Cuando el cliente pregunte por el horario de un ${staffLabel} específico, usa el horario indicado arriba para responderle con precisión.`
       : '';
 
+    const defaultSvc = store?.defaultServiceId
+      ? services.find((s: any) => s.serviceId === store.defaultServiceId)
+      : null;
+    const defaultSvcRule = defaultSvc
+      ? `\nSERVICIO PREDETERMINADO: si el cliente pide un turno/cita y NO especifica el servicio, agéndalo con "${defaultSvc.name}" sin preguntar cuál — no alargues. Solo pregunta el servicio si el cliente claramente quiere algo distinto.`
+      : '';
+    const horaVagaRule =
+      `\nHORA VAGA: si el cliente da una hora imprecisa ("desde las 8", "en la mañana", "lo más temprano", "por ahí a las 7"), NO preguntes una y otra vez: ofrece el horario libre real más cercano de la AGENDA REAL que te paso y pide UNA confirmación. Nunca inventes una hora que no esté libre.`;
+
     const agendamientoSection = `FLUJO DE AGENDAMIENTO (CITAS Y SERVICIOS):
 
 PRIMER MENSAJE — REGLA CRÍTICA:
@@ -3084,6 +3103,7 @@ ${staffBlock}
 CONSULTA DE DISPONIBILIDAD:
 Si el cliente pregunta sobre horarios disponibles y no menciona un día específico,
 pregunta: "¿Para qué día quieres consultar la disponibilidad?"
+${defaultSvcRule}${horaVagaRule}
 `;
 
     // Contexto de conversaciones anteriores (generado por el cleanup nocturno)
@@ -3111,6 +3131,9 @@ REGLA ANTI-BUCLE EN CONVERSACIÓN (OBLIGATORIA):
 - Nunca hagas la misma pregunta dos veces seguidas al mismo cliente.
 - Si el cliente envió varios mensajes juntos (separados por salto de línea), léelos como un solo mensaje continuo y responde considerando todo el contexto.`;
 
+    const brevedadRule =
+      `\nBREVEDAD (OBLIGATORIO): respuestas cortas estilo WhatsApp (1-3 líneas). NO re-listes todos los profesionales en cada mensaje. NO vuelvas a pedir datos que el cliente ya dio o que el sistema ya tiene (nombre, etc.). Cuando tengas día + hora + servicio, propón UNA confirmación corta y agenda; no des pasos extra.`;
+
     const formatoSection = `FORMATO DE MENSAJES (MUY IMPORTANTE):
 - NUNCA uses asteriscos (*) para negritas ni para ningún otro propósito.
 - NUNCA uses guiones seguidos (---) como separadores.
@@ -3125,7 +3148,7 @@ REGLA ANTI-BUCLE EN CONVERSACIÓN (OBLIGATORIA):
     Precio: $XX.000
 - Emojis sugeridos: 📦 para productos, 🔧 para servicios, 🛍️ para catálogo general.
 - Usa saltos de línea para separar productos, no guiones ni líneas decorativas.
-- El texto debe verse limpio en WhatsApp sin ningún símbolo de formato visible.`;
+- El texto debe verse limpio en WhatsApp sin ningún símbolo de formato visible.${brevedadRule}`;
 
     // ── Información del negocio ───────────────────────────────────────────────
     const negocioLines: string[] = [];
