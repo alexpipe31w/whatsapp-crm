@@ -2727,9 +2727,32 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
             this.pendingAppointments.delete(conversationId);
             this.cancelConfirmReminder(conversationId);
             const staffInfo = activeStaff.find(s => s.staffId === resolvedStaffId);
+            // En vez de un genérico "elige otra hora", ofrecer de una el slot LIBRE más
+            // cercano de ESE profesional ese día (primero el siguiente a la hora pedida;
+            // si no hay más tarde, el libre más cercano antes).
+            let sugerencia = ' ¿Quieres elegir otra hora disponible?';
+            try {
+              const slotsData = await this.computeSlotsForAI(storeId, scheduledAt, activeStaff as any, store as any);
+              const libres = slotsData.find(s => s.name === staffInfo?.name)?.slots ?? [];
+              if (libres.length > 0) {
+                const toMin = (t: string) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+                const [rh, rm] = extracted.scheduledTime!.split(':').map(Number);
+                const reqMin   = rh * 60 + rm;
+                const after    = libres.filter(t => toMin(t) > reqMin).sort((a, b) => toMin(a) - toMin(b));
+                const pick     = after[0] ?? [...libres].sort((a, b) => toMin(b) - toMin(a))[0];
+                if (pick) {
+                  const [h, m] = pick.split(':').map(Number);
+                  const period = h < 12 ? 'a. m.' : 'p. m.';
+                  const h12    = h % 12 === 0 ? 12 : h % 12;
+                  sugerencia = ` ¿Te sirve a las ${h12}:${String(m).padStart(2, '0')} ${period}?`;
+                }
+              }
+            } catch (e: any) {
+              this.logger.warn(`[Cita] No se pudo computar slot sugerido tras conflicto: ${e?.message}`);
+            }
             return {
               created: false,
-              message: `Lo siento, ese horario ya está ocupado para ${staffInfo?.name ?? 'el profesional'}. Por favor elige otra hora disponible.`,
+              message: `Lo siento, ese horario ya está ocupado para ${staffInfo?.name ?? 'el profesional'}.${sugerencia}`,
             };
           }
         }
