@@ -83,4 +83,9 @@ export class CreateAppointmentDto {
   // Admin puede forzar citas fuera del horario configurado; la IA nunca puede
   @IsBoolean() @IsOptional() @Type(() => Boolean)
   forceSchedule?: boolean;
+
+  // Permite omitir la verificación de conflicto (solo para walk-ins: el admin
+  // atiende al cliente conscientemente en el momento aunque el slot esté ocupado).
+  @IsBoolean() @IsOptional() @Type(() => Boolean)
+  skipConflictCheck?: boolean;
 }

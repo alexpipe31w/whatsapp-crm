@@ -197,7 +197,7 @@ export class AppointmentsService {
 
     return this.prisma.$transaction(async (tx) => {
       // Conflict check inside the transaction to prevent double-booking race conditions
-      if (dto.staffId) {
+      if (dto.staffId && !dto.skipConflictCheck) {
         const newEndsAt = endsAt ?? new Date(scheduledAt.getTime() + 30 * 60_000);
         const conflict  = await tx.appointment.findFirst({
           where: {
