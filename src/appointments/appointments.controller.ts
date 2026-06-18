@@ -7,6 +7,7 @@ import { AppointmentsService } from './appointments.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
+import { CreateWalkInDto } from './dto/create-walk-in.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('appointments')
@@ -52,6 +53,11 @@ export class AppointmentsController {
   @Post()
   create(@Body() dto: CreateAppointmentDto, @Request() req: any) {
     return this.appointmentsService.create(req.user.storeId, dto, req.user.userId);
+  }
+
+  @Post('walk-in')
+  createWalkIn(@Body() dto: CreateWalkInDto, @Request() req: any) {
+    return this.appointmentsService.createWalkIn(req.user.storeId, dto, req.user.userId);
   }
 
   @Patch(':id')

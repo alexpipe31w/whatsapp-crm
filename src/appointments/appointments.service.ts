@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '../generated/prisma/client';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
+import { CreateWalkInDto } from './dto/create-walk-in.dto';
 import { AppointmentStatus, AppointmentSource } from '../generated/prisma/enums';
 import { isWithinBusinessHours, BusinessHoursJson } from '../utils/business-hours.util';
 
@@ -260,6 +261,42 @@ export class AppointmentsService {
 
       return appointment;
     });
+  }
+
+  // ─── Walk-in: cliente atendido sin cita previa ───────────────────────────────
+  // Crea una cita a la hora actual y la marca COMPLETED + PAID en un paso. Reutiliza
+  // create() (forzando horario y omitiendo conflicto: el admin lo atiende ahora) y
+  // update() (que ya dispara la auto-orden de servicio idempotente al pasar a PAID).
+  async createWalkIn(storeId: string, dto: CreateWalkInDto, performedById?: string) {
+    const created = await this.create(
+      storeId,
+      {
+        customerId:        dto.customerId,
+        serviceId:         dto.serviceId,
+        staffId:           dto.staffId,
+        scheduledAt:       new Date().toISOString(),
+        durationMinutes:   dto.durationMinutes,
+        agreedPrice:       dto.price,
+        source:            AppointmentSource.MANUAL,
+        forceSchedule:     true,
+        skipConflictCheck: true,
+      } as CreateAppointmentDto,
+      performedById,
+    );
+
+    const { appointment } = await this.update(
+      created.appointmentId,
+      storeId,
+      {
+        status:        AppointmentStatus.COMPLETED,
+        paymentStatus: 'PAID',
+        paymentMethod: dto.paymentMethod,
+        paymentAmount: dto.price,
+      } as UpdateAppointmentDto,
+      performedById,
+    );
+
+    return appointment;
   }
 
   // ─── Actualizar ────────────────────────────────────────────────────────────
