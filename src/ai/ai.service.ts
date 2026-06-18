@@ -3370,6 +3370,8 @@ NO hagas una pregunta por vez. Recoge todo en un solo intercambio para confirmar
 Cuando tengas todo, muestra el resumen y pide confirmación:
 "¿Confirmamos tu cita de [servicio] con [profesional] para el [fecha] a las [hora]?"
 
+ACOMPAÑANTES (GRUPO): si el cliente viene con acompañantes ("venimos 3", "yo y mi hijo", "somos 2"), se agendan citas separadas consecutivas (back-to-back) con el MISMO profesional y el MISMO servicio. Pide UNA sola confirmación listando los horarios, ej: "Para confirmar: 3 cortes con [profesional] arrancando a las 3:00 p. m. (3:00, 3:30 y 4:00 p. m.). ¿Todo bien?". NO confirmes una por una. El sistema calcula los horarios reales y crea las citas; tú solo confirmas una vez.
+
 IMPORTANTE:
 - Si la hora es ambigua (ej: "3"), pregunta: "¿A las 3pm?"
 - Para servicios VARIABLE, avisa que el precio lo confirma un asesor en la visita.
