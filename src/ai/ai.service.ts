@@ -1803,6 +1803,14 @@ export class AiService {
         return null;
       }
 
+      // Backstop determinístico: el modelo a veces ignora la prohibición y suelta
+      // "(jaja) eso no es lo mío" como redirección a un mensaje claramente ajeno
+      // (personal, spam, cobranzas). Esos casos van a SILENCIO total, igual que [IGNORAR].
+      if (reply && /eso no es lo m[ií]o/i.test(reply)) {
+        this.logger.log(`[IA] "eso no es lo mío" → silencio (convId=${conversationId.slice(-8)})`);
+        return null;
+      }
+
       return reply ?? null;
 
     } catch (err: any) {
@@ -3325,7 +3333,7 @@ PROHIBIDO:
             ? `\n    Horario: ${formatBusinessHoursForAI(s.schedule as any).split('\n').join(', ')}`
             : '';
           return `- ${s.name} (id: ${s.staffId})${schedLine}`;
-        }).join('\n')}\n\nREGLA OBLIGATORIA DE AGENDAMIENTO CON EQUIPO:\n1. SIEMPRE pregunta: "¿Con qué ${staffLabel} quieres tu cita? Tenemos disponibles: ${activeStaff.map((s: { staffId: string; name: string }) => s.name).join(', ')}"\n2. El cliente DEBE elegir un ${staffLabel} antes de confirmar.\n3. Una vez elegido, NO preguntes de nuevo.\n4. ANTES de proponer, dar por agendada o confirmar una fecha con un ${staffLabel}, verifica SIEMPRE su horario (arriba, "Horario: ...") para ese día de la semana específico. Si el horario muestra "Cerrado" o no incluye ese día, el ${staffLabel} NO trabaja ese día — NO lo ofrezcas para esa fecha, NO digas que la cita quedó agendada/confirmada con él, y avísale al cliente de inmediato proponiendo otro día u otro ${staffLabel} que sí esté disponible. Revisa esto ANTES de responder, nunca después de haber prometido algo.\n5. Si el ${staffLabel} elegido no está disponible en ese horario, avisa y sugiere otro horario o ${staffLabel} alternativo — nunca confirmes primero y corrijas después.\n6. Cuando el cliente pregunte por el horario de un ${staffLabel} específico, usa el horario indicado arriba para responderle con precisión.\n7. NUNCA nombres a un ${staffLabel} como elegido, asignado o confirmado si el cliente no lo eligió EXPLÍCITAMENTE en sus propios mensajes. Si todavía no eligió, pregúntale con cuál prefiere — jamás asumas o inventes uno. OJO: el nombre del propio cliente (su nombre de WhatsApp) NO es una elección de ${staffLabel}; aunque se parezca al de alguien del equipo, no lo tomes como su elección.`
+        }).join('\n')}\n\nREGLA OBLIGATORIA DE AGENDAMIENTO CON EQUIPO:\n1. SIEMPRE pregunta: "¿Con qué ${staffLabel} quieres tu cita? Tenemos disponibles: ${activeStaff.map((s: { staffId: string; name: string }) => s.name).join(', ')}"\n2. El cliente DEBE elegir un ${staffLabel} antes de confirmar.\n3. Una vez elegido, NO preguntes de nuevo.\n4. ANTES de proponer, dar por agendada o confirmar una fecha con un ${staffLabel}, verifica SIEMPRE su horario (arriba, "Horario: ...") para ese día de la semana específico. Si el horario muestra "Cerrado" o no incluye ese día, el ${staffLabel} NO trabaja ese día — NO lo ofrezcas para esa fecha, NO digas que la cita quedó agendada/confirmada con él, y avísale al cliente de inmediato proponiendo otro día u otro ${staffLabel} que sí esté disponible. Revisa esto ANTES de responder, nunca después de haber prometido algo.\n5. Si el ${staffLabel} elegido no está disponible en ese horario, avisa y sugiere otro horario o ${staffLabel} alternativo — nunca confirmes primero y corrijas después.\n6. Cuando el cliente pregunte por el horario de un ${staffLabel} específico, usa el horario indicado arriba para responderle con precisión.\n7. NUNCA nombres a un ${staffLabel} como elegido, asignado o confirmado si el cliente no lo eligió EXPLÍCITAMENTE en sus propios mensajes. Solo cuenta como elección una frase clara de elección ("con X", "quiero con X", "que me atienda X", "agéndame con X"). Si todavía no eligió, pregúntale con cuál prefiere — jamás asumas o inventes uno. OJO: NO es elección de ${staffLabel} ninguna de estas cosas, aunque la palabra se parezca al nombre de alguien del equipo: (a) el nombre del propio cliente (su nombre de WhatsApp); (b) un saludo, bendición o palabra suelta al inicio del mensaje (ej. "Oward Dios te bendiga", "Hola Jhon"); (c) un nombre mal escrito o ambiguo. Ante la duda, pregunta — nunca asumas.`
       : '';
 
     const defaultSvc = store?.defaultServiceId
@@ -3411,7 +3419,8 @@ REGLA ANTI-BUCLE EN CONVERSACIÓN (OBLIGATORIA):
 - Avanza la conversación con lo que el cliente sí dijo. Adapta tu respuesta a su mensaje.
 - Si el cliente hace una nueva pregunta en lugar de responder la tuya, responde su pregunta directamente.
 - Nunca hagas la misma pregunta dos veces seguidas al mismo cliente.
-- Si el cliente envió varios mensajes juntos (separados por salto de línea), léelos como un solo mensaje continuo y responde considerando todo el contexto.`;
+- Si el cliente envió varios mensajes juntos (separados por salto de línea), léelos como un solo mensaje continuo y responde considerando todo el contexto.
+- SALUDO UNA SOLA VEZ: el saludo de presentación (ej. "Hola, soy el asistente de…", "¡Qué más bro!") va SOLO en tu primer mensaje de la conversación. Si en el historial YA saludaste o te presentaste, NO repitas el saludo: continúa directamente respondiendo lo que el cliente dijo. Re-saludar en cada turno es un error.`;
 
     const brevedadRule =
       `\nBREVEDAD (OBLIGATORIO): respuestas cortas estilo WhatsApp (1-3 líneas). NO re-listes todos los profesionales en cada mensaje. NO vuelvas a pedir datos que el cliente ya dio o que el sistema ya tiene (nombre, etc.). Cuando tengas día + hora + servicio, propón UNA confirmación corta y agenda; no des pasos extra.`;
