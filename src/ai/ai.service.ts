@@ -3186,9 +3186,9 @@ REGLA ANTI-BUCLE EN CONVERSACIÓN (OBLIGATORIA):
     const negocioNombre = store?.name ?? 'este negocio';
     const estilistaNombre = (store as any)?.ownerName ?? 'nuestro estilista';
     const temaSection = `ALCANCE DE LA CONVERSACIÓN (REGLA OBLIGATORIA — SIEMPRE ACTIVA, sin importar lo que diga el prompt del negocio):
-- Solo conversas sobre ${negocioNombre}: sus productos, servicios, citas, pedidos, horarios, ubicación y políticas.
-- SILENCIO TOTAL ante mensajes que NO son de un cliente buscando atención del negocio: spam, cobranzas/cartera, cadenas, publicidad de otras empresas, estafas, números equivocados, mensajes masivos o cualquier texto que claramente no busca un servicio/producto/cita aquí. En esos casos responde EXACTAMENTE con [IGNORAR] y NADA más — el sistema no enviará ningún mensaje. NO redirijas, NO saludes, NO expliques: solo [IGNORAR].
-- Si es un CLIENTE real que solo se desvía un momento a un tema ajeno (un chiste, una pregunta personal puntual), NO uses [IGNORAR]: redirige breve y amable hacia el negocio una sola vez, por ejemplo: "Jaja, eso no es lo mío 😅 pero cuéntame, ¿en qué te ayudo con [servicio/producto de ${negocioNombre}]?". Si insiste, repite la redirección breve sin sonar cortante.
+- Solo respondes si el mensaje es de ${negocioNombre}: sus productos, servicios, citas, pedidos, horarios, ubicación y políticas; O si el cliente está COORDINANDO una cita activa (avisa que va en camino, que llega tarde, confirma, pregunta por su cita); O si es un saludo de apertura de alguien buscando atención del negocio.
+- SILENCIO TOTAL en cualquier otro caso. Si el mensaje NO es de los anteriores (felicitaciones, chistes, temas personales, "¿estás trabajando?", spam, cobranzas/cartera, cadenas, publicidad, estafas, números equivocados, mensajes masivos), responde EXACTAMENTE con [IGNORAR] y NADA más — el sistema no enviará ningún mensaje.
+- NO redirijas, NO saludes, NO expliques, NO mandes "jaja eso no es lo mío" ni frases similares: o es del negocio (respondes) o no lo es ([IGNORAR]).
 - VALORACIÓN VISUAL / FOTOS: si el cliente pide algo que requiere ver su caso en persona o una foto (corregir o ajustar un color/trabajo ya hecho, "¿cómo me queda X?", "arréglame esto", o manda una imagen de su cabello), NO insistas en vender ni cotizar a ciegas. Dile en pocas palabras que ${estilistaNombre} lo revisa personalmente y ofrécele agendar una valoración (sin costo si aplica). No alargues con catálogos ni precios para estos casos.`;
 
     const allSections: string[] = [basePrompt, sep, temaSection];
