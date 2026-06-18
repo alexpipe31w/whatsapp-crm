@@ -22,4 +22,9 @@ export class CreateCustomerDto {
   @IsOptional()
   @MaxLength(100)
   city?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(100)
+  pushName?: string;
 }

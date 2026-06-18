@@ -12,14 +12,26 @@ export class CustomersService {
   // nuevo, el upsert puede fallar con P2002 en versiones antiguas de Prisma.
   async findOrCreate(dto: CreateCustomerDto) {
     const storeId = dto.storeId!;
+    // Nombre por defecto: el que venga explícito, si no el pushName de WhatsApp,
+    // y si tampoco hay → "Cliente {últimos 4 del teléfono}".
+    const digits = (dto.phone ?? '').replace(/\D/g, '');
+    const fallbackName = `Cliente ${digits.slice(-4) || '0000'}`;
+    const defaultName = (dto.name?.trim() || dto.pushName?.trim() || fallbackName).slice(0, 100);
     try {
-      return await this.prisma.customer.upsert({
+      const customer = await this.prisma.customer.upsert({
         where:  { storeId_phone: { storeId, phone: dto.phone } },
         update: {},
-        create: { storeId, phone: dto.phone, ...(dto.name ? { name: dto.name } : {}) },
+        create: { storeId, phone: dto.phone, name: defaultName },
       });
+      // Backfill: si el cliente existía sin nombre y ahora tenemos pushName/nombre, lo guardamos.
+      if (!customer.name && (dto.name?.trim() || dto.pushName?.trim())) {
+        return await this.prisma.customer.update({
+          where: { customerId: customer.customerId },
+          data:  { name: defaultName },
+        });
+      }
+      return customer;
     } catch (err: any) {
-      // P2002 = unique constraint — otro proceso creó el cliente primero
       if (err?.code === 'P2002') {
         const existing = await this.prisma.customer.findUnique({
           where: { storeId_phone: { storeId, phone: dto.phone } },

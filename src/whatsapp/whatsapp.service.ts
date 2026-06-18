@@ -340,6 +340,7 @@ export class WhatsappService implements OnModuleInit {
   private readonly messageBuffers  = new Map<string, {
     contents: string[];
     timer: ReturnType<typeof setTimeout>;
+    pushName?: string;
   }>();
 
   constructor(
@@ -567,6 +568,9 @@ export class WhatsappService implements OnModuleInit {
     const phone = phoneFromJid(jid);
     if (!phone) return; // grupos, status broadcasts, etc.
 
+    const pushName: string | undefined =
+      typeof msg.pushName === 'string' && msg.pushName.trim() ? msg.pushName.trim() : undefined;
+
     // Ignorar grupos
     if (jid.endsWith('@g.us'))   return;
     if (jid.endsWith('@broadcast')) return;
@@ -593,7 +597,7 @@ export class WhatsappService implements OnModuleInit {
 
     // Resto de media (imagen, video, doc, sticker)
     if (MEDIA_TYPES.has(messageType)) {
-      await this.handleMediaMessage(storeId, phone, messageType, sock);
+      await this.handleMediaMessage(storeId, phone, messageType, sock, pushName);
       return;
     }
 
@@ -610,7 +614,7 @@ export class WhatsappService implements OnModuleInit {
 
     this.logger.log(`📩 Mensaje de ${phone}: ${content.slice(0, 100)}${content.length > 100 ? '...' : ''}`);
 
-    this.bufferAndProcess(storeId, phone, content, sock);
+    this.bufferAndProcess(storeId, phone, content, sock, pushName);
   }
 
   // ─── Comando interno del dueño: !stop dentro del chat del cliente ───────────
@@ -649,6 +653,7 @@ export class WhatsappService implements OnModuleInit {
     phone: string,
     content: string,
     sock: any,
+    pushName?: string,
   ): void {
     const key      = `${storeId}:${phone}`;
     const existing = this.messageBuffers.get(key);
@@ -656,9 +661,10 @@ export class WhatsappService implements OnModuleInit {
     if (existing) {
       clearTimeout(existing.timer);
       existing.contents.push(content);
+      if (pushName) existing.pushName = pushName;
       this.logger.debug(`📥 Buffer [${key}] — ${existing.contents.length} msgs acumulados`);
     } else {
-      this.messageBuffers.set(key, { contents: [content], timer: null! });
+      this.messageBuffers.set(key, { contents: [content], timer: null!, pushName });
     }
 
     const buffer = this.messageBuffers.get(key)!;
@@ -674,7 +680,7 @@ export class WhatsappService implements OnModuleInit {
       }
 
       this.enqueueMessage(key, () =>
-        this.handleIncomingMessage(storeId, phone, combined, sock),
+        this.handleIncomingMessage(storeId, phone, combined, sock, buffer.pushName),
       );
     }, MSG_DEBOUNCE_MS);
   }
@@ -711,7 +717,9 @@ export class WhatsappService implements OnModuleInit {
     sock:    any,
     msg:     any,
   ): Promise<void> {
-    const fallback = () => this.handleMediaMessage(storeId, phone, 'audioMessage', sock);
+    const pushName: string | undefined =
+      typeof msg.pushName === 'string' && msg.pushName.trim() ? msg.pushName.trim() : undefined;
+    const fallback = () => this.handleMediaMessage(storeId, phone, 'audioMessage', sock, pushName);
 
     try {
       // ── 1. Rate limit — máx AUDIO_RATE_MAX audios/min por número ──────────
@@ -808,7 +816,7 @@ export class WhatsappService implements OnModuleInit {
 
       // ── 6. Procesar la transcripción como mensaje de texto normal ─────────
       // El buffer ya no se referencia aquí — puede ser GC'd inmediatamente
-      this.bufferAndProcess(storeId, phone, transcription, sock);
+      this.bufferAndProcess(storeId, phone, transcription, sock, pushName);
 
     } catch (err: any) {
       this.logger.error(`[Audio] Error procesando audio de ${phone}: ${err.message}`);
@@ -918,10 +926,11 @@ export class WhatsappService implements OnModuleInit {
     phone: string,
     messageType: string,
     sock: any,
+    pushName?: string,
   ): Promise<void> {
     try {
       const jid          = jidFromPhone(phone);
-      const customer     = await this.customersService.findOrCreate({ storeId, phone });
+      const customer     = await this.customersService.findOrCreate({ storeId, phone, pushName });
       const conversation = await this.conversationsService.findOrCreate(
         customer.customerId, storeId,
       );
@@ -987,6 +996,7 @@ export class WhatsappService implements OnModuleInit {
     phone: string,
     content: string,
     sock: any,
+    pushName?: string,
   ): Promise<void> {
     const jid = jidFromPhone(phone);
 
@@ -1001,7 +1011,7 @@ export class WhatsappService implements OnModuleInit {
       }
 
       // Obtener/crear cliente y conversación
-      const customer = await this.customersService.findOrCreate({ storeId, phone });
+      const customer = await this.customersService.findOrCreate({ storeId, phone, pushName });
       const conversation = await this.conversationsService.findOrCreate(
         customer.customerId, storeId,
       );
