@@ -55,6 +55,7 @@ export class PublicService {
           maxPrice:         true,
           unitLabel:        true,
           estimatedMinutes: true,
+          imageUrl:         true,
           hasVariants:      true,
           variants: {
             where:   { isActive: true },
