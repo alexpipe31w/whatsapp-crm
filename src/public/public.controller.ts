@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Param, Query, Body, UseGuards } from '@nestjs/common';
 import { PublicService } from './public.service';
 import { PublicBookingDto } from './dto/public-booking.dto';
+import { PublicOrderDto } from './dto/public-order.dto';
 import { PublicBookingRateLimitGuard } from '../auth/guards/public-booking-rate-limit.guard';
 
 @Controller('public')
@@ -22,5 +23,18 @@ export class PublicController {
   @Post(':slug/book')
   book(@Param('slug') slug: string, @Body() dto: PublicBookingDto) {
     return this.publicService.bookAppointment(slug, dto);
+  }
+
+  // Tienda pública — productos publicables de la tienda resuelta por slug
+  @Get(':slug/products')
+  getProducts(@Param('slug') slug: string) {
+    return this.publicService.getProductsBySlug(slug);
+  }
+
+  // Pedido público — plan de emergencia si la IA falla (mismo guard de rate-limit que book)
+  @UseGuards(PublicBookingRateLimitGuard)
+  @Post(':slug/order')
+  order(@Param('slug') slug: string, @Body() dto: PublicOrderDto) {
+    return this.publicService.createOrder(slug, dto);
   }
 }
