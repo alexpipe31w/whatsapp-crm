@@ -3,8 +3,10 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CustomersService } from '../customers/customers.service';
 import { AppointmentsService } from '../appointments/appointments.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { OrdersService } from '../orders/orders.service';
 import { AppointmentSource } from '../generated/prisma/enums';
 import { PublicBookingDto } from './dto/public-booking.dto';
+import { PublicOrderDto } from './dto/public-order.dto';
 
 interface SlotResult {
   staffId: string | null;
@@ -28,6 +30,7 @@ export class PublicService {
     private readonly customers:    CustomersService,
     private readonly appointments: AppointmentsService,
     private readonly notifications: NotificationsService,
+    private readonly orders:       OrdersService,
   ) {}
 
   async getStoreBySlug(slug: string) {
@@ -73,6 +76,113 @@ export class PublicService {
       hasStaff:      staffCount > 0,
       businessHours: store.businessHours,
       services,
+    };
+  }
+
+  // ─── Tienda pública (plan de emergencia si la IA cae) ──────────────────────
+  // Lista los productos publicables de la tienda resuelta por slug. El storeId
+  // SIEMPRE sale del slug (multi-tenant), nunca del cliente.
+  async getProductsBySlug(slug: string) {
+    const store = await this.prisma.store.findUnique({
+      where:  { slug },
+      select: { storeId: true, name: true, paymentMethods: true },
+    });
+    if (!store) throw new NotFoundException('Negocio no encontrado');
+
+    const products = await this.prisma.product.findMany({
+      where:   { storeId: store.storeId, isActive: true, stock: { gt: 0 } },
+      orderBy: { createdAt: 'asc' },
+      select: {
+        productId:   true,
+        name:        true,
+        description: true,
+        salePrice:   true,
+        stock:       true,
+        imageUrl:    true,
+        images:      true,
+        hasVariants: true,
+        variants: {
+          where:   { isActive: true },
+          orderBy: { sortOrder: 'asc' },
+          select: { variantId: true, name: true, salePrice: true, stock: true },
+        },
+      },
+    });
+
+    return { name: store.name, paymentMethods: store.paymentMethods ?? [], products };
+  }
+
+  // Pedido público (plan de emergencia si la IA falla). storeId desde el slug,
+  // precios leídos de la BD (nunca del cliente), creación delegada a
+  // OrdersService.create que valida tenant y descuenta stock atómicamente.
+  async createOrder(slug: string, dto: PublicOrderDto) {
+    const store = await this.prisma.store.findUnique({
+      where:  { slug },
+      select: { storeId: true },
+    });
+    if (!store) throw new NotFoundException('Negocio no encontrado');
+    const { storeId } = store;
+
+    const digits = normalizePhone(dto.customerPhone);
+    if (digits.length < 7) throw new BadRequestException('El número de teléfono no es válido.');
+
+    const customer = await this.findOrCreateCustomerByPhone(storeId, digits, dto.customerName.trim());
+
+    // Resolver precio y validar pertenencia de cada item desde la BD (nunca confiar en el cliente).
+    const items: {
+      productId: string;
+      variantId?: string;
+      quantity: number;
+      unitPrice: number;
+      description: string;
+    }[] = [];
+    for (const it of dto.items) {
+      const product = await this.prisma.product.findFirst({
+        where:  { productId: it.productId, storeId, isActive: true },
+        select: { productId: true, name: true, salePrice: true },
+      });
+      if (!product) throw new BadRequestException('Un producto seleccionado no existe.');
+
+      let unitPrice = Number(product.salePrice);
+      let variantId: string | undefined;
+      if (it.variantId) {
+        const variant = await this.prisma.productVariant.findFirst({
+          where:  { variantId: it.variantId, product: { storeId } },
+          select: { variantId: true, salePrice: true },
+        });
+        if (!variant) throw new BadRequestException('Una variante seleccionada no existe.');
+        variantId = variant.variantId;
+        if (variant.salePrice != null) unitPrice = Number(variant.salePrice);
+      }
+
+      items.push({
+        productId:   product.productId,
+        variantId,
+        quantity:    it.quantity,
+        unitPrice,
+        description: product.name,
+      });
+    }
+
+    // CreateOrderDto no expone un campo de pago con el set de valores del público,
+    // así que el método de pago elegido (a coordinar en el local) se guarda en notas.
+    const noteParts: string[] = [];
+    if (dto.notes?.trim()) noteParts.push(dto.notes.trim());
+    if (dto.paymentMethod) noteParts.push(`Método de pago: ${dto.paymentMethod}`);
+    const notes = noteParts.length ? noteParts.join(' — ').slice(0, 500) : undefined;
+
+    const order = await this.orders.create({
+      storeId,
+      customerId:     customer.customerId,
+      items,
+      notes,
+      idempotencyKey: `pub-${storeId}-${customer.customerId}-${Date.now()}`,
+    });
+
+    return {
+      orderId: order.orderId,
+      total:   order.total,
+      status:  order.status,
     };
   }
 
