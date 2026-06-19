@@ -18,12 +18,12 @@ export class CleanupService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  // ─── Cron: cada hora ────────────────────────────────────────────────────────
-  // Corre cada hora (no solo a medianoche) para honrar la retención de 24h: una
-  // conversación se borra dentro de la hora siguiente a cumplir +24h de vida.
-  @Cron('0 * * * *', { name: 'hourly-cleanup', timeZone: 'UTC' })
+  // ─── Cron: medianoche Colombia (UTC-5 = 05:00 UTC) ──────────────────────────
+  // "0 5 * * *" = 05:00 UTC = medianoche hora Colombia. Corre 1 vez al día en la
+  // madrugada (hora muerta) para no borrar chats activos durante el día.
+  @Cron('0 5 * * *', { name: 'daily-cleanup', timeZone: 'UTC' })
   async runDailyCleanup(): Promise<void> {
-    this.logger.log('🧹 Limpieza: borrando conversaciones con +24h de vida...');
+    this.logger.log('🧹 Limpieza nocturna: borrando conversaciones con +24h de vida...');
     const start = Date.now();
 
     const cutoff = new Date(Date.now() - CLEANUP_AFTER_HOURS * 60 * 60 * 1000);
