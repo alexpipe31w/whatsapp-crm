@@ -1782,15 +1782,12 @@ export class AiService {
       }
 
       if (reply === undefined) {
-        this.logger.error(`[Pool] Todos los cartuchos agotados para store ${storeId}`);
-        const frontendUrl = (process.env.FRONTEND_URL ?? '').replace(/\/$/, '');
-        if (store?.slug && frontendUrl) {
-          const publicLink   = `${frontendUrl}/cal/${store.slug}`;
-          const staffLbl     = ((store as any).staffLabel ?? 'asistente').toLowerCase();
-          reply = `Hola 👋, en este momento nuestro ${staffLbl} virtual no se encuentra disponible, pero puedes agendar tu cita directamente aquí:\n\n📅 ${publicLink}\n\nElige el servicio y el horario disponible. ¡Te esperamos!`;
-        } else {
-          reply = '⚠️ El asistente está temporalmente sin disponibilidad. Por favor intenta en unos minutos.';
-        }
+        // Todos los cartuchos agotados (rate-limit / error en cadena). NO enviar nada:
+        // el fallback con el link de calendario se estaba mandando en CADA mensaje y a
+        // conversaciones que no tenían nada que ver, spameando al cliente. Mejor silencio
+        // total — un humano puede tomar el control desde el panel.
+        this.logger.error(`[Pool] Todos los cartuchos agotados para store ${storeId} — silencio (no se envía fallback)`);
+        return null;
       }
 
       // ── Silencio en mensajes fuera de tema ──────────────────────────────────
