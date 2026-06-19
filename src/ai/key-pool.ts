@@ -20,8 +20,13 @@ interface PoolState {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const POOL_RESET_MS = 60 * 60 * 1000; // 60 min — rate limit windows reset
-const MAX_ACTIVE    = 2;               // cartridges used simultaneously
+// 2 min — un cartucho bancado (por 429 o por error) revive en este lapso. Los límites
+// por-minuto de Groq se despejan en ~60s; antes era 60 min y un bloqueo de 1 min se
+// convertía en un apagón largo de la IA.
+const POOL_RESET_MS = 2 * 60 * 1000;
+// Cartuchos usados en simultáneo (round-robin). Antes era 2 → con 6 keys solo se usaban
+// 2 y se saturaban rápido. 12 = usa TODAS las keys configuradas, máximo techo de rate-limit.
+const MAX_ACTIVE    = 12;
 
 // ─── In-memory store ──────────────────────────────────────────────────────────
 
