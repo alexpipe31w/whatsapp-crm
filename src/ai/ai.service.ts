@@ -357,8 +357,10 @@ function extractQueryDate(message: string, _today: Date, tz = TZ_CO): Date | nul
 function parseHoraEspanol(text: string): string | null {
   const t = text.toLowerCase().trim();
 
-  // HH:MM formato 24h o 12h
-  const colonFmt = t.match(/\b(\d{1,2}):(\d{2})\s*(am|pm|a\.m\.|p\.m\.)?\b/);
+  // HH:MM formato 24h o 12h. Acepta ":", ".", "," o "h" como separador de minutos
+  // ("3:30", "3.30", "3,30", "3h30") — un cliente escribió "3.30" y el parser solo
+  // leía el "3" → agendaba 3:00 en vez de 3:30.
+  const colonFmt = t.match(/\b(\d{1,2})[:.,h](\d{2})\s*(am|pm|a\.m\.|p\.m\.)?\b/);
   if (colonFmt) {
     let h = parseInt(colonFmt[1]);
     const m = colonFmt[2];
