@@ -3,7 +3,9 @@ import { Cron } from '@nestjs/schedule';
 import { createCompletion, PROVIDER_CONFIG, AIProvider } from '../ai/providers';
 import { PrismaService } from '../prisma/prisma.service';
 
-// Conversaciones que llevan +24h sin actividad se borran (cualquier estado)
+// Conversaciones con +24h de VIDA (desde su creación) se borran SIEMPRE — tengan o no
+// actividad reciente — conservando solo el resumen IA del contexto.
+// (Antes: 24h SIN actividad → las conversaciones activas nunca se borraban.)
 const CLEANUP_AFTER_HOURS   = 24;
 // Tamaño de lote para no saturar la BD
 const BATCH_SIZE            = 20;
@@ -16,11 +18,12 @@ export class CleanupService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  // ─── Cron: medianoche Colombia (UTC-5 = 05:00 UTC) ──────────────────────────
-  // "0 5 * * *" = las 5:00 AM UTC = medianoche hora Colombia
-  @Cron('0 5 * * *', { name: 'daily-cleanup', timeZone: 'UTC' })
+  // ─── Cron: cada hora ────────────────────────────────────────────────────────
+  // Corre cada hora (no solo a medianoche) para honrar la retención de 24h: una
+  // conversación se borra dentro de la hora siguiente a cumplir +24h de vida.
+  @Cron('0 * * * *', { name: 'hourly-cleanup', timeZone: 'UTC' })
   async runDailyCleanup(): Promise<void> {
-    this.logger.log('🧹 Iniciando limpieza nocturna de conversaciones...');
+    this.logger.log('🧹 Limpieza: borrando conversaciones con +24h de vida...');
     const start = Date.now();
 
     const cutoff = new Date(Date.now() - CLEANUP_AFTER_HOURS * 60 * 60 * 1000);
@@ -42,8 +45,9 @@ export class CleanupService {
     while (true) {
       const conversations = await this.prisma.conversation.findMany({
         where: {
-          lastMessageAt: { lt: cutoff },
-          // Cualquier estado, incluidos closed/human — solo importa que esté inactiva +24h
+          createdAt: { lt: cutoff },
+          // Cualquier estado (incluidos closed/human) y CON o SIN actividad reciente:
+          // solo importa que la conversación tenga +24h de vida desde su creación.
           messages: { some: {} },
           ...(failedIds.length ? { conversationId: { notIn: failedIds } } : {}),
         },
