@@ -79,6 +79,34 @@ const PAYMENT_PROOF_RE = new RegExp(
 const CANCEL_RESCHEDULE_RE = /\b(cancelar|no puedo ir|no puedo asistir|cambiar la cita|reprogramar|mover la cita|otro d[ií]a|otra hora|posponer|aplazar)\b/i;
 const MIN_ADVANCE_RE       = /m[ií]nimo\s+(\d+)\s*(hora|horas|h\b)/i;
 
+// ─── Respaldo determinístico cuando el LLM está caído ─────────────────────────
+// Detecta intención por palabras clave (no usa LLM porque el LLM es justo lo que
+// falló) y arma UN mensaje con los links públicos. Un marcador invisible permite
+// detectar en el historial que ya se envió, para no repetirlo en cada mensaje
+// (el spam del incidente del 2026-06-18).
+const FALLBACK_MARKER = 'no está disponible en este momento';
+const PRODUCT_INTENT_RE = /\b(producto|productos|comprar|compra|vende[ns]?|precio de|cu[aá]nto vale|domicilio|env[ií]o|gel|cera|shampoo|pomada|cuesta)\b/i;
+const APPT_INTENT_RE    = /\b(cita|agendar|agenda|turno|corte|barba|cejas?|hora|disponib|reservar|peluqu)\b/i;
+
+function buildFallbackMessage(opts: { hasSlug: boolean; frontendUrl: string; slug?: string; lastUserText: string }): string | null {
+  if (!opts.hasSlug || !opts.frontendUrl || !opts.slug) return null;
+  const cal    = `${opts.frontendUrl}/cal/${opts.slug}`;
+  const tienda = `${opts.frontendUrl}/tienda/${opts.slug}`;
+  const t = opts.lastUserText;
+  const wantsProduct = PRODUCT_INTENT_RE.test(t);
+  const wantsAppt    = APPT_INTENT_RE.test(t);
+
+  let cuerpo: string;
+  if (wantsProduct && !wantsAppt) {
+    cuerpo = `Para tu compra, puedes ver los productos y dejar tu pedido aquí:\n🛍️ ${tienda}`;
+  } else if (wantsAppt && !wantsProduct) {
+    cuerpo = `Para agendar tu cita, entra aquí y elige horario:\n📅 ${cal}`;
+  } else {
+    cuerpo = `Si quieres agendar una cita: 📅 ${cal}\nSi buscas un producto: 🛍️ ${tienda}`;
+  }
+  return `¡Hola! 👋 Nuestro asistente ${FALLBACK_MARKER}, pero vuelve muy pronto. ${cuerpo}`;
+}
+
 // ─── Meses en español ─────────────────────────────────────────────────────────
 const MESES: Record<string, number> = {
   enero:1, febrero:2, marzo:3, abril:4, mayo:5, junio:6,
@@ -1782,12 +1810,24 @@ export class AiService {
       }
 
       if (reply === undefined) {
-        // Todos los cartuchos agotados (rate-limit / error en cadena). NO enviar nada:
-        // el fallback con el link de calendario se estaba mandando en CADA mensaje y a
-        // conversaciones que no tenían nada que ver, spameando al cliente. Mejor silencio
-        // total — un humano puede tomar el control desde el panel.
-        this.logger.error(`[Pool] Todos los cartuchos agotados para store ${storeId} — silencio (no se envía fallback)`);
-        return null;
+        // Todos los cartuchos agotados. En vez de silencio total (o del spam viejo),
+        // mandamos UN mensaje útil con los links públicos — pero solo si no lo mandamos
+        // ya en esta conversación (dedup por historial), para no repetirlo en cada turno.
+        this.logger.error(`[Pool] Todos los cartuchos agotados para store ${storeId} — respaldo`);
+        const yaEnviado = (history ?? []).some(
+          (m: any) => m?.isAiResponse && typeof m.content === 'string' && m.content.includes(FALLBACK_MARKER),
+        );
+        if (yaEnviado) {
+          this.logger.log(`[Pool] Respaldo ya enviado en esta conversación → silencio`);
+          return null;
+        }
+        const frontendUrl = (process.env.FRONTEND_URL ?? '').replace(/\/$/, '');
+        return buildFallbackMessage({
+          hasSlug:      !!store?.slug,
+          frontendUrl,
+          slug:         store?.slug ?? undefined,
+          lastUserText: userMessage ?? '',
+        });
       }
 
       // ── Silencio en mensajes fuera de tema ──────────────────────────────────
