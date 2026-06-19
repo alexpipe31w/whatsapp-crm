@@ -71,6 +71,14 @@ export class StaffService {
     });
   }
 
+  // Borrado PERMANENTE (hard delete). Las citas ligadas quedan con staff_id = NULL
+  // (la FK es ON DELETE SET NULL), no se borran. Úsalo para limpiar duplicados/errores.
+  async removePermanent(staffId: string, storeId: string) {
+    await this.verifyOwnership(staffId, storeId);
+    await this.prisma.staff.delete({ where: { staffId } });
+    return { deleted: true };
+  }
+
   private async verifyOwnership(staffId: string, storeId: string) {
     const staff = await this.prisma.staff.findUnique({ where: { staffId } });
     if (!staff)                    throw new NotFoundException('Profesional no encontrado');

@@ -32,4 +32,11 @@ export class StaffController {
   remove(@Param('id') id: string, @Request() req: any) {
     return this.staffService.remove(id, req.user.storeId);
   }
+
+  // Borrado permanente (hard delete) — elimina el registro de la BD.
+  @Delete(':id/permanent')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  removePermanent(@Param('id') id: string, @Request() req: any) {
+    return this.staffService.removePermanent(id, req.user.storeId);
+  }
 }
