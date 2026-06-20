@@ -53,4 +53,6 @@ export class CreateStoreDto {
   slug?: string;
 
   @IsString() @IsOptional() defaultServiceId?: string;
+
+  @IsBoolean() @IsOptional() @Type(() => Boolean) autoConfirmAppointments?: boolean;
 }

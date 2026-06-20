@@ -33,7 +33,7 @@ export class AutoConfirmService {
         pendingAction: null,                          // no tocar las que esperan cancelar/reprogramar
         createdAt:     { lte: cutoff },               // +15 min desde que se creó
         scheduledAt:   { gt: now },                   // solo citas futuras (confirmar una pasada no sirve)
-        store:         { subscriptionStatus: 'active' },
+        store:         { subscriptionStatus: 'active', autoConfirmAppointments: true },
       },
       select: { appointmentId: true, storeId: true },
       take:   BATCH_SIZE,

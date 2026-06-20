@@ -97,6 +97,10 @@ model Store {
   defaultServiceId String? @map("default_service_id")  // servicio usado cuando el cliente no especifica
   isActive    Boolean  @default(true) @map("is_active")
 
+  // Si está activo, una cita que lleve +15 min en PENDING se autoconfirma sola (y el
+  // cliente recibe la confirmación por WhatsApp) sin esperar a que el barbero/admin confirme.
+  autoConfirmAppointments Boolean @default(true) @map("auto_confirm_appointments")
+
   // Paleta de colores personalizable por tienda
   primaryColor   String? @default("#2563eb") @map("primary_color")   @db.VarChar(7)
   secondaryColor String? @default("#9333ea") @map("secondary_color") @db.VarChar(7)
