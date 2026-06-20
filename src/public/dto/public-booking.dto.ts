@@ -8,12 +8,10 @@ export class PublicBookingDto {
   @MaxLength(100)
   customerName: string;
 
-  // Teléfono opcional: si el cliente lo deja en blanco se agenda igual (se crea un
-  // cliente con placeholder interno). Si lo escribe, se valida el formato en el service.
   @IsString()
-  @IsOptional()
+  @MinLength(7)
   @MaxLength(20)
-  customerPhone?: string;
+  customerPhone: string;
 
   @IsUUID()
   @IsOptional()

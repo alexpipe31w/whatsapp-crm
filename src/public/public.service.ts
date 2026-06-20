@@ -211,16 +211,11 @@ export class PublicService {
       throw new BadRequestException('Debes seleccionar un profesional para agendar.');
     }
 
-    // Teléfono opcional: si viene, se valida y se reusa/crea el cliente por teléfono
-    // (evita duplicados con quien ya escribió por WhatsApp). Si no viene, se crea un
-    // cliente solo con el nombre (placeholder interno, porque phone es único no-nulo).
-    const digits = dto.customerPhone ? normalizePhone(dto.customerPhone) : '';
-    if (dto.customerPhone && digits.length < 7) {
+    const digits = normalizePhone(dto.customerPhone);
+    if (digits.length < 7) {
       throw new BadRequestException('El número de teléfono no es válido.');
     }
-    const customer = digits.length >= 7
-      ? await this.findOrCreateCustomerByPhone(storeId, digits, dto.customerName.trim())
-      : await this.createNamedCustomerNoPhone(storeId, dto.customerName.trim());
+    const customer = await this.findOrCreateCustomerByPhone(storeId, digits, dto.customerName.trim());
 
     let durationMinutes: number | undefined;
     if (dto.serviceVariantId) {
@@ -267,16 +262,6 @@ export class PublicService {
       service:       appointment.service?.name ?? null,
       staff:         appointment.staff?.name ?? null,
     };
-  }
-
-  // Cliente agendado por el link público SIN teléfono. phone es único y no-nulo en el
-  // schema, así que se guarda un placeholder interno ("s/n-..."); el nombre sí queda.
-  // El negocio coordina en persona (no habrá confirmación por WhatsApp).
-  private async createNamedCustomerNoPhone(storeId: string, name: string) {
-    const placeholder = `s/n-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`.slice(0, 20);
-    return this.prisma.customer.create({
-      data: { storeId, phone: placeholder, name: name.slice(0, 100) || 'Cliente' },
-    });
   }
 
   private async findOrCreateCustomerByPhone(storeId: string, digits: string, name: string) {

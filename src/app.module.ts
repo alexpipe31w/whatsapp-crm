@@ -23,6 +23,7 @@ import { SuperAdminModule } from './superadmin/superadmin.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { RemindersModule } from './reminders/reminders.module';
+import { AutoConfirmModule } from './auto-confirm/auto-confirm.module';
 import { ReportsModule } from './reports/reports.module';
 import { StaffModule } from './staff/staff.module';
 import { PublicModule } from './public/public.module';
@@ -56,6 +57,7 @@ import { UploadModule } from './upload/upload.module';
     SubscriptionsModule,
     NotificationsModule,
     RemindersModule,
+    AutoConfirmModule,
     ReportsModule,
     StaffModule,
     PublicModule,
