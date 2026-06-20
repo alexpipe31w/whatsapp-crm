@@ -196,6 +196,23 @@ export class AppointmentsService {
       }
     }
 
+    // Anticipación mínima: el negocio puede exigir X minutos de antelación para agendar.
+    // Se impone igual que el horario laboral — la IA y el link público no pueden saltárselo;
+    // el staff sí con forceSchedule (los walk-ins van forzados, así que no se ven afectados).
+    const minAdvance = store?.minAdvanceMinutes ?? 0;
+    if (minAdvance > 0 && !forced) {
+      const earliest = new Date(Date.now() + minAdvance * 60_000);
+      if (scheduledAt < earliest) {
+        const horas = Math.round(minAdvance / 60);
+        const txt = minAdvance % 60 === 0
+          ? `${horas} hora${horas !== 1 ? 's' : ''}`
+          : `${minAdvance} minutos`;
+        throw new BadRequestException(
+          `Las citas requieren mínimo ${txt} de anticipación. Por favor elige un horario más adelante.`,
+        );
+      }
+    }
+
     return this.prisma.$transaction(async (tx) => {
       // Conflict check inside the transaction to prevent double-booking race conditions
       if (dto.staffId && !dto.skipConflictCheck) {
