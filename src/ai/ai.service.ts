@@ -85,6 +85,13 @@ const MIN_ADVANCE_RE       = /m[ií]nimo\s+(\d+)\s*(hora|horas|h\b)/i;
 // detectar en el historial que ya se envió, para no repetirlo en cada mensaje
 // (el spam del incidente del 2026-06-18).
 const FALLBACK_MARKER = 'no está disponible en este momento';
+// Ventana del dedup del respaldo. Antes se buscaba el marcador en TODO el historial
+// sin límite de tiempo → una conversación que recibió el respaldo durante un bajón de
+// rate-limit quedaba MUDA para siempre, aunque el pool se recuperara segundos después.
+// Ahora solo se silencia si el respaldo se mandó hace menos de esto; pasado el lapso la
+// IA reintenta (responde si el pool ya revivió, o re-manda el respaldo a lo sumo 1 vez
+// cada FALLBACK_DEDUP_MS).
+const FALLBACK_DEDUP_MS = 10 * 60 * 1000;
 const PRODUCT_INTENT_RE = /\b(producto|productos|comprar|compra|vende[ns]?|precio de|cu[aá]nto vale|domicilio|env[ií]o|gel|cera|shampoo|pomada|cuesta)\b/i;
 const APPT_INTENT_RE    = /\b(cita|agendar|agenda|turno|corte|barba|cejas?|hora|disponib|reservar|peluqu)\b/i;
 
@@ -1816,11 +1823,17 @@ export class AiService {
         // mandamos UN mensaje útil con los links públicos — pero solo si no lo mandamos
         // ya en esta conversación (dedup por historial), para no repetirlo en cada turno.
         this.logger.error(`[Pool] Todos los cartuchos agotados para store ${storeId} — respaldo`);
+        const dedupCutoff = Date.now() - FALLBACK_DEDUP_MS;
         const yaEnviado = (history ?? []).some(
-          (m: any) => m?.isAiResponse && typeof m.content === 'string' && m.content.includes(FALLBACK_MARKER),
+          (m: any) =>
+            m?.isAiResponse &&
+            typeof m.content === 'string' &&
+            m.content.includes(FALLBACK_MARKER) &&
+            m.createdAt != null &&
+            new Date(m.createdAt).getTime() >= dedupCutoff,
         );
         if (yaEnviado) {
-          this.logger.log(`[Pool] Respaldo ya enviado en esta conversación → silencio`);
+          this.logger.log(`[Pool] Respaldo ya enviado hace <10min → silencio`);
           return null;
         }
         const frontendUrl = (process.env.FRONTEND_URL ?? '').replace(/\/$/, '');
