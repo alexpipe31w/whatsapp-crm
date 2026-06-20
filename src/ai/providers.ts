@@ -49,8 +49,11 @@ export const PROVIDER_CONFIG: Record<AIProvider, ProviderMeta> = {
     baseURL:          'https://generativelanguage.googleapis.com/v1beta/openai/',
     whisperSupported: false,
     whisperBaseURL:   '',
-    defaultModel:     'gemini-2.0-flash',
-    defaultFastModel: 'gemini-1.5-flash',
+    // gemini-2.0-flash perdió la cuota free tier (Google devuelve 429 "limit: 0") y
+    // gemini-1.5-flash ya no existe (404). La serie 2.5 sí tiene free tier (TPM ~250k,
+    // mucho mayor que groq) — verificado 2026-06-20 por el endpoint OpenAI-compat.
+    defaultModel:     'gemini-2.5-flash',
+    defaultFastModel: 'gemini-2.5-flash-lite',
   },
 };
 
