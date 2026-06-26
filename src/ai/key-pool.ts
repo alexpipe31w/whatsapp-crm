@@ -1,4 +1,4 @@
-import { AIProvider, PROVIDER_CONFIG } from './providers';
+import { AIProvider, PROVIDER_CONFIG, normalizeCartridgeModel } from './providers';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -131,7 +131,9 @@ export function buildCartridgeList(config: {
   const primary: Cartridge = {
     provider: primaryProvider,
     apiKey:   config.apiKey,
-    model:    config.model ?? PROVIDER_CONFIG[primaryProvider]?.defaultModel ?? '',
+    // normalizeCartridgeModel remapea modelos gemini capados (2.0-flash/1.5) al vivo;
+    // cubre también cartuchos guardados antes del fix de normalización al persistir.
+    model:    normalizeCartridgeModel(primaryProvider, config.model) || PROVIDER_CONFIG[primaryProvider]?.defaultModel || '',
   };
 
   const extra: Cartridge[] = Array.isArray(config.cartridges)
@@ -140,7 +142,7 @@ export function buildCartridgeList(config: {
         .map(c => ({
           provider: c.provider as AIProvider,
           apiKey:   c.apiKey.trim(),
-          model:    c.model?.trim() || PROVIDER_CONFIG[c.provider as AIProvider]?.defaultModel || '',
+          model:    normalizeCartridgeModel(c.provider, c.model?.trim()) || PROVIDER_CONFIG[c.provider as AIProvider]?.defaultModel || '',
         }))
     : [];
 

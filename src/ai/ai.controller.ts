@@ -3,6 +3,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateAiConfigDto } from './dto/create-ai-config.dto';
 import { buildCartridgeList, Cartridge, getPoolSnapshot } from './key-pool';
+import { normalizeCartridgeModel } from './providers';
 
 // ─── Verify a single API key by hitting the provider's lightweight models endpoint ──
 
@@ -88,6 +89,21 @@ export class AiController {
   async create(@Body() dto: CreateAiConfigDto, @Request() req: any) {
     const storeId = req.user.storeId;
     const { storeId: _ignored, ...updateData } = dto as any;
+
+    // Normalizar modelo gemini al guardar: una key gemini con modelo capado
+    // (gemini-2.0-flash → 429 "limit:0", 1.5 → 404) o sin modelo se fija al default
+    // vivo (gemini-2.5-flash). Evita que cada vez que se vuelva a agregar una key
+    // gemini el pool quede inservible. Solo afecta cartuchos/primary gemini.
+    if (Array.isArray(updateData.cartridges)) {
+      updateData.cartridges = updateData.cartridges.map((c: any) => ({
+        ...c,
+        model: normalizeCartridgeModel(c.provider, c.model),
+      }));
+    }
+    if (updateData.aiProvider === 'gemini') {
+      updateData.model = normalizeCartridgeModel('gemini', updateData.model);
+    }
+
     return this.prisma.aIConfiguration.upsert({
       where: { storeId },
       update: updateData,

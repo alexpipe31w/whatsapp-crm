@@ -57,6 +57,27 @@ export const PROVIDER_CONFIG: Record<AIProvider, ProviderMeta> = {
   },
 };
 
+// Modelos gemini que Google capó (429 "limit: 0" sin free tier) o eliminó (404).
+// Cuando se guarda una key gemini con uno de estos —o sin modelo—, se normaliza al
+// default vivo (gemini-2.5-flash) para que el pool no vuelva a fallar. Ver la nota en
+// PROVIDER_CONFIG.gemini. Solo afecta a gemini; el resto de proveedores pasa intacto.
+const DEAD_GEMINI_MODEL_RE = /^gemini-(2\.0|1\.5|1\.0|pro)\b/i;
+
+/**
+ * Devuelve el modelo a persistir para un cartucho. Para gemini, garantiza un modelo
+ * con free tier vivo: si viene vacío o es uno de los modelos capados/eliminados, lo
+ * reemplaza por PROVIDER_CONFIG.gemini.defaultModel. Para los demás proveedores
+ * devuelve el modelo tal cual lo envió el usuario (sin tocarlo).
+ */
+export function normalizeCartridgeModel(provider: string, model?: string | null): string | undefined {
+  if (provider === 'gemini') {
+    const m = (model ?? '').trim();
+    if (!m || DEAD_GEMINI_MODEL_RE.test(m)) return PROVIDER_CONFIG.gemini.defaultModel;
+    return m;
+  }
+  return model ?? undefined;
+}
+
 export interface CompletionMessage {
   role: 'system' | 'user' | 'assistant';
   content: string;

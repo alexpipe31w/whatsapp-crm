@@ -1629,7 +1629,7 @@ export class AiService {
       if (shouldTryOrder) {
         const orderResult = await this.tryExtractAndCreateOrder(
           provider, apiKey, model, history, userMessage,
-          products, services, customer, storeId, conversationId, settings,
+          products, services, customer, storeId, conversationId, settings, store,
         );
         if (orderResult.created) return orderResult.message!;
         // Mismo principio que en citas: si hay un mensaje específico (ej. "ese
@@ -1885,10 +1885,14 @@ export class AiService {
     storeId: string,
     conversationId: string,
     settings: StoreSettings,
+    store: any = null,
   ): Promise<{ created: boolean; message?: string }> {
 
     const cached            = this.pendingExtractions.get(conversationId);
     let extracted: ExtractionResult;
+    // Cédula del cliente requerida para generar la guía de envío (toggle del negocio).
+    const requiresCedula = !!store?.requiresCustomerCedula;
+    const needsCedula    = requiresCedula && !customer.cedula;
 
     // Para órdenes el nombre del cliente es opcional — se usa "Cliente general" si no hay
     const needsName = !customer.name;
@@ -1957,12 +1961,19 @@ export class AiService {
         `Cliente: ${latestMessage}`,
       ].join('\n');
 
+      const cedulaInstruction = requiresCedula
+        ? (customer.cedula
+            ? `La cédula ya está registrada (${customer.cedula}).`
+            : `La cédula del cliente es OBLIGATORIA para generar la guía de envío: extráela en "customerCedula". Sin cédula NO se puede completar el pedido.`)
+        : `La cédula es opcional — extráela SOLO si el cliente la menciona explícitamente.`;
+
       const customerDataInstruction = needsName
         ? `DATOS DEL CLIENTE (OPCIONAL):
 Si el cliente mencionó su nombre en la conversación, extráelo en "customerName". Si no lo mencionó, deja null.
 El nombre NO es requisito para "complete":true — la orden se puede crear sin él.
-La cédula es opcional — extráela SOLO si el cliente la menciona explícitamente.`
-        : `DATOS DEL CLIENTE: Nombre ya registrado (${customer.name}).`;
+${cedulaInstruction}`
+        : `DATOS DEL CLIENTE: Nombre ya registrado (${customer.name}).
+${cedulaInstruction}`;
 
       const extractorPrompt = `Eres un extractor de datos de órdenes de compra. Tu única tarea es leer la conversación y extraer los datos del pedido en JSON.
 
@@ -1986,7 +1997,8 @@ REGLAS ESTRICTAS:
    a) Al menos un producto/servicio del catálogo con cantidad
    b) Dirección con calle, carrera, barrio o similar (solo ciudad NO es suficiente)
    c) Confirmación explícita del cliente (sí, confirmo, listo, dale, ok, etc.)
-   d) Si se requieren datos del cliente: nombre presente
+   d) Si se requieren datos del cliente: nombre presente${requiresCedula && !customer.cedula ? `
+   e) Cédula del cliente presente (este negocio la exige para la guía de envío)` : ''}
 2. Si falta CUALQUIER condición → "complete":false.
 3. Para productos CON variantes: variantId es OBLIGATORIO, serviceVariantId debe ser null.
 4. Para servicios CON variantes: serviceVariantId es OBLIGATORIO, variantId debe ser null.
@@ -2063,6 +2075,16 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
     if (needsCustomerData && !extracted.customerName) {
       return { created: false };
     }
+    // Guard de cédula: si el negocio la exige para la guía de envío y no la tenemos
+    // (ni registrada en el cliente ni extraída ahora), pídela en vez de crear la orden.
+    // Cubre todos los caminos (caché y extractor fresco).
+    if (needsCedula && !extracted.customerCedula && !customer.cedula) {
+      this.logger.log(`[Orden] Falta cédula (requerida) para ${conversationId} — pidiéndola`);
+      return {
+        created: false,
+        message: `Para generar tu guía de envío necesito tu número de cédula 🪪. ¿Me lo compartes, por favor?`,
+      };
+    }
     if (this.orderInProgress.has(conversationId)) {
       this.logger.warn(`[Orden] Ya en progreso para ${conversationId}`);
       return { created: false };
@@ -2081,6 +2103,13 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
           },
         });
         this.logger.log(`✅ [Orden] Cliente actualizado: ${extracted.customerName}`);
+      } else if (extracted.customerCedula && !customer.cedula) {
+        // Cliente ya tenía nombre pero faltaba la cédula y la dio ahora.
+        await this.prisma.customer.update({
+          where: { customerId: customer.customerId },
+          data:  { cedula: extracted.customerCedula },
+        });
+        this.logger.log(`✅ [Orden] Cédula registrada para ${customer.customerId}`);
       }
 
       const orderItemsData: any[]       = [];
@@ -3386,10 +3415,19 @@ REGLAS:
     }
 
     const clienteDataPendiente = !customer.name;
-    const hasPaymentMethods    = (settings.paymentMethods?.length ?? 0) > 0;
+    // Nombres de métodos: store.paymentMethods (lista simple del negocio) o, si no hay,
+    // los labels de settings.paymentMethods (lista estructurada con datos de cuenta).
+    const storePayNames        = ((store as any)?.paymentMethods as string[] | undefined)?.filter(Boolean) ?? [];
+    const settingsPayNames     = (settings.paymentMethods ?? []).map(m => m.label).filter(Boolean);
+    const paymentMethodNames   = (storePayNames.length > 0 ? storePayNames : settingsPayNames).join(', ');
+    const hasPaymentMethods    = paymentMethodNames.length > 0;
     const paymentInstruction   = hasPaymentMethods
-      ? `- NUNCA des información de pago antes de que el pedido esté confirmado. Los datos se envían automáticamente al crear el pedido.`
+      ? `- Formas de pago aceptadas: ${paymentMethodNames}. Puedes informar al cliente CUÁLES son (los nombres) cuando pregunte o al tomar el pedido.\n- NO des los números de cuenta, Nequi ni datos para transferir antes de confirmar el pedido — esos se envían automáticamente al registrarlo.`
       : `- Si el cliente pregunta por métodos de pago: "Un asesor te contactará con esa información."`;
+
+    const requiresCedula = !!(store as any)?.requiresCustomerCedula && !customer.cedula;
+    const cedulaLine = requiresCedula ? `\n  e) Número de cédula del cliente (obligatorio para la guía de envío)` : '';
+    const pedidoAsks = ['tu nombre completo', 'dirección de entrega', requiresCedula ? 'número de cédula' : null].filter(Boolean).join(', ');
 
     const flujoSection = `FLUJO DE TOMA DE ORDEN (PRODUCTOS Y SERVICIOS):
 
@@ -3397,9 +3435,9 @@ Para crear un pedido necesito:
   a) Productos o servicios con cantidad
   b) Dirección de entrega completa
   c) ${!customer.name ? 'Nombre completo del cliente' : '(nombre ya registrado)'}
-  d) Confirmación explícita
+  d) Confirmación explícita${cedulaLine}
 
-${!customer.name ? `IMPORTANTE: Cuando el cliente muestre intención de compra PIDE todo de una:\n"Para registrar tu pedido necesito tu nombre completo y dirección de entrega."` : ''}
+${requiresCedula ? `CÉDULA OBLIGATORIA: este negocio necesita el número de cédula del cliente para generar la guía de envío. Pídela junto con la dirección (no por separado) y NO confirmes el pedido sin ella.\n` : ''}${!customer.name ? `IMPORTANTE: Cuando el cliente muestre intención de compra PIDE todo de una:\n"Para registrar tu pedido necesito ${pedidoAsks}."` : (requiresCedula ? `IMPORTANTE: cuando el cliente vaya a comprar, pídele dirección de entrega y número de cédula juntos.` : '')}
 
 ANTI-LOOP:
 - Si un dato ya está en DATOS YA RECOPILADOS, NO lo vuelvas a pedir.
