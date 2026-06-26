@@ -36,6 +36,11 @@ const RECONNECT_DELAYS: Record<number, number> = {
 const DEFAULT_RECONNECT_DELAY = 3_000;
 // Código 408 = QR timeout (nadie escaneó). Tras MAX_QR_ATTEMPTS el loop se detiene.
 const MAX_QR_ATTEMPTS = 3;
+// Código 401 = loggedOut. Reintentos con los mismos creds antes de borrar la sesión:
+// un 401 transitorio se recupera; un logout real agota el presupuesto y recién ahí
+// se limpia. Evita que cerrar la app de WhatsApp un momento destruya la sesión.
+const MAX_LOGGED_OUT_RETRIES   = 2;
+const LOGGED_OUT_RETRY_DELAY_MS = 5_000;
 
 // ─── Tipos de mensajes que se ignoran silenciosamente ────────────────────────
 const IGNORED_TYPES = new Set([
@@ -334,6 +339,11 @@ export class WhatsappService implements OnModuleInit {
   private readonly qrCodes         = new Map<string, string>();
   private readonly reconnecting    = new Set<string>();
   private readonly qrAttempts      = new Map<string, number>();
+  // Reintentos ante código 401 (loggedOut) antes de declarar logout real y borrar
+  // la sesión. Un 401 transitorio (el dueño cerró un momento la app de WhatsApp,
+  // pérdida de red del teléfono) se recupera reconectando con los MISMOS creds; solo
+  // si el 401 persiste tras MAX_LOGGED_OUT_RETRIES se trata como logout definitivo.
+  private readonly loggedOutAttempts = new Map<string, number>();
   private readonly processedMsgIds  = new Set<string>();
   private readonly messageQueues    = new Map<string, Promise<void>>();
   private readonly audioRateLimiter = new Map<string, { count: number; resetAt: number }>();
@@ -474,6 +484,7 @@ export class WhatsappService implements OnModuleInit {
       this.qrCodes.delete(storeId);
       this.reconnecting.delete(storeId);
       this.qrAttempts.delete(storeId);
+      this.loggedOutAttempts.delete(storeId);
       await this.prisma.store.update({
         where: { storeId },
         data:  { waSessionId: storeId },
@@ -496,11 +507,31 @@ export class WhatsappService implements OnModuleInit {
     this.logger.warn(`Conexión cerrada para ${storeId} — código: ${statusCode}`);
 
     if (loggedOut) {
-      this.logger.warn(`Store ${storeId} hizo logout — limpiando sesión`);
+      const loAttempts = (this.loggedOutAttempts.get(storeId) ?? 0) + 1;
+
+      // Reintento tolerante: un 401 transitorio (app cerrada un momento, red caída del
+      // teléfono) se recupera reconectando con los mismos creds. NO borrar la sesión aún.
+      if (loAttempts <= MAX_LOGGED_OUT_RETRIES) {
+        this.loggedOutAttempts.set(storeId, loAttempts);
+        this.logger.warn(`Store ${storeId} recibió 401 (loggedOut) — reintento ${loAttempts}/${MAX_LOGGED_OUT_RETRIES} con los mismos creds (sin borrar sesión)`);
+        if (this.reconnecting.has(storeId)) return;
+        this.reconnecting.add(storeId);
+        setTimeout(() => {
+          this.reconnecting.delete(storeId);
+          this.connectStore(storeId).catch(err =>
+            this.logger.error(`Error reconectando ${storeId} tras 401: ${err.message}`),
+          );
+        }, LOGGED_OUT_RETRY_DELAY_MS);
+        return;
+      }
+
+      // El 401 persiste tras agotar el presupuesto → logout real, limpiar sesión.
+      this.logger.warn(`Store ${storeId} hizo logout definitivo (401 tras ${MAX_LOGGED_OUT_RETRIES} reintentos) — limpiando sesión`);
       this.sockets.delete(storeId);
       this.qrCodes.delete(storeId);
       this.reconnecting.delete(storeId);
       this.qrAttempts.delete(storeId);
+      this.loggedOutAttempts.delete(storeId);
       await Promise.allSettled([
         this.prisma.whatsappSession.deleteMany({ where: { storeId } }),
         this.prisma.store.update({ where: { storeId }, data: { waSessionId: null } }),
@@ -1191,6 +1222,8 @@ export class WhatsappService implements OnModuleInit {
     this.sockets.delete(storeId);
     this.qrCodes.delete(storeId);
     this.reconnecting.delete(storeId);
+    this.qrAttempts.delete(storeId);
+    this.loggedOutAttempts.delete(storeId);
 
     if (sock) {
       try { await sock.logout(); } catch {

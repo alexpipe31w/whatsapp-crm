@@ -2085,6 +2085,9 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
 
       const orderItemsData: any[]       = [];
       const orderItemsSummary: string[] = [];
+      // Decrementos de stock a aplicar atómicamente junto con la creación de la orden.
+      // Solo productos/variantes (los servicios no manejan stock).
+      const stockOps: { productId?: string; variantId?: string; quantity: number }[] = [];
       let total = 0;
 
       for (const item of extracted.items) {
@@ -2124,6 +2127,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
               description: item.description ?? `${product.name} - ${variant.name}`,
               quantity: item.quantity, unitPrice,
             });
+            stockOps.push({ variantId: item.variantId, quantity: item.quantity });
             orderItemsSummary.push(`• ${item.description ?? `${product.name} - ${variant.name}`} x${item.quantity} — $${subtotal.toLocaleString('es-CO')}`);
           } else {
             if (product.stock < item.quantity) { this.logger.warn(`[Orden] Stock insuficiente: ${product.name}`); continue; }
@@ -2135,6 +2139,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
               description: item.description ?? product.name,
               quantity: item.quantity, unitPrice,
             });
+            stockOps.push({ productId: item.productId, quantity: item.quantity });
             orderItemsSummary.push(`• ${item.description ?? product.name} x${item.quantity} — $${subtotal.toLocaleString('es-CO')}`);
           }
         }
@@ -2152,17 +2157,50 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
         };
       }
 
-      const order = await this.prisma.order.create({
-        data: {
-          storeId,
-          customerId:      customer.customerId,
-          status:          'pending',
-          total,
-          deliveryAddress: extracted.deliveryAddress,
-          notes: [extracted.notes ? `Notas: ${extracted.notes}` : null, 'Creado automáticamente por IA'].filter(Boolean).join(' | '),
-          orderItems: { create: orderItemsData },
-        },
-      });
+      // Transacción atómica: descontar stock (guardado con stock >= cantidad y
+      // store-scoped, igual que orders.service) y crear la orden en una sola unidad.
+      // Antes la orden se creaba sin tocar el stock → el inventario nunca bajaba con
+      // las ventas por IA. El guard gte evita sobreventa si el cache quedó desfasado.
+      let order: { orderId: string };
+      try {
+        order = await this.prisma.$transaction(async (tx) => {
+          for (const op of stockOps) {
+            if (op.variantId) {
+              const r = await tx.productVariant.updateMany({
+                where: { variantId: op.variantId, stock: { gte: op.quantity }, product: { storeId } },
+                data:  { stock: { decrement: op.quantity } },
+              });
+              if (r.count === 0) throw new Error('STOCK_OUT');
+            } else if (op.productId) {
+              const r = await tx.product.updateMany({
+                where: { productId: op.productId, stock: { gte: op.quantity }, storeId },
+                data:  { stock: { decrement: op.quantity } },
+              });
+              if (r.count === 0) throw new Error('STOCK_OUT');
+            }
+          }
+          return tx.order.create({
+            data: {
+              storeId,
+              customerId:      customer.customerId,
+              status:          'pending',
+              total,
+              deliveryAddress: extracted.deliveryAddress,
+              notes: [extracted.notes ? `Notas: ${extracted.notes}` : null, 'Creado automáticamente por IA'].filter(Boolean).join(' | '),
+              orderItems: { create: orderItemsData },
+            },
+          });
+        });
+      } catch (e: any) {
+        if (e?.message === 'STOCK_OUT') {
+          this.logger.warn(`[Orden] Stock agotado durante la confirmación — orden no creada`);
+          return {
+            created: false,
+            message: `Lo siento, uno de los productos se agotó mientras confirmabas el pedido. ¿Quieres elegir otra opción del catálogo?`,
+          };
+        }
+        throw e;
+      }
 
       await this.prisma.conversation.update({ where: { conversationId }, data: { status: 'pending_human' } });
       this.pendingExtractions.delete(conversationId);
@@ -3529,8 +3567,13 @@ ANTI-BUCLE (OBLIGATORIO):
     // El flujo de toma de pedido (dirección de entrega, envío) solo aplica si hay
     // productos que vender. Negocios solo-citas no lo necesitan → ahorra tokens.
     if (products.length > 0) allSections.push(sep, flujoSection);
+    // El flujo de agendamiento (citas/servicios, "¿qué servicio deseas?", primer
+    // mensaje de cita) solo aplica si la tienda ofrece servicios. Sin este gate, una
+    // tienda SOLO-productos saludaba con "Para agendar tu cita necesito: ¿qué servicio?"
+    // aunque no tuviera ningún servicio.
+    if (services.length > 0) allSections.push(sep, agendamientoSection);
     allSections.push(
-      sep, agendamientoSection, sep,
+      sep,
       audioSection, sep, antiBucleSection, sep, formatoSection, sep,
       `FECHA Y HORA ACTUAL: ${fechaActual}, ${horaActual} (Colombia).\n${buildCalendarioRef()}`,
     );
