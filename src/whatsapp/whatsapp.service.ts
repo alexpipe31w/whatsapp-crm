@@ -501,10 +501,20 @@ export class WhatsappService implements OnModuleInit {
     lastDisconnect: any,
     DisconnectReason: any,
   ): Promise<void> {
-    const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
+    const discError  = lastDisconnect?.error as Boom | undefined;
+    const statusCode = discError?.output?.statusCode;
     const loggedOut  = statusCode === DisconnectReason.loggedOut;
 
-    this.logger.warn(`Conexión cerrada para ${storeId} — código: ${statusCode}`);
+    // El motivo real del cierre (device_removed, conflict, replaced...) viene en el
+    // error crudo de Baileys, no en el statusCode — loguearlo para diagnóstico.
+    let discDetail = discError?.message ?? 'sin detalle';
+    try {
+      const data = (discError as any)?.data;
+      if (data) discDetail += ` | data: ${JSON.stringify(data)}`;
+      if (discError?.output?.payload) discDetail += ` | payload: ${JSON.stringify(discError.output.payload)}`;
+    } catch { /* JSON circular — dejar solo el message */ }
+
+    this.logger.warn(`Conexión cerrada para ${storeId} — código: ${statusCode} — motivo: ${discDetail}`);
 
     if (loggedOut) {
       const loAttempts = (this.loggedOutAttempts.get(storeId) ?? 0) + 1;
@@ -557,7 +567,7 @@ export class WhatsappService implements OnModuleInit {
     }
 
     this.reconnecting.add(storeId);
-    const delay = RECONNECT_DELAYS[statusCode] ?? DEFAULT_RECONNECT_DELAY;
+    const delay = RECONNECT_DELAYS[statusCode ?? -1] ?? DEFAULT_RECONNECT_DELAY;
     this.logger.log(`Reconectando ${storeId} en ${delay}ms... (intento QR: ${this.qrAttempts.get(storeId) ?? 1}/${MAX_QR_ATTEMPTS})`);
 
     setTimeout(() => {
