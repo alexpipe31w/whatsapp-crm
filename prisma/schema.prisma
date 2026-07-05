@@ -129,6 +129,8 @@ model Store {
   subscription    Subscription?
   dailyReports    DailyReport[]
   staff           Staff[]
+  stockupConnection StockupConnection?
+  syncOutbox        SyncOutbox[]
 
   @@map("stores")
 }
@@ -784,6 +786,8 @@ model StockupConnection {
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
 
+  store Store @relation(fields: [storeId], references: [storeId], onDelete: Cascade)
+
   @@map("stockup_connections")
 }
 
@@ -795,11 +799,13 @@ model SyncOutbox {
   eventId     String   @unique @map("event_id")
   type        String   @db.VarChar(40)
   payload     Json
-  status      String   @default("PENDING") @db.VarChar(10)
+  status      String   @default("PENDING") @db.VarChar(20)
   attempts    Int      @default(0)
   nextRetryAt DateTime @default(now()) @map("next_retry_at")
   occurredAt  DateTime @default(now()) @map("occurred_at")
   createdAt   DateTime @default(now()) @map("created_at")
+
+  store Store @relation(fields: [storeId], references: [storeId], onDelete: Cascade)
 
   @@index([status, nextRetryAt])
   @@map("sync_outbox")

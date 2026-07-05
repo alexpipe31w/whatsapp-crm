@@ -16,7 +16,7 @@ const STARTUP_MIGRATIONS = [
   `ALTER TABLE categories ADD COLUMN IF NOT EXISTS stockup_category_id VARCHAR(50)`,
   `CREATE TABLE IF NOT EXISTS stockup_connections (
      connection_id TEXT PRIMARY KEY,
-     store_id TEXT UNIQUE NOT NULL,
+     store_id TEXT UNIQUE NOT NULL REFERENCES stores(store_id) ON DELETE CASCADE,
      stockup_tenant_id VARCHAR(50),
      secret VARCHAR(200),
      enabled BOOLEAN NOT NULL DEFAULT false,
@@ -28,11 +28,11 @@ const STARTUP_MIGRATIONS = [
    )`,
   `CREATE TABLE IF NOT EXISTS sync_outbox (
      id TEXT PRIMARY KEY,
-     store_id TEXT NOT NULL,
+     store_id TEXT NOT NULL REFERENCES stores(store_id) ON DELETE CASCADE,
      event_id TEXT UNIQUE NOT NULL,
      type VARCHAR(40) NOT NULL,
      payload JSONB NOT NULL,
-     status VARCHAR(10) NOT NULL DEFAULT 'PENDING',
+     status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
      attempts INT NOT NULL DEFAULT 0,
      next_retry_at TIMESTAMP NOT NULL DEFAULT now(),
      occurred_at TIMESTAMP NOT NULL DEFAULT now(),
