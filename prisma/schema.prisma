@@ -220,6 +220,7 @@ model Category {
   storeId    String   @map("store_id")
   name       String   @db.VarChar(100)
   slug       String   @db.VarChar(100)
+  stockupCategoryId String? @map("stockup_category_id") @db.VarChar(50)
   createdAt  DateTime @default(now()) @map("created_at")
 
   store    Store     @relation(fields: [storeId], references: [storeId], onDelete: Cascade)
@@ -257,6 +258,7 @@ model Product {
 
   isActive  Boolean  @default(true) @map("is_active")
   version   Int      @default(0)
+  stockupProductId String? @map("stockup_product_id") @db.VarChar(50)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt     @map("updated_at")
 
@@ -292,6 +294,7 @@ model ProductVariant {
 
   isActive  Boolean  @default(true) @map("is_active")
   sortOrder Int      @default(0)    @map("sort_order")
+  stockupVariantId String? @map("stockup_variant_id") @db.VarChar(50)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt     @map("updated_at")
 
@@ -765,4 +768,48 @@ model Staff {
 
   @@index([storeId, isActive])
   @@map("staff")
+}
+
+// ─── StockupConnection ────────────────────────────────────────────────────────
+
+model StockupConnection {
+  connectionId    String    @id @default(uuid()) @map("connection_id")
+  storeId         String    @unique @map("store_id")
+  stockupTenantId String?   @map("stockup_tenant_id") @db.VarChar(50)
+  secret          String?   @db.VarChar(200)
+  enabled         Boolean   @default(false)
+  linkCode        String?   @map("link_code") @db.VarChar(20)
+  linkCodeExpiresAt DateTime? @map("link_code_expires_at")
+  lastSyncAt      DateTime? @map("last_sync_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@map("stockup_connections")
+}
+
+// ─── SyncOutbox ───────────────────────────────────────────────────────────────
+
+model SyncOutbox {
+  id          String   @id @default(uuid())
+  storeId     String   @map("store_id")
+  eventId     String   @unique @map("event_id")
+  type        String   @db.VarChar(40)
+  payload     Json
+  status      String   @default("PENDING") @db.VarChar(10)
+  attempts    Int      @default(0)
+  nextRetryAt DateTime @default(now()) @map("next_retry_at")
+  occurredAt  DateTime @default(now()) @map("occurred_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([status, nextRetryAt])
+  @@map("sync_outbox")
+}
+
+// ─── SyncInbox ────────────────────────────────────────────────────────────────
+
+model SyncInbox {
+  eventId     String   @id @map("event_id")
+  processedAt DateTime @default(now()) @map("processed_at")
+
+  @@map("sync_inbox")
 }

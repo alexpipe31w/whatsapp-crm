@@ -11,6 +11,38 @@ const STARTUP_MIGRATIONS = [
   `ALTER TABLE staff ADD COLUMN IF NOT EXISTS suspended_until TIMESTAMP`,
   `ALTER TABLE stores ADD COLUMN IF NOT EXISTS default_service_id TEXT`,
   `ALTER TABLE stores ADD COLUMN IF NOT EXISTS auto_confirm_appointments BOOLEAN NOT NULL DEFAULT true`,
+  `ALTER TABLE products ADD COLUMN IF NOT EXISTS stockup_product_id VARCHAR(50)`,
+  `ALTER TABLE product_variants ADD COLUMN IF NOT EXISTS stockup_variant_id VARCHAR(50)`,
+  `ALTER TABLE categories ADD COLUMN IF NOT EXISTS stockup_category_id VARCHAR(50)`,
+  `CREATE TABLE IF NOT EXISTS stockup_connections (
+     connection_id TEXT PRIMARY KEY,
+     store_id TEXT UNIQUE NOT NULL,
+     stockup_tenant_id VARCHAR(50),
+     secret VARCHAR(200),
+     enabled BOOLEAN NOT NULL DEFAULT false,
+     link_code VARCHAR(20),
+     link_code_expires_at TIMESTAMP,
+     last_sync_at TIMESTAMP,
+     created_at TIMESTAMP NOT NULL DEFAULT now(),
+     updated_at TIMESTAMP NOT NULL DEFAULT now()
+   )`,
+  `CREATE TABLE IF NOT EXISTS sync_outbox (
+     id TEXT PRIMARY KEY,
+     store_id TEXT NOT NULL,
+     event_id TEXT UNIQUE NOT NULL,
+     type VARCHAR(40) NOT NULL,
+     payload JSONB NOT NULL,
+     status VARCHAR(10) NOT NULL DEFAULT 'PENDING',
+     attempts INT NOT NULL DEFAULT 0,
+     next_retry_at TIMESTAMP NOT NULL DEFAULT now(),
+     occurred_at TIMESTAMP NOT NULL DEFAULT now(),
+     created_at TIMESTAMP NOT NULL DEFAULT now()
+   )`,
+  `CREATE INDEX IF NOT EXISTS sync_outbox_status_retry ON sync_outbox (status, next_retry_at)`,
+  `CREATE TABLE IF NOT EXISTS sync_inbox (
+     event_id TEXT PRIMARY KEY,
+     processed_at TIMESTAMP NOT NULL DEFAULT now()
+   )`,
 ];
 
 @Injectable()
