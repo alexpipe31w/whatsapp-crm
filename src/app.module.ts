@@ -28,6 +28,7 @@ import { ReportsModule } from './reports/reports.module';
 import { StaffModule } from './staff/staff.module';
 import { PublicModule } from './public/public.module';
 import { UploadModule } from './upload/upload.module';
+import { IntegrationsModule } from './integrations/integrations.module';
 
 @Module({
   imports: [
@@ -62,6 +63,7 @@ import { UploadModule } from './upload/upload.module';
     StaffModule,
     PublicModule,
     UploadModule,
+    IntegrationsModule,
   ],
 })
 export class AppModule {}
