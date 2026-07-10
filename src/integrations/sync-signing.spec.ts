@@ -12,7 +12,8 @@ describe('sync-signing', () => {
   it('rechaza firma alterada', () => {
     const { timestamp, signature } = signSyncRequest(secret, body);
     expect(verifySyncRequest(secret, body + 'x', timestamp, signature)).toBe(false);
-    expect(verifySyncRequest(secret, body, timestamp, signature.replace(/^./, '0'))).toBe(false);
+    const flipped = (signature[0] === '0' ? '1' : '0') + signature.slice(1);
+    expect(verifySyncRequest(secret, body, timestamp, flipped)).toBe(false);
   });
 
   it('rechaza timestamp fuera de la ventana de 5 min', () => {
