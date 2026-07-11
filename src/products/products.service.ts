@@ -1,5 +1,5 @@
 import {
-  Injectable, NotFoundException, ForbiddenException, BadRequestException,
+  Injectable, Logger, NotFoundException, ForbiddenException, BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SyncService } from '../integrations/sync.service';
@@ -28,6 +28,8 @@ const PRODUCT_INCLUDE = {
 
 @Injectable()
 export class ProductsService {
+  private readonly logger = new Logger('Products');
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly sync:   SyncService,
@@ -278,10 +280,15 @@ export class ProductsService {
     });
 
     if (!opts?.fromSync) {
-      await this.sync.emitProductDeleted(
-        this.prisma, existing.storeId, productId, (existing as any).stockupProductId ?? null,
-      );
-      this.sync.kick();
+      // El cambio YA se persistió: un fallo del enqueue no debe volverse un 500.
+      try {
+        await this.sync.emitProductDeleted(
+          this.prisma, existing.storeId, productId, existing.stockupProductId ?? null,
+        );
+        this.sync.kick();
+      } catch (e) {
+        this.logger.warn(`[sync] fallo emision product.deleted ${productId}: ${e}`);
+      }
     }
 
     return removed;
@@ -301,8 +308,13 @@ export class ProductsService {
 
     if (!opts?.fromSync) {
       // Snapshot del producto padre: ya incluye la variante recién creada.
-      await this.sync.emitProductUpserted(this.prisma, product.storeId, productId);
-      this.sync.kick();
+      // El cambio YA se persistió: un fallo del enqueue no debe volverse un 500.
+      try {
+        await this.sync.emitProductUpserted(this.prisma, product.storeId, productId);
+        this.sync.kick();
+      } catch (e) {
+        this.logger.warn(`[sync] fallo emision product.upserted ${productId}: ${e}`);
+      }
     }
 
     return created;
@@ -346,8 +358,13 @@ export class ProductsService {
     });
 
     if (!opts?.fromSync) {
-      await this.sync.emitProductUpserted(this.prisma, variant.product.storeId, variant.productId);
-      this.sync.kick();
+      // El cambio YA se persistió: un fallo del enqueue no debe volverse un 500.
+      try {
+        await this.sync.emitProductUpserted(this.prisma, variant.product.storeId, variant.productId);
+        this.sync.kick();
+      } catch (e) {
+        this.logger.warn(`[sync] fallo emision product.upserted ${variant.productId}: ${e}`);
+      }
     }
 
     return updated;
@@ -369,8 +386,13 @@ export class ProductsService {
 
     if (!opts?.fromSync) {
       // El snapshot completo del producto padre ya refleja la variante ausente/inactiva.
-      await this.sync.emitProductUpserted(this.prisma, variant.product.storeId, variant.productId);
-      this.sync.kick();
+      // El cambio YA se persistió: un fallo del enqueue no debe volverse un 500.
+      try {
+        await this.sync.emitProductUpserted(this.prisma, variant.product.storeId, variant.productId);
+        this.sync.kick();
+      } catch (e) {
+        this.logger.warn(`[sync] fallo emision product.upserted ${variant.productId}: ${e}`);
+      }
     }
 
     return removed;
@@ -404,8 +426,13 @@ export class ProductsService {
     });
 
     if (!opts?.fromSync) {
-      await this.sync.emitCategoryUpserted(this.prisma, storeId, category.categoryId);
-      this.sync.kick();
+      // El cambio YA se persistió: un fallo del enqueue no debe volverse un 500.
+      try {
+        await this.sync.emitCategoryUpserted(this.prisma, storeId, category.categoryId);
+        this.sync.kick();
+      } catch (e) {
+        this.logger.warn(`[sync] fallo emision category.upserted ${category.categoryId}: ${e}`);
+      }
     }
 
     return category;
@@ -427,10 +454,15 @@ export class ProductsService {
     const deleted = await this.prisma.category.delete({ where: { categoryId } });
 
     if (!opts?.fromSync) {
-      await this.sync.emitCategoryDeleted(
-        this.prisma, storeId, categoryId, (category as any).stockupCategoryId ?? null,
-      );
-      this.sync.kick();
+      // El cambio YA se persistió: un fallo del enqueue no debe volverse un 500.
+      try {
+        await this.sync.emitCategoryDeleted(
+          this.prisma, storeId, categoryId, category.stockupCategoryId ?? null,
+        );
+        this.sync.kick();
+      } catch (e) {
+        this.logger.warn(`[sync] fallo emision category.deleted ${categoryId}: ${e}`);
+      }
     }
 
     return deleted;

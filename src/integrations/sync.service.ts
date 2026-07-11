@@ -77,6 +77,10 @@ export class SyncService {
 
   constructor(private prisma: PrismaService) {}
 
+  // OJO: en cache-miss dentro de una $transaction esta lectura usa `this.prisma`
+  // (segunda conexión del pool, fuera de la tx). El riesgo teórico de estancamiento
+  // del pool se acepta: el cache de 60 s hace el miss raro y el volumen de tiendas
+  // conectadas a StockUp es bajo.
   async getConnection(storeId: string) {
     const hit = this.connCache.get(storeId);
     if (hit && Date.now() - hit.at < 60_000) return hit.conn;
@@ -97,6 +101,7 @@ export class SyncService {
   }
 
   async emitProductUpserted(tx: Tx, storeId: string, productId: string) {
+    if (!(await this.getConnection(storeId))) return; // no-op barato: evita el findFirst en el hot path
     const p = await tx.product.findFirst({
       where: { productId, storeId },
       include: { category: true, variants: true },
@@ -112,6 +117,7 @@ export class SyncService {
   }
 
   async emitStockChanged(tx: Tx, storeId: string, ref: { productId?: string; variantId?: string }) {
+    if (!(await this.getConnection(storeId))) return; // no-op barato: evita el findFirst en el hot path
     if (ref.variantId) {
       const v = await tx.productVariant.findFirst({
         where: { variantId: ref.variantId, product: { storeId } },
@@ -135,6 +141,7 @@ export class SyncService {
   }
 
   async emitCategoryUpserted(tx: Tx, storeId: string, categoryId: string) {
+    if (!(await this.getConnection(storeId))) return; // no-op barato: evita el findFirst en el hot path
     const c = await tx.category.findFirst({ where: { categoryId, storeId } });
     if (!c) return;
     await this.enqueue(tx, storeId, 'category.upserted', {
