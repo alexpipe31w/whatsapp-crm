@@ -6,7 +6,8 @@ import helmet from 'helmet';
 import { PrismaService } from './prisma/prisma.service';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  // rawBody: necesario para verificar firmas HMAC del sync StockUp (integrations)
+  const app = await NestFactory.create(AppModule, { rawBody: true });
 
   // Seguridad: cabeceras HTTP hardening
   app.use(helmet({
