@@ -19,6 +19,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { SyncService } from './sync.service';
 import { verifySyncRequest } from './sync-signing';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { IntegrationsRateLimitGuard } from './integrations-rate-limit.guard';
 
 @Controller('integrations/stockup')
 export class IntegrationsController {
@@ -28,7 +29,7 @@ export class IntegrationsController {
   @UseGuards(JwtAuthGuard)
   @Post('link-code')
   async generateLinkCode(@Request() req: any) {
-    const storeId = req.user.storeId;
+    const storeId = this.requireStoreId(req);
     const code = randomBytes(4).toString('hex').toUpperCase(); // 8 chars
     await this.prisma.stockupConnection.upsert({
       where: { storeId },
@@ -41,8 +42,9 @@ export class IntegrationsController {
   @UseGuards(JwtAuthGuard)
   @Get('connection')
   async getConnectionStatus(@Request() req: any) {
+    const storeId = this.requireStoreId(req);
     const conn = await this.prisma.stockupConnection.findUnique({
-      where: { storeId: req.user.storeId },
+      where: { storeId },
     });
     return {
       connected: !!conn?.enabled,
@@ -54,24 +56,33 @@ export class IntegrationsController {
   @UseGuards(JwtAuthGuard)
   @Delete('connection')
   async disconnect(@Request() req: any) {
+    const storeId = this.requireStoreId(req);
     // purga outbox pendiente para no dejar filas que ahoguen el batch global del dispatcher
     await this.prisma.syncOutbox.deleteMany({
-      where: { storeId: req.user.storeId, status: 'PENDING' },
+      where: { storeId, status: 'PENDING' },
     });
-    await this.prisma.stockupConnection.deleteMany({ where: { storeId: req.user.storeId } });
-    this.sync.invalidateCache(req.user.storeId);
+    await this.prisma.stockupConnection.deleteMany({ where: { storeId } });
+    this.sync.invalidateCache(storeId);
     return { ok: true };
   }
 
   // ── Pairing (lo llama StockUp con el código; público) ───────────────────
+  @UseGuards(IntegrationsRateLimitGuard)
   @Post('link')
   @HttpCode(200)
   async link(@Body() body: { code: string; stockupTenantId: string }) {
     if (!body?.code || !body?.stockupTenantId) {
       throw new HttpException('code y stockupTenantId requeridos', HttpStatus.BAD_REQUEST);
     }
+    if (typeof body.stockupTenantId !== 'string' || body.stockupTenantId.length > 50) {
+      throw new HttpException('stockupTenantId invalido', HttpStatus.BAD_REQUEST);
+    }
+    const code = typeof body.code === 'string' ? body.code.trim().toUpperCase() : '';
+    if (!code) {
+      throw new HttpException('code y stockupTenantId requeridos', HttpStatus.BAD_REQUEST);
+    }
     const conn = await this.prisma.stockupConnection.findFirst({
-      where: { linkCode: body.code, linkCodeExpiresAt: { gte: new Date() } },
+      where: { linkCode: code, linkCodeExpiresAt: { gte: new Date() } },
     });
     if (!conn) throw new HttpException('Codigo invalido o vencido', HttpStatus.UNAUTHORIZED);
     const secret = randomBytes(32).toString('hex');
@@ -98,7 +109,7 @@ export class IntegrationsController {
     @Headers('x-sync-signature') sig: string,
     @Body() envelope: any,
   ) {
-    const rawBody: string = req.rawBody?.toString('utf8') ?? JSON.stringify(envelope);
+    const rawBody = this.requireRawBody(req);
     const match = await this.findSignedConnection(rawBody, ts, sig);
     if (!match) throw new HttpException('Firma invalida', HttpStatus.UNAUTHORIZED);
 
@@ -114,9 +125,8 @@ export class IntegrationsController {
     @Req() req: RawBodyRequest<any>,
     @Headers('x-sync-timestamp') ts: string,
     @Headers('x-sync-signature') sig: string,
-    @Body() body: any,
   ) {
-    const rawBody: string = req.rawBody?.toString('utf8') ?? JSON.stringify(body);
+    const rawBody = this.requireRawBody(req);
     const match = await this.findSignedConnection(rawBody, ts, sig);
     if (!match) throw new HttpException('Firma invalida', HttpStatus.UNAUTHORIZED);
 
@@ -150,6 +160,28 @@ export class IntegrationsController {
         name: c.name,
       })),
     };
+  }
+
+  // storeId puede ser null en el JWT (jwt.strategy.ts); sin él estos endpoints
+  // no tienen sentido y Prisma reventaría con 500 — mejor un 400 explícito.
+  private requireStoreId(req: any): string {
+    const storeId = req.user?.storeId;
+    if (!storeId) {
+      throw new HttpException('El usuario no tiene tienda asociada', HttpStatus.BAD_REQUEST);
+    }
+    return storeId;
+  }
+
+  // La verificación HMAC exige los bytes crudos; si faltan es un error de
+  // configuración del server, no una firma inválida del cliente.
+  private requireRawBody(req: RawBodyRequest<any>): string {
+    if (!req.rawBody) {
+      throw new HttpException(
+        'rawBody no disponible — revisar rawBody:true en main.ts',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+    return req.rawBody.toString('utf8');
   }
 
   // Resolución de conexión por firma: hay 1 conexión por store y el volumen de
