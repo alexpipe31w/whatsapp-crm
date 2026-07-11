@@ -2,6 +2,7 @@ import {
   Injectable, NotFoundException, BadRequestException, ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { SyncService } from '../integrations/sync.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 
@@ -19,7 +20,10 @@ const VALID_ORDER_STATUSES = new Set(Object.keys(VALID_TRANSITIONS));
 
 @Injectable()
 export class OrdersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private sync:   SyncService,
+  ) {}
 
   async create(dto: CreateOrderDto) {
     if (!dto.items || dto.items.length === 0)
@@ -80,6 +84,7 @@ export class OrdersService {
               `Stock insuficiente para la variante (disponible: ${variant.stock})`,
             );
           }
+          await this.sync.emitStockChanged(tx, dto.storeId!, { variantId: item.variantId });
         } else if (item.productId) {
           const result = await tx.product.updateMany({
             where: { productId: item.productId, stock: { gte: item.quantity }, storeId: dto.storeId },
@@ -94,6 +99,7 @@ export class OrdersService {
               `Stock insuficiente para "${product.name}" (disponible: ${product.stock})`,
             );
           }
+          await this.sync.emitStockChanged(tx, dto.storeId!, { productId: item.productId });
         }
 
         if (item.serviceId) {
@@ -143,6 +149,7 @@ export class OrdersService {
       return created;
     });
 
+    this.sync.kick();
     return order;
   }
 

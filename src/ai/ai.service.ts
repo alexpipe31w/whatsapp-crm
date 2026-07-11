@@ -6,6 +6,7 @@ import {
   markExhausted, isRateLimitError, getPoolStatus, Cartridge,
 } from './key-pool';
 import { PrismaService } from '../prisma/prisma.service';
+import { SyncService } from '../integrations/sync.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { formatBusinessHoursForAI } from '../utils/business-hours.util';
 
@@ -727,6 +728,7 @@ export class AiService {
   constructor(
     private readonly prisma:        PrismaService,
     private readonly notifications: NotificationsService,
+    private readonly sync:          SyncService,
   ) {}
 
   // ─── Recordatorio de confirmación de cita ────────────────────────────────────
@@ -2200,12 +2202,14 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
                 data:  { stock: { decrement: op.quantity } },
               });
               if (r.count === 0) throw new Error('STOCK_OUT');
+              await this.sync.emitStockChanged(tx, storeId, { variantId: op.variantId });
             } else if (op.productId) {
               const r = await tx.product.updateMany({
                 where: { productId: op.productId, stock: { gte: op.quantity }, storeId },
                 data:  { stock: { decrement: op.quantity } },
               });
               if (r.count === 0) throw new Error('STOCK_OUT');
+              await this.sync.emitStockChanged(tx, storeId, { productId: op.productId });
             }
           }
           return tx.order.create({
@@ -2230,6 +2234,8 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
         }
         throw e;
       }
+
+      this.sync.kick();
 
       await this.prisma.conversation.update({ where: { conversationId }, data: { status: 'pending_human' } });
       this.pendingExtractions.delete(conversationId);

@@ -2,8 +2,13 @@ import {
   Injectable, NotFoundException, ForbiddenException, BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { SyncService } from '../integrations/sync.service';
 import { CreateProductDto, CreateVariantInlineDto } from './dto/create-product.dto';
 import { UpdateProductDto, UpdateVariantInlineDto } from './dto/update-product.dto';
+
+// Opciones internas para llamadas que aplican eventos remotos del sync
+// StockUp↔CRM: evitan re-emitir el mismo cambio de vuelta (eco).
+type MutationOpts = { fromSync?: boolean };
 
 // ─── Selector reutilizable ────────────────────────────────────────────────────
 
@@ -23,7 +28,10 @@ const PRODUCT_INCLUDE = {
 
 @Injectable()
 export class ProductsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly sync:   SyncService,
+  ) {}
 
   // ─── Helpers privados ─────────────────────────────────────────────────────
 
@@ -77,7 +85,7 @@ export class ProductsService {
 
   // ─── Crear ────────────────────────────────────────────────────────────────
 
-  async create(dto: CreateProductDto) {
+  async create(dto: CreateProductDto, opts?: MutationOpts) {
     const profitMargin = this.calcProfitMargin(dto.salePrice, dto.costPrice);
 
     // Si viene con variantes, el stock del producto padre = suma de variantes
@@ -85,7 +93,7 @@ export class ProductsService {
       ? dto.variants.reduce((sum, v) => sum + (v.stock ?? 0), 0)
       : (dto.stock ?? 0);
 
-    return this.prisma.$transaction(async (tx) => {
+    const created = await this.prisma.$transaction(async (tx) => {
       const product = await tx.product.create({
         data: {
           storeId:         dto.storeId!,
@@ -114,12 +122,19 @@ export class ProductsService {
         });
       }
 
+      if (!opts?.fromSync) {
+        await this.sync.emitProductUpserted(tx, dto.storeId!, product.productId);
+      }
+
       // Retornar con variantes incluidas
       return tx.product.findUnique({
         where: { productId: product.productId },
         include: PRODUCT_INCLUDE,
       });
     });
+
+    if (!opts?.fromSync) this.sync.kick();
+    return created;
   }
 
   // ─── Listar por tienda ────────────────────────────────────────────────────
@@ -151,14 +166,14 @@ export class ProductsService {
 
   // ─── Actualizar ───────────────────────────────────────────────────────────
 
-  async update(productId: string, dto: UpdateProductDto, storeId?: string) {
+  async update(productId: string, dto: UpdateProductDto, storeId?: string, opts?: MutationOpts) {
     await this.findAndVerify(productId, storeId);
 
     const profitMargin = dto.salePrice !== undefined
       ? this.calcProfitMargin(dto.salePrice, dto.costPrice)
       : undefined;
 
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       // Actualizar producto
       const updated = await tx.product.update({
         where: { productId },
@@ -200,11 +215,18 @@ export class ProductsService {
         });
       }
 
+      if (!opts?.fromSync) {
+        await this.sync.emitProductUpserted(tx, updated.storeId, productId);
+      }
+
       return tx.product.findUnique({
         where:   { productId },
         include: PRODUCT_INCLUDE,
       });
     });
+
+    if (!opts?.fromSync) this.sync.kick();
+    return result;
   }
 
   /**
@@ -248,12 +270,21 @@ export class ProductsService {
 
   // ─── Eliminar (soft delete) ───────────────────────────────────────────────
 
-  async remove(productId: string, storeId?: string) {
-    await this.findAndVerify(productId, storeId);
-    return this.prisma.product.update({
+  async remove(productId: string, storeId?: string, opts?: MutationOpts) {
+    const existing = await this.findAndVerify(productId, storeId);
+    const removed = await this.prisma.product.update({
       where: { productId },
       data:  { isActive: false },
     });
+
+    if (!opts?.fromSync) {
+      await this.sync.emitProductDeleted(
+        this.prisma, existing.storeId, productId, (existing as any).stockupProductId ?? null,
+      );
+      this.sync.kick();
+    }
+
+    return removed;
   }
 
   // ─── Variantes individuales ───────────────────────────────────────────────
@@ -272,6 +303,7 @@ export class ProductsService {
     variantId: string,
     data: UpdateVariantInlineDto,
     storeId?: string,
+    opts?: MutationOpts,
   ) {
     const variant = await this.prisma.productVariant.findUnique({
       where:   { variantId },
@@ -287,7 +319,7 @@ export class ProductsService {
       ? this.calcProfitMargin(salePrice, costPrice)
       : null;
 
-    return this.prisma.productVariant.update({
+    const updated = await this.prisma.productVariant.update({
       where: { variantId },
       data: {
         ...(data.name       !== undefined && { name:       data.name }),
@@ -303,9 +335,16 @@ export class ProductsService {
         ...(data.isActive   !== undefined && { isActive:   data.isActive }),
       },
     });
+
+    if (!opts?.fromSync) {
+      await this.sync.emitProductUpserted(this.prisma, variant.product.storeId, variant.productId);
+      this.sync.kick();
+    }
+
+    return updated;
   }
 
-  async removeVariant(variantId: string, storeId?: string) {
+  async removeVariant(variantId: string, storeId?: string, opts?: MutationOpts) {
     const variant = await this.prisma.productVariant.findUnique({
       where:   { variantId },
       include: { product: true },
@@ -314,10 +353,18 @@ export class ProductsService {
     if (storeId && variant.product.storeId !== storeId)
       throw new ForbiddenException('No tienes acceso a esta variante');
 
-    return this.prisma.productVariant.update({
+    const removed = await this.prisma.productVariant.update({
       where: { variantId },
       data:  { isActive: false },
     });
+
+    if (!opts?.fromSync) {
+      // El snapshot completo del producto padre ya refleja la variante ausente/inactiva.
+      await this.sync.emitProductUpserted(this.prisma, variant.product.storeId, variant.productId);
+      this.sync.kick();
+    }
+
+    return removed;
   }
 
   // ─── Categorías ───────────────────────────────────────────────────────────
@@ -329,7 +376,7 @@ export class ProductsService {
     });
   }
 
-  async createCategory(storeId: string, name: string) {
+  async createCategory(storeId: string, name: string, opts?: MutationOpts) {
     const slug = name
       .toLowerCase()
       .normalize('NFD')
@@ -343,12 +390,19 @@ export class ProductsService {
     });
     if (existing) throw new BadRequestException(`Ya existe una categoría con el nombre "${name}"`);
 
-    return this.prisma.category.create({
+    const category = await this.prisma.category.create({
       data: { storeId, name, slug },
     });
+
+    if (!opts?.fromSync) {
+      await this.sync.emitCategoryUpserted(this.prisma, storeId, category.categoryId);
+      this.sync.kick();
+    }
+
+    return category;
   }
 
-  async removeCategory(categoryId: string, storeId: string) {
+  async removeCategory(categoryId: string, storeId: string, opts?: MutationOpts) {
     const category = await this.prisma.category.findUnique({
       where: { categoryId },
     });
@@ -361,7 +415,16 @@ export class ProductsService {
       data:  { categoryId: null },
     });
 
-    return this.prisma.category.delete({ where: { categoryId } });
+    const deleted = await this.prisma.category.delete({ where: { categoryId } });
+
+    if (!opts?.fromSync) {
+      await this.sync.emitCategoryDeleted(
+        this.prisma, storeId, categoryId, (category as any).stockupCategoryId ?? null,
+      );
+      this.sync.kick();
+    }
+
+    return deleted;
   }
 
   // ─── Resumen para la IA ───────────────────────────────────────────────────
