@@ -293,10 +293,19 @@ export class ProductsService {
     productId: string,
     data: CreateVariantInlineDto,
     storeId?: string,
+    opts?: MutationOpts,
   ) {
-    await this.findAndVerify(productId, storeId);
+    const product = await this.findAndVerify(productId, storeId);
     const variantData = this.buildVariantData(data, productId);
-    return this.prisma.productVariant.create({ data: variantData });
+    const created = await this.prisma.productVariant.create({ data: variantData });
+
+    if (!opts?.fromSync) {
+      // Snapshot del producto padre: ya incluye la variante recién creada.
+      await this.sync.emitProductUpserted(this.prisma, product.storeId, productId);
+      this.sync.kick();
+    }
+
+    return created;
   }
 
   async updateVariant(
