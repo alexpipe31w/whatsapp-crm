@@ -172,6 +172,24 @@ export class SyncService {
     const occurredAt = new Date(envelope.occurredAt);
     const mapped: any = {};
 
+    // Si la aplicación falla, liberamos el eventId del inbox para que el
+    // reintento del emisor NO se cortocircuite como "ya procesado".
+    try {
+      return await this.applyEvent(storeId, envelope, occurredAt, mapped);
+    } catch (e) {
+      await this.prisma.syncInbox
+        .delete({ where: { eventId: envelope.eventId } })
+        .catch(() => {});
+      throw e;
+    }
+  }
+
+  private async applyEvent(
+    storeId: string,
+    envelope: any,
+    occurredAt: Date,
+    mapped: any,
+  ): Promise<{ ok: boolean; mapped?: any; skipped?: boolean }> {
     switch (envelope.type) {
       case 'category.upserted': {
         const w = envelope.payload.category;
@@ -208,14 +226,26 @@ export class SyncService {
           categoryId = cat.categoryId;
         }
         const data = { ...wireToProductData(w), categoryId };
-        const existing = await this.prisma.product.findFirst({
+        let existing = await this.prisma.product.findFirst({
           where: { storeId, stockupProductId: w.sourceId },
         });
+        let adopted = false;
+        if (!existing && w.sku) {
+          // Adopción por SKU: sku es unique [storeId, sku] — si ya existe un
+          // producto CRM sin mapear con ese sku, lo vinculamos en vez de
+          // reventar con P2002 al crear (escenario onboarding Vida Verde).
+          existing = await this.prisma.product.findFirst({
+            where: { storeId, sku: w.sku, stockupProductId: null },
+          });
+          adopted = !!existing;
+        }
         let productId: string;
         if (existing) {
           if (existing.updatedAt > occurredAt) return { ok: true, skipped: true }; // evento viejo
           await this.prisma.product.update({ where: { productId: existing.productId }, data });
           productId = existing.productId;
+          // adoptado: StockUp debe aprender el mapeo hacia este producto CRM
+          if (adopted) mapped.productId = existing.productId;
         } else {
           const p = await this.prisma.product.create({ data: { ...data, storeId } });
           productId = p.productId;
@@ -289,19 +319,35 @@ export class SyncService {
   }
 
   // ── DISPATCHER ───────────────────────────────────────────────────────────
+  private dispatching = false;
+
   @Interval(30_000)
   async dispatchPending() {
-    const events = await this.prisma.syncOutbox.findMany({
-      where: { status: 'PENDING', nextRetryAt: { lte: new Date() } },
-      orderBy: { createdAt: 'asc' },
-      take: 50,
-    });
-    for (const ev of events) await this.dispatchOne(ev);
+    if (this.dispatching) return; // evita corridas solapadas del interval
+    this.dispatching = true;
+    try {
+      const events = await this.prisma.syncOutbox.findMany({
+        where: { status: 'PENDING', nextRetryAt: { lte: new Date() } },
+        orderBy: { createdAt: 'asc' },
+        take: 50,
+      });
+      for (const ev of events) await this.dispatchOne(ev);
+    } finally {
+      this.dispatching = false;
+    }
   }
 
   async dispatchOne(ev: any) {
     const conn = await this.prisma.stockupConnection.findUnique({ where: { storeId: ev.storeId } });
-    if (!conn?.enabled || !conn.secret) return;
+    if (!conn?.enabled || !conn.secret) {
+      // conexión muerta/deshabilitada: no dejar filas PENDING huérfanas
+      // acaparando el batch global para siempre
+      await this.prisma.syncOutbox.update({
+        where: { id: ev.id },
+        data: { status: 'FAILED' },
+      });
+      return;
+    }
     const base = process.env.STOCKUP_BASE_URL || 'https://stock-up-ashy.vercel.app';
     const body = JSON.stringify({
       eventId: ev.eventId, type: ev.type,
@@ -318,6 +364,7 @@ export class SyncService {
           'x-sync-signature': signature,
         },
         body,
+        signal: AbortSignal.timeout(10_000),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
@@ -358,7 +405,7 @@ export class SyncService {
     if (mapped.variantIds) {
       for (const [srcId, remoteId] of Object.entries(mapped.variantIds)) {
         await this.prisma.productVariant.updateMany({
-          where: { variantId: srcId },
+          where: { variantId: srcId, product: { storeId: ev.storeId } },
           data: { stockupVariantId: remoteId as string },
         });
       }
