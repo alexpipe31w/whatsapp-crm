@@ -73,7 +73,10 @@ export const ModelName = {
   SubscriptionConfig: 'SubscriptionConfig',
   Subscription: 'Subscription',
   SubscriptionPayment: 'SubscriptionPayment',
-  Staff: 'Staff'
+  Staff: 'Staff',
+  StockupConnection: 'StockupConnection',
+  SyncOutbox: 'SyncOutbox',
+  SyncInbox: 'SyncInbox'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -125,6 +128,7 @@ export const StoreScalarFieldEnum = {
   slug: 'slug',
   defaultServiceId: 'defaultServiceId',
   isActive: 'isActive',
+  autoConfirmAppointments: 'autoConfirmAppointments',
   primaryColor: 'primaryColor',
   secondaryColor: 'secondaryColor',
   accentColor: 'accentColor',
@@ -191,6 +195,7 @@ export const CategoryScalarFieldEnum = {
   storeId: 'storeId',
   name: 'name',
   slug: 'slug',
+  stockupCategoryId: 'stockupCategoryId',
   createdAt: 'createdAt'
 } as const
 
@@ -217,6 +222,8 @@ export const ProductScalarFieldEnum = {
   shippingExpress: 'shippingExpress',
   isActive: 'isActive',
   version: 'version',
+  stockupProductId: 'stockupProductId',
+  stockupSyncedAt: 'stockupSyncedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -238,6 +245,8 @@ export const ProductVariantScalarFieldEnum = {
   weight: 'weight',
   isActive: 'isActive',
   sortOrder: 'sortOrder',
+  stockupVariantId: 'stockupVariantId',
+  stockupSyncedAt: 'stockupSyncedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -542,6 +551,46 @@ export const StaffScalarFieldEnum = {
 } as const
 
 export type StaffScalarFieldEnum = (typeof StaffScalarFieldEnum)[keyof typeof StaffScalarFieldEnum]
+
+
+export const StockupConnectionScalarFieldEnum = {
+  connectionId: 'connectionId',
+  storeId: 'storeId',
+  stockupTenantId: 'stockupTenantId',
+  secret: 'secret',
+  enabled: 'enabled',
+  linkCode: 'linkCode',
+  linkCodeExpiresAt: 'linkCodeExpiresAt',
+  lastSyncAt: 'lastSyncAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type StockupConnectionScalarFieldEnum = (typeof StockupConnectionScalarFieldEnum)[keyof typeof StockupConnectionScalarFieldEnum]
+
+
+export const SyncOutboxScalarFieldEnum = {
+  id: 'id',
+  storeId: 'storeId',
+  eventId: 'eventId',
+  type: 'type',
+  payload: 'payload',
+  status: 'status',
+  attempts: 'attempts',
+  nextRetryAt: 'nextRetryAt',
+  occurredAt: 'occurredAt',
+  createdAt: 'createdAt'
+} as const
+
+export type SyncOutboxScalarFieldEnum = (typeof SyncOutboxScalarFieldEnum)[keyof typeof SyncOutboxScalarFieldEnum]
+
+
+export const SyncInboxScalarFieldEnum = {
+  eventId: 'eventId',
+  processedAt: 'processedAt'
+} as const
+
+export type SyncInboxScalarFieldEnum = (typeof SyncInboxScalarFieldEnum)[keyof typeof SyncInboxScalarFieldEnum]
 
 
 export const SortOrder = {

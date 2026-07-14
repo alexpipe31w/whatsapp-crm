@@ -260,7 +260,8 @@ model Product {
 
   isActive  Boolean  @default(true) @map("is_active")
   version   Int      @default(0)
-  stockupProductId String? @map("stockup_product_id") @db.VarChar(50)
+  stockupProductId String?   @map("stockup_product_id") @db.VarChar(50)
+  stockupSyncedAt  DateTime? @map("stockup_synced_at") // occurredAt del último evento StockUp aplicado (orden evento-contra-evento, no updatedAt)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt     @map("updated_at")
 
@@ -296,7 +297,8 @@ model ProductVariant {
 
   isActive  Boolean  @default(true) @map("is_active")
   sortOrder Int      @default(0)    @map("sort_order")
-  stockupVariantId String? @map("stockup_variant_id") @db.VarChar(50)
+  stockupVariantId String?   @map("stockup_variant_id") @db.VarChar(50)
+  stockupSyncedAt  DateTime? @map("stockup_synced_at") // occurredAt del último evento StockUp aplicado (orden evento-contra-evento, no updatedAt)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt     @map("updated_at")
 

@@ -65,6 +65,7 @@ export type StoreMinAggregateOutputType = {
   slug: string | null
   defaultServiceId: string | null
   isActive: boolean | null
+  autoConfirmAppointments: boolean | null
   primaryColor: string | null
   secondaryColor: string | null
   accentColor: string | null
@@ -106,6 +107,7 @@ export type StoreMaxAggregateOutputType = {
   slug: string | null
   defaultServiceId: string | null
   isActive: boolean | null
+  autoConfirmAppointments: boolean | null
   primaryColor: string | null
   secondaryColor: string | null
   accentColor: string | null
@@ -149,6 +151,7 @@ export type StoreCountAggregateOutputType = {
   slug: number
   defaultServiceId: number
   isActive: number
+  autoConfirmAppointments: number
   primaryColor: number
   secondaryColor: number
   accentColor: number
@@ -200,6 +203,7 @@ export type StoreMinAggregateInputType = {
   slug?: true
   defaultServiceId?: true
   isActive?: true
+  autoConfirmAppointments?: true
   primaryColor?: true
   secondaryColor?: true
   accentColor?: true
@@ -241,6 +245,7 @@ export type StoreMaxAggregateInputType = {
   slug?: true
   defaultServiceId?: true
   isActive?: true
+  autoConfirmAppointments?: true
   primaryColor?: true
   secondaryColor?: true
   accentColor?: true
@@ -284,6 +289,7 @@ export type StoreCountAggregateInputType = {
   slug?: true
   defaultServiceId?: true
   isActive?: true
+  autoConfirmAppointments?: true
   primaryColor?: true
   secondaryColor?: true
   accentColor?: true
@@ -414,6 +420,7 @@ export type StoreGroupByOutputType = {
   slug: string | null
   defaultServiceId: string | null
   isActive: boolean
+  autoConfirmAppointments: boolean
   primaryColor: string | null
   secondaryColor: string | null
   accentColor: string | null
@@ -480,6 +487,7 @@ export type StoreWhereInput = {
   slug?: Prisma.StringNullableFilter<"Store"> | string | null
   defaultServiceId?: Prisma.StringNullableFilter<"Store"> | string | null
   isActive?: Prisma.BoolFilter<"Store"> | boolean
+  autoConfirmAppointments?: Prisma.BoolFilter<"Store"> | boolean
   primaryColor?: Prisma.StringNullableFilter<"Store"> | string | null
   secondaryColor?: Prisma.StringNullableFilter<"Store"> | string | null
   accentColor?: Prisma.StringNullableFilter<"Store"> | string | null
@@ -504,6 +512,8 @@ export type StoreWhereInput = {
   subscription?: Prisma.XOR<Prisma.SubscriptionNullableScalarRelationFilter, Prisma.SubscriptionWhereInput> | null
   dailyReports?: Prisma.DailyReportListRelationFilter
   staff?: Prisma.StaffListRelationFilter
+  stockupConnection?: Prisma.XOR<Prisma.StockupConnectionNullableScalarRelationFilter, Prisma.StockupConnectionWhereInput> | null
+  syncOutbox?: Prisma.SyncOutboxListRelationFilter
 }
 
 export type StoreOrderByWithRelationInput = {
@@ -539,6 +549,7 @@ export type StoreOrderByWithRelationInput = {
   slug?: Prisma.SortOrderInput | Prisma.SortOrder
   defaultServiceId?: Prisma.SortOrderInput | Prisma.SortOrder
   isActive?: Prisma.SortOrder
+  autoConfirmAppointments?: Prisma.SortOrder
   primaryColor?: Prisma.SortOrderInput | Prisma.SortOrder
   secondaryColor?: Prisma.SortOrderInput | Prisma.SortOrder
   accentColor?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -563,6 +574,8 @@ export type StoreOrderByWithRelationInput = {
   subscription?: Prisma.SubscriptionOrderByWithRelationInput
   dailyReports?: Prisma.DailyReportOrderByRelationAggregateInput
   staff?: Prisma.StaffOrderByRelationAggregateInput
+  stockupConnection?: Prisma.StockupConnectionOrderByWithRelationInput
+  syncOutbox?: Prisma.SyncOutboxOrderByRelationAggregateInput
 }
 
 export type StoreWhereUniqueInput = Prisma.AtLeast<{
@@ -601,6 +614,7 @@ export type StoreWhereUniqueInput = Prisma.AtLeast<{
   staffLabel?: Prisma.StringNullableFilter<"Store"> | string | null
   defaultServiceId?: Prisma.StringNullableFilter<"Store"> | string | null
   isActive?: Prisma.BoolFilter<"Store"> | boolean
+  autoConfirmAppointments?: Prisma.BoolFilter<"Store"> | boolean
   primaryColor?: Prisma.StringNullableFilter<"Store"> | string | null
   secondaryColor?: Prisma.StringNullableFilter<"Store"> | string | null
   accentColor?: Prisma.StringNullableFilter<"Store"> | string | null
@@ -625,6 +639,8 @@ export type StoreWhereUniqueInput = Prisma.AtLeast<{
   subscription?: Prisma.XOR<Prisma.SubscriptionNullableScalarRelationFilter, Prisma.SubscriptionWhereInput> | null
   dailyReports?: Prisma.DailyReportListRelationFilter
   staff?: Prisma.StaffListRelationFilter
+  stockupConnection?: Prisma.XOR<Prisma.StockupConnectionNullableScalarRelationFilter, Prisma.StockupConnectionWhereInput> | null
+  syncOutbox?: Prisma.SyncOutboxListRelationFilter
 }, "storeId" | "phone" | "waSessionId" | "slug">
 
 export type StoreOrderByWithAggregationInput = {
@@ -660,6 +676,7 @@ export type StoreOrderByWithAggregationInput = {
   slug?: Prisma.SortOrderInput | Prisma.SortOrder
   defaultServiceId?: Prisma.SortOrderInput | Prisma.SortOrder
   isActive?: Prisma.SortOrder
+  autoConfirmAppointments?: Prisma.SortOrder
   primaryColor?: Prisma.SortOrderInput | Prisma.SortOrder
   secondaryColor?: Prisma.SortOrderInput | Prisma.SortOrder
   accentColor?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -711,6 +728,7 @@ export type StoreScalarWhereWithAggregatesInput = {
   slug?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
   defaultServiceId?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
   isActive?: Prisma.BoolWithAggregatesFilter<"Store"> | boolean
+  autoConfirmAppointments?: Prisma.BoolWithAggregatesFilter<"Store"> | boolean
   primaryColor?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
   secondaryColor?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
   accentColor?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
@@ -754,6 +772,7 @@ export type StoreCreateInput = {
   slug?: string | null
   defaultServiceId?: string | null
   isActive?: boolean
+  autoConfirmAppointments?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
@@ -778,6 +797,8 @@ export type StoreCreateInput = {
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
   staff?: Prisma.StaffCreateNestedManyWithoutStoreInput
+  stockupConnection?: Prisma.StockupConnectionCreateNestedOneWithoutStoreInput
+  syncOutbox?: Prisma.SyncOutboxCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateInput = {
@@ -813,6 +834,7 @@ export type StoreUncheckedCreateInput = {
   slug?: string | null
   defaultServiceId?: string | null
   isActive?: boolean
+  autoConfirmAppointments?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
@@ -837,6 +859,8 @@ export type StoreUncheckedCreateInput = {
   subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
   staff?: Prisma.StaffUncheckedCreateNestedManyWithoutStoreInput
+  stockupConnection?: Prisma.StockupConnectionUncheckedCreateNestedOneWithoutStoreInput
+  syncOutbox?: Prisma.SyncOutboxUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUpdateInput = {
@@ -872,6 +896,7 @@ export type StoreUpdateInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoConfirmAppointments?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -896,6 +921,8 @@ export type StoreUpdateInput = {
   subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
   staff?: Prisma.StaffUpdateManyWithoutStoreNestedInput
+  stockupConnection?: Prisma.StockupConnectionUpdateOneWithoutStoreNestedInput
+  syncOutbox?: Prisma.SyncOutboxUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateInput = {
@@ -931,6 +958,7 @@ export type StoreUncheckedUpdateInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoConfirmAppointments?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -955,6 +983,8 @@ export type StoreUncheckedUpdateInput = {
   subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
   staff?: Prisma.StaffUncheckedUpdateManyWithoutStoreNestedInput
+  stockupConnection?: Prisma.StockupConnectionUncheckedUpdateOneWithoutStoreNestedInput
+  syncOutbox?: Prisma.SyncOutboxUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateManyInput = {
@@ -990,6 +1020,7 @@ export type StoreCreateManyInput = {
   slug?: string | null
   defaultServiceId?: string | null
   isActive?: boolean
+  autoConfirmAppointments?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
@@ -1033,6 +1064,7 @@ export type StoreUpdateManyMutationInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoConfirmAppointments?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1076,6 +1108,7 @@ export type StoreUncheckedUpdateManyInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoConfirmAppointments?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1127,6 +1160,7 @@ export type StoreCountOrderByAggregateInput = {
   slug?: Prisma.SortOrder
   defaultServiceId?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
+  autoConfirmAppointments?: Prisma.SortOrder
   primaryColor?: Prisma.SortOrder
   secondaryColor?: Prisma.SortOrder
   accentColor?: Prisma.SortOrder
@@ -1172,6 +1206,7 @@ export type StoreMaxOrderByAggregateInput = {
   slug?: Prisma.SortOrder
   defaultServiceId?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
+  autoConfirmAppointments?: Prisma.SortOrder
   primaryColor?: Prisma.SortOrder
   secondaryColor?: Prisma.SortOrder
   accentColor?: Prisma.SortOrder
@@ -1213,6 +1248,7 @@ export type StoreMinOrderByAggregateInput = {
   slug?: Prisma.SortOrder
   defaultServiceId?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
+  autoConfirmAppointments?: Prisma.SortOrder
   primaryColor?: Prisma.SortOrder
   secondaryColor?: Prisma.SortOrder
   accentColor?: Prisma.SortOrder
@@ -1500,6 +1536,34 @@ export type StoreUpdateOneRequiredWithoutStaffNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.StoreUpdateToOneWithWhereWithoutStaffInput, Prisma.StoreUpdateWithoutStaffInput>, Prisma.StoreUncheckedUpdateWithoutStaffInput>
 }
 
+export type StoreCreateNestedOneWithoutStockupConnectionInput = {
+  create?: Prisma.XOR<Prisma.StoreCreateWithoutStockupConnectionInput, Prisma.StoreUncheckedCreateWithoutStockupConnectionInput>
+  connectOrCreate?: Prisma.StoreCreateOrConnectWithoutStockupConnectionInput
+  connect?: Prisma.StoreWhereUniqueInput
+}
+
+export type StoreUpdateOneRequiredWithoutStockupConnectionNestedInput = {
+  create?: Prisma.XOR<Prisma.StoreCreateWithoutStockupConnectionInput, Prisma.StoreUncheckedCreateWithoutStockupConnectionInput>
+  connectOrCreate?: Prisma.StoreCreateOrConnectWithoutStockupConnectionInput
+  upsert?: Prisma.StoreUpsertWithoutStockupConnectionInput
+  connect?: Prisma.StoreWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.StoreUpdateToOneWithWhereWithoutStockupConnectionInput, Prisma.StoreUpdateWithoutStockupConnectionInput>, Prisma.StoreUncheckedUpdateWithoutStockupConnectionInput>
+}
+
+export type StoreCreateNestedOneWithoutSyncOutboxInput = {
+  create?: Prisma.XOR<Prisma.StoreCreateWithoutSyncOutboxInput, Prisma.StoreUncheckedCreateWithoutSyncOutboxInput>
+  connectOrCreate?: Prisma.StoreCreateOrConnectWithoutSyncOutboxInput
+  connect?: Prisma.StoreWhereUniqueInput
+}
+
+export type StoreUpdateOneRequiredWithoutSyncOutboxNestedInput = {
+  create?: Prisma.XOR<Prisma.StoreCreateWithoutSyncOutboxInput, Prisma.StoreUncheckedCreateWithoutSyncOutboxInput>
+  connectOrCreate?: Prisma.StoreCreateOrConnectWithoutSyncOutboxInput
+  upsert?: Prisma.StoreUpsertWithoutSyncOutboxInput
+  connect?: Prisma.StoreWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.StoreUpdateToOneWithWhereWithoutSyncOutboxInput, Prisma.StoreUpdateWithoutSyncOutboxInput>, Prisma.StoreUncheckedUpdateWithoutSyncOutboxInput>
+}
+
 export type StoreCreateWithoutCustomersInput = {
   storeId?: string
   name: string
@@ -1533,6 +1597,7 @@ export type StoreCreateWithoutCustomersInput = {
   slug?: string | null
   defaultServiceId?: string | null
   isActive?: boolean
+  autoConfirmAppointments?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
@@ -1556,6 +1621,8 @@ export type StoreCreateWithoutCustomersInput = {
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
   staff?: Prisma.StaffCreateNestedManyWithoutStoreInput
+  stockupConnection?: Prisma.StockupConnectionCreateNestedOneWithoutStoreInput
+  syncOutbox?: Prisma.SyncOutboxCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutCustomersInput = {
@@ -1591,6 +1658,7 @@ export type StoreUncheckedCreateWithoutCustomersInput = {
   slug?: string | null
   defaultServiceId?: string | null
   isActive?: boolean
+  autoConfirmAppointments?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
@@ -1614,6 +1682,8 @@ export type StoreUncheckedCreateWithoutCustomersInput = {
   subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
   staff?: Prisma.StaffUncheckedCreateNestedManyWithoutStoreInput
+  stockupConnection?: Prisma.StockupConnectionUncheckedCreateNestedOneWithoutStoreInput
+  syncOutbox?: Prisma.SyncOutboxUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutCustomersInput = {
@@ -1665,6 +1735,7 @@ export type StoreUpdateWithoutCustomersInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoConfirmAppointments?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1688,6 +1759,8 @@ export type StoreUpdateWithoutCustomersInput = {
   subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
   staff?: Prisma.StaffUpdateManyWithoutStoreNestedInput
+  stockupConnection?: Prisma.StockupConnectionUpdateOneWithoutStoreNestedInput
+  syncOutbox?: Prisma.SyncOutboxUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutCustomersInput = {
@@ -1723,6 +1796,7 @@ export type StoreUncheckedUpdateWithoutCustomersInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoConfirmAppointments?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1746,6 +1820,8 @@ export type StoreUncheckedUpdateWithoutCustomersInput = {
   subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
   staff?: Prisma.StaffUncheckedUpdateManyWithoutStoreNestedInput
+  stockupConnection?: Prisma.StockupConnectionUncheckedUpdateOneWithoutStoreNestedInput
+  syncOutbox?: Prisma.SyncOutboxUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutConversationsInput = {
@@ -1781,6 +1857,7 @@ export type StoreCreateWithoutConversationsInput = {
   slug?: string | null
   defaultServiceId?: string | null
   isActive?: boolean
+  autoConfirmAppointments?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
@@ -1804,6 +1881,8 @@ export type StoreCreateWithoutConversationsInput = {
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
   staff?: Prisma.StaffCreateNestedManyWithoutStoreInput
+  stockupConnection?: Prisma.StockupConnectionCreateNestedOneWithoutStoreInput
+  syncOutbox?: Prisma.SyncOutboxCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutConversationsInput = {
@@ -1839,6 +1918,7 @@ export type StoreUncheckedCreateWithoutConversationsInput = {
   slug?: string | null
   defaultServiceId?: string | null
   isActive?: boolean
+  autoConfirmAppointments?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
@@ -1862,6 +1942,8 @@ export type StoreUncheckedCreateWithoutConversationsInput = {
   subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
   staff?: Prisma.StaffUncheckedCreateNestedManyWithoutStoreInput
+  stockupConnection?: Prisma.StockupConnectionUncheckedCreateNestedOneWithoutStoreInput
+  syncOutbox?: Prisma.SyncOutboxUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutConversationsInput = {
@@ -1913,6 +1995,7 @@ export type StoreUpdateWithoutConversationsInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoConfirmAppointments?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1936,6 +2019,8 @@ export type StoreUpdateWithoutConversationsInput = {
   subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
   staff?: Prisma.StaffUpdateManyWithoutStoreNestedInput
+  stockupConnection?: Prisma.StockupConnectionUpdateOneWithoutStoreNestedInput
+  syncOutbox?: Prisma.SyncOutboxUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutConversationsInput = {
@@ -1971,6 +2056,7 @@ export type StoreUncheckedUpdateWithoutConversationsInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoConfirmAppointments?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1994,6 +2080,8 @@ export type StoreUncheckedUpdateWithoutConversationsInput = {
   subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
   staff?: Prisma.StaffUncheckedUpdateManyWithoutStoreNestedInput
+  stockupConnection?: Prisma.StockupConnectionUncheckedUpdateOneWithoutStoreNestedInput
+  syncOutbox?: Prisma.SyncOutboxUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutMessagesInput = {
@@ -2029,6 +2117,7 @@ export type StoreCreateWithoutMessagesInput = {
   slug?: string | null
   defaultServiceId?: string | null
   isActive?: boolean
+  autoConfirmAppointments?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
@@ -2052,6 +2141,8 @@ export type StoreCreateWithoutMessagesInput = {
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
   staff?: Prisma.StaffCreateNestedManyWithoutStoreInput
+  stockupConnection?: Prisma.StockupConnectionCreateNestedOneWithoutStoreInput
+  syncOutbox?: Prisma.SyncOutboxCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutMessagesInput = {
@@ -2087,6 +2178,7 @@ export type StoreUncheckedCreateWithoutMessagesInput = {
   slug?: string | null
   defaultServiceId?: string | null
   isActive?: boolean
+  autoConfirmAppointments?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
@@ -2110,6 +2202,8 @@ export type StoreUncheckedCreateWithoutMessagesInput = {
   subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
   staff?: Prisma.StaffUncheckedCreateNestedManyWithoutStoreInput
+  stockupConnection?: Prisma.StockupConnectionUncheckedCreateNestedOneWithoutStoreInput
+  syncOutbox?: Prisma.SyncOutboxUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutMessagesInput = {
@@ -2161,6 +2255,7 @@ export type StoreUpdateWithoutMessagesInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoConfirmAppointments?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2184,6 +2279,8 @@ export type StoreUpdateWithoutMessagesInput = {
   subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
   staff?: Prisma.StaffUpdateManyWithoutStoreNestedInput
+  stockupConnection?: Prisma.StockupConnectionUpdateOneWithoutStoreNestedInput
+  syncOutbox?: Prisma.SyncOutboxUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutMessagesInput = {
@@ -2219,6 +2316,7 @@ export type StoreUncheckedUpdateWithoutMessagesInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoConfirmAppointments?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2242,6 +2340,8 @@ export type StoreUncheckedUpdateWithoutMessagesInput = {
   subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
   staff?: Prisma.StaffUncheckedUpdateManyWithoutStoreNestedInput
+  stockupConnection?: Prisma.StockupConnectionUncheckedUpdateOneWithoutStoreNestedInput
+  syncOutbox?: Prisma.SyncOutboxUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutCategoriesInput = {
@@ -2277,6 +2377,7 @@ export type StoreCreateWithoutCategoriesInput = {
   slug?: string | null
   defaultServiceId?: string | null
   isActive?: boolean
+  autoConfirmAppointments?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
@@ -2300,6 +2401,8 @@ export type StoreCreateWithoutCategoriesInput = {
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
   staff?: Prisma.StaffCreateNestedManyWithoutStoreInput
+  stockupConnection?: Prisma.StockupConnectionCreateNestedOneWithoutStoreInput
+  syncOutbox?: Prisma.SyncOutboxCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutCategoriesInput = {
@@ -2335,6 +2438,7 @@ export type StoreUncheckedCreateWithoutCategoriesInput = {
   slug?: string | null
   defaultServiceId?: string | null
   isActive?: boolean
+  autoConfirmAppointments?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
@@ -2358,6 +2462,8 @@ export type StoreUncheckedCreateWithoutCategoriesInput = {
   subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
   staff?: Prisma.StaffUncheckedCreateNestedManyWithoutStoreInput
+  stockupConnection?: Prisma.StockupConnectionUncheckedCreateNestedOneWithoutStoreInput
+  syncOutbox?: Prisma.SyncOutboxUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutCategoriesInput = {
@@ -2409,6 +2515,7 @@ export type StoreUpdateWithoutCategoriesInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoConfirmAppointments?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2432,6 +2539,8 @@ export type StoreUpdateWithoutCategoriesInput = {
   subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
   staff?: Prisma.StaffUpdateManyWithoutStoreNestedInput
+  stockupConnection?: Prisma.StockupConnectionUpdateOneWithoutStoreNestedInput
+  syncOutbox?: Prisma.SyncOutboxUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutCategoriesInput = {
@@ -2467,6 +2576,7 @@ export type StoreUncheckedUpdateWithoutCategoriesInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoConfirmAppointments?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2490,6 +2600,8 @@ export type StoreUncheckedUpdateWithoutCategoriesInput = {
   subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
   staff?: Prisma.StaffUncheckedUpdateManyWithoutStoreNestedInput
+  stockupConnection?: Prisma.StockupConnectionUncheckedUpdateOneWithoutStoreNestedInput
+  syncOutbox?: Prisma.SyncOutboxUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutProductsInput = {
@@ -2525,6 +2637,7 @@ export type StoreCreateWithoutProductsInput = {
   slug?: string | null
   defaultServiceId?: string | null
   isActive?: boolean
+  autoConfirmAppointments?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
@@ -2548,6 +2661,8 @@ export type StoreCreateWithoutProductsInput = {
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
   staff?: Prisma.StaffCreateNestedManyWithoutStoreInput
+  stockupConnection?: Prisma.StockupConnectionCreateNestedOneWithoutStoreInput
+  syncOutbox?: Prisma.SyncOutboxCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutProductsInput = {
@@ -2583,6 +2698,7 @@ export type StoreUncheckedCreateWithoutProductsInput = {
   slug?: string | null
   defaultServiceId?: string | null
   isActive?: boolean
+  autoConfirmAppointments?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
@@ -2606,6 +2722,8 @@ export type StoreUncheckedCreateWithoutProductsInput = {
   subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
   staff?: Prisma.StaffUncheckedCreateNestedManyWithoutStoreInput
+  stockupConnection?: Prisma.StockupConnectionUncheckedCreateNestedOneWithoutStoreInput
+  syncOutbox?: Prisma.SyncOutboxUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutProductsInput = {
@@ -2657,6 +2775,7 @@ export type StoreUpdateWithoutProductsInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoConfirmAppointments?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2680,6 +2799,8 @@ export type StoreUpdateWithoutProductsInput = {
   subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
   staff?: Prisma.StaffUpdateManyWithoutStoreNestedInput
+  stockupConnection?: Prisma.StockupConnectionUpdateOneWithoutStoreNestedInput
+  syncOutbox?: Prisma.SyncOutboxUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutProductsInput = {
@@ -2715,6 +2836,7 @@ export type StoreUncheckedUpdateWithoutProductsInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoConfirmAppointments?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2738,6 +2860,8 @@ export type StoreUncheckedUpdateWithoutProductsInput = {
   subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
   staff?: Prisma.StaffUncheckedUpdateManyWithoutStoreNestedInput
+  stockupConnection?: Prisma.StockupConnectionUncheckedUpdateOneWithoutStoreNestedInput
+  syncOutbox?: Prisma.SyncOutboxUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutServicesInput = {
@@ -2773,6 +2897,7 @@ export type StoreCreateWithoutServicesInput = {
   slug?: string | null
   defaultServiceId?: string | null
   isActive?: boolean
+  autoConfirmAppointments?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
@@ -2796,6 +2921,8 @@ export type StoreCreateWithoutServicesInput = {
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
   staff?: Prisma.StaffCreateNestedManyWithoutStoreInput
+  stockupConnection?: Prisma.StockupConnectionCreateNestedOneWithoutStoreInput
+  syncOutbox?: Prisma.SyncOutboxCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutServicesInput = {
@@ -2831,6 +2958,7 @@ export type StoreUncheckedCreateWithoutServicesInput = {
   slug?: string | null
   defaultServiceId?: string | null
   isActive?: boolean
+  autoConfirmAppointments?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
@@ -2854,6 +2982,8 @@ export type StoreUncheckedCreateWithoutServicesInput = {
   subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
   staff?: Prisma.StaffUncheckedCreateNestedManyWithoutStoreInput
+  stockupConnection?: Prisma.StockupConnectionUncheckedCreateNestedOneWithoutStoreInput
+  syncOutbox?: Prisma.SyncOutboxUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutServicesInput = {
@@ -2905,6 +3035,7 @@ export type StoreUpdateWithoutServicesInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoConfirmAppointments?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2928,6 +3059,8 @@ export type StoreUpdateWithoutServicesInput = {
   subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
   staff?: Prisma.StaffUpdateManyWithoutStoreNestedInput
+  stockupConnection?: Prisma.StockupConnectionUpdateOneWithoutStoreNestedInput
+  syncOutbox?: Prisma.SyncOutboxUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutServicesInput = {
@@ -2963,6 +3096,7 @@ export type StoreUncheckedUpdateWithoutServicesInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoConfirmAppointments?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2986,6 +3120,8 @@ export type StoreUncheckedUpdateWithoutServicesInput = {
   subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
   staff?: Prisma.StaffUncheckedUpdateManyWithoutStoreNestedInput
+  stockupConnection?: Prisma.StockupConnectionUncheckedUpdateOneWithoutStoreNestedInput
+  syncOutbox?: Prisma.SyncOutboxUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutOrdersInput = {
@@ -3021,6 +3157,7 @@ export type StoreCreateWithoutOrdersInput = {
   slug?: string | null
   defaultServiceId?: string | null
   isActive?: boolean
+  autoConfirmAppointments?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
@@ -3044,6 +3181,8 @@ export type StoreCreateWithoutOrdersInput = {
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
   staff?: Prisma.StaffCreateNestedManyWithoutStoreInput
+  stockupConnection?: Prisma.StockupConnectionCreateNestedOneWithoutStoreInput
+  syncOutbox?: Prisma.SyncOutboxCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutOrdersInput = {
@@ -3079,6 +3218,7 @@ export type StoreUncheckedCreateWithoutOrdersInput = {
   slug?: string | null
   defaultServiceId?: string | null
   isActive?: boolean
+  autoConfirmAppointments?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
@@ -3102,6 +3242,8 @@ export type StoreUncheckedCreateWithoutOrdersInput = {
   subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
   staff?: Prisma.StaffUncheckedCreateNestedManyWithoutStoreInput
+  stockupConnection?: Prisma.StockupConnectionUncheckedCreateNestedOneWithoutStoreInput
+  syncOutbox?: Prisma.SyncOutboxUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutOrdersInput = {
@@ -3153,6 +3295,7 @@ export type StoreUpdateWithoutOrdersInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoConfirmAppointments?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3176,6 +3319,8 @@ export type StoreUpdateWithoutOrdersInput = {
   subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
   staff?: Prisma.StaffUpdateManyWithoutStoreNestedInput
+  stockupConnection?: Prisma.StockupConnectionUpdateOneWithoutStoreNestedInput
+  syncOutbox?: Prisma.SyncOutboxUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutOrdersInput = {
@@ -3211,6 +3356,7 @@ export type StoreUncheckedUpdateWithoutOrdersInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoConfirmAppointments?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3234,6 +3380,8 @@ export type StoreUncheckedUpdateWithoutOrdersInput = {
   subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
   staff?: Prisma.StaffUncheckedUpdateManyWithoutStoreNestedInput
+  stockupConnection?: Prisma.StockupConnectionUncheckedUpdateOneWithoutStoreNestedInput
+  syncOutbox?: Prisma.SyncOutboxUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutAppointmentsInput = {
@@ -3269,6 +3417,7 @@ export type StoreCreateWithoutAppointmentsInput = {
   slug?: string | null
   defaultServiceId?: string | null
   isActive?: boolean
+  autoConfirmAppointments?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
@@ -3292,6 +3441,8 @@ export type StoreCreateWithoutAppointmentsInput = {
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
   staff?: Prisma.StaffCreateNestedManyWithoutStoreInput
+  stockupConnection?: Prisma.StockupConnectionCreateNestedOneWithoutStoreInput
+  syncOutbox?: Prisma.SyncOutboxCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutAppointmentsInput = {
@@ -3327,6 +3478,7 @@ export type StoreUncheckedCreateWithoutAppointmentsInput = {
   slug?: string | null
   defaultServiceId?: string | null
   isActive?: boolean
+  autoConfirmAppointments?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
@@ -3350,6 +3502,8 @@ export type StoreUncheckedCreateWithoutAppointmentsInput = {
   subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
   staff?: Prisma.StaffUncheckedCreateNestedManyWithoutStoreInput
+  stockupConnection?: Prisma.StockupConnectionUncheckedCreateNestedOneWithoutStoreInput
+  syncOutbox?: Prisma.SyncOutboxUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutAppointmentsInput = {
@@ -3401,6 +3555,7 @@ export type StoreUpdateWithoutAppointmentsInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoConfirmAppointments?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3424,6 +3579,8 @@ export type StoreUpdateWithoutAppointmentsInput = {
   subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
   staff?: Prisma.StaffUpdateManyWithoutStoreNestedInput
+  stockupConnection?: Prisma.StockupConnectionUpdateOneWithoutStoreNestedInput
+  syncOutbox?: Prisma.SyncOutboxUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutAppointmentsInput = {
@@ -3459,6 +3616,7 @@ export type StoreUncheckedUpdateWithoutAppointmentsInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoConfirmAppointments?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3482,6 +3640,8 @@ export type StoreUncheckedUpdateWithoutAppointmentsInput = {
   subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
   staff?: Prisma.StaffUncheckedUpdateManyWithoutStoreNestedInput
+  stockupConnection?: Prisma.StockupConnectionUncheckedUpdateOneWithoutStoreNestedInput
+  syncOutbox?: Prisma.SyncOutboxUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutDailyReportsInput = {
@@ -3517,6 +3677,7 @@ export type StoreCreateWithoutDailyReportsInput = {
   slug?: string | null
   defaultServiceId?: string | null
   isActive?: boolean
+  autoConfirmAppointments?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
@@ -3540,6 +3701,8 @@ export type StoreCreateWithoutDailyReportsInput = {
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
   staff?: Prisma.StaffCreateNestedManyWithoutStoreInput
+  stockupConnection?: Prisma.StockupConnectionCreateNestedOneWithoutStoreInput
+  syncOutbox?: Prisma.SyncOutboxCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutDailyReportsInput = {
@@ -3575,6 +3738,7 @@ export type StoreUncheckedCreateWithoutDailyReportsInput = {
   slug?: string | null
   defaultServiceId?: string | null
   isActive?: boolean
+  autoConfirmAppointments?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
@@ -3598,6 +3762,8 @@ export type StoreUncheckedCreateWithoutDailyReportsInput = {
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
   staff?: Prisma.StaffUncheckedCreateNestedManyWithoutStoreInput
+  stockupConnection?: Prisma.StockupConnectionUncheckedCreateNestedOneWithoutStoreInput
+  syncOutbox?: Prisma.SyncOutboxUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutDailyReportsInput = {
@@ -3649,6 +3815,7 @@ export type StoreUpdateWithoutDailyReportsInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoConfirmAppointments?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3672,6 +3839,8 @@ export type StoreUpdateWithoutDailyReportsInput = {
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
   staff?: Prisma.StaffUpdateManyWithoutStoreNestedInput
+  stockupConnection?: Prisma.StockupConnectionUpdateOneWithoutStoreNestedInput
+  syncOutbox?: Prisma.SyncOutboxUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutDailyReportsInput = {
@@ -3707,6 +3876,7 @@ export type StoreUncheckedUpdateWithoutDailyReportsInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoConfirmAppointments?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3730,6 +3900,8 @@ export type StoreUncheckedUpdateWithoutDailyReportsInput = {
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
   staff?: Prisma.StaffUncheckedUpdateManyWithoutStoreNestedInput
+  stockupConnection?: Prisma.StockupConnectionUncheckedUpdateOneWithoutStoreNestedInput
+  syncOutbox?: Prisma.SyncOutboxUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutAiConfigInput = {
@@ -3765,6 +3937,7 @@ export type StoreCreateWithoutAiConfigInput = {
   slug?: string | null
   defaultServiceId?: string | null
   isActive?: boolean
+  autoConfirmAppointments?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
@@ -3788,6 +3961,8 @@ export type StoreCreateWithoutAiConfigInput = {
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
   staff?: Prisma.StaffCreateNestedManyWithoutStoreInput
+  stockupConnection?: Prisma.StockupConnectionCreateNestedOneWithoutStoreInput
+  syncOutbox?: Prisma.SyncOutboxCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutAiConfigInput = {
@@ -3823,6 +3998,7 @@ export type StoreUncheckedCreateWithoutAiConfigInput = {
   slug?: string | null
   defaultServiceId?: string | null
   isActive?: boolean
+  autoConfirmAppointments?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
@@ -3846,6 +4022,8 @@ export type StoreUncheckedCreateWithoutAiConfigInput = {
   subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
   staff?: Prisma.StaffUncheckedCreateNestedManyWithoutStoreInput
+  stockupConnection?: Prisma.StockupConnectionUncheckedCreateNestedOneWithoutStoreInput
+  syncOutbox?: Prisma.SyncOutboxUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutAiConfigInput = {
@@ -3897,6 +4075,7 @@ export type StoreUpdateWithoutAiConfigInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoConfirmAppointments?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3920,6 +4099,8 @@ export type StoreUpdateWithoutAiConfigInput = {
   subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
   staff?: Prisma.StaffUpdateManyWithoutStoreNestedInput
+  stockupConnection?: Prisma.StockupConnectionUpdateOneWithoutStoreNestedInput
+  syncOutbox?: Prisma.SyncOutboxUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutAiConfigInput = {
@@ -3955,6 +4136,7 @@ export type StoreUncheckedUpdateWithoutAiConfigInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoConfirmAppointments?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3978,6 +4160,8 @@ export type StoreUncheckedUpdateWithoutAiConfigInput = {
   subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
   staff?: Prisma.StaffUncheckedUpdateManyWithoutStoreNestedInput
+  stockupConnection?: Prisma.StockupConnectionUncheckedUpdateOneWithoutStoreNestedInput
+  syncOutbox?: Prisma.SyncOutboxUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutCampaignsInput = {
@@ -4013,6 +4197,7 @@ export type StoreCreateWithoutCampaignsInput = {
   slug?: string | null
   defaultServiceId?: string | null
   isActive?: boolean
+  autoConfirmAppointments?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
@@ -4036,6 +4221,8 @@ export type StoreCreateWithoutCampaignsInput = {
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
   staff?: Prisma.StaffCreateNestedManyWithoutStoreInput
+  stockupConnection?: Prisma.StockupConnectionCreateNestedOneWithoutStoreInput
+  syncOutbox?: Prisma.SyncOutboxCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutCampaignsInput = {
@@ -4071,6 +4258,7 @@ export type StoreUncheckedCreateWithoutCampaignsInput = {
   slug?: string | null
   defaultServiceId?: string | null
   isActive?: boolean
+  autoConfirmAppointments?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
@@ -4094,6 +4282,8 @@ export type StoreUncheckedCreateWithoutCampaignsInput = {
   subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
   staff?: Prisma.StaffUncheckedCreateNestedManyWithoutStoreInput
+  stockupConnection?: Prisma.StockupConnectionUncheckedCreateNestedOneWithoutStoreInput
+  syncOutbox?: Prisma.SyncOutboxUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutCampaignsInput = {
@@ -4145,6 +4335,7 @@ export type StoreUpdateWithoutCampaignsInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoConfirmAppointments?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4168,6 +4359,8 @@ export type StoreUpdateWithoutCampaignsInput = {
   subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
   staff?: Prisma.StaffUpdateManyWithoutStoreNestedInput
+  stockupConnection?: Prisma.StockupConnectionUpdateOneWithoutStoreNestedInput
+  syncOutbox?: Prisma.SyncOutboxUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutCampaignsInput = {
@@ -4203,6 +4396,7 @@ export type StoreUncheckedUpdateWithoutCampaignsInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoConfirmAppointments?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4226,6 +4420,8 @@ export type StoreUncheckedUpdateWithoutCampaignsInput = {
   subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
   staff?: Prisma.StaffUncheckedUpdateManyWithoutStoreNestedInput
+  stockupConnection?: Prisma.StockupConnectionUncheckedUpdateOneWithoutStoreNestedInput
+  syncOutbox?: Prisma.SyncOutboxUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutUsersInput = {
@@ -4261,6 +4457,7 @@ export type StoreCreateWithoutUsersInput = {
   slug?: string | null
   defaultServiceId?: string | null
   isActive?: boolean
+  autoConfirmAppointments?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
@@ -4284,6 +4481,8 @@ export type StoreCreateWithoutUsersInput = {
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
   staff?: Prisma.StaffCreateNestedManyWithoutStoreInput
+  stockupConnection?: Prisma.StockupConnectionCreateNestedOneWithoutStoreInput
+  syncOutbox?: Prisma.SyncOutboxCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutUsersInput = {
@@ -4319,6 +4518,7 @@ export type StoreUncheckedCreateWithoutUsersInput = {
   slug?: string | null
   defaultServiceId?: string | null
   isActive?: boolean
+  autoConfirmAppointments?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
@@ -4342,6 +4542,8 @@ export type StoreUncheckedCreateWithoutUsersInput = {
   subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
   staff?: Prisma.StaffUncheckedCreateNestedManyWithoutStoreInput
+  stockupConnection?: Prisma.StockupConnectionUncheckedCreateNestedOneWithoutStoreInput
+  syncOutbox?: Prisma.SyncOutboxUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutUsersInput = {
@@ -4393,6 +4595,7 @@ export type StoreUpdateWithoutUsersInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoConfirmAppointments?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4416,6 +4619,8 @@ export type StoreUpdateWithoutUsersInput = {
   subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
   staff?: Prisma.StaffUpdateManyWithoutStoreNestedInput
+  stockupConnection?: Prisma.StockupConnectionUpdateOneWithoutStoreNestedInput
+  syncOutbox?: Prisma.SyncOutboxUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutUsersInput = {
@@ -4451,6 +4656,7 @@ export type StoreUncheckedUpdateWithoutUsersInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoConfirmAppointments?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4474,6 +4680,8 @@ export type StoreUncheckedUpdateWithoutUsersInput = {
   subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
   staff?: Prisma.StaffUncheckedUpdateManyWithoutStoreNestedInput
+  stockupConnection?: Prisma.StockupConnectionUncheckedUpdateOneWithoutStoreNestedInput
+  syncOutbox?: Prisma.SyncOutboxUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutBlockedContactsInput = {
@@ -4509,6 +4717,7 @@ export type StoreCreateWithoutBlockedContactsInput = {
   slug?: string | null
   defaultServiceId?: string | null
   isActive?: boolean
+  autoConfirmAppointments?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
@@ -4532,6 +4741,8 @@ export type StoreCreateWithoutBlockedContactsInput = {
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
   staff?: Prisma.StaffCreateNestedManyWithoutStoreInput
+  stockupConnection?: Prisma.StockupConnectionCreateNestedOneWithoutStoreInput
+  syncOutbox?: Prisma.SyncOutboxCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutBlockedContactsInput = {
@@ -4567,6 +4778,7 @@ export type StoreUncheckedCreateWithoutBlockedContactsInput = {
   slug?: string | null
   defaultServiceId?: string | null
   isActive?: boolean
+  autoConfirmAppointments?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
@@ -4590,6 +4802,8 @@ export type StoreUncheckedCreateWithoutBlockedContactsInput = {
   subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
   staff?: Prisma.StaffUncheckedCreateNestedManyWithoutStoreInput
+  stockupConnection?: Prisma.StockupConnectionUncheckedCreateNestedOneWithoutStoreInput
+  syncOutbox?: Prisma.SyncOutboxUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutBlockedContactsInput = {
@@ -4641,6 +4855,7 @@ export type StoreUpdateWithoutBlockedContactsInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoConfirmAppointments?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4664,6 +4879,8 @@ export type StoreUpdateWithoutBlockedContactsInput = {
   subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
   staff?: Prisma.StaffUpdateManyWithoutStoreNestedInput
+  stockupConnection?: Prisma.StockupConnectionUpdateOneWithoutStoreNestedInput
+  syncOutbox?: Prisma.SyncOutboxUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutBlockedContactsInput = {
@@ -4699,6 +4916,7 @@ export type StoreUncheckedUpdateWithoutBlockedContactsInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoConfirmAppointments?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4722,6 +4940,8 @@ export type StoreUncheckedUpdateWithoutBlockedContactsInput = {
   subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
   staff?: Prisma.StaffUncheckedUpdateManyWithoutStoreNestedInput
+  stockupConnection?: Prisma.StockupConnectionUncheckedUpdateOneWithoutStoreNestedInput
+  syncOutbox?: Prisma.SyncOutboxUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutWaSessionInput = {
@@ -4757,6 +4977,7 @@ export type StoreCreateWithoutWaSessionInput = {
   slug?: string | null
   defaultServiceId?: string | null
   isActive?: boolean
+  autoConfirmAppointments?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
@@ -4780,6 +5001,8 @@ export type StoreCreateWithoutWaSessionInput = {
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
   staff?: Prisma.StaffCreateNestedManyWithoutStoreInput
+  stockupConnection?: Prisma.StockupConnectionCreateNestedOneWithoutStoreInput
+  syncOutbox?: Prisma.SyncOutboxCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutWaSessionInput = {
@@ -4815,6 +5038,7 @@ export type StoreUncheckedCreateWithoutWaSessionInput = {
   slug?: string | null
   defaultServiceId?: string | null
   isActive?: boolean
+  autoConfirmAppointments?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
@@ -4838,6 +5062,8 @@ export type StoreUncheckedCreateWithoutWaSessionInput = {
   subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
   staff?: Prisma.StaffUncheckedCreateNestedManyWithoutStoreInput
+  stockupConnection?: Prisma.StockupConnectionUncheckedCreateNestedOneWithoutStoreInput
+  syncOutbox?: Prisma.SyncOutboxUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutWaSessionInput = {
@@ -4889,6 +5115,7 @@ export type StoreUpdateWithoutWaSessionInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoConfirmAppointments?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4912,6 +5139,8 @@ export type StoreUpdateWithoutWaSessionInput = {
   subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
   staff?: Prisma.StaffUpdateManyWithoutStoreNestedInput
+  stockupConnection?: Prisma.StockupConnectionUpdateOneWithoutStoreNestedInput
+  syncOutbox?: Prisma.SyncOutboxUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutWaSessionInput = {
@@ -4947,6 +5176,7 @@ export type StoreUncheckedUpdateWithoutWaSessionInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoConfirmAppointments?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4970,6 +5200,8 @@ export type StoreUncheckedUpdateWithoutWaSessionInput = {
   subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
   staff?: Prisma.StaffUncheckedUpdateManyWithoutStoreNestedInput
+  stockupConnection?: Prisma.StockupConnectionUncheckedUpdateOneWithoutStoreNestedInput
+  syncOutbox?: Prisma.SyncOutboxUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutSubscriptionInput = {
@@ -5005,6 +5237,7 @@ export type StoreCreateWithoutSubscriptionInput = {
   slug?: string | null
   defaultServiceId?: string | null
   isActive?: boolean
+  autoConfirmAppointments?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
@@ -5028,6 +5261,8 @@ export type StoreCreateWithoutSubscriptionInput = {
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
   staff?: Prisma.StaffCreateNestedManyWithoutStoreInput
+  stockupConnection?: Prisma.StockupConnectionCreateNestedOneWithoutStoreInput
+  syncOutbox?: Prisma.SyncOutboxCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutSubscriptionInput = {
@@ -5063,6 +5298,7 @@ export type StoreUncheckedCreateWithoutSubscriptionInput = {
   slug?: string | null
   defaultServiceId?: string | null
   isActive?: boolean
+  autoConfirmAppointments?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
@@ -5086,6 +5322,8 @@ export type StoreUncheckedCreateWithoutSubscriptionInput = {
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
   staff?: Prisma.StaffUncheckedCreateNestedManyWithoutStoreInput
+  stockupConnection?: Prisma.StockupConnectionUncheckedCreateNestedOneWithoutStoreInput
+  syncOutbox?: Prisma.SyncOutboxUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutSubscriptionInput = {
@@ -5137,6 +5375,7 @@ export type StoreUpdateWithoutSubscriptionInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoConfirmAppointments?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -5160,6 +5399,8 @@ export type StoreUpdateWithoutSubscriptionInput = {
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
   staff?: Prisma.StaffUpdateManyWithoutStoreNestedInput
+  stockupConnection?: Prisma.StockupConnectionUpdateOneWithoutStoreNestedInput
+  syncOutbox?: Prisma.SyncOutboxUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutSubscriptionInput = {
@@ -5195,6 +5436,7 @@ export type StoreUncheckedUpdateWithoutSubscriptionInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoConfirmAppointments?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -5218,6 +5460,8 @@ export type StoreUncheckedUpdateWithoutSubscriptionInput = {
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
   staff?: Prisma.StaffUncheckedUpdateManyWithoutStoreNestedInput
+  stockupConnection?: Prisma.StockupConnectionUncheckedUpdateOneWithoutStoreNestedInput
+  syncOutbox?: Prisma.SyncOutboxUncheckedUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreCreateWithoutStaffInput = {
@@ -5253,6 +5497,7 @@ export type StoreCreateWithoutStaffInput = {
   slug?: string | null
   defaultServiceId?: string | null
   isActive?: boolean
+  autoConfirmAppointments?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
@@ -5276,6 +5521,8 @@ export type StoreCreateWithoutStaffInput = {
   waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
+  stockupConnection?: Prisma.StockupConnectionCreateNestedOneWithoutStoreInput
+  syncOutbox?: Prisma.SyncOutboxCreateNestedManyWithoutStoreInput
 }
 
 export type StoreUncheckedCreateWithoutStaffInput = {
@@ -5311,6 +5558,7 @@ export type StoreUncheckedCreateWithoutStaffInput = {
   slug?: string | null
   defaultServiceId?: string | null
   isActive?: boolean
+  autoConfirmAppointments?: boolean
   primaryColor?: string | null
   secondaryColor?: string | null
   accentColor?: string | null
@@ -5334,6 +5582,8 @@ export type StoreUncheckedCreateWithoutStaffInput = {
   waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
   subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
   dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
+  stockupConnection?: Prisma.StockupConnectionUncheckedCreateNestedOneWithoutStoreInput
+  syncOutbox?: Prisma.SyncOutboxUncheckedCreateNestedManyWithoutStoreInput
 }
 
 export type StoreCreateOrConnectWithoutStaffInput = {
@@ -5385,6 +5635,7 @@ export type StoreUpdateWithoutStaffInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoConfirmAppointments?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -5408,6 +5659,8 @@ export type StoreUpdateWithoutStaffInput = {
   waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
+  stockupConnection?: Prisma.StockupConnectionUpdateOneWithoutStoreNestedInput
+  syncOutbox?: Prisma.SyncOutboxUpdateManyWithoutStoreNestedInput
 }
 
 export type StoreUncheckedUpdateWithoutStaffInput = {
@@ -5443,6 +5696,7 @@ export type StoreUncheckedUpdateWithoutStaffInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoConfirmAppointments?: Prisma.BoolFieldUpdateOperationsInput | boolean
   primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -5466,6 +5720,528 @@ export type StoreUncheckedUpdateWithoutStaffInput = {
   waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
   subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
   dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
+  stockupConnection?: Prisma.StockupConnectionUncheckedUpdateOneWithoutStoreNestedInput
+  syncOutbox?: Prisma.SyncOutboxUncheckedUpdateManyWithoutStoreNestedInput
+}
+
+export type StoreCreateWithoutStockupConnectionInput = {
+  storeId?: string
+  name: string
+  phone: string
+  ownerName?: string | null
+  adminPhone?: string | null
+  description?: string | null
+  address?: string | null
+  neighborhood?: string | null
+  directions?: string | null
+  googleMapsUrl?: string | null
+  email?: string | null
+  website?: string | null
+  instagram?: string | null
+  facebook?: string | null
+  tiktok?: string | null
+  paymentMethods?: Prisma.StoreCreatepaymentMethodsInput | string[]
+  paymentAccount?: string | null
+  requiresDeposit?: boolean
+  depositAmount?: string | null
+  minAdvanceMinutes?: number | null
+  cancellationPolicy?: string | null
+  hasDelivery?: boolean
+  deliveryZone?: string | null
+  hasParking?: boolean
+  requiresCustomerAddress?: boolean
+  requiresCustomerCedula?: boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  waSessionId?: string | null
+  staffLabel?: string | null
+  slug?: string | null
+  defaultServiceId?: string | null
+  isActive?: boolean
+  autoConfirmAppointments?: boolean
+  primaryColor?: string | null
+  secondaryColor?: string | null
+  accentColor?: string | null
+  subscriptionStatus?: string
+  subscriptionEnd?: Date | string | null
+  apiBlocked?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  customers?: Prisma.CustomerCreateNestedManyWithoutStoreInput
+  conversations?: Prisma.ConversationCreateNestedManyWithoutStoreInput
+  messages?: Prisma.MessageCreateNestedManyWithoutStoreInput
+  products?: Prisma.ProductCreateNestedManyWithoutStoreInput
+  categories?: Prisma.CategoryCreateNestedManyWithoutStoreInput
+  users?: Prisma.UserCreateNestedManyWithoutStoreInput
+  services?: Prisma.ServiceCreateNestedManyWithoutStoreInput
+  orders?: Prisma.OrderCreateNestedManyWithoutStoreInput
+  appointments?: Prisma.AppointmentCreateNestedManyWithoutStoreInput
+  campaigns?: Prisma.CampaignCreateNestedManyWithoutStoreInput
+  aiConfig?: Prisma.AIConfigurationCreateNestedOneWithoutStoreInput
+  blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
+  waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
+  subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
+  dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
+  staff?: Prisma.StaffCreateNestedManyWithoutStoreInput
+  syncOutbox?: Prisma.SyncOutboxCreateNestedManyWithoutStoreInput
+}
+
+export type StoreUncheckedCreateWithoutStockupConnectionInput = {
+  storeId?: string
+  name: string
+  phone: string
+  ownerName?: string | null
+  adminPhone?: string | null
+  description?: string | null
+  address?: string | null
+  neighborhood?: string | null
+  directions?: string | null
+  googleMapsUrl?: string | null
+  email?: string | null
+  website?: string | null
+  instagram?: string | null
+  facebook?: string | null
+  tiktok?: string | null
+  paymentMethods?: Prisma.StoreCreatepaymentMethodsInput | string[]
+  paymentAccount?: string | null
+  requiresDeposit?: boolean
+  depositAmount?: string | null
+  minAdvanceMinutes?: number | null
+  cancellationPolicy?: string | null
+  hasDelivery?: boolean
+  deliveryZone?: string | null
+  hasParking?: boolean
+  requiresCustomerAddress?: boolean
+  requiresCustomerCedula?: boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  waSessionId?: string | null
+  staffLabel?: string | null
+  slug?: string | null
+  defaultServiceId?: string | null
+  isActive?: boolean
+  autoConfirmAppointments?: boolean
+  primaryColor?: string | null
+  secondaryColor?: string | null
+  accentColor?: string | null
+  subscriptionStatus?: string
+  subscriptionEnd?: Date | string | null
+  apiBlocked?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  customers?: Prisma.CustomerUncheckedCreateNestedManyWithoutStoreInput
+  conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutStoreInput
+  messages?: Prisma.MessageUncheckedCreateNestedManyWithoutStoreInput
+  products?: Prisma.ProductUncheckedCreateNestedManyWithoutStoreInput
+  categories?: Prisma.CategoryUncheckedCreateNestedManyWithoutStoreInput
+  users?: Prisma.UserUncheckedCreateNestedManyWithoutStoreInput
+  services?: Prisma.ServiceUncheckedCreateNestedManyWithoutStoreInput
+  orders?: Prisma.OrderUncheckedCreateNestedManyWithoutStoreInput
+  appointments?: Prisma.AppointmentUncheckedCreateNestedManyWithoutStoreInput
+  campaigns?: Prisma.CampaignUncheckedCreateNestedManyWithoutStoreInput
+  aiConfig?: Prisma.AIConfigurationUncheckedCreateNestedOneWithoutStoreInput
+  blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
+  waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
+  subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
+  dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
+  staff?: Prisma.StaffUncheckedCreateNestedManyWithoutStoreInput
+  syncOutbox?: Prisma.SyncOutboxUncheckedCreateNestedManyWithoutStoreInput
+}
+
+export type StoreCreateOrConnectWithoutStockupConnectionInput = {
+  where: Prisma.StoreWhereUniqueInput
+  create: Prisma.XOR<Prisma.StoreCreateWithoutStockupConnectionInput, Prisma.StoreUncheckedCreateWithoutStockupConnectionInput>
+}
+
+export type StoreUpsertWithoutStockupConnectionInput = {
+  update: Prisma.XOR<Prisma.StoreUpdateWithoutStockupConnectionInput, Prisma.StoreUncheckedUpdateWithoutStockupConnectionInput>
+  create: Prisma.XOR<Prisma.StoreCreateWithoutStockupConnectionInput, Prisma.StoreUncheckedCreateWithoutStockupConnectionInput>
+  where?: Prisma.StoreWhereInput
+}
+
+export type StoreUpdateToOneWithWhereWithoutStockupConnectionInput = {
+  where?: Prisma.StoreWhereInput
+  data: Prisma.XOR<Prisma.StoreUpdateWithoutStockupConnectionInput, Prisma.StoreUncheckedUpdateWithoutStockupConnectionInput>
+}
+
+export type StoreUpdateWithoutStockupConnectionInput = {
+  storeId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  directions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  googleMapsUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  website?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  instagram?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tiktok?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethods?: Prisma.StoreUpdatepaymentMethodsInput | string[]
+  paymentAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  depositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minAdvanceMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  cancellationPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasDelivery?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deliveryZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoConfirmAppointments?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  apiBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  customers?: Prisma.CustomerUpdateManyWithoutStoreNestedInput
+  conversations?: Prisma.ConversationUpdateManyWithoutStoreNestedInput
+  messages?: Prisma.MessageUpdateManyWithoutStoreNestedInput
+  products?: Prisma.ProductUpdateManyWithoutStoreNestedInput
+  categories?: Prisma.CategoryUpdateManyWithoutStoreNestedInput
+  users?: Prisma.UserUpdateManyWithoutStoreNestedInput
+  services?: Prisma.ServiceUpdateManyWithoutStoreNestedInput
+  orders?: Prisma.OrderUpdateManyWithoutStoreNestedInput
+  appointments?: Prisma.AppointmentUpdateManyWithoutStoreNestedInput
+  campaigns?: Prisma.CampaignUpdateManyWithoutStoreNestedInput
+  aiConfig?: Prisma.AIConfigurationUpdateOneWithoutStoreNestedInput
+  blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
+  waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
+  subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
+  dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
+  staff?: Prisma.StaffUpdateManyWithoutStoreNestedInput
+  syncOutbox?: Prisma.SyncOutboxUpdateManyWithoutStoreNestedInput
+}
+
+export type StoreUncheckedUpdateWithoutStockupConnectionInput = {
+  storeId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  directions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  googleMapsUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  website?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  instagram?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tiktok?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethods?: Prisma.StoreUpdatepaymentMethodsInput | string[]
+  paymentAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  depositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minAdvanceMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  cancellationPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasDelivery?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deliveryZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoConfirmAppointments?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  apiBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  customers?: Prisma.CustomerUncheckedUpdateManyWithoutStoreNestedInput
+  conversations?: Prisma.ConversationUncheckedUpdateManyWithoutStoreNestedInput
+  messages?: Prisma.MessageUncheckedUpdateManyWithoutStoreNestedInput
+  products?: Prisma.ProductUncheckedUpdateManyWithoutStoreNestedInput
+  categories?: Prisma.CategoryUncheckedUpdateManyWithoutStoreNestedInput
+  users?: Prisma.UserUncheckedUpdateManyWithoutStoreNestedInput
+  services?: Prisma.ServiceUncheckedUpdateManyWithoutStoreNestedInput
+  orders?: Prisma.OrderUncheckedUpdateManyWithoutStoreNestedInput
+  appointments?: Prisma.AppointmentUncheckedUpdateManyWithoutStoreNestedInput
+  campaigns?: Prisma.CampaignUncheckedUpdateManyWithoutStoreNestedInput
+  aiConfig?: Prisma.AIConfigurationUncheckedUpdateOneWithoutStoreNestedInput
+  blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
+  waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
+  subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
+  dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
+  staff?: Prisma.StaffUncheckedUpdateManyWithoutStoreNestedInput
+  syncOutbox?: Prisma.SyncOutboxUncheckedUpdateManyWithoutStoreNestedInput
+}
+
+export type StoreCreateWithoutSyncOutboxInput = {
+  storeId?: string
+  name: string
+  phone: string
+  ownerName?: string | null
+  adminPhone?: string | null
+  description?: string | null
+  address?: string | null
+  neighborhood?: string | null
+  directions?: string | null
+  googleMapsUrl?: string | null
+  email?: string | null
+  website?: string | null
+  instagram?: string | null
+  facebook?: string | null
+  tiktok?: string | null
+  paymentMethods?: Prisma.StoreCreatepaymentMethodsInput | string[]
+  paymentAccount?: string | null
+  requiresDeposit?: boolean
+  depositAmount?: string | null
+  minAdvanceMinutes?: number | null
+  cancellationPolicy?: string | null
+  hasDelivery?: boolean
+  deliveryZone?: string | null
+  hasParking?: boolean
+  requiresCustomerAddress?: boolean
+  requiresCustomerCedula?: boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  waSessionId?: string | null
+  staffLabel?: string | null
+  slug?: string | null
+  defaultServiceId?: string | null
+  isActive?: boolean
+  autoConfirmAppointments?: boolean
+  primaryColor?: string | null
+  secondaryColor?: string | null
+  accentColor?: string | null
+  subscriptionStatus?: string
+  subscriptionEnd?: Date | string | null
+  apiBlocked?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  customers?: Prisma.CustomerCreateNestedManyWithoutStoreInput
+  conversations?: Prisma.ConversationCreateNestedManyWithoutStoreInput
+  messages?: Prisma.MessageCreateNestedManyWithoutStoreInput
+  products?: Prisma.ProductCreateNestedManyWithoutStoreInput
+  categories?: Prisma.CategoryCreateNestedManyWithoutStoreInput
+  users?: Prisma.UserCreateNestedManyWithoutStoreInput
+  services?: Prisma.ServiceCreateNestedManyWithoutStoreInput
+  orders?: Prisma.OrderCreateNestedManyWithoutStoreInput
+  appointments?: Prisma.AppointmentCreateNestedManyWithoutStoreInput
+  campaigns?: Prisma.CampaignCreateNestedManyWithoutStoreInput
+  aiConfig?: Prisma.AIConfigurationCreateNestedOneWithoutStoreInput
+  blockedContacts?: Prisma.BlockedContactCreateNestedManyWithoutStoreInput
+  waSession?: Prisma.WhatsappSessionCreateNestedOneWithoutStoreInput
+  subscription?: Prisma.SubscriptionCreateNestedOneWithoutStoreInput
+  dailyReports?: Prisma.DailyReportCreateNestedManyWithoutStoreInput
+  staff?: Prisma.StaffCreateNestedManyWithoutStoreInput
+  stockupConnection?: Prisma.StockupConnectionCreateNestedOneWithoutStoreInput
+}
+
+export type StoreUncheckedCreateWithoutSyncOutboxInput = {
+  storeId?: string
+  name: string
+  phone: string
+  ownerName?: string | null
+  adminPhone?: string | null
+  description?: string | null
+  address?: string | null
+  neighborhood?: string | null
+  directions?: string | null
+  googleMapsUrl?: string | null
+  email?: string | null
+  website?: string | null
+  instagram?: string | null
+  facebook?: string | null
+  tiktok?: string | null
+  paymentMethods?: Prisma.StoreCreatepaymentMethodsInput | string[]
+  paymentAccount?: string | null
+  requiresDeposit?: boolean
+  depositAmount?: string | null
+  minAdvanceMinutes?: number | null
+  cancellationPolicy?: string | null
+  hasDelivery?: boolean
+  deliveryZone?: string | null
+  hasParking?: boolean
+  requiresCustomerAddress?: boolean
+  requiresCustomerCedula?: boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  waSessionId?: string | null
+  staffLabel?: string | null
+  slug?: string | null
+  defaultServiceId?: string | null
+  isActive?: boolean
+  autoConfirmAppointments?: boolean
+  primaryColor?: string | null
+  secondaryColor?: string | null
+  accentColor?: string | null
+  subscriptionStatus?: string
+  subscriptionEnd?: Date | string | null
+  apiBlocked?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  customers?: Prisma.CustomerUncheckedCreateNestedManyWithoutStoreInput
+  conversations?: Prisma.ConversationUncheckedCreateNestedManyWithoutStoreInput
+  messages?: Prisma.MessageUncheckedCreateNestedManyWithoutStoreInput
+  products?: Prisma.ProductUncheckedCreateNestedManyWithoutStoreInput
+  categories?: Prisma.CategoryUncheckedCreateNestedManyWithoutStoreInput
+  users?: Prisma.UserUncheckedCreateNestedManyWithoutStoreInput
+  services?: Prisma.ServiceUncheckedCreateNestedManyWithoutStoreInput
+  orders?: Prisma.OrderUncheckedCreateNestedManyWithoutStoreInput
+  appointments?: Prisma.AppointmentUncheckedCreateNestedManyWithoutStoreInput
+  campaigns?: Prisma.CampaignUncheckedCreateNestedManyWithoutStoreInput
+  aiConfig?: Prisma.AIConfigurationUncheckedCreateNestedOneWithoutStoreInput
+  blockedContacts?: Prisma.BlockedContactUncheckedCreateNestedManyWithoutStoreInput
+  waSession?: Prisma.WhatsappSessionUncheckedCreateNestedOneWithoutStoreInput
+  subscription?: Prisma.SubscriptionUncheckedCreateNestedOneWithoutStoreInput
+  dailyReports?: Prisma.DailyReportUncheckedCreateNestedManyWithoutStoreInput
+  staff?: Prisma.StaffUncheckedCreateNestedManyWithoutStoreInput
+  stockupConnection?: Prisma.StockupConnectionUncheckedCreateNestedOneWithoutStoreInput
+}
+
+export type StoreCreateOrConnectWithoutSyncOutboxInput = {
+  where: Prisma.StoreWhereUniqueInput
+  create: Prisma.XOR<Prisma.StoreCreateWithoutSyncOutboxInput, Prisma.StoreUncheckedCreateWithoutSyncOutboxInput>
+}
+
+export type StoreUpsertWithoutSyncOutboxInput = {
+  update: Prisma.XOR<Prisma.StoreUpdateWithoutSyncOutboxInput, Prisma.StoreUncheckedUpdateWithoutSyncOutboxInput>
+  create: Prisma.XOR<Prisma.StoreCreateWithoutSyncOutboxInput, Prisma.StoreUncheckedCreateWithoutSyncOutboxInput>
+  where?: Prisma.StoreWhereInput
+}
+
+export type StoreUpdateToOneWithWhereWithoutSyncOutboxInput = {
+  where?: Prisma.StoreWhereInput
+  data: Prisma.XOR<Prisma.StoreUpdateWithoutSyncOutboxInput, Prisma.StoreUncheckedUpdateWithoutSyncOutboxInput>
+}
+
+export type StoreUpdateWithoutSyncOutboxInput = {
+  storeId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  directions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  googleMapsUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  website?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  instagram?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tiktok?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethods?: Prisma.StoreUpdatepaymentMethodsInput | string[]
+  paymentAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  depositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minAdvanceMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  cancellationPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasDelivery?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deliveryZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoConfirmAppointments?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  apiBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  customers?: Prisma.CustomerUpdateManyWithoutStoreNestedInput
+  conversations?: Prisma.ConversationUpdateManyWithoutStoreNestedInput
+  messages?: Prisma.MessageUpdateManyWithoutStoreNestedInput
+  products?: Prisma.ProductUpdateManyWithoutStoreNestedInput
+  categories?: Prisma.CategoryUpdateManyWithoutStoreNestedInput
+  users?: Prisma.UserUpdateManyWithoutStoreNestedInput
+  services?: Prisma.ServiceUpdateManyWithoutStoreNestedInput
+  orders?: Prisma.OrderUpdateManyWithoutStoreNestedInput
+  appointments?: Prisma.AppointmentUpdateManyWithoutStoreNestedInput
+  campaigns?: Prisma.CampaignUpdateManyWithoutStoreNestedInput
+  aiConfig?: Prisma.AIConfigurationUpdateOneWithoutStoreNestedInput
+  blockedContacts?: Prisma.BlockedContactUpdateManyWithoutStoreNestedInput
+  waSession?: Prisma.WhatsappSessionUpdateOneWithoutStoreNestedInput
+  subscription?: Prisma.SubscriptionUpdateOneWithoutStoreNestedInput
+  dailyReports?: Prisma.DailyReportUpdateManyWithoutStoreNestedInput
+  staff?: Prisma.StaffUpdateManyWithoutStoreNestedInput
+  stockupConnection?: Prisma.StockupConnectionUpdateOneWithoutStoreNestedInput
+}
+
+export type StoreUncheckedUpdateWithoutSyncOutboxInput = {
+  storeId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  ownerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  neighborhood?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  directions?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  googleMapsUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  website?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  instagram?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebook?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tiktok?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethods?: Prisma.StoreUpdatepaymentMethodsInput | string[]
+  paymentAccount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  depositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  minAdvanceMinutes?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  cancellationPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasDelivery?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deliveryZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  defaultServiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoConfirmAppointments?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  primaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  secondaryColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accentColor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  apiBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  customers?: Prisma.CustomerUncheckedUpdateManyWithoutStoreNestedInput
+  conversations?: Prisma.ConversationUncheckedUpdateManyWithoutStoreNestedInput
+  messages?: Prisma.MessageUncheckedUpdateManyWithoutStoreNestedInput
+  products?: Prisma.ProductUncheckedUpdateManyWithoutStoreNestedInput
+  categories?: Prisma.CategoryUncheckedUpdateManyWithoutStoreNestedInput
+  users?: Prisma.UserUncheckedUpdateManyWithoutStoreNestedInput
+  services?: Prisma.ServiceUncheckedUpdateManyWithoutStoreNestedInput
+  orders?: Prisma.OrderUncheckedUpdateManyWithoutStoreNestedInput
+  appointments?: Prisma.AppointmentUncheckedUpdateManyWithoutStoreNestedInput
+  campaigns?: Prisma.CampaignUncheckedUpdateManyWithoutStoreNestedInput
+  aiConfig?: Prisma.AIConfigurationUncheckedUpdateOneWithoutStoreNestedInput
+  blockedContacts?: Prisma.BlockedContactUncheckedUpdateManyWithoutStoreNestedInput
+  waSession?: Prisma.WhatsappSessionUncheckedUpdateOneWithoutStoreNestedInput
+  subscription?: Prisma.SubscriptionUncheckedUpdateOneWithoutStoreNestedInput
+  dailyReports?: Prisma.DailyReportUncheckedUpdateManyWithoutStoreNestedInput
+  staff?: Prisma.StaffUncheckedUpdateManyWithoutStoreNestedInput
+  stockupConnection?: Prisma.StockupConnectionUncheckedUpdateOneWithoutStoreNestedInput
 }
 
 
@@ -5487,6 +6263,7 @@ export type StoreCountOutputType = {
   blockedContacts: number
   dailyReports: number
   staff: number
+  syncOutbox: number
 }
 
 export type StoreCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -5503,6 +6280,7 @@ export type StoreCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.
   blockedContacts?: boolean | StoreCountOutputTypeCountBlockedContactsArgs
   dailyReports?: boolean | StoreCountOutputTypeCountDailyReportsArgs
   staff?: boolean | StoreCountOutputTypeCountStaffArgs
+  syncOutbox?: boolean | StoreCountOutputTypeCountSyncOutboxArgs
 }
 
 /**
@@ -5606,6 +6384,13 @@ export type StoreCountOutputTypeCountStaffArgs<ExtArgs extends runtime.Types.Ext
   where?: Prisma.StaffWhereInput
 }
 
+/**
+ * StoreCountOutputType without action
+ */
+export type StoreCountOutputTypeCountSyncOutboxArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.SyncOutboxWhereInput
+}
+
 
 export type StoreSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   storeId?: boolean
@@ -5640,6 +6425,7 @@ export type StoreSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   slug?: boolean
   defaultServiceId?: boolean
   isActive?: boolean
+  autoConfirmAppointments?: boolean
   primaryColor?: boolean
   secondaryColor?: boolean
   accentColor?: boolean
@@ -5664,6 +6450,8 @@ export type StoreSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   subscription?: boolean | Prisma.Store$subscriptionArgs<ExtArgs>
   dailyReports?: boolean | Prisma.Store$dailyReportsArgs<ExtArgs>
   staff?: boolean | Prisma.Store$staffArgs<ExtArgs>
+  stockupConnection?: boolean | Prisma.Store$stockupConnectionArgs<ExtArgs>
+  syncOutbox?: boolean | Prisma.Store$syncOutboxArgs<ExtArgs>
   _count?: boolean | Prisma.StoreCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["store"]>
 
@@ -5700,6 +6488,7 @@ export type StoreSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   slug?: boolean
   defaultServiceId?: boolean
   isActive?: boolean
+  autoConfirmAppointments?: boolean
   primaryColor?: boolean
   secondaryColor?: boolean
   accentColor?: boolean
@@ -5743,6 +6532,7 @@ export type StoreSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   slug?: boolean
   defaultServiceId?: boolean
   isActive?: boolean
+  autoConfirmAppointments?: boolean
   primaryColor?: boolean
   secondaryColor?: boolean
   accentColor?: boolean
@@ -5786,6 +6576,7 @@ export type StoreSelectScalar = {
   slug?: boolean
   defaultServiceId?: boolean
   isActive?: boolean
+  autoConfirmAppointments?: boolean
   primaryColor?: boolean
   secondaryColor?: boolean
   accentColor?: boolean
@@ -5796,7 +6587,7 @@ export type StoreSelectScalar = {
   updatedAt?: boolean
 }
 
-export type StoreOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"storeId" | "name" | "phone" | "ownerName" | "adminPhone" | "description" | "address" | "neighborhood" | "directions" | "googleMapsUrl" | "email" | "website" | "instagram" | "facebook" | "tiktok" | "paymentMethods" | "paymentAccount" | "requiresDeposit" | "depositAmount" | "minAdvanceMinutes" | "cancellationPolicy" | "hasDelivery" | "deliveryZone" | "hasParking" | "requiresCustomerAddress" | "requiresCustomerCedula" | "businessHours" | "waSessionId" | "staffLabel" | "slug" | "defaultServiceId" | "isActive" | "primaryColor" | "secondaryColor" | "accentColor" | "subscriptionStatus" | "subscriptionEnd" | "apiBlocked" | "createdAt" | "updatedAt", ExtArgs["result"]["store"]>
+export type StoreOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"storeId" | "name" | "phone" | "ownerName" | "adminPhone" | "description" | "address" | "neighborhood" | "directions" | "googleMapsUrl" | "email" | "website" | "instagram" | "facebook" | "tiktok" | "paymentMethods" | "paymentAccount" | "requiresDeposit" | "depositAmount" | "minAdvanceMinutes" | "cancellationPolicy" | "hasDelivery" | "deliveryZone" | "hasParking" | "requiresCustomerAddress" | "requiresCustomerCedula" | "businessHours" | "waSessionId" | "staffLabel" | "slug" | "defaultServiceId" | "isActive" | "autoConfirmAppointments" | "primaryColor" | "secondaryColor" | "accentColor" | "subscriptionStatus" | "subscriptionEnd" | "apiBlocked" | "createdAt" | "updatedAt", ExtArgs["result"]["store"]>
 export type StoreInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   customers?: boolean | Prisma.Store$customersArgs<ExtArgs>
   conversations?: boolean | Prisma.Store$conversationsArgs<ExtArgs>
@@ -5814,6 +6605,8 @@ export type StoreInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   subscription?: boolean | Prisma.Store$subscriptionArgs<ExtArgs>
   dailyReports?: boolean | Prisma.Store$dailyReportsArgs<ExtArgs>
   staff?: boolean | Prisma.Store$staffArgs<ExtArgs>
+  stockupConnection?: boolean | Prisma.Store$stockupConnectionArgs<ExtArgs>
+  syncOutbox?: boolean | Prisma.Store$syncOutboxArgs<ExtArgs>
   _count?: boolean | Prisma.StoreCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type StoreIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -5838,6 +6631,8 @@ export type $StorePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     subscription: Prisma.$SubscriptionPayload<ExtArgs> | null
     dailyReports: Prisma.$DailyReportPayload<ExtArgs>[]
     staff: Prisma.$StaffPayload<ExtArgs>[]
+    stockupConnection: Prisma.$StockupConnectionPayload<ExtArgs> | null
+    syncOutbox: Prisma.$SyncOutboxPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     storeId: string
@@ -5872,6 +6667,7 @@ export type $StorePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     slug: string | null
     defaultServiceId: string | null
     isActive: boolean
+    autoConfirmAppointments: boolean
     primaryColor: string | null
     secondaryColor: string | null
     accentColor: string | null
@@ -6290,6 +7086,8 @@ export interface Prisma__StoreClient<T, Null = never, ExtArgs extends runtime.Ty
   subscription<T extends Prisma.Store$subscriptionArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Store$subscriptionArgs<ExtArgs>>): Prisma.Prisma__SubscriptionClient<runtime.Types.Result.GetResult<Prisma.$SubscriptionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   dailyReports<T extends Prisma.Store$dailyReportsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Store$dailyReportsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DailyReportPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   staff<T extends Prisma.Store$staffArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Store$staffArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$StaffPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  stockupConnection<T extends Prisma.Store$stockupConnectionArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Store$stockupConnectionArgs<ExtArgs>>): Prisma.Prisma__StockupConnectionClient<runtime.Types.Result.GetResult<Prisma.$StockupConnectionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  syncOutbox<T extends Prisma.Store$syncOutboxArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Store$syncOutboxArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SyncOutboxPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -6351,6 +7149,7 @@ export interface StoreFieldRefs {
   readonly slug: Prisma.FieldRef<"Store", 'String'>
   readonly defaultServiceId: Prisma.FieldRef<"Store", 'String'>
   readonly isActive: Prisma.FieldRef<"Store", 'Boolean'>
+  readonly autoConfirmAppointments: Prisma.FieldRef<"Store", 'Boolean'>
   readonly primaryColor: Prisma.FieldRef<"Store", 'String'>
   readonly secondaryColor: Prisma.FieldRef<"Store", 'String'>
   readonly accentColor: Prisma.FieldRef<"Store", 'String'>
@@ -7113,6 +7912,49 @@ export type Store$staffArgs<ExtArgs extends runtime.Types.Extensions.InternalArg
   take?: number
   skip?: number
   distinct?: Prisma.StaffScalarFieldEnum | Prisma.StaffScalarFieldEnum[]
+}
+
+/**
+ * Store.stockupConnection
+ */
+export type Store$stockupConnectionArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the StockupConnection
+   */
+  select?: Prisma.StockupConnectionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the StockupConnection
+   */
+  omit?: Prisma.StockupConnectionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.StockupConnectionInclude<ExtArgs> | null
+  where?: Prisma.StockupConnectionWhereInput
+}
+
+/**
+ * Store.syncOutbox
+ */
+export type Store$syncOutboxArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the SyncOutbox
+   */
+  select?: Prisma.SyncOutboxSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the SyncOutbox
+   */
+  omit?: Prisma.SyncOutboxOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SyncOutboxInclude<ExtArgs> | null
+  where?: Prisma.SyncOutboxWhereInput
+  orderBy?: Prisma.SyncOutboxOrderByWithRelationInput | Prisma.SyncOutboxOrderByWithRelationInput[]
+  cursor?: Prisma.SyncOutboxWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.SyncOutboxScalarFieldEnum | Prisma.SyncOutboxScalarFieldEnum[]
 }
 
 /**

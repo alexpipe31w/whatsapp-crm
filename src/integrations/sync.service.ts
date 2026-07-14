@@ -4,12 +4,37 @@ import { Interval } from '@nestjs/schedule';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { signSyncRequest } from './sync-signing';
+import { Prisma } from '../generated/prisma/client';
 
 // Tx = cliente prisma o cliente transaccional
 type Tx = any;
 
 const RETRY_STEPS_MIN = [1, 5, 30, 120]; // backoff en minutos; luego cap 120
 const MAX_ATTEMPTS = 10;
+
+// Tipos de evento soportados por el receptor — se valida ANTES de tocar el
+// inbox o abrir transacción para no quemar recursos en tipos desconocidos.
+const KNOWN_EVENT_TYPES = new Set([
+  'category.upserted',
+  'category.deleted',
+  'product.upserted',
+  'product.deleted',
+  'stock.changed',
+  'sync.completed',
+]);
+
+// P2002 del syncInbox.create dentro de la tx = carrera entre dos instancias
+// procesando el mismo evento: la otra ya lo aplicó → tratar como skipped, no
+// como error real (que sí debe propagar para que el emisor reintente).
+function isInboxDuplicate(e: unknown): boolean {
+  if (!(e instanceof Prisma.PrismaClientKnownRequestError) || e.code !== 'P2002') return false;
+  const meta = e.meta as { modelName?: string; target?: unknown } | undefined;
+  if (meta?.modelName === 'SyncInbox') return true;
+  const target = meta?.target;
+  if (Array.isArray(target)) return (target as string[]).includes('eventId');
+  if (typeof target === 'string') return target.includes('eventId') || target.includes('sync_inbox');
+  return false;
+}
 
 // Slug requerido por el schema de Category (unique [storeId, slug]).
 // Misma normalización que products.service.ts createCategory.
@@ -157,41 +182,94 @@ export class SyncService {
 
   // Crea una categoría local para un evento remoto, resolviendo el slug
   // requerido por el schema (colisión → sufijo aleatorio corto).
-  private async createCategoryFromWire(storeId: string, name: string, stockupCategoryId: string) {
+  private async createCategoryFromWire(tx: Tx, storeId: string, name: string, stockupCategoryId: string) {
     const base = slugify(name) || 'categoria';
-    const taken = await this.prisma.category.findUnique({
+    const taken = await tx.category.findUnique({
       where: { storeId_slug: { storeId, slug: base } },
     });
     const slug = taken ? `${base}-${randomUUID().slice(0, 6)}` : base;
-    return this.prisma.category.create({
+    return tx.category.create({
       data: { storeId, name, slug, stockupCategoryId },
     });
   }
 
-  // ── APLICACIÓN de eventos remotos (StockUp → CRM). NUNCA emite. ─────────
-  async applyRemoteEvent(storeId: string, envelope: any): Promise<{ ok: boolean; mapped?: any; skipped?: boolean }> {
-    // dedupe
-    try {
-      await this.prisma.syncInbox.create({ data: { eventId: envelope.eventId } });
-    } catch {
-      return { ok: true, skipped: true }; // ya procesado
-    }
-    const occurredAt = new Date(envelope.occurredAt);
+  // Recompone `mapped` desde la BD para el fast-path de retry: si el CRM ya
+  // aplicó y commiteó el evento pero la respuesta original se perdió (timeout
+  // del lado StockUp), StockUp reintenta y necesitamos re-entregarle el mapeo
+  // igual, sin volver a aplicar nada.
+  private async recomputeMapped(storeId: string, envelope: any): Promise<any> {
     const mapped: any = {};
+    if (envelope.type === 'product.upserted') {
+      const w = envelope.payload.product;
+      const p = await this.prisma.product.findFirst({
+        where: { storeId, stockupProductId: w.sourceId },
+        include: { variants: true },
+      });
+      if (p) {
+        mapped.productId = p.productId;
+        const variantIds: Record<string, string> = {};
+        for (const vw of w.variants ?? []) {
+          const v = p.variants.find((x: any) => x.stockupVariantId === vw.sourceId);
+          if (v) variantIds[vw.sourceId] = v.variantId;
+        }
+        if (Object.keys(variantIds).length) mapped.variantIds = variantIds;
+      }
+      if (w.category) {
+        const c = await this.prisma.category.findFirst({
+          where: { storeId, stockupCategoryId: w.category.sourceId },
+        });
+        if (c) mapped.categoryId = c.categoryId;
+      }
+    } else if (envelope.type === 'category.upserted') {
+      const w = envelope.payload.category;
+      const c = await this.prisma.category.findFirst({ where: { storeId, stockupCategoryId: w.sourceId } });
+      if (c) mapped.categoryId = c.categoryId;
+    }
+    return Object.keys(mapped).length ? mapped : undefined;
+  }
 
-    // Si la aplicación falla, liberamos el eventId del inbox para que el
-    // reintento del emisor NO se cortocircuite como "ya procesado".
+  // ── APLICACIÓN de eventos remotos (StockUp → CRM). NUNCA emite. ─────────
+  //
+  // Atomicidad: el apply y la fila de dedupe (syncInbox) se escriben en la
+  // MISMA transacción, inbox al final. Si la tx falla o el proceso muere a
+  // mitad, TODO rollbackea (incluido el inbox) y el reintento del emisor
+  // re-aplica desde cero — nunca queda un evento "fantasma" marcado como
+  // procesado sin haberse aplicado.
+  //
+  // Orden: los reintentos del dispatcher no garantizan orden, así que el skip
+  // de eventos viejos se decide evento-contra-evento con `stockupSyncedAt`
+  // (occurredAt del último evento StockUp aplicado a esa entidad), NUNCA
+  // contra `updatedAt` local (que cambia también por escrituras ajenas al
+  // sync y colapsaría un backlog reordenado a su estado más viejo).
+  async applyRemoteEvent(storeId: string, envelope: any): Promise<{ ok: boolean; mapped?: any; skipped?: boolean }> {
+    if (!KNOWN_EVENT_TYPES.has(envelope.type)) return { ok: false }; // no tocar inbox/tx por tipos desconocidos
+
+    // Fast-path: evento ya procesado y commiteado → skipped, re-entregando
+    // `mapped` por si la respuesta original se perdió (timeout del emisor).
+    const seen = await this.prisma.syncInbox.findUnique({ where: { eventId: envelope.eventId } });
+    if (seen) {
+      const mapped = await this.recomputeMapped(storeId, envelope);
+      return { ok: true, skipped: true, ...(mapped ? { mapped } : {}) };
+    }
+
+    const occurredAt = new Date(envelope.occurredAt);
     try {
-      return await this.applyEvent(storeId, envelope, occurredAt, mapped);
+      return await this.prisma.$transaction(async (tx: Tx) => {
+        const mapped: any = {};
+        const result = await this.applyEvent(tx, storeId, envelope, occurredAt, mapped);
+        // Último paso: si algo antes falló, esto nunca se ejecuta y la tx
+        // entera rollbackea (incluido el inbox).
+        await tx.syncInbox.create({ data: { eventId: envelope.eventId } });
+        return result;
+      });
     } catch (e) {
-      await this.prisma.syncInbox
-        .delete({ where: { eventId: envelope.eventId } })
-        .catch(() => {});
-      throw e;
+      if (isInboxDuplicate(e)) return { ok: true, skipped: true }; // carrera con otra instancia
+      throw e; // fallo real: propaga para que el controller responda 500 y el emisor reintente
     }
   }
 
   private async applyEvent(
+    tx: Tx,
     storeId: string,
     envelope: any,
     occurredAt: Date,
@@ -199,41 +277,29 @@ export class SyncService {
   ): Promise<{ ok: boolean; mapped?: any; skipped?: boolean }> {
     switch (envelope.type) {
       case 'category.upserted': {
+        // categorías: last-write-wins, sin skip evento-contra-evento
         const w = envelope.payload.category;
-        const existing = await this.prisma.category.findFirst({
+        const existing = await tx.category.findFirst({
           where: { storeId, stockupCategoryId: w.sourceId },
         });
         if (existing) {
-          await this.prisma.category.update({
+          await tx.category.update({
             where: { categoryId: existing.categoryId }, data: { name: w.name },
           });
         } else {
-          const c = await this.createCategoryFromWire(storeId, w.name, w.sourceId);
+          const c = await this.createCategoryFromWire(tx, storeId, w.name, w.sourceId);
           mapped.categoryId = c.categoryId;
         }
         break;
       }
       case 'category.deleted': {
         const w = envelope.payload.category;
-        await this.prisma.category.deleteMany({ where: { storeId, stockupCategoryId: w.sourceId } });
+        await tx.category.deleteMany({ where: { storeId, stockupCategoryId: w.sourceId } });
         break;
       }
       case 'product.upserted': {
         const w = envelope.payload.product;
-        // categoría inline
-        let categoryId: string | null = null;
-        if (w.category) {
-          let cat = await this.prisma.category.findFirst({
-            where: { storeId, stockupCategoryId: w.category.sourceId },
-          });
-          if (!cat) {
-            cat = await this.createCategoryFromWire(storeId, w.category.name, w.category.sourceId);
-            mapped.categoryId = cat.categoryId;
-          }
-          categoryId = cat.categoryId;
-        }
-        const data = { ...wireToProductData(w), categoryId };
-        let existing = await this.prisma.product.findFirst({
+        let existing = await tx.product.findFirst({
           where: { storeId, stockupProductId: w.sourceId },
         });
         let adopted = false;
@@ -241,45 +307,64 @@ export class SyncService {
           // Adopción por SKU: sku es unique [storeId, sku] — si ya existe un
           // producto CRM sin mapear con ese sku, lo vinculamos en vez de
           // reventar con P2002 al crear (escenario onboarding Vida Verde).
-          existing = await this.prisma.product.findFirst({
+          existing = await tx.product.findFirst({
             where: { storeId, sku: w.sku, stockupProductId: null },
           });
           adopted = !!existing;
         }
+        // Skip evento-contra-evento: solo si YA se aplicó un evento StockUp
+        // más nuevo a esta entidad. stockupSyncedAt null (nunca sincronizada,
+        // o recién adoptada por sku) nunca se skipea. Se decide ANTES de
+        // tocar la categoría para no crearla/actualizarla desde un evento viejo.
+        if (existing?.stockupSyncedAt && occurredAt <= existing.stockupSyncedAt) {
+          return { ok: true, skipped: true };
+        }
+        // categoría inline
+        let categoryId: string | null = null;
+        if (w.category) {
+          let cat = await tx.category.findFirst({
+            where: { storeId, stockupCategoryId: w.category.sourceId },
+          });
+          if (!cat) {
+            cat = await this.createCategoryFromWire(tx, storeId, w.category.name, w.category.sourceId);
+            mapped.categoryId = cat.categoryId;
+          }
+          categoryId = cat.categoryId;
+        }
+        const data = { ...wireToProductData(w), categoryId, stockupSyncedAt: occurredAt };
         let productId: string;
         if (existing) {
-          if (existing.updatedAt > occurredAt) return { ok: true, skipped: true }; // evento viejo
-          await this.prisma.product.update({ where: { productId: existing.productId }, data });
+          await tx.product.update({ where: { productId: existing.productId }, data });
           productId = existing.productId;
           // adoptado: StockUp debe aprender el mapeo hacia este producto CRM
           if (adopted) mapped.productId = existing.productId;
         } else {
-          const p = await this.prisma.product.create({ data: { ...data, storeId } });
+          const p = await tx.product.create({ data: { ...data, storeId } });
           productId = p.productId;
           mapped.productId = p.productId;
         }
         // variantes: upsert por stockupVariantId; desactivar las locales que ya no vienen
         const variantIds: Record<string, string> = {};
         for (const vw of w.variants ?? []) {
-          const ev = await this.prisma.productVariant.findFirst({
+          const ev = await tx.productVariant.findFirst({
             where: { productId, stockupVariantId: vw.sourceId },
           });
           const vdata = {
             name: vw.name, sku: vw.sku, salePrice: vw.price, costPrice: vw.costPrice ?? 0,
             stock: vw.stock, imageUrl: vw.image, isActive: vw.isActive,
-            stockupVariantId: vw.sourceId,
+            stockupVariantId: vw.sourceId, stockupSyncedAt: occurredAt,
           };
           if (ev) {
-            await this.prisma.productVariant.update({ where: { variantId: ev.variantId }, data: vdata });
+            await tx.productVariant.update({ where: { variantId: ev.variantId }, data: vdata });
           } else {
-            const nv = await this.prisma.productVariant.create({
+            const nv = await tx.productVariant.create({
               data: { ...vdata, productId, attributes: {} },
             });
             variantIds[vw.sourceId] = nv.variantId;
           }
         }
         const keepIds = (w.variants ?? []).map((v: any) => v.sourceId);
-        await this.prisma.productVariant.updateMany({
+        await tx.productVariant.updateMany({
           where: { productId, stockupVariantId: { notIn: keepIds.length ? keepIds : ['__none__'] }, NOT: { stockupVariantId: null } },
           data: { isActive: false },
         });
@@ -288,38 +373,50 @@ export class SyncService {
       }
       case 'product.deleted': {
         const w = envelope.payload.product;
-        await this.prisma.product.updateMany({
+        await tx.product.updateMany({
           where: { storeId, stockupProductId: w.sourceId }, data: { isActive: false },
         });
         break;
       }
       case 'stock.changed': {
+        // Skip evento-contra-evento (stockupSyncedAt), no contra reloj local:
+        // un retry con stock viejo no debe pisar un evento StockUp más nuevo
+        // ya aplicado, pero una escritura LOCAL reciente no debe bloquear el evento.
         const p = envelope.payload;
         if (p.variantSourceId) {
-          await this.prisma.productVariant.updateMany({
+          const v = await tx.productVariant.findFirst({
             where: { stockupVariantId: p.variantSourceId, product: { storeId } },
-            data: { stock: p.stock },
+          });
+          if (!v) return { ok: true, skipped: true };
+          if (v.stockupSyncedAt && occurredAt <= v.stockupSyncedAt) return { ok: true, skipped: true };
+          await tx.productVariant.update({
+            where: { variantId: v.variantId },
+            data: { stock: p.stock, stockupSyncedAt: occurredAt },
           });
         } else {
-          await this.prisma.product.updateMany({
-            where: { storeId, stockupProductId: p.productSourceId },
-            data: { stock: p.stock },
+          const prod = await tx.product.findFirst({ where: { storeId, stockupProductId: p.productSourceId } });
+          if (!prod) return { ok: true, skipped: true };
+          if (prod.stockupSyncedAt && occurredAt <= prod.stockupSyncedAt) return { ok: true, skipped: true };
+          await tx.product.update({
+            where: { productId: prod.productId },
+            data: { stock: p.stock, stockupSyncedAt: occurredAt },
           });
         }
         break;
       }
       case 'sync.completed': {
         // fin de sync inicial: desactivar productos sin mapeo (StockUp pisa todo)
-        await this.prisma.product.updateMany({
+        await tx.product.updateMany({
           where: { storeId, stockupProductId: null, isActive: true },
           data: { isActive: false },
         });
-        await this.prisma.stockupConnection.update({
+        await tx.stockupConnection.update({
           where: { storeId }, data: { lastSyncAt: new Date() },
         });
         break;
       }
       default:
+        // inalcanzable: el tipo se valida contra KNOWN_EVENT_TYPES antes de la tx
         return { ok: false };
     }
     return { ok: true, mapped: Object.keys(mapped).length ? mapped : undefined };

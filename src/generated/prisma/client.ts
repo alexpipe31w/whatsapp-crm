@@ -185,3 +185,18 @@ export type SubscriptionPayment = Prisma.SubscriptionPaymentModel
  * 
  */
 export type Staff = Prisma.StaffModel
+/**
+ * Model StockupConnection
+ * 
+ */
+export type StockupConnection = Prisma.StockupConnectionModel
+/**
+ * Model SyncOutbox
+ * 
+ */
+export type SyncOutbox = Prisma.SyncOutboxModel
+/**
+ * Model SyncInbox
+ * 
+ */
+export type SyncInbox = Prisma.SyncInboxModel

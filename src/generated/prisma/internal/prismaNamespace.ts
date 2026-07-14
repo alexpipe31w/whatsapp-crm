@@ -414,7 +414,10 @@ export const ModelName = {
   SubscriptionConfig: 'SubscriptionConfig',
   Subscription: 'Subscription',
   SubscriptionPayment: 'SubscriptionPayment',
-  Staff: 'Staff'
+  Staff: 'Staff',
+  StockupConnection: 'StockupConnection',
+  SyncOutbox: 'SyncOutbox',
+  SyncInbox: 'SyncInbox'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -430,7 +433,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "store" | "customer" | "conversation" | "message" | "category" | "product" | "productVariant" | "service" | "serviceVariant" | "order" | "orderItem" | "appointment" | "appointmentTimeline" | "dailyReport" | "aIConfiguration" | "campaign" | "user" | "blockedContact" | "archivedMessage" | "adminAuditLog" | "whatsappSession" | "subscriptionConfig" | "subscription" | "subscriptionPayment" | "staff"
+    modelProps: "store" | "customer" | "conversation" | "message" | "category" | "product" | "productVariant" | "service" | "serviceVariant" | "order" | "orderItem" | "appointment" | "appointmentTimeline" | "dailyReport" | "aIConfiguration" | "campaign" | "user" | "blockedContact" | "archivedMessage" | "adminAuditLog" | "whatsappSession" | "subscriptionConfig" | "subscription" | "subscriptionPayment" | "staff" | "stockupConnection" | "syncOutbox" | "syncInbox"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2284,6 +2287,228 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    StockupConnection: {
+      payload: Prisma.$StockupConnectionPayload<ExtArgs>
+      fields: Prisma.StockupConnectionFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.StockupConnectionFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StockupConnectionPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.StockupConnectionFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StockupConnectionPayload>
+        }
+        findFirst: {
+          args: Prisma.StockupConnectionFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StockupConnectionPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.StockupConnectionFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StockupConnectionPayload>
+        }
+        findMany: {
+          args: Prisma.StockupConnectionFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StockupConnectionPayload>[]
+        }
+        create: {
+          args: Prisma.StockupConnectionCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StockupConnectionPayload>
+        }
+        createMany: {
+          args: Prisma.StockupConnectionCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.StockupConnectionCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StockupConnectionPayload>[]
+        }
+        delete: {
+          args: Prisma.StockupConnectionDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StockupConnectionPayload>
+        }
+        update: {
+          args: Prisma.StockupConnectionUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StockupConnectionPayload>
+        }
+        deleteMany: {
+          args: Prisma.StockupConnectionDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.StockupConnectionUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.StockupConnectionUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StockupConnectionPayload>[]
+        }
+        upsert: {
+          args: Prisma.StockupConnectionUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StockupConnectionPayload>
+        }
+        aggregate: {
+          args: Prisma.StockupConnectionAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateStockupConnection>
+        }
+        groupBy: {
+          args: Prisma.StockupConnectionGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.StockupConnectionGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.StockupConnectionCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.StockupConnectionCountAggregateOutputType> | number
+        }
+      }
+    }
+    SyncOutbox: {
+      payload: Prisma.$SyncOutboxPayload<ExtArgs>
+      fields: Prisma.SyncOutboxFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.SyncOutboxFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SyncOutboxPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.SyncOutboxFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SyncOutboxPayload>
+        }
+        findFirst: {
+          args: Prisma.SyncOutboxFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SyncOutboxPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.SyncOutboxFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SyncOutboxPayload>
+        }
+        findMany: {
+          args: Prisma.SyncOutboxFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SyncOutboxPayload>[]
+        }
+        create: {
+          args: Prisma.SyncOutboxCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SyncOutboxPayload>
+        }
+        createMany: {
+          args: Prisma.SyncOutboxCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.SyncOutboxCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SyncOutboxPayload>[]
+        }
+        delete: {
+          args: Prisma.SyncOutboxDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SyncOutboxPayload>
+        }
+        update: {
+          args: Prisma.SyncOutboxUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SyncOutboxPayload>
+        }
+        deleteMany: {
+          args: Prisma.SyncOutboxDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.SyncOutboxUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.SyncOutboxUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SyncOutboxPayload>[]
+        }
+        upsert: {
+          args: Prisma.SyncOutboxUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SyncOutboxPayload>
+        }
+        aggregate: {
+          args: Prisma.SyncOutboxAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateSyncOutbox>
+        }
+        groupBy: {
+          args: Prisma.SyncOutboxGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SyncOutboxGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.SyncOutboxCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SyncOutboxCountAggregateOutputType> | number
+        }
+      }
+    }
+    SyncInbox: {
+      payload: Prisma.$SyncInboxPayload<ExtArgs>
+      fields: Prisma.SyncInboxFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.SyncInboxFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SyncInboxPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.SyncInboxFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SyncInboxPayload>
+        }
+        findFirst: {
+          args: Prisma.SyncInboxFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SyncInboxPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.SyncInboxFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SyncInboxPayload>
+        }
+        findMany: {
+          args: Prisma.SyncInboxFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SyncInboxPayload>[]
+        }
+        create: {
+          args: Prisma.SyncInboxCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SyncInboxPayload>
+        }
+        createMany: {
+          args: Prisma.SyncInboxCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.SyncInboxCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SyncInboxPayload>[]
+        }
+        delete: {
+          args: Prisma.SyncInboxDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SyncInboxPayload>
+        }
+        update: {
+          args: Prisma.SyncInboxUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SyncInboxPayload>
+        }
+        deleteMany: {
+          args: Prisma.SyncInboxDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.SyncInboxUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.SyncInboxUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SyncInboxPayload>[]
+        }
+        upsert: {
+          args: Prisma.SyncInboxUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SyncInboxPayload>
+        }
+        aggregate: {
+          args: Prisma.SyncInboxAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateSyncInbox>
+        }
+        groupBy: {
+          args: Prisma.SyncInboxGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SyncInboxGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.SyncInboxCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SyncInboxCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -2356,6 +2581,7 @@ export const StoreScalarFieldEnum = {
   slug: 'slug',
   defaultServiceId: 'defaultServiceId',
   isActive: 'isActive',
+  autoConfirmAppointments: 'autoConfirmAppointments',
   primaryColor: 'primaryColor',
   secondaryColor: 'secondaryColor',
   accentColor: 'accentColor',
@@ -2422,6 +2648,7 @@ export const CategoryScalarFieldEnum = {
   storeId: 'storeId',
   name: 'name',
   slug: 'slug',
+  stockupCategoryId: 'stockupCategoryId',
   createdAt: 'createdAt'
 } as const
 
@@ -2448,6 +2675,8 @@ export const ProductScalarFieldEnum = {
   shippingExpress: 'shippingExpress',
   isActive: 'isActive',
   version: 'version',
+  stockupProductId: 'stockupProductId',
+  stockupSyncedAt: 'stockupSyncedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -2469,6 +2698,8 @@ export const ProductVariantScalarFieldEnum = {
   weight: 'weight',
   isActive: 'isActive',
   sortOrder: 'sortOrder',
+  stockupVariantId: 'stockupVariantId',
+  stockupSyncedAt: 'stockupSyncedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -2773,6 +3004,46 @@ export const StaffScalarFieldEnum = {
 } as const
 
 export type StaffScalarFieldEnum = (typeof StaffScalarFieldEnum)[keyof typeof StaffScalarFieldEnum]
+
+
+export const StockupConnectionScalarFieldEnum = {
+  connectionId: 'connectionId',
+  storeId: 'storeId',
+  stockupTenantId: 'stockupTenantId',
+  secret: 'secret',
+  enabled: 'enabled',
+  linkCode: 'linkCode',
+  linkCodeExpiresAt: 'linkCodeExpiresAt',
+  lastSyncAt: 'lastSyncAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type StockupConnectionScalarFieldEnum = (typeof StockupConnectionScalarFieldEnum)[keyof typeof StockupConnectionScalarFieldEnum]
+
+
+export const SyncOutboxScalarFieldEnum = {
+  id: 'id',
+  storeId: 'storeId',
+  eventId: 'eventId',
+  type: 'type',
+  payload: 'payload',
+  status: 'status',
+  attempts: 'attempts',
+  nextRetryAt: 'nextRetryAt',
+  occurredAt: 'occurredAt',
+  createdAt: 'createdAt'
+} as const
+
+export type SyncOutboxScalarFieldEnum = (typeof SyncOutboxScalarFieldEnum)[keyof typeof SyncOutboxScalarFieldEnum]
+
+
+export const SyncInboxScalarFieldEnum = {
+  eventId: 'eventId',
+  processedAt: 'processedAt'
+} as const
+
+export type SyncInboxScalarFieldEnum = (typeof SyncInboxScalarFieldEnum)[keyof typeof SyncInboxScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -3087,6 +3358,9 @@ export type GlobalOmitConfig = {
   subscription?: Prisma.SubscriptionOmit
   subscriptionPayment?: Prisma.SubscriptionPaymentOmit
   staff?: Prisma.StaffOmit
+  stockupConnection?: Prisma.StockupConnectionOmit
+  syncOutbox?: Prisma.SyncOutboxOmit
+  syncInbox?: Prisma.SyncInboxOmit
 }
 
 /* Types for Logging */

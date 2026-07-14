@@ -14,6 +14,10 @@ const STARTUP_MIGRATIONS = [
   `ALTER TABLE products ADD COLUMN IF NOT EXISTS stockup_product_id VARCHAR(50)`,
   `ALTER TABLE product_variants ADD COLUMN IF NOT EXISTS stockup_variant_id VARCHAR(50)`,
   `ALTER TABLE categories ADD COLUMN IF NOT EXISTS stockup_category_id VARCHAR(50)`,
+  // orden evento-contra-evento del receptor (A6): occurredAt del último evento
+  // StockUp aplicado, NUNCA comparar contra updatedAt local (colapsa backlogs).
+  `ALTER TABLE products ADD COLUMN IF NOT EXISTS stockup_synced_at TIMESTAMP`,
+  `ALTER TABLE product_variants ADD COLUMN IF NOT EXISTS stockup_synced_at TIMESTAMP`,
   `CREATE TABLE IF NOT EXISTS stockup_connections (
      connection_id TEXT PRIMARY KEY,
      store_id TEXT UNIQUE NOT NULL REFERENCES stores(store_id) ON DELETE CASCADE,
