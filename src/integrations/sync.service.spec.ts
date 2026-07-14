@@ -96,6 +96,32 @@ describe('applyRemoteEvent — orden evento-contra-evento (no updatedAt local)',
       data: { stock: 8, stockupSyncedAt: new Date('2026-01-01T13:00:00Z') },
     });
   });
+
+  it('product.upserted viejo se skipea sin tocar la categoría inline ni el producto', async () => {
+    const { service, tx } = makeHarness();
+    const syncedAt = new Date('2026-01-01T12:00:00Z');
+    tx.product.findFirst.mockResolvedValue({ productId: 'p1', stockupSyncedAt: syncedAt });
+
+    const oldEvent = {
+      eventId: 'e-old', type: 'product.upserted', occurredAt: '2026-01-01T11:00:00Z',
+      payload: {
+        product: {
+          sourceId: 'sp1', name: 'Nombre viejo', sku: 'INSO', price: 100, stock: 5,
+          isActive: true, hasVariants: false,
+          category: { sourceId: 'sc1', name: 'Categoria vieja' },
+          variants: [],
+        },
+      },
+    };
+    const result = await service.applyRemoteEvent('store1', oldEvent);
+    expect(result).toEqual({ ok: true, skipped: true });
+    // ni el producto ni la categoría inline deben tocarse desde un evento viejo
+    expect(tx.product.update).not.toHaveBeenCalled();
+    expect(tx.product.create).not.toHaveBeenCalled();
+    expect(tx.category.findFirst).not.toHaveBeenCalled();
+    expect(tx.category.create).not.toHaveBeenCalled();
+    expect(tx.category.update).not.toHaveBeenCalled();
+  });
 });
 
 describe('applyRemoteEvent — fast-path de dedupe', () => {
@@ -109,6 +135,43 @@ describe('applyRemoteEvent — fast-path de dedupe', () => {
     };
     const result = await service.applyRemoteEvent('store1', event);
     expect(result).toEqual({ ok: true, skipped: true });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('retry de product.upserted ya aplicado: recompone mapped desde la BD sin abrir tx', async () => {
+    const { service, prisma } = makeHarness();
+    prisma.syncInbox.findUnique.mockResolvedValue({ eventId: 'e1', processedAt: new Date() });
+    // el evento anterior ya creó producto + variantes + categoría en el CRM
+    prisma.product.findFirst.mockResolvedValue({
+      productId: 'p1',
+      variants: [
+        { variantId: 'v1', stockupVariantId: 'sv1' },
+        { variantId: 'v2', stockupVariantId: 'sv2' },
+      ],
+    });
+    prisma.category.findFirst.mockResolvedValue({ categoryId: 'c1', stockupCategoryId: 'sc1' });
+
+    const event = {
+      eventId: 'e1', type: 'product.upserted', occurredAt: new Date().toISOString(),
+      payload: {
+        product: {
+          sourceId: 'sp1', name: 'Inositol', sku: 'INSO', price: 100, stock: 5,
+          isActive: true, hasVariants: true,
+          category: { sourceId: 'sc1', name: 'Vitaminas' },
+          variants: [{ sourceId: 'sv1' }, { sourceId: 'sv2' }],
+        },
+      },
+    };
+    const result = await service.applyRemoteEvent('store1', event);
+    expect(result).toEqual({
+      ok: true,
+      skipped: true,
+      mapped: {
+        productId: 'p1',
+        variantIds: { sv1: 'v1', sv2: 'v2' },
+        categoryId: 'c1',
+      },
+    });
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 });

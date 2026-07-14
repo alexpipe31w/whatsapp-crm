@@ -14,6 +14,7 @@ const MAX_ATTEMPTS = 10;
 
 // Tipos de evento soportados por el receptor — se valida ANTES de tocar el
 // inbox o abrir transacción para no quemar recursos en tipos desconocidos.
+// Debe ir 1:1 con el switch de applyEvent (su default lanza si divergen).
 const KNOWN_EVENT_TYPES = new Set([
   'category.upserted',
   'category.deleted',
@@ -26,6 +27,14 @@ const KNOWN_EVENT_TYPES = new Set([
 // P2002 del syncInbox.create dentro de la tx = carrera entre dos instancias
 // procesando el mismo evento: la otra ya lo aplicó → tratar como skipped, no
 // como error real (que sí debe propagar para que el emisor reintente).
+//
+// Trade-off deliberado: NO se amplía a "cualquier P2002 = skipped" — un P2002
+// genuino (p.ej. sku duplicado de Product/ProductVariant) marcaría el evento
+// como procesado en StockUp y se perdería para siempre. Si un redelivery
+// CONCURRENTE del mismo evento choca en Product/ProductVariant antes de llegar
+// al inbox, propaga como 500 y se auto-cura en el siguiente retry: el
+// fast-path encuentra el inbox commiteado por el ganador. La ventana es rara
+// porque el dispatcher de StockUp es serial por conexión.
 function isInboxDuplicate(e: unknown): boolean {
   if (!(e instanceof Prisma.PrismaClientKnownRequestError) || e.code !== 'P2002') return false;
   const meta = e.meta as { modelName?: string; target?: unknown } | undefined;
@@ -254,14 +263,20 @@ export class SyncService {
 
     const occurredAt = new Date(envelope.occurredAt);
     try {
-      return await this.prisma.$transaction(async (tx: Tx) => {
-        const mapped: any = {};
-        const result = await this.applyEvent(tx, storeId, envelope, occurredAt, mapped);
-        // Último paso: si algo antes falló, esto nunca se ejecuta y la tx
-        // entera rollbackea (incluido el inbox).
-        await tx.syncInbox.create({ data: { eventId: envelope.eventId } });
-        return result;
-      });
+      return await this.prisma.$transaction(
+        async (tx: Tx) => {
+          const mapped: any = {};
+          const result = await this.applyEvent(tx, storeId, envelope, occurredAt, mapped);
+          // Último paso: si algo antes falló, esto nunca se ejecuta y la tx
+          // entera rollbackea (incluido el inbox).
+          await tx.syncInbox.create({ data: { eventId: envelope.eventId } });
+          return result;
+        },
+        // product.upserted con muchas variantes es una cadena secuencial de
+        // queries: el default de 5s puede reventar con P2028 y reintentar en
+        // loop. Mismo timeout que el receptor de referencia de StockUp.
+        { timeout: 15_000 },
+      );
     } catch (e) {
       if (isInboxDuplicate(e)) return { ok: true, skipped: true }; // carrera con otra instancia
       throw e; // fallo real: propaga para que el controller responda 500 y el emisor reintente
@@ -316,6 +331,8 @@ export class SyncService {
         // más nuevo a esta entidad. stockupSyncedAt null (nunca sincronizada,
         // o recién adoptada por sku) nunca se skipea. Se decide ANTES de
         // tocar la categoría para no crearla/actualizarla desde un evento viejo.
+        // El <= en empate de timestamps es deliberado: gana el primero
+        // commiteado y se evita re-aplicar un duplicado.
         if (existing?.stockupSyncedAt && occurredAt <= existing.stockupSyncedAt) {
           return { ok: true, skipped: true };
         }
@@ -382,6 +399,8 @@ export class SyncService {
         // Skip evento-contra-evento (stockupSyncedAt), no contra reloj local:
         // un retry con stock viejo no debe pisar un evento StockUp más nuevo
         // ya aplicado, pero una escritura LOCAL reciente no debe bloquear el evento.
+        // El <= en empate de timestamps es deliberado: gana el primero
+        // commiteado y se evita re-aplicar un duplicado.
         const p = envelope.payload;
         if (p.variantSourceId) {
           const v = await tx.productVariant.findFirst({
@@ -416,8 +435,11 @@ export class SyncService {
         break;
       }
       default:
-        // inalcanzable: el tipo se valida contra KNOWN_EVENT_TYPES antes de la tx
-        return { ok: false };
+        // Inalcanzable: el tipo se valida contra KNOWN_EVENT_TYPES antes de
+        // abrir la tx (si agregas un case aquí, agrégalo también al Set, y
+        // viceversa). Throw y no { ok: false }: devolver "ok" commitearía el
+        // inbox para un evento NO manejado y el retry se cortocircuitaría.
+        throw new Error(`[sync] tipo de evento no manejado: ${envelope.type}`);
     }
     return { ok: true, mapped: Object.keys(mapped).length ? mapped : undefined };
   }
