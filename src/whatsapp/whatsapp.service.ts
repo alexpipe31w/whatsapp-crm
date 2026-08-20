@@ -194,7 +194,9 @@ function resolveJid(key: { remoteJid?: string; remoteJidAlt?: string }): string 
 
 function phoneFromJid(jid: string): string | null {
   if (!jid || !jid.endsWith('@s.whatsapp.net')) return null;
-  const raw = jid.replace('@s.whatsapp.net', '');
+  // El jid puede traer sufijo de dispositivo ("573001112233:26@s.whatsapp.net");
+  // el teléfono del cliente es solo la parte anterior a los dos puntos.
+  const raw = jid.replace('@s.whatsapp.net', '').split(':')[0];
   return raw ? `+${raw}` : null;
 }
 
@@ -448,6 +450,9 @@ export class WhatsappService implements OnModuleInit {
     });
 
     sock.ev.on('messages.upsert', async ({ messages, type }: any) => {
+      // Traza de entrada: si un mensaje no aparece luego en el log, aquí se ve si
+      // WhatsApp llegó a entregarlo o si el problema es anterior a nosotros.
+      this.logger.debug(`[upsert] type=${type} n=${messages?.length ?? 0}`);
       if (type !== 'notify' && type !== 'append') return;
       const cutoffMs = type === 'append' ? Date.now() - HISTORY_SYNC_WINDOW_MS : 0;
 
@@ -580,8 +585,45 @@ export class WhatsappService implements OnModuleInit {
 
   // ─── Procesamiento de mensajes ──────────────────────────────────────────────
 
+  /**
+   * Devuelve el teléfono del remitente. WhatsApp está migrando el direccionamiento a
+   * LID: el mensaje llega con remoteJid "<lid>@lid" y el número real solo viaja en los
+   * atributos participant_pn/sender_pn del stanza. Si WhatsApp no los manda, Baileys
+   * deja key.remoteJidAlt vacío y nos quedábamos sin teléfono — y el mensaje se caía en
+   * silencio, sin log ni fila en BD. Ahí preguntamos al mapa LID→PN del propio socket.
+   */
+  private async resolveSenderPhone(msg: any, sock: any): Promise<string | null> {
+    const jid = resolveJid(msg.key);
+    if (!jid) return null;
+    if (jid.endsWith('@g.us') || jid.endsWith('@broadcast')) return null;
+
+    const direct = phoneFromJid(jid);
+    if (direct) return direct;
+
+    if (jid.endsWith('@lid')) {
+      try {
+        const pn = await sock?.signalRepository?.lidMapping?.getPNForLID?.(jid);
+        if (pn) {
+          const asJid = String(pn).includes('@') ? String(pn) : `${pn}@s.whatsapp.net`;
+          const phone = phoneFromJid(asJid);
+          if (phone) {
+            this.logger.debug(`[LID] ${jid} → ${phone} (vía lidMapping)`);
+            return phone;
+          }
+        }
+      } catch (err: any) {
+        this.logger.warn(`[LID] No se pudo resolver ${jid}: ${err.message}`);
+      }
+    }
+    return null;
+  }
+
   private async processMessage(msg: any, storeId: string, sock: any): Promise<void> {
-    if (!msg.message) return;
+    if (!msg.message) {
+      // Sobre suele ser un mensaje que no se pudo descifrar; sin este log desaparece.
+      this.logger.warn(`Mensaje sin contenido (¿fallo de descifrado?) — key: ${JSON.stringify(msg.key ?? {})}`);
+      return;
+    }
 
     // Mensajes propios: el bot los ignora, salvo el comando interno "!stop" que
     // el dueño escribe dentro del chat del cliente para silenciar al bot ahí.
@@ -604,17 +646,25 @@ export class WhatsappService implements OnModuleInit {
     }
 
     const jid = resolveJid(msg.key);
-    if (!jid) return;
+    if (!jid) {
+      this.logger.warn(`Mensaje descartado sin jid — key: ${JSON.stringify(msg.key ?? {})}`);
+      return;
+    }
 
-    const phone = phoneFromJid(jid);
-    if (!phone) return; // grupos, status broadcasts, etc.
+    // Grupos y difusiones: fuera, y sin ruido en el log.
+    if (jid.endsWith('@g.us') || jid.endsWith('@broadcast')) return;
+
+    const phone = await this.resolveSenderPhone(msg, sock);
+    if (!phone) {
+      // Nunca en silencio: si llegamos aquí hay un mensaje real que no pudimos atribuir.
+      this.logger.warn(
+        `Mensaje SIN teléfono resoluble — jid=${jid} | key=${JSON.stringify(msg.key ?? {})} | tipo=${Object.keys(msg.message ?? {})[0]}`,
+      );
+      return;
+    }
 
     const pushName: string | undefined =
       typeof msg.pushName === 'string' && msg.pushName.trim() ? msg.pushName.trim() : undefined;
-
-    // Ignorar grupos
-    if (jid.endsWith('@g.us'))   return;
-    if (jid.endsWith('@broadcast')) return;
 
     const messageType = Object.keys(msg.message)[0];
 
