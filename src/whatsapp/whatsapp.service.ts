@@ -449,6 +449,12 @@ export class WhatsappService implements OnModuleInit {
       }
     });
 
+    // WhatsApp solo manda el par LID↔teléfono en contadas ocasiones (sync de contactos,
+    // migración LID). Guardarlos cuando pasan es la única forma de atribuir después un
+    // mensaje direccionado por LID: no existe consulta inversa LID→PN en el protocolo.
+    sock.ev.on('contacts.upsert', (c: any) => { void this.learnLidMappings(c, sock); });
+    sock.ev.on('contacts.update', (c: any) => { void this.learnLidMappings(c, sock); });
+
     sock.ev.on('messages.upsert', async ({ messages, type }: any) => {
       // Traza de entrada: si un mensaje no aparece luego en el log, aquí se ve si
       // WhatsApp llegó a entregarlo o si el problema es anterior a nosotros.
@@ -618,6 +624,27 @@ export class WhatsappService implements OnModuleInit {
     return null;
   }
 
+  /**
+   * Guarda los pares LID↔teléfono que aparezcan en los eventos de contactos. Sin esto,
+   * un contacto que escribe por primera vez direccionado por LID es inatribuible.
+   */
+  private async learnLidMappings(contacts: any, sock: any): Promise<void> {
+    const list  = Array.isArray(contacts) ? contacts : [contacts];
+    const pairs = list
+      .filter((c: any) => c?.id && c?.lid)
+      .map((c: any) => ({
+        lid: String(c.lid).includes('@') ? String(c.lid) : `${c.lid}@lid`,
+        pn:  String(c.id),
+      }));
+    if (pairs.length === 0) return;
+    try {
+      await sock?.signalRepository?.lidMapping?.storeLIDPNMappings?.(pairs);
+      this.logger.debug(`[LID] aprendidos ${pairs.length} mapeo(s) desde contactos`);
+    } catch (err: any) {
+      this.logger.warn(`[LID] No se pudieron guardar mapeos: ${err.message}`);
+    }
+  }
+
   private async processMessage(msg: any, storeId: string, sock: any): Promise<void> {
     if (!msg.message) {
       // Sobre suele ser un mensaje que no se pudo descifrar; sin este log desaparece.
@@ -657,8 +684,20 @@ export class WhatsappService implements OnModuleInit {
     const phone = await this.resolveSenderPhone(msg, sock);
     if (!phone) {
       // Nunca en silencio: si llegamos aquí hay un mensaje real que no pudimos atribuir.
+      // Volcado de los campos donde WhatsApp podría traer el número, para no adivinar.
+      const ctxInfo = (msg.message as any)?.[Object.keys(msg.message)[0]]?.contextInfo ?? {};
       this.logger.warn(
-        `Mensaje SIN teléfono resoluble — jid=${jid} | key=${JSON.stringify(msg.key ?? {})} | tipo=${Object.keys(msg.message ?? {})[0]}`,
+        `Mensaje SIN teléfono resoluble — jid=${jid} | key=${JSON.stringify(msg.key ?? {})} | ` +
+        `campos=${JSON.stringify({
+          tipo:           Object.keys(msg.message)[0],
+          pushName:       msg.pushName,
+          senderPn:       (msg.key as any)?.senderPn,
+          participantAlt: (msg.key as any)?.participantAlt,
+          remoteJidAlt:   (msg.key as any)?.remoteJidAlt,
+          ctxParticipant: ctxInfo?.participant,
+          ctxRemoteJid:   ctxInfo?.remoteJid,
+          topLevel:       Object.keys(msg),
+        })}`,
       );
       return;
     }
