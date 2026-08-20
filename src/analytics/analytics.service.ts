@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { createCompletion, AIProvider } from '../ai/providers';
+import { createCompletion, normalizeCartridgeModel, PROVIDER_CONFIG, AIProvider } from '../ai/providers';
 
 @Injectable()
 export class AnalyticsService {
@@ -45,9 +45,10 @@ NO uses asteriscos para negritas.
 
 ${context}`;
 
-    const reply = await this.callAI((aiConfig.aiProvider ?? 'groq') as AIProvider,
+    const provider = (aiConfig.aiProvider ?? 'groq') as AIProvider;
+    const reply = await this.callAI(provider,
       aiConfig.apiKey,
-      aiConfig.model ?? 'llama-3.3-70b-versatile',
+      normalizeCartridgeModel(provider, aiConfig.model) ?? PROVIDER_CONFIG[provider].defaultModel,
       [{ role: 'system', content: systemPrompt }, ...messages],
       1024,
       0.7,
@@ -118,9 +119,10 @@ Analiza el sentimiento general y los patrones. Devuelve ÚNICAMENTE este JSON (s
 }`;
 
     try {
-      const raw = await this.callAI((aiConfig.aiProvider ?? 'groq') as AIProvider,
+      const provider = (aiConfig.aiProvider ?? 'groq') as AIProvider;
+      const raw = await this.callAI(provider,
         aiConfig.apiKey,
-        'llama-3.3-70b-versatile',
+        PROVIDER_CONFIG[provider].defaultModel,
         [{ role: 'user', content: prompt }],
         512,
         0.3,

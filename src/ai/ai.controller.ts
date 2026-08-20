@@ -90,18 +90,17 @@ export class AiController {
     const storeId = req.user.storeId;
     const { storeId: _ignored, ...updateData } = dto as any;
 
-    // Normalizar modelo gemini al guardar: una key gemini con modelo capado
-    // (gemini-2.0-flash → 429 "limit:0", 1.5 → 404) o sin modelo se fija al default
-    // vivo (gemini-2.5-flash). Evita que cada vez que se vuelva a agregar una key
-    // gemini el pool quede inservible. Solo afecta cartuchos/primary gemini.
+    // Normalizar el modelo al guardar: gemini capado (2.0-flash → 429 "limit:0", 1.5 →
+    // 404) y groq de la familia llama (decomisionada, 404) se fijan al default vivo del
+    // proveedor. Evita que agregar una key deje el pool inservible. Ver providers.ts.
     if (Array.isArray(updateData.cartridges)) {
       updateData.cartridges = updateData.cartridges.map((c: any) => ({
         ...c,
         model: normalizeCartridgeModel(c.provider, c.model),
       }));
     }
-    if (updateData.aiProvider === 'gemini') {
-      updateData.model = normalizeCartridgeModel('gemini', updateData.model);
+    if (updateData.aiProvider && updateData.model !== undefined) {
+      updateData.model = normalizeCartridgeModel(updateData.aiProvider, updateData.model);
     }
 
     return this.prisma.aIConfiguration.upsert({

@@ -4,7 +4,8 @@ import { Pool } from 'pg';
 import { PrismaClient } from '../generated/prisma/client';
 
 // Migraciones aditivas seguras que se corren en cada arranque.
-// Solo operaciones ADD COLUMN IF NOT EXISTS — idempotentes, nunca destruyen datos.
+// Solo operaciones idempotentes y no destructivas: ADD COLUMN / CREATE TABLE IF NOT
+// EXISTS, y UPDATEs de saneamiento acotados que dejan de matchear tras la 1ª pasada.
 const STARTUP_MIGRATIONS = [
   `ALTER TABLE staff ADD COLUMN IF NOT EXISTS commission_percentage DOUBLE PRECISION`,
   `ALTER TABLE staff ADD COLUMN IF NOT EXISTS suspended_from TIMESTAMP`,
@@ -47,6 +48,37 @@ const STARTUP_MIGRATIONS = [
      event_id TEXT PRIMARY KEY,
      processed_at TIMESTAMP NOT NULL DEFAULT now()
    )`,
+  // Saneamiento de modelos de IA muertos. Groq decomisionó la familia llama y Google
+  // capó gemini 2.0/1.5 (ver DEAD_GROQ_MODEL_RE / DEAD_GEMINI_MODEL_RE en providers.ts).
+  // El pool ya normaliza en memoria, pero la BD seguiría mostrando el modelo muerto en el
+  // panel y sirviéndoselo a analytics. Idempotente: tras la primera pasada el WHERE deja
+  // de matchear, así que en arranques siguientes son no-ops sin escrituras.
+  `ALTER TABLE ai_configurations ALTER COLUMN model SET DEFAULT 'openai/gpt-oss-120b'`,
+  `UPDATE ai_configurations
+      SET model = 'openai/gpt-oss-120b'
+    WHERE ai_provider = 'groq'
+      AND model ~* '^(llama[-0-9]|meta-llama/llama-[34]|mixtral|gemma)'`,
+  `UPDATE ai_configurations
+      SET model = 'gemini-2.5-flash'
+    WHERE ai_provider = 'gemini'
+      AND model ~* '^gemini-(2[.]0|1[.]5|1[.]0|pro)'`,
+  `UPDATE ai_configurations
+      SET cartridges = (
+            SELECT jsonb_agg(
+                     CASE WHEN c->>'provider' = 'groq'   AND c->>'model' ~* '^(llama[-0-9]|meta-llama/llama-[34]|mixtral|gemma)'
+                          THEN jsonb_set(c, '{model}', to_jsonb('openai/gpt-oss-120b'::text))
+                          WHEN c->>'provider' = 'gemini' AND c->>'model' ~* '^gemini-(2[.]0|1[.]5|1[.]0|pro)'
+                          THEN jsonb_set(c, '{model}', to_jsonb('gemini-2.5-flash'::text))
+                          ELSE c END
+                     ORDER BY ord)
+              FROM jsonb_array_elements(cartridges) WITH ORDINALITY AS t(c, ord)
+          )
+    WHERE jsonb_typeof(cartridges) = 'array'
+      AND EXISTS (
+            SELECT 1 FROM jsonb_array_elements(cartridges) AS c
+             WHERE (c->>'provider' = 'groq'   AND c->>'model' ~* '^(llama[-0-9]|meta-llama/llama-[34]|mixtral|gemma)')
+                OR (c->>'provider' = 'gemini' AND c->>'model' ~* '^gemini-(2[.]0|1[.]5|1[.]0|pro)')
+          )`,
 ];
 
 @Injectable()

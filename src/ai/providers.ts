@@ -16,8 +16,13 @@ export const PROVIDER_CONFIG: Record<AIProvider, ProviderMeta> = {
     baseURL:          'https://api.groq.com/openai/v1',
     whisperSupported: true,
     whisperBaseURL:   'https://api.groq.com/openai/v1',
-    defaultModel:     'llama-3.3-70b-versatile',
-    defaultFastModel: 'llama-3.1-8b-instant',
+    // Groq decomisionó toda la familia llama en agosto de 2026 (404 "model does not
+    // exist"): llama-3.3-70b-versatile y llama-3.1-8b-instant están muertos. Verificado
+    // 2026-08-20 contra GET /openai/v1/models con la key de la tienda: los únicos chat
+    // models vivos son openai/gpt-oss-*, qwen/qwen3.6-27b, groq/compound* y allam-2-7b.
+    // Whisper NO está afectado (whisper-large-v3 sigue vivo).
+    defaultModel:     'openai/gpt-oss-120b',
+    defaultFastModel: 'openai/gpt-oss-20b',
   },
   openai: {
     whisperSupported: true,
@@ -63,16 +68,30 @@ export const PROVIDER_CONFIG: Record<AIProvider, ProviderMeta> = {
 // PROVIDER_CONFIG.gemini. Solo afecta a gemini; el resto de proveedores pasa intacto.
 const DEAD_GEMINI_MODEL_RE = /^gemini-(2\.0|1\.5|1\.0|pro)\b/i;
 
+// Modelos groq que Groq decomisionó (404 "The model ... does not exist"): toda la
+// familia llama (llama-3.x, meta-llama/llama-3|4-*), mixtral y gemma. Se remapean al
+// default vivo (openai/gpt-oss-120b) al guardar el cartucho y al construir el pool,
+// para que una config vieja en BD no queme todas las keys en llamadas fallidas. OJO:
+// meta-llama/llama-prompt-guard-2-* sigue vivo y NO matchea (no lleva dígito tras
+// "llama-"); tampoco se usa como modelo de chat.
+const DEAD_GROQ_MODEL_RE = /^(llama[-\d]|meta-llama\/llama-[34]|mixtral|gemma)/i;
+
 /**
  * Devuelve el modelo a persistir para un cartucho. Para gemini, garantiza un modelo
  * con free tier vivo: si viene vacío o es uno de los modelos capados/eliminados, lo
- * reemplaza por PROVIDER_CONFIG.gemini.defaultModel. Para los demás proveedores
- * devuelve el modelo tal cual lo envió el usuario (sin tocarlo).
+ * reemplaza por PROVIDER_CONFIG.gemini.defaultModel. Para groq hace lo mismo con la
+ * familia llama decomisionada (→ PROVIDER_CONFIG.groq.defaultModel). Para los demás
+ * proveedores devuelve el modelo tal cual lo envió el usuario (sin tocarlo).
  */
 export function normalizeCartridgeModel(provider: string, model?: string | null): string | undefined {
   if (provider === 'gemini') {
     const m = (model ?? '').trim();
     if (!m || DEAD_GEMINI_MODEL_RE.test(m)) return PROVIDER_CONFIG.gemini.defaultModel;
+    return m;
+  }
+  if (provider === 'groq') {
+    const m = (model ?? '').trim();
+    if (!m || DEAD_GROQ_MODEL_RE.test(m)) return PROVIDER_CONFIG.groq.defaultModel;
     return m;
   }
   return model ?? undefined;
@@ -131,11 +150,17 @@ export async function createCompletion(
   }
 
   const client   = getOpenAIClient(provider, apiKey);
+  // Los gpt-oss de groq son modelos de razonamiento: el reasoning gasta tokens del
+  // mismo presupuesto max_tokens y viaja aparte, en message.reasoning. Con effort
+  // "low" baja de ~210 a ~60 tokens (medido contra la API el 2026-08-20), que es lo
+  // que evita truncar respuestas y, sobre todo, el JSON de los extractores (700-900).
+  const isGroqReasoning = provider === 'groq' && model.startsWith('openai/gpt-oss');
   const response = await client.chat.completions.create({
     model,
     messages:    messages as any,
     temperature,
     max_tokens:  maxTokens,
+    ...(isGroqReasoning ? { reasoning_effort: 'low' as const } : {}),
   });
   return response.choices[0]?.message?.content ?? '';
 }
