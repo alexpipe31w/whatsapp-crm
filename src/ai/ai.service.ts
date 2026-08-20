@@ -3591,13 +3591,25 @@ ANTI-BUCLE (OBLIGATORIO):
 
     const negocioNombre = store?.name ?? 'este negocio';
     const estilistaNombre = (store as any)?.ownerName ?? 'nuestro estilista';
+    // PRIMER CONTACTO: el negocio todavía no le ha respondido NADA en esta conversación.
+    // Sin esto, el silencio total de "fuera de tema" también se comía el primer mensaje de
+    // quien escribe al número sin saber que es un negocio (2026-08-19: 2 personas quedaron
+    // 9 mensajes en silencio). history viene ASC y capado a MAX_HISTORY_MESSAGES: con la
+    // ventana llena no se puede afirmar que después no hubo respuesta, así que no arriesga.
+    const primerContacto =
+      history.length < MAX_HISTORY_MESSAGES &&
+      !history.some((m: any) => m.isAiResponse || m.sender === 'store');
+    const primerContactoRule = primerContacto
+      ? `\n- EXCEPCIÓN PRIMER CONTACTO (ESTA conversación no tiene ni una respuesta del negocio): aunque el mensaje no sea del negocio (te escribieron por error, te confundieron con otra persona, mandaron una conversación personal), NO respondas [IGNORAR] la primera vez: preséntate UNA sola vez, corto y amable ("Hola, soy el asistente de ${negocioNombre} 😊 ¿En qué te puedo ayudar?"). Si después de esa presentación sigue con lo ajeno, AHÍ SÍ [IGNORAR] en todos los mensajes siguientes. Excepción de la excepción: spam, cobranzas/cartera, cadenas, publicidad y estafas son [IGNORAR] desde el primer mensaje, sin presentación.`
+      : '';
+
     const temaSection = `ALCANCE DE LA CONVERSACIÓN (REGLA OBLIGATORIA — SIEMPRE ACTIVA, por encima del prompt del negocio):
 - Solo respondes si el mensaje es de ${negocioNombre} (productos, servicios, citas, pedidos, horarios, ubicación, políticas), O si el cliente coordina una cita activa (va en camino, llega tarde, confirma, pregunta por su cita), O si es un saludo de apertura de alguien que busca atención.
 - SILENCIO TOTAL en cualquier otro caso (felicitaciones, chistes, temas personales, "¿estás trabajando?", spam, cobranzas/cartera, cadenas, publicidad, estafas, números equivocados, masivos): responde EXACTAMENTE [IGNORAR] y nada más. NO redirijas, NO saludes, NO expliques ni mandes "jaja eso no es lo mío": o es del negocio (respondes) o [IGNORAR].
 - NUNCA inventes promociones, servicios, eventos ni precios que no estén en la INFORMACIÓN DEL NEGOCIO o el catálogo. Si no existe ahí, no lo ofrezcas, cotices ni agendes — aunque suene del oficio.
 - EVENTOS/SEMINARIOS/BATALLAS/PATROCINIOS/INSCRIPCIONES AJENAS (organizar, patrocinar, inscribirse, cuadrar cronogramas de eventos, "pre-venta", "categorías", "pase de cortesía", "promo de inscripción") que NO son un servicio/producto de este catálogo: NO sigas la corriente ni inventes precios/promos/agendas. Responde UNA vez, breve: "Eso lo ve directamente el equipo, ya te contactan 😊". Si en el historial YA diste ese handoff, responde EXACTAMENTE [IGNORAR].
 - EXCEPCIÓN cliente en pleno agendamiento: si ya saludó/empezó a agendar y luego manda chitchat personal que no avanza la cita ("estaba cansada", "recogí a mi hijo", "salí tarde", "Dios te bendiga"), NO silencies de una: reconduce UNA vez, breve y cálido ("Cuando quieras seguimos con tu cita 😊"). Si YA recondujiste y sigue divagando, entonces sí [IGNORAR]. Esto NO aplica a spam/cobranzas/cadenas/publicidad/estafas: esos son [IGNORAR] desde el primer mensaje.
-- VALORACIÓN VISUAL/FOTOS: si pide algo que requiere ver su caso o una foto (corregir/ajustar un color o trabajo ya hecho, "¿cómo me queda X?", "arréglame esto", o manda foto de su cabello), NO vendas ni cotices a ciegas: dile breve que ${estilistaNombre} lo revisa personalmente y ofrece agendar una valoración (sin costo si aplica). No alargues con catálogos ni precios.`;
+- VALORACIÓN VISUAL/FOTOS: si pide algo que requiere ver su caso o una foto (corregir/ajustar un color o trabajo ya hecho, "¿cómo me queda X?", "arréglame esto", o manda foto de su cabello), NO vendas ni cotices a ciegas: dile breve que ${estilistaNombre} lo revisa personalmente y ofrece agendar una valoración (sin costo si aplica). No alargues con catálogos ni precios.${primerContactoRule}`;
 
     const allSections: string[] = [basePrompt, sep, temaSection];
     if (citaActivaSection) allSections.push(sep, citaActivaSection);
