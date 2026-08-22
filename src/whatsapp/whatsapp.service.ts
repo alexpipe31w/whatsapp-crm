@@ -11,6 +11,9 @@ import { CustomersService } from '../customers/customers.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { BlockedService } from '../blocked/blocked.service';
 import { AdminAssistantService } from '../admin-assistant/admin-assistant.service';
+import {
+  isLidIdentity, lidIdentity, resolveJid, phoneFromJid, lidUserFromJid, jidFromPhone,
+} from '../utils/wa-identity.util';
 
 const WHISPER_TIMEOUT_MS    = 25_000;
 const WHISPER_MODEL         = 'whisper-large-v3-turbo';
@@ -192,24 +195,6 @@ async function useDBAuthState(prisma: PrismaService, storeId: string) {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function resolveJid(key: { remoteJid?: string; remoteJidAlt?: string }): string {
-  const rawJid = key.remoteJid ?? '';
-  if (rawJid.endsWith('@lid') && key.remoteJidAlt) return key.remoteJidAlt;
-  return rawJid;
-}
-
-function phoneFromJid(jid: string): string | null {
-  if (!jid || !jid.endsWith('@s.whatsapp.net')) return null;
-  // El jid puede traer sufijo de dispositivo ("573001112233:26@s.whatsapp.net");
-  // el teléfono del cliente es solo la parte anterior a los dos puntos.
-  const raw = jid.replace('@s.whatsapp.net', '').split(':')[0];
-  return raw ? `+${raw}` : null;
-}
-
-function jidFromPhone(phone: string): string {
-  return `${phone.replace(/\D/g, '')}@s.whatsapp.net`;
-}
-
 /**
  * Extrae el texto de un mensaje de WhatsApp cubriendo TODOS los tipos
  * que Baileys puede entregar, incluyendo botones, listas, templates,
@@ -353,6 +338,9 @@ export class WhatsappService implements OnModuleInit {
   // si el 401 persiste tras MAX_LOGGED_OUT_RETRIES se trata como logout definitivo.
   private readonly loggedOutAttempts = new Map<string, number>();
   private readonly processedMsgIds  = new Set<string>();
+  // Pares "<storeId>:<waLid>" cuya ficha de cliente ya se cruzó en esta ejecución.
+  // Evita repetir la transacción de fusión en cada mensaje del mismo cliente.
+  private readonly reconciledLids   = new Set<string>();
   private readonly messageQueues    = new Map<string, Promise<void>>();
   private readonly audioRateLimiter = new Map<string, { count: number; resetAt: number }>();
   private readonly messageBuffers  = new Map<string, {
@@ -604,19 +592,31 @@ export class WhatsappService implements OnModuleInit {
   // ─── Procesamiento de mensajes ──────────────────────────────────────────────
 
   /**
-   * Devuelve el teléfono del remitente. WhatsApp está migrando el direccionamiento a
-   * LID: el mensaje llega con remoteJid "<lid>@lid" y el número real solo viaja en los
-   * atributos participant_pn/sender_pn del stanza. Si WhatsApp no los manda, Baileys
-   * deja key.remoteJidAlt vacío y nos quedábamos sin teléfono — y el mensaje se caía en
-   * silencio, sin log ni fila en BD. Ahí preguntamos al mapa LID→PN del propio socket.
+   * Identifica al remitente con lo que WhatsApp deje ver, sin exigir teléfono.
+   *
+   * WhatsApp está migrando el direccionamiento a LID: el mensaje llega con remoteJid
+   * "<lid>@lid" y el número solo viaja en participant_pn/sender_pn. Si no los manda,
+   * Baileys deja remoteJidAlt vacío y no hay número — y no existe consulta inversa
+   * LID→PN (getPNForLID solo lee caché local; pnFromLIDUSync va PN→LID). Antes eso
+   * significaba tirar el mensaje; ahora el LID pasa a ser la identidad del cliente.
+   *
+   * Devuelve la identidad para customers.phone y, cuando se conoce, el LID por separado
+   * — se guarda también en los clientes que SÍ tienen teléfono, para poder fusionar.
    */
-  private async resolveSenderPhone(msg: any, sock: any): Promise<string | null> {
+  private async resolveSenderIdentity(
+    msg: any,
+    sock: any,
+  ): Promise<{ identity: string; waLid: string | null } | null> {
     const jid = resolveJid(msg.key);
     if (!jid) return null;
     if (jid.endsWith('@g.us') || jid.endsWith('@broadcast')) return null;
 
+    // resolveJid prefiere el jid con número; si lo devolvió, el LID original sigue
+    // en la key y nos lo quedamos igual para poder cruzar las dos identidades.
+    const waLid = lidUserFromJid(jid) ?? lidUserFromJid(msg.key?.remoteJid ?? '');
+
     const direct = phoneFromJid(jid);
-    if (direct) return direct;
+    if (direct) return { identity: direct, waLid };
 
     if (jid.endsWith('@lid')) {
       try {
@@ -626,13 +626,17 @@ export class WhatsappService implements OnModuleInit {
           const phone = phoneFromJid(asJid);
           if (phone) {
             this.logger.debug(`[LID] ${jid} → ${phone} (vía lidMapping)`);
-            return phone;
+            return { identity: phone, waLid };
           }
         }
       } catch (err: any) {
         this.logger.warn(`[LID] No se pudo resolver ${jid}: ${err.message}`);
       }
     }
+
+    // Sin número: el cliente entra identificado por su LID y la IA le responde igual.
+    if (waLid) return { identity: lidIdentity(waLid), waLid };
+
     return null;
   }
 
@@ -717,7 +721,7 @@ export class WhatsappService implements OnModuleInit {
     // Baileys reporta esos mensajes como fromMe, así que hay que revisarlos
     // ANTES de descartarlos (de lo contrario el comando nunca llega a procesarse).
     if (msg.key?.fromMe) {
-      await this.handleOwnerStopCommand(msg, storeId);
+      await this.handleOwnerStopCommand(msg, storeId, sock);
       return;
     }
 
@@ -741,13 +745,13 @@ export class WhatsappService implements OnModuleInit {
     // Grupos y difusiones: fuera, y sin ruido en el log.
     if (jid.endsWith('@g.us') || jid.endsWith('@broadcast')) return;
 
-    const phone = await this.resolveSenderPhone(msg, sock);
-    if (!phone) {
-      // Nunca en silencio: si llegamos aquí hay un mensaje real que no pudimos atribuir.
-      // Volcado de los campos donde WhatsApp podría traer el número, para no adivinar.
+    const identity = await this.resolveSenderIdentity(msg, sock);
+    if (!identity) {
+      // Ya ni teléfono ni LID: sin identidad de ningún tipo no hay a quién responder.
+      // Nunca en silencio — volcado completo para saber qué mandó WhatsApp esta vez.
       const ctxInfo = (msg.message as any)?.[Object.keys(msg.message)[0]]?.contextInfo ?? {};
       this.logger.warn(
-        `Mensaje SIN teléfono resoluble — jid=${jid} | key=${JSON.stringify(msg.key ?? {})} | ` +
+        `Mensaje SIN identidad resoluble — jid=${jid} | key=${JSON.stringify(msg.key ?? {})} | ` +
         `campos=${JSON.stringify({
           tipo:           Object.keys(msg.message)[0],
           pushName:       msg.pushName,
@@ -760,6 +764,22 @@ export class WhatsappService implements OnModuleInit {
         })}`,
       );
       return;
+    }
+
+    const { identity: phone, waLid } = identity;
+    if (isLidIdentity(phone)) {
+      this.logger.log(`[LID] Cliente sin teléfono: ${phone} (${msg.pushName ?? 'sin nombre'}) — se atiende igual`);
+    } else if (waLid) {
+      // Conocemos sus dos identidades: si antes había escrito sin número, su ficha está
+      // duplicada y hay que unificarla. Una vez cruzada no hay que repetirlo por mensaje.
+      const key = `${storeId}:${waLid}`;
+      if (!this.reconciledLids.has(key)) {
+        this.reconciledLids.add(key);
+        await this.customersService.linkLidIdentity(storeId, phone, waLid).catch((err: any) => {
+          this.reconciledLids.delete(key); // que lo reintente el próximo mensaje
+          this.logger.warn(`[LID] No se pudo cruzar ${waLid} con ${phone}: ${err.message}`);
+        });
+      }
     }
 
     const pushName: string | undefined =
@@ -809,7 +829,7 @@ export class WhatsappService implements OnModuleInit {
 
   // ─── Comando interno del dueño: !stop dentro del chat del cliente ───────────
 
-  private async handleOwnerStopCommand(msg: any, storeId: string): Promise<void> {
+  private async handleOwnerStopCommand(msg: any, storeId: string, sock: any): Promise<void> {
     const messageType = Object.keys(msg.message ?? {})[0];
     if (!messageType || IGNORED_TYPES.has(messageType) || MEDIA_TYPES.has(messageType)) return;
 
@@ -820,7 +840,10 @@ export class WhatsappService implements OnModuleInit {
     const jid = resolveJid(msg.key);
     if (!jid || jid.endsWith('@g.us') || jid.endsWith('@broadcast')) return;
 
-    const phone = phoneFromJid(jid);
+    // Misma identidad que en processMessage: el chat puede ser de un cliente sin
+    // número, y ahí "!stop" tiene que silenciar el bot igual que en cualquier otro.
+    const identity = await this.resolveSenderIdentity(msg, sock);
+    const phone    = identity?.identity;
     if (!phone) return;
 
     const conversation = await this.prisma.conversation.findFirst({

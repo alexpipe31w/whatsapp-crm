@@ -6,10 +6,12 @@ export class CreateCustomerDto {
   @IsOptional()
   storeId?: string;
 
+  // Identidad del cliente: su teléfono, o "lid:<user>" cuando WhatsApp lo direcciona
+  // por LID y no entrega el número (ver utils/wa-identity.util.ts).
   @IsString()
   @MinLength(7, { message: 'El teléfono debe tener al menos 7 dígitos' })
-  @MaxLength(20)
-  @Matches(/^\+?[\d\s\-().]+$/, { message: 'Formato de teléfono inválido' })
+  @MaxLength(32)
+  @Matches(/^(\+?[\d\s\-().]+|lid:\d{5,25})$/, { message: 'Formato de teléfono inválido' })
   phone: string;
 
   @IsString()

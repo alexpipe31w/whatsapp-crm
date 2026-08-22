@@ -140,7 +140,12 @@ model Store {
 model Customer {
   customerId String   @id @default(uuid()) @map("customer_id")
   storeId    String   @map("store_id")
-  phone      String   @db.VarChar(20)
+  // Identidad del cliente. Normalmente el teléfono ("+57300..."), pero si WhatsApp lo
+  // direcciona por LID y no entrega el número, es "lid:<user>" — ver waLid.
+  phone      String   @db.VarChar(32)
+  // LID de WhatsApp cuando se conoce, tanto si además tenemos teléfono como si no.
+  // Índice único parcial por tienda creado en STARTUP_MIGRATIONS (Prisma no los declara).
+  waLid      String?  @map("wa_lid") @db.VarChar(32)
   name       String?  @db.VarChar(100)
   cedula     String?  @db.VarChar(20)
   city       String?  @db.VarChar(100)

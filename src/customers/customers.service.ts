@@ -3,6 +3,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
+import { lidFromIdentity, lidIdentity } from '../utils/wa-identity.util';
 
 @Injectable()
 export class CustomersService {
@@ -12,16 +13,22 @@ export class CustomersService {
   // nuevo, el upsert puede fallar con P2002 en versiones antiguas de Prisma.
   async findOrCreate(dto: CreateCustomerDto) {
     const storeId = dto.storeId!;
+    // Cliente que WhatsApp direcciona por LID sin dar su número: su identidad es
+    // "lid:<user>", así que el LID se deriva de ella sin necesidad de pasarlo aparte.
+    const derivedLid = lidFromIdentity(dto.phone ?? '');
     // Nombre por defecto: el que venga explícito, si no el pushName de WhatsApp,
-    // y si tampoco hay → "Cliente {últimos 4 del teléfono}".
+    // y si tampoco hay → "Cliente {últimos 4 del teléfono}". Sin número no hay
+    // últimos 4 que valgan, así que se cae a un genérico.
     const digits = (dto.phone ?? '').replace(/\D/g, '');
-    const fallbackName = `Cliente ${digits.slice(-4) || '0000'}`;
+    const fallbackName = derivedLid
+      ? 'Cliente de WhatsApp'
+      : `Cliente ${digits.slice(-4) || '0000'}`;
     const defaultName = (dto.name?.trim() || dto.pushName?.trim() || fallbackName).slice(0, 100);
     try {
       const customer = await this.prisma.customer.upsert({
         where:  { storeId_phone: { storeId, phone: dto.phone } },
         update: {},
-        create: { storeId, phone: dto.phone, name: defaultName },
+        create: { storeId, phone: dto.phone, name: defaultName, waLid: derivedLid },
       });
       // Backfill: si el cliente existía sin nombre y ahora tenemos pushName/nombre, lo guardamos.
       if (!customer.name && (dto.name?.trim() || dto.pushName?.trim())) {
@@ -40,6 +47,72 @@ export class CustomersService {
       }
       throw err;
     }
+  }
+
+  /**
+   * Cruza las dos identidades posibles de un mismo cliente: la telefónica y la LID.
+   *
+   * Se llama cuando llega un mensaje del que SÍ conocemos el teléfono y además su LID.
+   * Si ese cliente había escrito antes sin número, su ficha existe como "lid:<user>" y
+   * hay que unificarla — si no, el mismo cliente quedaría partido en dos y el historial
+   * que ve la IA saldría a medias.
+   *
+   * Todo va en una transacción y se apoya en el índice único (store_id, phone): dos
+   * mensajes simultáneos no pueden dejar fichas duplicadas ni a medio mover.
+   */
+  async linkLidIdentity(storeId: string, phone: string, waLid: string): Promise<void> {
+    const lidKey = lidIdentity(waLid);
+    if (phone === lidKey) return; // aún no sabemos el teléfono: nada que cruzar
+
+    await this.prisma.$transaction(async (tx) => {
+      const [lidCustomer, phoneCustomer] = await Promise.all([
+        tx.customer.findUnique({ where: { storeId_phone: { storeId, phone: lidKey } } }),
+        tx.customer.findUnique({ where: { storeId_phone: { storeId, phone } } }),
+      ]);
+
+      // Caso 1: nunca escribió sin número. Solo anotamos su LID para poder responderle
+      // por esa vía si algún día WhatsApp deja de entregar el teléfono.
+      if (!lidCustomer) {
+        if (phoneCustomer && phoneCustomer.waLid !== waLid) {
+          await tx.customer.update({
+            where: { customerId: phoneCustomer.customerId },
+            data:  { waLid },
+          });
+        }
+        return;
+      }
+
+      // Caso 2: la ficha existe solo como LID y ahora aparece el número. Se completa
+      // en sitio: conserva conversaciones, pedidos y citas sin mover nada.
+      if (!phoneCustomer) {
+        await tx.customer.update({
+          where: { customerId: lidCustomer.customerId },
+          data:  { phone, waLid },
+        });
+        return;
+      }
+
+      // Caso 3: duplicado real. El cliente telefónico es el que manda (tiene métricas de
+      // compra y datos de facturación); se le lleva todo lo del LID y esa ficha se borra.
+      if (lidCustomer.customerId === phoneCustomer.customerId) return;
+
+      const where = { customerId: lidCustomer.customerId };
+      const data  = { customerId: phoneCustomer.customerId };
+      await tx.conversation.updateMany({ where, data });
+      await tx.order.updateMany({ where, data });
+      await tx.appointment.updateMany({ where, data });
+
+      await tx.customer.update({
+        where: { customerId: phoneCustomer.customerId },
+        data:  {
+          waLid,
+          name:        phoneCustomer.name ?? lidCustomer.name,
+          totalOrders: phoneCustomer.totalOrders + lidCustomer.totalOrders,
+          totalSpent:  phoneCustomer.totalSpent.add(lidCustomer.totalSpent),
+        },
+      });
+      await tx.customer.delete({ where: { customerId: lidCustomer.customerId } });
+    });
   }
 
   async findAllByStore(storeId: string) {

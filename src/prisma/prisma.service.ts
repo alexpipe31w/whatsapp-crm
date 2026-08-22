@@ -15,6 +15,12 @@ const STARTUP_MIGRATIONS = [
   `ALTER TABLE products ADD COLUMN IF NOT EXISTS stockup_product_id VARCHAR(50)`,
   `ALTER TABLE product_variants ADD COLUMN IF NOT EXISTS stockup_variant_id VARCHAR(50)`,
   `ALTER TABLE categories ADD COLUMN IF NOT EXISTS stockup_category_id VARCHAR(50)`,
+  // Direccionamiento LID de WhatsApp: un cliente puede llegar sin número (su identidad
+  // pasa a ser "lid:<user>", 19 chars, que no cabía holgado en VARCHAR(20)), y cuando SÍ
+  // trae número queremos guardar igual su LID para poder fusionar fichas más adelante.
+  `ALTER TABLE customers ALTER COLUMN phone TYPE VARCHAR(32)`,
+  `ALTER TABLE customers ADD COLUMN IF NOT EXISTS wa_lid VARCHAR(32)`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS customers_store_wa_lid_key ON customers (store_id, wa_lid) WHERE wa_lid IS NOT NULL`,
   // orden evento-contra-evento del receptor (A6): occurredAt del último evento
   // StockUp aplicado, NUNCA comparar contra updatedAt local (colapsa backlogs).
   `ALTER TABLE products ADD COLUMN IF NOT EXISTS stockup_synced_at TIMESTAMP`,

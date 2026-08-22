@@ -62,3 +62,6 @@ sessions/
 src/generated/prisma/query_engine-*.node
 src/generated/prisma/query_engine-*.node.tmp*
 src/generated/prisma/libquery_engine-*
+
+# Volcados de diagnostico: pueden contener claves de API y datos de clientes
+scripts/backups/
