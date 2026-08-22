@@ -42,6 +42,12 @@ const MAX_QR_ATTEMPTS = 3;
 const MAX_LOGGED_OUT_RETRIES   = 2;
 const LOGGED_OUT_RETRY_DELAY_MS = 5_000;
 
+// Precarga del mapa LID↔teléfono al conectar. Acotada a los clientes más recientes:
+// cada lote es una consulta USYNC al servidor de WhatsApp, no una query local.
+const LID_PRELOAD_MAX_CUSTOMERS = 500;
+const LID_PRELOAD_BATCH         = 50;
+const LID_PRELOAD_TIMEOUT_MS    = 20_000;
+
 // ─── Tipos de mensajes que se ignoran silenciosamente ────────────────────────
 const IGNORED_TYPES = new Set([
   'protocolMessage',
@@ -500,6 +506,12 @@ export class WhatsappService implements OnModuleInit {
         where: { storeId },
         data:  { waSessionId: storeId },
       }).catch(() => {});
+
+      // En segundo plano: la precarga son consultas al servidor de WhatsApp y no puede
+      // retrasar la conexión ni tumbarla si falla. Los mensajes entran igual mientras.
+      void this.preloadLidMappings(storeId).catch((err: any) =>
+        this.logger.warn(`[LID] Precarga falló para ${storeId}: ${err.message}`),
+      );
     }
 
     if (connection === 'close') {
@@ -643,6 +655,54 @@ export class WhatsappService implements OnModuleInit {
     } catch (err: any) {
       this.logger.warn(`[LID] No se pudieron guardar mapeos: ${err.message}`);
     }
+  }
+
+  /**
+   * Precarga el mapa LID↔teléfono con los clientes que ya conocemos. WhatsApp NO permite
+   * consultar el teléfono de un LID (`getPNForLID` solo lee caché local; `pnFromLIDUSync`
+   * va en sentido contrario), pero sí el LID de un teléfono vía USYNC — y el store de
+   * Baileys guarda los dos sentidos, así que preguntando por nuestros clientes dejamos
+   * listo el camino inverso. Sin esto solo se atribuyen los contactos que estén en la
+   * agenda del teléfono vinculado, que es justo lo que un cliente nunca es.
+   */
+  private async preloadLidMappings(storeId: string): Promise<void> {
+    const mapping = this.sockets.get(storeId)?.signalRepository?.lidMapping;
+    if (!mapping?.getLIDsForPNs) {
+      this.logger.warn(`[LID] Precarga omitida para ${storeId}: la sesión no expone lidMapping`);
+      return;
+    }
+
+    const customers = await this.prisma.customer.findMany({
+      where:   { storeId },
+      select:  { phone: true },
+      orderBy: { updatedAt: 'desc' },
+      take:    LID_PRELOAD_MAX_CUSTOMERS,
+    });
+
+    // Los clientes identificados solo por LID (sin teléfono real) no se pueden consultar.
+    const jids = customers
+      .map(c => c.phone.replace(/\D/g, ''))
+      .filter(digits => digits.length >= 7 && digits.length <= 15)
+      .map(digits => `${digits}@s.whatsapp.net`);
+    if (jids.length === 0) return;
+
+    let resolved = 0;
+    for (let i = 0; i < jids.length; i += LID_PRELOAD_BATCH) {
+      const batch = jids.slice(i, i + LID_PRELOAD_BATCH);
+      try {
+        const pairs = await Promise.race([
+          mapping.getLIDsForPNs(batch),
+          new Promise<never>((_, rej) =>
+            setTimeout(() => rej(new Error('USYNC timeout')), LID_PRELOAD_TIMEOUT_MS),
+          ),
+        ]);
+        resolved += Array.isArray(pairs) ? pairs.length : 0;
+      } catch (err: any) {
+        // Un lote fallido no puede impedir los siguientes: seguimos con el resto.
+        this.logger.warn(`[LID] Precarga ${storeId}: lote ${i / LID_PRELOAD_BATCH + 1} falló: ${err.message}`);
+      }
+    }
+    this.logger.log(`[LID] Precarga ${storeId}: ${resolved}/${jids.length} pares resueltos`);
   }
 
   private async processMessage(msg: any, storeId: string, sock: any): Promise<void> {
