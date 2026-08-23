@@ -602,7 +602,9 @@ model AIConfiguration {
   systemPrompt String  @map("system_prompt")
   model        String  @default("openai/gpt-oss-120b")
   temperature  Decimal @default(0.70) @db.Decimal(3, 2)
-  maxTokens    Int     @default(1024) @map("max_tokens")
+  // Los modelos de razonamiento (gpt-oss) gastan de este mismo presupuesto al pensar:
+  // con 600 la respuesta al cliente salía cortada a media frase.
+  maxTokens    Int     @default(2000) @map("max_tokens")
   settings     Json    @default("{}")
   cartridges   Json?   @map("cartridges")
 

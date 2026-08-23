@@ -21,6 +21,12 @@ const STARTUP_MIGRATIONS = [
   `ALTER TABLE customers ALTER COLUMN phone TYPE VARCHAR(32)`,
   `ALTER TABLE customers ADD COLUMN IF NOT EXISTS wa_lid VARCHAR(32)`,
   `CREATE UNIQUE INDEX IF NOT EXISTS customers_store_wa_lid_key ON customers (store_id, wa_lid) WHERE wa_lid IS NOT NULL`,
+  // Los gpt-oss son modelos de razonamiento y el reasoning sale del mismo presupuesto
+  // max_tokens: con 600 la respuesta al cliente se cortaba a media frase en cuanto la
+  // pregunta exigía pensar (agenda, disponibilidad). Saneamiento acotado y idempotente.
+  `ALTER TABLE ai_configurations ALTER COLUMN max_tokens SET DEFAULT 2000`,
+  `UPDATE ai_configurations SET max_tokens = 2000
+     WHERE max_tokens < 2000 AND model LIKE 'openai/gpt-oss%'`,
   // orden evento-contra-evento del receptor (A6): occurredAt del último evento
   // StockUp aplicado, NUNCA comparar contra updatedAt local (colapsa backlogs).
   `ALTER TABLE products ADD COLUMN IF NOT EXISTS stockup_synced_at TIMESTAMP`,

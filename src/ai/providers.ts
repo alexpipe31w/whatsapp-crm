@@ -162,5 +162,20 @@ export async function createCompletion(
     max_tokens:  maxTokens,
     ...(isGroqReasoning ? { reasoning_effort: 'low' as const } : {}),
   });
-  return response.choices[0]?.message?.content ?? '';
+
+  // Un corte por presupuesto salía mudo: el cliente recibía media frase y en el log no
+  // quedaba rastro. Con modelos de razonamiento pasa fácil — el reasoning gasta del
+  // mismo max_tokens — así que se avisa con cuánto se gastó en pensar.
+  const choice = response.choices[0];
+  if (choice?.finish_reason === 'length') {
+    const usage     = response.usage as any;
+    const reasoning = usage?.completion_tokens_details?.reasoning_tokens;
+    console.warn(
+      `[AI] Respuesta TRUNCADA por max_tokens=${maxTokens} — modelo=${model} ` +
+      `completion=${usage?.completion_tokens ?? '?'} razonamiento=${reasoning ?? '?'} ` +
+      `texto=${choice.message?.content?.length ?? 0} chars`,
+    );
+  }
+
+  return choice?.message?.content ?? '';
 }
