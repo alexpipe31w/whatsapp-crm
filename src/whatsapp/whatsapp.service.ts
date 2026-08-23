@@ -690,7 +690,8 @@ export class WhatsappService implements OnModuleInit {
       .map(digits => `${digits}@s.whatsapp.net`);
     if (jids.length === 0) return;
 
-    let resolved = 0;
+    let reported = 0;
+    let blindBatches = 0;
     for (let i = 0; i < jids.length; i += LID_PRELOAD_BATCH) {
       const batch = jids.slice(i, i + LID_PRELOAD_BATCH);
       try {
@@ -700,13 +701,19 @@ export class WhatsappService implements OnModuleInit {
             setTimeout(() => rej(new Error('USYNC timeout')), LID_PRELOAD_TIMEOUT_MS),
           ),
         ]);
-        resolved += Array.isArray(pairs) ? pairs.length : 0;
+        // OJO: getLIDsForPNs devuelve null para el lote ENTERO si alguno de sus números
+        // no se resuelve, aunque el resto sí estuviera mapeado (lid-mapping.js:117). El
+        // mapa se puebla igual — lo que no se puede es contar ese lote.
+        if (Array.isArray(pairs)) reported += pairs.length;
+        else blindBatches++;
       } catch (err: any) {
         // Un lote fallido no puede impedir los siguientes: seguimos con el resto.
+        blindBatches++;
         this.logger.warn(`[LID] Precarga ${storeId}: lote ${i / LID_PRELOAD_BATCH + 1} falló: ${err.message}`);
       }
     }
-    this.logger.log(`[LID] Precarga ${storeId}: ${resolved}/${jids.length} pares resueltos`);
+    const nota = blindBatches ? ` (+${blindBatches} lote(s) sin reporte, ya mapeados)` : '';
+    this.logger.log(`[LID] Precarga ${storeId}: ${jids.length} clientes consultados, ${reported} pares confirmados${nota}`);
   }
 
   private async processMessage(msg: any, storeId: string, sock: any): Promise<void> {
