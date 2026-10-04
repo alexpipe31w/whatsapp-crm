@@ -20,6 +20,8 @@ export const PROVIDER_CONFIG: Record<AIProvider, ProviderMeta> = {
     // exist"): llama-3.3-70b-versatile y llama-3.1-8b-instant están muertos. Verificado
     // 2026-08-20 contra GET /openai/v1/models con la key de la tienda: los únicos chat
     // models vivos son openai/gpt-oss-*, qwen/qwen3.6-27b, groq/compound* y allam-2-7b.
+    // Después cayeron también groq/compound* (21-09) y qwen/qwen3.6-27b (14-09, sucesor
+    // qwen/qwen3.8-27b): ver https://console.groq.com/docs/deprecations.
     // Whisper NO está afectado (whisper-large-v3 sigue vivo).
     defaultModel:     'openai/gpt-oss-120b',
     defaultFastModel: 'openai/gpt-oss-20b',
@@ -74,7 +76,8 @@ const DEAD_GEMINI_MODEL_RE = /^gemini-(2\.0|1\.5|1\.0|pro)\b/i;
 // para que una config vieja en BD no queme todas las keys en llamadas fallidas. OJO:
 // meta-llama/llama-prompt-guard-2-* sigue vivo y NO matchea (no lleva dígito tras
 // "llama-"); tampoco se usa como modelo de chat.
-const DEAD_GROQ_MODEL_RE = /^(llama[-\d]|meta-llama\/llama-[34]|mixtral|gemma)/i;
+const DEAD_GROQ_MODEL_RE =
+  /^(llama[-\d]|meta-llama\/llama-[34]|mixtral|gemma|qwen-qwq|qwen\/qwen3-32b|qwen\/qwen3\.6-|moonshotai\/kimi-k2|deepseek-r1|mistral-saba|groq\/compound)/i;
 
 /**
  * Devuelve el modelo a persistir para un cartucho. Para gemini, garantiza un modelo

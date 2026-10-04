@@ -12,13 +12,18 @@ describe('normalizeCartridgeModel', () => {
       'meta-llama/llama-4-scout-17b-16e-instruct',
       'mixtral-8x7b-32768',
       'gemma2-9b-it',
+      'qwen/qwen3.6-27b',
+      'qwen/qwen3-32b',
+      'moonshotai/kimi-k2-instruct-0905',
+      'groq/compound',
+      'groq/compound-mini',
     ]) {
       expect(normalizeCartridgeModel('groq', dead)).toBe(GROQ_LIVE);
     }
   });
 
   it('deja pasar los modelos groq vivos', () => {
-    for (const live of ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'qwen/qwen3.6-27b', 'groq/compound']) {
+    for (const live of ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'qwen/qwen3.8-27b']) {
       expect(normalizeCartridgeModel('groq', live)).toBe(live);
     }
   });
