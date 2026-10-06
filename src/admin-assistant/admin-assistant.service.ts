@@ -6,6 +6,7 @@ import { createCompletion } from '../ai/providers';
 import {
   buildCartridgeList, ensurePool, getNextCartridge,
   markExhausted, isRateLimitError, Cartridge,
+  isBrokenCartridgeError, quarantineCartridge,
 } from '../ai/key-pool';
 
 // ── Historial en memoria (TTL 2h por tienda) ──────────────────────────────────
@@ -118,7 +119,8 @@ export class AdminAssistantService implements OnModuleDestroy {
           this.logger.warn(`[AdminAssistant] ${storeId}: proveedor ${thisCur.provider} falló (${status ?? err?.message ?? err}), probando siguiente cartridge...`);
           // Solo se exilia del pool compartido si la llave está agotada/limitada o
           // inválida — un error transitorio no debe condenarla por la próxima hora.
-          if (isRateLimitError(err) || isAuthError) markExhausted(storeId, thisCur);
+          if (isBrokenCartridgeError(err)) quarantineCartridge(storeId, thisCur);
+          else if (isRateLimitError(err) || isAuthError) markExhausted(storeId, thisCur);
           const next = getNextCartridge(storeId);
           cur = (next && !triedKeys.has(`${next.provider}:${next.apiKey}`)) ? next : null;
         }

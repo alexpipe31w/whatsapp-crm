@@ -4,6 +4,7 @@ import { createCompletion, PROVIDER_CONFIG, AIProvider } from './providers';
 import {
   buildCartridgeList, ensurePool, getNextCartridge,
   markExhausted, isRateLimitError, getPoolStatus, Cartridge,
+  isBrokenCartridgeError, quarantineCartridge,
 } from './key-pool';
 import { PrismaService } from '../prisma/prisma.service';
 import { SyncService } from '../integrations/sync.service';
@@ -33,7 +34,18 @@ const PURCHASE_INTENT_RE = new RegExp(
   `${esWord('quiero|deseo|pedir|pido|ordenar|comprar|llevar|encargar|confirm|dale|listo|acepto|perfecto|procede|adelante|claro|exacto|sip|yep|yes|s[ií]|ok|pedido|orden|dirección|entrega|envío|cantidad|unidades?')}|\\[Pedido del catálogo:`,
   'iu',
 );
-const APPOINTMENT_INTENT_RE = /\b(agendar|agenda|cita|visita|visita técnica|técnico|técnica|programar|reservar|reserva|turno|appointment|quiero una cita|necesito una visita|instalar|instalación|mantenimiento|corte|sesión)\b/i;
+// Intención de compra INEQUÍVOCA (sin "sí/ok/claro" de PURCHASE_INTENT_RE, que también
+// son muletillas). Solo decide si un [IGNORAR] merece segunda opinión.
+const STRONG_BUY_INTENT_RE = new RegExp(
+  esWord('comprar|compro|pedir|pido|encargar|encargo|precios?|cu[aá]nto (?:vale|valen|cuesta|cuestan|sale|salen)|env[ií]os?|env[ií]an|domicilios?|venden|vendes'),
+  'iu',
+);
+const BUY_INTENT_CORRECTION =
+  '\n\nCORRECCIÓN DEL SISTEMA: el último mensaje del cliente muestra intención de COMPRA ' +
+  '(producto, precio, envío o disponibilidad). Eso SIEMPRE es del negocio aunque el producto ' +
+  'no esté en el catálogo: responde (si no lo tienes, dilo y ofrece lo más parecido). ' +
+  'Solo responde [IGNORAR] si es publicidad de un tercero ofreciendo SUS productos.';
+const APPOINTMENT_INTENT_RE =/\b(agendar|agenda|cita|visita|visita técnica|técnico|técnica|programar|reservar|reserva|turno|appointment|quiero una cita|necesito una visita|instalar|instalación|mantenimiento|corte|sesión)\b/i;
 
 // Confirmaciones — el mensaje debe SER una confirmación, no solo CONTENER una.
 // Antes el regex usaba esWord() para buscar la palabra en cualquier parte de la
@@ -1801,8 +1813,19 @@ export class AiService {
             markExhausted(storeId, thisCur);
             const next = getNextCartridge(storeId);
             cur = (next && !triedKeys.has(`${next.provider}:${next.apiKey}`)) ? next : null;
+          } else if (isBrokenCartridgeError(err)) {
+            // Modelo retirado / key inválida: el "modelo rápido" del mismo proveedor no
+            // lo arregla (Frutatza 2026-10-06: gemini 404 en los dos). Cuarentena y al
+            // siguiente cartucho, que es el que de verdad puede contestar.
+            this.logger.error(
+              `[Pool] Cartucho ROTO ${thisCur.provider}/${thisCur.model} ...${thisCur.apiKey.slice(-4)} ` +
+              `(store ${storeId}): ${err.message?.slice(0, 80)} — en cuarentena, revisar la config de IA de la tienda`,
+            );
+            quarantineCartridge(storeId, thisCur);
+            const next = getNextCartridge(storeId);
+            cur = (next && !triedKeys.has(`${next.provider}:${next.apiKey}`)) ? next : null;
           } else {
-            // Error no-rate-limit → intenta modelo rápido del mismo cartucho
+            // Error transitorio → intenta modelo rápido del mismo cartucho
             this.logger.warn(`[Pool] Error en ${thisCur.provider}: ${err.message?.slice(0, 60)}, probando modelo rápido`);
             try {
               reply = await createCompletion(
@@ -1852,7 +1875,31 @@ export class AiService {
       // (spam, cobranza, número equivocado, cadenas, etc.), responde con el sentinel
       // [IGNORAR]; aquí lo convertimos en silencio total — devolver null hace que el
       // caller (whatsapp.service) omita el envío (no se manda ni se guarda nada).
-      if (reply && /\[\s*IGNORAR\s*\]/i.test(reply)) {
+      // Segunda opinión ante intención de compra explícita: silenciar a un comprador es
+      // una venta perdida, y el modelo lo hacía cuando el producto no estaba en el
+      // catálogo (Frutatza 2026-10-06: "comprar dos mermeladas de arazá" → silencio).
+      // Un solo reintento con la corrección explícita; si insiste, se respeta (puede ser
+      // publicidad de un tercero que usa las mismas palabras).
+      const IGNORE_RE = /\[\s*IGNORAR\s*\]/i;
+      if (reply && IGNORE_RE.test(reply) && STRONG_BUY_INTENT_RE.test(userMessage) && cur) {
+        this.logger.warn(`[IA] [IGNORAR] ante intención de compra → segunda opinión (convId=${conversationId.slice(-8)})`);
+        const corrected = [
+          { ...messages[0], content: messages[0].content + BUY_INTENT_CORRECTION },
+          ...messages.slice(1),
+        ];
+        try {
+          reply = await Promise.race([
+            createCompletion(cur.provider, cur.apiKey, cur.model, corrected, Number(config.temperature), config.maxTokens),
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error('AI timeout')), AI_TIMEOUT_MAIN_MS)
+            ),
+          ]);
+        } catch (err: any) {
+          this.logger.warn(`[IA] Segunda opinión falló (${err.message?.slice(0, 60)}) — se mantiene el silencio`);
+        }
+      }
+
+      if (reply && IGNORE_RE.test(reply)) {
         this.logger.log(`[IA] Mensaje fuera de tema → silencio (convId=${conversationId.slice(-8)})`);
         return null;
       }
@@ -2067,6 +2114,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
 
       } catch (err: any) {
         this.logger.error(`[Orden] Error extractor: ${err.message}`);
+        if (isBrokenCartridgeError(err)) quarantineCartridge(storeId, { provider, apiKey, model });
         return { created: false };
       }
     }
@@ -2705,6 +2753,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
 
       } catch (err: any) {
         this.logger.error(`[Cita] Error extractor: ${err.message}`);
+        if (isBrokenCartridgeError(err)) quarantineCartridge(storeId, { provider, apiKey, model });
         return { created: false };
       }
     }
@@ -3605,6 +3654,7 @@ ANTI-BUCLE (OBLIGATORIO):
 
     const temaSection = `ALCANCE DE LA CONVERSACIÓN (REGLA OBLIGATORIA — SIEMPRE ACTIVA, por encima del prompt del negocio):
 - Solo respondes si el mensaje es de ${negocioNombre} (productos, servicios, citas, pedidos, horarios, ubicación, políticas), O si el cliente coordina una cita activa (va en camino, llega tarde, confirma, pregunta por su cita), O si es un saludo de apertura de alguien que busca atención.
+- QUIEN QUIERE COMPRAR SIEMPRE ES DEL NEGOCIO: preguntas por productos (aunque NO estén en el catálogo), precios, disponibilidad, envíos, cobertura o ciudades → SÍ respondes, NUNCA [IGNORAR]. Si no lo tienes, dilo con amabilidad y ofrece lo más parecido del catálogo; si no sabes algo (ej. envíos a otro país), di que lo confirma el equipo.
 - SILENCIO TOTAL en cualquier otro caso (felicitaciones, chistes, temas personales, "¿estás trabajando?", spam, cobranzas/cartera, cadenas, publicidad, estafas, números equivocados, masivos): responde EXACTAMENTE [IGNORAR] y nada más. NO redirijas, NO saludes, NO expliques ni mandes "jaja eso no es lo mío": o es del negocio (respondes) o [IGNORAR].
 - NUNCA inventes promociones, servicios, eventos ni precios que no estén en la INFORMACIÓN DEL NEGOCIO o el catálogo. Si no existe ahí, no lo ofrezcas, cotices ni agendes — aunque suene del oficio.
 - EVENTOS/SEMINARIOS/BATALLAS/PATROCINIOS/INSCRIPCIONES AJENAS (organizar, patrocinar, inscribirse, cuadrar cronogramas de eventos, "pre-venta", "categorías", "pase de cortesía", "promo de inscripción") que NO son un servicio/producto de este catálogo: NO sigas la corriente ni inventes precios/promos/agendas. Responde UNA vez, breve: "Eso lo ve directamente el equipo, ya te contactan 😊". Si en el historial YA diste ese handoff, responde EXACTAMENTE [IGNORAR].

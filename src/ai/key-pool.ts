@@ -32,6 +32,23 @@ const MAX_ACTIVE    = 12;
 
 const pools = new Map<string, PoolState>();
 
+// Cuarentena de cartuchos ROTOS (modelo inexistente/retirado o key inválida). Vive
+// fuera de `pools` a propósito: el pool se borra entero cada POOL_RESET_MS, y un 404
+// no se arregla solo en 2 min — sin esto el cartucho volvía al turno y se comía otro
+// mensaje. Incidente Frutatza 2026-10-06: gemini daba 404 y los clientes quedaban mudos.
+const BROKEN_QUARANTINE_MS = 30 * 60 * 1000;
+const quarantine = new Map<string, number>(); // `${storeId}|${provider}:${apiKey}` → hasta cuándo
+
+const quarantineKey = (storeId: string, c: Cartridge) => `${storeId}|${c.provider}:${c.apiKey}`;
+
+function isQuarantined(storeId: string, c: Cartridge): boolean {
+  const k     = quarantineKey(storeId, c);
+  const until = quarantine.get(k);
+  if (until === undefined) return false;
+  if (Date.now() >= until) { quarantine.delete(k); return false; }
+  return true;
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function cartridgeHash(cartridges: Cartridge[]): string {
@@ -58,7 +75,10 @@ export function ensurePool(storeId: string, cartridges: Cartridge[]): void {
   const existing = pools.get(storeId);
   const hash     = cartridgeHash(cartridges);
   if (!existing || existing.configHash !== hash) {
-    const valid  = cartridges.filter(c => c.apiKey?.trim());
+    const withKey = cartridges.filter(c => c.apiKey?.trim());
+    const healthy = withKey.filter(c => !isQuarantined(storeId, c));
+    // Si TODOS están en cuarentena se usan igual: mejor intentar que no responder nada.
+    const valid   = healthy.length > 0 ? healthy : withKey;
     const active = valid.slice(0, MAX_ACTIVE);
     const unused = valid.slice(MAX_ACTIVE);
     pools.set(storeId, {
@@ -100,6 +120,34 @@ export function markExhausted(storeId: string, cartridge: Cartridge): void {
     pool.active.push(pool.unused.shift()!);
   }
   pool.cursor = 0;
+}
+
+/**
+ * Saca un cartucho ROTO del pool y lo deja en cuarentena BROKEN_QUARANTINE_MS, más
+ * allá de los reinicios del pool. Para errores que no se curan solos (ver
+ * isBrokenCartridgeError); los 429 siguen yendo por markExhausted.
+ */
+export function quarantineCartridge(storeId: string, cartridge: Cartridge): void {
+  quarantine.set(quarantineKey(storeId, cartridge), Date.now() + BROKEN_QUARANTINE_MS);
+  markExhausted(storeId, cartridge);
+}
+
+/**
+ * Errores que NO se arreglan reintentando con la misma key: modelo inexistente o
+ * retirado por el proveedor (404, model_not_found, model_decommissioned) o key
+ * inválida/revocada (401/403). Reintentar con el "modelo rápido" del mismo proveedor
+ * no sirve: o falla igual o, peor, contesta otro modelo con otro criterio.
+ */
+export function isBrokenCartridgeError(err: any): boolean {
+  if (isRateLimitError(err)) return false;
+  const status  = err?.status ?? err?.statusCode ?? err?.response?.status ?? 0;
+  if (status === 401 || status === 403 || status === 404) return true;
+  const code    = String(err?.code ?? err?.error?.code ?? '').toLowerCase();
+  if (code === 'model_not_found' || code === 'model_decommissioned' || code === 'invalid_api_key') return true;
+  const message = String(err?.message ?? err?.error?.message ?? '').toLowerCase();
+  if (message.includes('decommissioned') || message.includes('model_not_found')) return true;
+  if (/model .*(does not exist|not found|is not supported|no longer)/.test(message)) return true;
+  return false;
 }
 
 /**
