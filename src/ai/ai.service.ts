@@ -811,14 +811,34 @@ export class AiService {
     return {};
   }
 
-  private buildPaymentBlock(settings: StoreSettings): string | null {
-    const methods = settings.paymentMethods;
+  private buildPaymentBlock(settings: StoreSettings, store: any = null): string | null {
+    const methods = settings.paymentMethods?.length
+      ? settings.paymentMethods
+      // Sin lista estructurada en la config de IA se usa lo que la tienda configuró en su
+      // perfil (métodos + cuenta). Antes se ignoraba y el cliente recibía "un asesor te
+      // contactará" aunque la tienda tuviera su Nequi puesto (Frutatza 2026-10-06).
+      : this.paymentMethodsFromStore(store);
     if (!methods?.length) return null;
-    const lines = methods.map(m => `• ${m.label}: ${m.value}`).join('\n');
+    const lines = methods.map(m => (m.value ? `• ${m.label}: ${m.value}` : `• ${m.label}`)).join('\n');
     const note   = settings.paymentNote
       ? `\n\n${settings.paymentNote}`
       : '\n\nCuando realices el pago, compártenos el comprobante por aquí.';
     return `💳 Información de pago:\n${lines}${note}`;
+  }
+
+  private paymentMethodsFromStore(store: any): Array<{ label: string; value: string }> {
+    const names   = ((store?.paymentMethods as string[] | undefined) ?? []).map(n => n?.trim()).filter(Boolean);
+    const account = (store?.paymentAccount as string | undefined)?.trim() ?? '';
+    const cap     = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+    const methods = names.map(n => ({ label: cap(n), value: '' }));
+    if (account) {
+      // La cuenta va con el primer método digital que la tienda acepte (Nequi, Daviplata…),
+      // o sola si no hay ninguno; el efectivo nunca lleva número.
+      const digital = methods.find(m => !/efectivo|contra\s*entrega/i.test(m.label));
+      if (digital) digital.value = account;
+      else methods.unshift({ label: 'Cuenta', value: account });
+    }
+    return methods;
   }
 
   private resolveServicePrice(service: any, variant?: any): number {
@@ -2304,7 +2324,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
       this.logger.log(`✅ [Orden] ${order.orderId} — ${orderItemsData.length} items — Total: $${total}`);
 
       const nombreCliente  = extracted.customerName ? `, ${extracted.customerName.split(' ')[0]}` : customer.name ? `, ${customer.name}` : '';
-      const paymentBlock   = this.buildPaymentBlock(settings);
+      const paymentBlock   = this.buildPaymentBlock(settings, store);
       const paymentSection = paymentBlock ? `\n\n${paymentBlock}` : `\n\nUn asesor te contactará pronto para coordinar el pago y confirmar el envío.`;
       const closingMessage = settings.orderClosingMessage ?? '';
 
