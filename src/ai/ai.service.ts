@@ -911,6 +911,7 @@ export class AiService {
     userMessage: string,
     systemPrompt: string,
     activeStaff: Array<{ staffId: string; name: string; schedule?: any }> = [],
+    store: any = null,
   ): Promise<string | null> {
     if (!CANCEL_RESCHEDULE_RE.test(userMessage)) return null;
 
@@ -1058,7 +1059,8 @@ export class AiService {
     });
     this.notifications.notifyPendingAction(appt as any, 'cancel').catch(() => {});
 
-    return '🗑 Tu solicitud de *cancelación* fue enviada al equipo. Un asesor la procesará y te confirmará en breve ✅';
+    // La política de cancelación de citas configurada por la tienda va con la respuesta.
+    return '🗑 Tu solicitud de *cancelación* fue enviada al equipo. Un asesor la procesará y te confirmará en breve ✅' + apptCancelNote(store);
   }
 
   // ── Segundo paso de reprogramación: cliente ya dio la nueva fecha/hora ──────
@@ -1489,7 +1491,7 @@ export class AiService {
 
       // ── Cancelar / Reprogramar ──────────────────────────────────────────────
       const cancelRescheduleReply = await this.tryHandleCancelOrReschedule(
-        storeId, customer.customerId, conversationId, userMessage, config.systemPrompt, activeStaff,
+        storeId, customer.customerId, conversationId, userMessage, config.systemPrompt, activeStaff, store,
       );
       if (cancelRescheduleReply) return cancelRescheduleReply;
 
