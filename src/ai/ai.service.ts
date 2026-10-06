@@ -1974,8 +1974,9 @@ export class AiService {
 
     const cached            = this.pendingExtractions.get(conversationId);
     let extracted: ExtractionResult;
-    // Cédula del cliente requerida para generar la guía de envío (toggle del negocio).
-    const requiresCedula = !!store?.requiresCustomerCedula;
+    // Config de PEDIDOS: envíos o recogida, anticipo y cédula para la guía (toggle del negocio).
+    const oc = orderConfig(store);
+    const requiresCedula = oc.cedula;
     const needsCedula    = requiresCedula && !customer.cedula;
 
     // Para órdenes el nombre del cliente es opcional — se usa "Cliente general" si no hay
@@ -2079,7 +2080,9 @@ No incluyas el nombre en deliveryAddress ni la dirección en customerName.
 REGLAS ESTRICTAS:
 1. "complete":true SOLO si se cumplen TODAS las condiciones simultáneamente:
    a) Al menos un producto/servicio del catálogo con cantidad
-   b) Dirección con calle, carrera, barrio o similar (solo ciudad NO es suficiente) Y la ciudad o municipio (sin ciudad → false)
+   b) ${oc.ships
+     ? 'Dirección con calle, carrera, barrio o similar (solo ciudad NO es suficiente) Y la ciudad o municipio (sin ciudad → false)'
+     : 'No aplica: el negocio NO hace envíos, el cliente recoge en tienda (deliveryAddress = null)'}
    c) Confirmación explícita del cliente (sí, confirmo, listo, dale, ok, etc.)
    d) Si se requieren datos del cliente: nombre presente${requiresCedula && !customer.cedula ? `
    e) Cédula del cliente presente (este negocio la exige para la guía de envío)` : ''}
@@ -2113,6 +2116,9 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
         if (!jsonMatch) return { created: false };
 
         extracted = JSON.parse(jsonMatch[0]);
+        // Antes de cachear: sin envíos la "dirección" es la recogida, para que el atajo
+        // del "sí" (Caso 1.5, que exige dirección en caché) también funcione.
+        if (!oc.ships) extracted.deliveryAddress = oc.pickup;
 
         // ── Fallback nombre para órdenes ──────────────────────────────────────
         if (needsCustomerData && !extracted.customerName) {
@@ -2153,6 +2159,10 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
         return { created: false };
       }
     }
+
+    // Sin envíos no hay dirección que pedir: la entrega es la recogida en tienda. Cubre
+    // los tres caminos (caché completo, caché + "sí" y extractor fresco).
+    if (extracted && !oc.ships) extracted.deliveryAddress = oc.pickup;
 
     if (!extracted?.complete)       return { created: false };
     if (!extracted.items?.length)   return { created: false };
@@ -2335,7 +2345,8 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
           `¡Pedido registrado${nombreCliente}! 🎉\n\n` +
           `📦 Resumen:\n${orderItemsSummary.join('\n')}` +
           `\n\n💰 Total: $${total.toLocaleString('es-CO')}\n` +
-          `📍 Dirección de entrega: ${extracted.deliveryAddress}` +
+          (oc.ships ? `📍 Dirección de entrega: ${extracted.deliveryAddress}` : `🏪 ${oc.pickup}`) +
+          (oc.deposit ? `\n\n💰 ${oc.deposit}` : '') +
           paymentSection +
           (closingMessage ? `\n\n${closingMessage}` : ''),
       };
