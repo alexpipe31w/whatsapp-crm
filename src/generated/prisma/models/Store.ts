@@ -60,6 +60,12 @@ export type StoreMinAggregateOutputType = {
   hasParking: boolean | null
   requiresCustomerAddress: boolean | null
   requiresCustomerCedula: boolean | null
+  orderShipping: boolean | null
+  orderShippingZone: string | null
+  orderRequiresDeposit: boolean | null
+  orderDepositAmount: string | null
+  orderPolicy: string | null
+  orderRequiresCedula: boolean | null
   waSessionId: string | null
   staffLabel: string | null
   slug: string | null
@@ -102,6 +108,12 @@ export type StoreMaxAggregateOutputType = {
   hasParking: boolean | null
   requiresCustomerAddress: boolean | null
   requiresCustomerCedula: boolean | null
+  orderShipping: boolean | null
+  orderShippingZone: string | null
+  orderRequiresDeposit: boolean | null
+  orderDepositAmount: string | null
+  orderPolicy: string | null
+  orderRequiresCedula: boolean | null
   waSessionId: string | null
   staffLabel: string | null
   slug: string | null
@@ -145,6 +157,12 @@ export type StoreCountAggregateOutputType = {
   hasParking: number
   requiresCustomerAddress: number
   requiresCustomerCedula: number
+  orderShipping: number
+  orderShippingZone: number
+  orderRequiresDeposit: number
+  orderDepositAmount: number
+  orderPolicy: number
+  orderRequiresCedula: number
   businessHours: number
   waSessionId: number
   staffLabel: number
@@ -198,6 +216,12 @@ export type StoreMinAggregateInputType = {
   hasParking?: true
   requiresCustomerAddress?: true
   requiresCustomerCedula?: true
+  orderShipping?: true
+  orderShippingZone?: true
+  orderRequiresDeposit?: true
+  orderDepositAmount?: true
+  orderPolicy?: true
+  orderRequiresCedula?: true
   waSessionId?: true
   staffLabel?: true
   slug?: true
@@ -240,6 +264,12 @@ export type StoreMaxAggregateInputType = {
   hasParking?: true
   requiresCustomerAddress?: true
   requiresCustomerCedula?: true
+  orderShipping?: true
+  orderShippingZone?: true
+  orderRequiresDeposit?: true
+  orderDepositAmount?: true
+  orderPolicy?: true
+  orderRequiresCedula?: true
   waSessionId?: true
   staffLabel?: true
   slug?: true
@@ -283,6 +313,12 @@ export type StoreCountAggregateInputType = {
   hasParking?: true
   requiresCustomerAddress?: true
   requiresCustomerCedula?: true
+  orderShipping?: true
+  orderShippingZone?: true
+  orderRequiresDeposit?: true
+  orderDepositAmount?: true
+  orderPolicy?: true
+  orderRequiresCedula?: true
   businessHours?: true
   waSessionId?: true
   staffLabel?: true
@@ -414,6 +450,12 @@ export type StoreGroupByOutputType = {
   hasParking: boolean
   requiresCustomerAddress: boolean
   requiresCustomerCedula: boolean
+  orderShipping: boolean
+  orderShippingZone: string | null
+  orderRequiresDeposit: boolean
+  orderDepositAmount: string | null
+  orderPolicy: string | null
+  orderRequiresCedula: boolean
   businessHours: runtime.JsonValue | null
   waSessionId: string | null
   staffLabel: string | null
@@ -481,6 +523,12 @@ export type StoreWhereInput = {
   hasParking?: Prisma.BoolFilter<"Store"> | boolean
   requiresCustomerAddress?: Prisma.BoolFilter<"Store"> | boolean
   requiresCustomerCedula?: Prisma.BoolFilter<"Store"> | boolean
+  orderShipping?: Prisma.BoolFilter<"Store"> | boolean
+  orderShippingZone?: Prisma.StringNullableFilter<"Store"> | string | null
+  orderRequiresDeposit?: Prisma.BoolFilter<"Store"> | boolean
+  orderDepositAmount?: Prisma.StringNullableFilter<"Store"> | string | null
+  orderPolicy?: Prisma.StringNullableFilter<"Store"> | string | null
+  orderRequiresCedula?: Prisma.BoolFilter<"Store"> | boolean
   businessHours?: Prisma.JsonNullableFilter<"Store">
   waSessionId?: Prisma.StringNullableFilter<"Store"> | string | null
   staffLabel?: Prisma.StringNullableFilter<"Store"> | string | null
@@ -543,6 +591,12 @@ export type StoreOrderByWithRelationInput = {
   hasParking?: Prisma.SortOrder
   requiresCustomerAddress?: Prisma.SortOrder
   requiresCustomerCedula?: Prisma.SortOrder
+  orderShipping?: Prisma.SortOrder
+  orderShippingZone?: Prisma.SortOrderInput | Prisma.SortOrder
+  orderRequiresDeposit?: Prisma.SortOrder
+  orderDepositAmount?: Prisma.SortOrderInput | Prisma.SortOrder
+  orderPolicy?: Prisma.SortOrderInput | Prisma.SortOrder
+  orderRequiresCedula?: Prisma.SortOrder
   businessHours?: Prisma.SortOrderInput | Prisma.SortOrder
   waSessionId?: Prisma.SortOrderInput | Prisma.SortOrder
   staffLabel?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -610,6 +664,12 @@ export type StoreWhereUniqueInput = Prisma.AtLeast<{
   hasParking?: Prisma.BoolFilter<"Store"> | boolean
   requiresCustomerAddress?: Prisma.BoolFilter<"Store"> | boolean
   requiresCustomerCedula?: Prisma.BoolFilter<"Store"> | boolean
+  orderShipping?: Prisma.BoolFilter<"Store"> | boolean
+  orderShippingZone?: Prisma.StringNullableFilter<"Store"> | string | null
+  orderRequiresDeposit?: Prisma.BoolFilter<"Store"> | boolean
+  orderDepositAmount?: Prisma.StringNullableFilter<"Store"> | string | null
+  orderPolicy?: Prisma.StringNullableFilter<"Store"> | string | null
+  orderRequiresCedula?: Prisma.BoolFilter<"Store"> | boolean
   businessHours?: Prisma.JsonNullableFilter<"Store">
   staffLabel?: Prisma.StringNullableFilter<"Store"> | string | null
   defaultServiceId?: Prisma.StringNullableFilter<"Store"> | string | null
@@ -670,6 +730,12 @@ export type StoreOrderByWithAggregationInput = {
   hasParking?: Prisma.SortOrder
   requiresCustomerAddress?: Prisma.SortOrder
   requiresCustomerCedula?: Prisma.SortOrder
+  orderShipping?: Prisma.SortOrder
+  orderShippingZone?: Prisma.SortOrderInput | Prisma.SortOrder
+  orderRequiresDeposit?: Prisma.SortOrder
+  orderDepositAmount?: Prisma.SortOrderInput | Prisma.SortOrder
+  orderPolicy?: Prisma.SortOrderInput | Prisma.SortOrder
+  orderRequiresCedula?: Prisma.SortOrder
   businessHours?: Prisma.SortOrderInput | Prisma.SortOrder
   waSessionId?: Prisma.SortOrderInput | Prisma.SortOrder
   staffLabel?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -722,6 +788,12 @@ export type StoreScalarWhereWithAggregatesInput = {
   hasParking?: Prisma.BoolWithAggregatesFilter<"Store"> | boolean
   requiresCustomerAddress?: Prisma.BoolWithAggregatesFilter<"Store"> | boolean
   requiresCustomerCedula?: Prisma.BoolWithAggregatesFilter<"Store"> | boolean
+  orderShipping?: Prisma.BoolWithAggregatesFilter<"Store"> | boolean
+  orderShippingZone?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
+  orderRequiresDeposit?: Prisma.BoolWithAggregatesFilter<"Store"> | boolean
+  orderDepositAmount?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
+  orderPolicy?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
+  orderRequiresCedula?: Prisma.BoolWithAggregatesFilter<"Store"> | boolean
   businessHours?: Prisma.JsonNullableWithAggregatesFilter<"Store">
   waSessionId?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
   staffLabel?: Prisma.StringNullableWithAggregatesFilter<"Store"> | string | null
@@ -766,6 +838,12 @@ export type StoreCreateInput = {
   hasParking?: boolean
   requiresCustomerAddress?: boolean
   requiresCustomerCedula?: boolean
+  orderShipping?: boolean
+  orderShippingZone?: string | null
+  orderRequiresDeposit?: boolean
+  orderDepositAmount?: string | null
+  orderPolicy?: string | null
+  orderRequiresCedula?: boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
   staffLabel?: string | null
@@ -828,6 +906,12 @@ export type StoreUncheckedCreateInput = {
   hasParking?: boolean
   requiresCustomerAddress?: boolean
   requiresCustomerCedula?: boolean
+  orderShipping?: boolean
+  orderShippingZone?: string | null
+  orderRequiresDeposit?: boolean
+  orderDepositAmount?: string | null
+  orderPolicy?: string | null
+  orderRequiresCedula?: boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
   staffLabel?: string | null
@@ -890,6 +974,12 @@ export type StoreUpdateInput = {
   hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShipping?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShippingZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderDepositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -952,6 +1042,12 @@ export type StoreUncheckedUpdateInput = {
   hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShipping?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShippingZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderDepositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1014,6 +1110,12 @@ export type StoreCreateManyInput = {
   hasParking?: boolean
   requiresCustomerAddress?: boolean
   requiresCustomerCedula?: boolean
+  orderShipping?: boolean
+  orderShippingZone?: string | null
+  orderRequiresDeposit?: boolean
+  orderDepositAmount?: string | null
+  orderPolicy?: string | null
+  orderRequiresCedula?: boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
   staffLabel?: string | null
@@ -1058,6 +1160,12 @@ export type StoreUpdateManyMutationInput = {
   hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShipping?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShippingZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderDepositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1102,6 +1210,12 @@ export type StoreUncheckedUpdateManyInput = {
   hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShipping?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShippingZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderDepositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1154,6 +1268,12 @@ export type StoreCountOrderByAggregateInput = {
   hasParking?: Prisma.SortOrder
   requiresCustomerAddress?: Prisma.SortOrder
   requiresCustomerCedula?: Prisma.SortOrder
+  orderShipping?: Prisma.SortOrder
+  orderShippingZone?: Prisma.SortOrder
+  orderRequiresDeposit?: Prisma.SortOrder
+  orderDepositAmount?: Prisma.SortOrder
+  orderPolicy?: Prisma.SortOrder
+  orderRequiresCedula?: Prisma.SortOrder
   businessHours?: Prisma.SortOrder
   waSessionId?: Prisma.SortOrder
   staffLabel?: Prisma.SortOrder
@@ -1201,6 +1321,12 @@ export type StoreMaxOrderByAggregateInput = {
   hasParking?: Prisma.SortOrder
   requiresCustomerAddress?: Prisma.SortOrder
   requiresCustomerCedula?: Prisma.SortOrder
+  orderShipping?: Prisma.SortOrder
+  orderShippingZone?: Prisma.SortOrder
+  orderRequiresDeposit?: Prisma.SortOrder
+  orderDepositAmount?: Prisma.SortOrder
+  orderPolicy?: Prisma.SortOrder
+  orderRequiresCedula?: Prisma.SortOrder
   waSessionId?: Prisma.SortOrder
   staffLabel?: Prisma.SortOrder
   slug?: Prisma.SortOrder
@@ -1243,6 +1369,12 @@ export type StoreMinOrderByAggregateInput = {
   hasParking?: Prisma.SortOrder
   requiresCustomerAddress?: Prisma.SortOrder
   requiresCustomerCedula?: Prisma.SortOrder
+  orderShipping?: Prisma.SortOrder
+  orderShippingZone?: Prisma.SortOrder
+  orderRequiresDeposit?: Prisma.SortOrder
+  orderDepositAmount?: Prisma.SortOrder
+  orderPolicy?: Prisma.SortOrder
+  orderRequiresCedula?: Prisma.SortOrder
   waSessionId?: Prisma.SortOrder
   staffLabel?: Prisma.SortOrder
   slug?: Prisma.SortOrder
@@ -1591,6 +1723,12 @@ export type StoreCreateWithoutCustomersInput = {
   hasParking?: boolean
   requiresCustomerAddress?: boolean
   requiresCustomerCedula?: boolean
+  orderShipping?: boolean
+  orderShippingZone?: string | null
+  orderRequiresDeposit?: boolean
+  orderDepositAmount?: string | null
+  orderPolicy?: string | null
+  orderRequiresCedula?: boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
   staffLabel?: string | null
@@ -1652,6 +1790,12 @@ export type StoreUncheckedCreateWithoutCustomersInput = {
   hasParking?: boolean
   requiresCustomerAddress?: boolean
   requiresCustomerCedula?: boolean
+  orderShipping?: boolean
+  orderShippingZone?: string | null
+  orderRequiresDeposit?: boolean
+  orderDepositAmount?: string | null
+  orderPolicy?: string | null
+  orderRequiresCedula?: boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
   staffLabel?: string | null
@@ -1729,6 +1873,12 @@ export type StoreUpdateWithoutCustomersInput = {
   hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShipping?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShippingZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderDepositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1790,6 +1940,12 @@ export type StoreUncheckedUpdateWithoutCustomersInput = {
   hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShipping?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShippingZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderDepositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1851,6 +2007,12 @@ export type StoreCreateWithoutConversationsInput = {
   hasParking?: boolean
   requiresCustomerAddress?: boolean
   requiresCustomerCedula?: boolean
+  orderShipping?: boolean
+  orderShippingZone?: string | null
+  orderRequiresDeposit?: boolean
+  orderDepositAmount?: string | null
+  orderPolicy?: string | null
+  orderRequiresCedula?: boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
   staffLabel?: string | null
@@ -1912,6 +2074,12 @@ export type StoreUncheckedCreateWithoutConversationsInput = {
   hasParking?: boolean
   requiresCustomerAddress?: boolean
   requiresCustomerCedula?: boolean
+  orderShipping?: boolean
+  orderShippingZone?: string | null
+  orderRequiresDeposit?: boolean
+  orderDepositAmount?: string | null
+  orderPolicy?: string | null
+  orderRequiresCedula?: boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
   staffLabel?: string | null
@@ -1989,6 +2157,12 @@ export type StoreUpdateWithoutConversationsInput = {
   hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShipping?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShippingZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderDepositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2050,6 +2224,12 @@ export type StoreUncheckedUpdateWithoutConversationsInput = {
   hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShipping?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShippingZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderDepositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2111,6 +2291,12 @@ export type StoreCreateWithoutMessagesInput = {
   hasParking?: boolean
   requiresCustomerAddress?: boolean
   requiresCustomerCedula?: boolean
+  orderShipping?: boolean
+  orderShippingZone?: string | null
+  orderRequiresDeposit?: boolean
+  orderDepositAmount?: string | null
+  orderPolicy?: string | null
+  orderRequiresCedula?: boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
   staffLabel?: string | null
@@ -2172,6 +2358,12 @@ export type StoreUncheckedCreateWithoutMessagesInput = {
   hasParking?: boolean
   requiresCustomerAddress?: boolean
   requiresCustomerCedula?: boolean
+  orderShipping?: boolean
+  orderShippingZone?: string | null
+  orderRequiresDeposit?: boolean
+  orderDepositAmount?: string | null
+  orderPolicy?: string | null
+  orderRequiresCedula?: boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
   staffLabel?: string | null
@@ -2249,6 +2441,12 @@ export type StoreUpdateWithoutMessagesInput = {
   hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShipping?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShippingZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderDepositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2310,6 +2508,12 @@ export type StoreUncheckedUpdateWithoutMessagesInput = {
   hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShipping?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShippingZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderDepositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2371,6 +2575,12 @@ export type StoreCreateWithoutCategoriesInput = {
   hasParking?: boolean
   requiresCustomerAddress?: boolean
   requiresCustomerCedula?: boolean
+  orderShipping?: boolean
+  orderShippingZone?: string | null
+  orderRequiresDeposit?: boolean
+  orderDepositAmount?: string | null
+  orderPolicy?: string | null
+  orderRequiresCedula?: boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
   staffLabel?: string | null
@@ -2432,6 +2642,12 @@ export type StoreUncheckedCreateWithoutCategoriesInput = {
   hasParking?: boolean
   requiresCustomerAddress?: boolean
   requiresCustomerCedula?: boolean
+  orderShipping?: boolean
+  orderShippingZone?: string | null
+  orderRequiresDeposit?: boolean
+  orderDepositAmount?: string | null
+  orderPolicy?: string | null
+  orderRequiresCedula?: boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
   staffLabel?: string | null
@@ -2509,6 +2725,12 @@ export type StoreUpdateWithoutCategoriesInput = {
   hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShipping?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShippingZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderDepositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2570,6 +2792,12 @@ export type StoreUncheckedUpdateWithoutCategoriesInput = {
   hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShipping?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShippingZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderDepositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2631,6 +2859,12 @@ export type StoreCreateWithoutProductsInput = {
   hasParking?: boolean
   requiresCustomerAddress?: boolean
   requiresCustomerCedula?: boolean
+  orderShipping?: boolean
+  orderShippingZone?: string | null
+  orderRequiresDeposit?: boolean
+  orderDepositAmount?: string | null
+  orderPolicy?: string | null
+  orderRequiresCedula?: boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
   staffLabel?: string | null
@@ -2692,6 +2926,12 @@ export type StoreUncheckedCreateWithoutProductsInput = {
   hasParking?: boolean
   requiresCustomerAddress?: boolean
   requiresCustomerCedula?: boolean
+  orderShipping?: boolean
+  orderShippingZone?: string | null
+  orderRequiresDeposit?: boolean
+  orderDepositAmount?: string | null
+  orderPolicy?: string | null
+  orderRequiresCedula?: boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
   staffLabel?: string | null
@@ -2769,6 +3009,12 @@ export type StoreUpdateWithoutProductsInput = {
   hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShipping?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShippingZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderDepositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2830,6 +3076,12 @@ export type StoreUncheckedUpdateWithoutProductsInput = {
   hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShipping?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShippingZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderDepositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2891,6 +3143,12 @@ export type StoreCreateWithoutServicesInput = {
   hasParking?: boolean
   requiresCustomerAddress?: boolean
   requiresCustomerCedula?: boolean
+  orderShipping?: boolean
+  orderShippingZone?: string | null
+  orderRequiresDeposit?: boolean
+  orderDepositAmount?: string | null
+  orderPolicy?: string | null
+  orderRequiresCedula?: boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
   staffLabel?: string | null
@@ -2952,6 +3210,12 @@ export type StoreUncheckedCreateWithoutServicesInput = {
   hasParking?: boolean
   requiresCustomerAddress?: boolean
   requiresCustomerCedula?: boolean
+  orderShipping?: boolean
+  orderShippingZone?: string | null
+  orderRequiresDeposit?: boolean
+  orderDepositAmount?: string | null
+  orderPolicy?: string | null
+  orderRequiresCedula?: boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
   staffLabel?: string | null
@@ -3029,6 +3293,12 @@ export type StoreUpdateWithoutServicesInput = {
   hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShipping?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShippingZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderDepositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3090,6 +3360,12 @@ export type StoreUncheckedUpdateWithoutServicesInput = {
   hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShipping?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShippingZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderDepositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3151,6 +3427,12 @@ export type StoreCreateWithoutOrdersInput = {
   hasParking?: boolean
   requiresCustomerAddress?: boolean
   requiresCustomerCedula?: boolean
+  orderShipping?: boolean
+  orderShippingZone?: string | null
+  orderRequiresDeposit?: boolean
+  orderDepositAmount?: string | null
+  orderPolicy?: string | null
+  orderRequiresCedula?: boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
   staffLabel?: string | null
@@ -3212,6 +3494,12 @@ export type StoreUncheckedCreateWithoutOrdersInput = {
   hasParking?: boolean
   requiresCustomerAddress?: boolean
   requiresCustomerCedula?: boolean
+  orderShipping?: boolean
+  orderShippingZone?: string | null
+  orderRequiresDeposit?: boolean
+  orderDepositAmount?: string | null
+  orderPolicy?: string | null
+  orderRequiresCedula?: boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
   staffLabel?: string | null
@@ -3289,6 +3577,12 @@ export type StoreUpdateWithoutOrdersInput = {
   hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShipping?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShippingZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderDepositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3350,6 +3644,12 @@ export type StoreUncheckedUpdateWithoutOrdersInput = {
   hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShipping?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShippingZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderDepositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3411,6 +3711,12 @@ export type StoreCreateWithoutAppointmentsInput = {
   hasParking?: boolean
   requiresCustomerAddress?: boolean
   requiresCustomerCedula?: boolean
+  orderShipping?: boolean
+  orderShippingZone?: string | null
+  orderRequiresDeposit?: boolean
+  orderDepositAmount?: string | null
+  orderPolicy?: string | null
+  orderRequiresCedula?: boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
   staffLabel?: string | null
@@ -3472,6 +3778,12 @@ export type StoreUncheckedCreateWithoutAppointmentsInput = {
   hasParking?: boolean
   requiresCustomerAddress?: boolean
   requiresCustomerCedula?: boolean
+  orderShipping?: boolean
+  orderShippingZone?: string | null
+  orderRequiresDeposit?: boolean
+  orderDepositAmount?: string | null
+  orderPolicy?: string | null
+  orderRequiresCedula?: boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
   staffLabel?: string | null
@@ -3549,6 +3861,12 @@ export type StoreUpdateWithoutAppointmentsInput = {
   hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShipping?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShippingZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderDepositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3610,6 +3928,12 @@ export type StoreUncheckedUpdateWithoutAppointmentsInput = {
   hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShipping?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShippingZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderDepositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3671,6 +3995,12 @@ export type StoreCreateWithoutDailyReportsInput = {
   hasParking?: boolean
   requiresCustomerAddress?: boolean
   requiresCustomerCedula?: boolean
+  orderShipping?: boolean
+  orderShippingZone?: string | null
+  orderRequiresDeposit?: boolean
+  orderDepositAmount?: string | null
+  orderPolicy?: string | null
+  orderRequiresCedula?: boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
   staffLabel?: string | null
@@ -3732,6 +4062,12 @@ export type StoreUncheckedCreateWithoutDailyReportsInput = {
   hasParking?: boolean
   requiresCustomerAddress?: boolean
   requiresCustomerCedula?: boolean
+  orderShipping?: boolean
+  orderShippingZone?: string | null
+  orderRequiresDeposit?: boolean
+  orderDepositAmount?: string | null
+  orderPolicy?: string | null
+  orderRequiresCedula?: boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
   staffLabel?: string | null
@@ -3809,6 +4145,12 @@ export type StoreUpdateWithoutDailyReportsInput = {
   hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShipping?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShippingZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderDepositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3870,6 +4212,12 @@ export type StoreUncheckedUpdateWithoutDailyReportsInput = {
   hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShipping?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShippingZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderDepositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3931,6 +4279,12 @@ export type StoreCreateWithoutAiConfigInput = {
   hasParking?: boolean
   requiresCustomerAddress?: boolean
   requiresCustomerCedula?: boolean
+  orderShipping?: boolean
+  orderShippingZone?: string | null
+  orderRequiresDeposit?: boolean
+  orderDepositAmount?: string | null
+  orderPolicy?: string | null
+  orderRequiresCedula?: boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
   staffLabel?: string | null
@@ -3992,6 +4346,12 @@ export type StoreUncheckedCreateWithoutAiConfigInput = {
   hasParking?: boolean
   requiresCustomerAddress?: boolean
   requiresCustomerCedula?: boolean
+  orderShipping?: boolean
+  orderShippingZone?: string | null
+  orderRequiresDeposit?: boolean
+  orderDepositAmount?: string | null
+  orderPolicy?: string | null
+  orderRequiresCedula?: boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
   staffLabel?: string | null
@@ -4069,6 +4429,12 @@ export type StoreUpdateWithoutAiConfigInput = {
   hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShipping?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShippingZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderDepositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4130,6 +4496,12 @@ export type StoreUncheckedUpdateWithoutAiConfigInput = {
   hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShipping?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShippingZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderDepositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4191,6 +4563,12 @@ export type StoreCreateWithoutCampaignsInput = {
   hasParking?: boolean
   requiresCustomerAddress?: boolean
   requiresCustomerCedula?: boolean
+  orderShipping?: boolean
+  orderShippingZone?: string | null
+  orderRequiresDeposit?: boolean
+  orderDepositAmount?: string | null
+  orderPolicy?: string | null
+  orderRequiresCedula?: boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
   staffLabel?: string | null
@@ -4252,6 +4630,12 @@ export type StoreUncheckedCreateWithoutCampaignsInput = {
   hasParking?: boolean
   requiresCustomerAddress?: boolean
   requiresCustomerCedula?: boolean
+  orderShipping?: boolean
+  orderShippingZone?: string | null
+  orderRequiresDeposit?: boolean
+  orderDepositAmount?: string | null
+  orderPolicy?: string | null
+  orderRequiresCedula?: boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
   staffLabel?: string | null
@@ -4329,6 +4713,12 @@ export type StoreUpdateWithoutCampaignsInput = {
   hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShipping?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShippingZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderDepositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4390,6 +4780,12 @@ export type StoreUncheckedUpdateWithoutCampaignsInput = {
   hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShipping?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShippingZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderDepositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4451,6 +4847,12 @@ export type StoreCreateWithoutUsersInput = {
   hasParking?: boolean
   requiresCustomerAddress?: boolean
   requiresCustomerCedula?: boolean
+  orderShipping?: boolean
+  orderShippingZone?: string | null
+  orderRequiresDeposit?: boolean
+  orderDepositAmount?: string | null
+  orderPolicy?: string | null
+  orderRequiresCedula?: boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
   staffLabel?: string | null
@@ -4512,6 +4914,12 @@ export type StoreUncheckedCreateWithoutUsersInput = {
   hasParking?: boolean
   requiresCustomerAddress?: boolean
   requiresCustomerCedula?: boolean
+  orderShipping?: boolean
+  orderShippingZone?: string | null
+  orderRequiresDeposit?: boolean
+  orderDepositAmount?: string | null
+  orderPolicy?: string | null
+  orderRequiresCedula?: boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
   staffLabel?: string | null
@@ -4589,6 +4997,12 @@ export type StoreUpdateWithoutUsersInput = {
   hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShipping?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShippingZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderDepositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4650,6 +5064,12 @@ export type StoreUncheckedUpdateWithoutUsersInput = {
   hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShipping?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShippingZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderDepositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4711,6 +5131,12 @@ export type StoreCreateWithoutBlockedContactsInput = {
   hasParking?: boolean
   requiresCustomerAddress?: boolean
   requiresCustomerCedula?: boolean
+  orderShipping?: boolean
+  orderShippingZone?: string | null
+  orderRequiresDeposit?: boolean
+  orderDepositAmount?: string | null
+  orderPolicy?: string | null
+  orderRequiresCedula?: boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
   staffLabel?: string | null
@@ -4772,6 +5198,12 @@ export type StoreUncheckedCreateWithoutBlockedContactsInput = {
   hasParking?: boolean
   requiresCustomerAddress?: boolean
   requiresCustomerCedula?: boolean
+  orderShipping?: boolean
+  orderShippingZone?: string | null
+  orderRequiresDeposit?: boolean
+  orderDepositAmount?: string | null
+  orderPolicy?: string | null
+  orderRequiresCedula?: boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
   staffLabel?: string | null
@@ -4849,6 +5281,12 @@ export type StoreUpdateWithoutBlockedContactsInput = {
   hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShipping?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShippingZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderDepositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4910,6 +5348,12 @@ export type StoreUncheckedUpdateWithoutBlockedContactsInput = {
   hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShipping?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShippingZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderDepositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4971,6 +5415,12 @@ export type StoreCreateWithoutWaSessionInput = {
   hasParking?: boolean
   requiresCustomerAddress?: boolean
   requiresCustomerCedula?: boolean
+  orderShipping?: boolean
+  orderShippingZone?: string | null
+  orderRequiresDeposit?: boolean
+  orderDepositAmount?: string | null
+  orderPolicy?: string | null
+  orderRequiresCedula?: boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
   staffLabel?: string | null
@@ -5032,6 +5482,12 @@ export type StoreUncheckedCreateWithoutWaSessionInput = {
   hasParking?: boolean
   requiresCustomerAddress?: boolean
   requiresCustomerCedula?: boolean
+  orderShipping?: boolean
+  orderShippingZone?: string | null
+  orderRequiresDeposit?: boolean
+  orderDepositAmount?: string | null
+  orderPolicy?: string | null
+  orderRequiresCedula?: boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
   staffLabel?: string | null
@@ -5109,6 +5565,12 @@ export type StoreUpdateWithoutWaSessionInput = {
   hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShipping?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShippingZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderDepositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -5170,6 +5632,12 @@ export type StoreUncheckedUpdateWithoutWaSessionInput = {
   hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShipping?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShippingZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderDepositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -5231,6 +5699,12 @@ export type StoreCreateWithoutSubscriptionInput = {
   hasParking?: boolean
   requiresCustomerAddress?: boolean
   requiresCustomerCedula?: boolean
+  orderShipping?: boolean
+  orderShippingZone?: string | null
+  orderRequiresDeposit?: boolean
+  orderDepositAmount?: string | null
+  orderPolicy?: string | null
+  orderRequiresCedula?: boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
   staffLabel?: string | null
@@ -5292,6 +5766,12 @@ export type StoreUncheckedCreateWithoutSubscriptionInput = {
   hasParking?: boolean
   requiresCustomerAddress?: boolean
   requiresCustomerCedula?: boolean
+  orderShipping?: boolean
+  orderShippingZone?: string | null
+  orderRequiresDeposit?: boolean
+  orderDepositAmount?: string | null
+  orderPolicy?: string | null
+  orderRequiresCedula?: boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
   staffLabel?: string | null
@@ -5369,6 +5849,12 @@ export type StoreUpdateWithoutSubscriptionInput = {
   hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShipping?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShippingZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderDepositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -5430,6 +5916,12 @@ export type StoreUncheckedUpdateWithoutSubscriptionInput = {
   hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShipping?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShippingZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderDepositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -5491,6 +5983,12 @@ export type StoreCreateWithoutStaffInput = {
   hasParking?: boolean
   requiresCustomerAddress?: boolean
   requiresCustomerCedula?: boolean
+  orderShipping?: boolean
+  orderShippingZone?: string | null
+  orderRequiresDeposit?: boolean
+  orderDepositAmount?: string | null
+  orderPolicy?: string | null
+  orderRequiresCedula?: boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
   staffLabel?: string | null
@@ -5552,6 +6050,12 @@ export type StoreUncheckedCreateWithoutStaffInput = {
   hasParking?: boolean
   requiresCustomerAddress?: boolean
   requiresCustomerCedula?: boolean
+  orderShipping?: boolean
+  orderShippingZone?: string | null
+  orderRequiresDeposit?: boolean
+  orderDepositAmount?: string | null
+  orderPolicy?: string | null
+  orderRequiresCedula?: boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
   staffLabel?: string | null
@@ -5629,6 +6133,12 @@ export type StoreUpdateWithoutStaffInput = {
   hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShipping?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShippingZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderDepositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -5690,6 +6200,12 @@ export type StoreUncheckedUpdateWithoutStaffInput = {
   hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShipping?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShippingZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderDepositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -5751,6 +6267,12 @@ export type StoreCreateWithoutStockupConnectionInput = {
   hasParking?: boolean
   requiresCustomerAddress?: boolean
   requiresCustomerCedula?: boolean
+  orderShipping?: boolean
+  orderShippingZone?: string | null
+  orderRequiresDeposit?: boolean
+  orderDepositAmount?: string | null
+  orderPolicy?: string | null
+  orderRequiresCedula?: boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
   staffLabel?: string | null
@@ -5812,6 +6334,12 @@ export type StoreUncheckedCreateWithoutStockupConnectionInput = {
   hasParking?: boolean
   requiresCustomerAddress?: boolean
   requiresCustomerCedula?: boolean
+  orderShipping?: boolean
+  orderShippingZone?: string | null
+  orderRequiresDeposit?: boolean
+  orderDepositAmount?: string | null
+  orderPolicy?: string | null
+  orderRequiresCedula?: boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
   staffLabel?: string | null
@@ -5889,6 +6417,12 @@ export type StoreUpdateWithoutStockupConnectionInput = {
   hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShipping?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShippingZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderDepositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -5950,6 +6484,12 @@ export type StoreUncheckedUpdateWithoutStockupConnectionInput = {
   hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShipping?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShippingZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderDepositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -6011,6 +6551,12 @@ export type StoreCreateWithoutSyncOutboxInput = {
   hasParking?: boolean
   requiresCustomerAddress?: boolean
   requiresCustomerCedula?: boolean
+  orderShipping?: boolean
+  orderShippingZone?: string | null
+  orderRequiresDeposit?: boolean
+  orderDepositAmount?: string | null
+  orderPolicy?: string | null
+  orderRequiresCedula?: boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
   staffLabel?: string | null
@@ -6072,6 +6618,12 @@ export type StoreUncheckedCreateWithoutSyncOutboxInput = {
   hasParking?: boolean
   requiresCustomerAddress?: boolean
   requiresCustomerCedula?: boolean
+  orderShipping?: boolean
+  orderShippingZone?: string | null
+  orderRequiresDeposit?: boolean
+  orderDepositAmount?: string | null
+  orderPolicy?: string | null
+  orderRequiresCedula?: boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: string | null
   staffLabel?: string | null
@@ -6149,6 +6701,12 @@ export type StoreUpdateWithoutSyncOutboxInput = {
   hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShipping?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShippingZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderDepositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -6210,6 +6768,12 @@ export type StoreUncheckedUpdateWithoutSyncOutboxInput = {
   hasParking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerAddress?: Prisma.BoolFieldUpdateOperationsInput | boolean
   requiresCustomerCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShipping?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderShippingZone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresDeposit?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  orderDepositAmount?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderPolicy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  orderRequiresCedula?: Prisma.BoolFieldUpdateOperationsInput | boolean
   businessHours?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   waSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   staffLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -6419,6 +6983,12 @@ export type StoreSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   hasParking?: boolean
   requiresCustomerAddress?: boolean
   requiresCustomerCedula?: boolean
+  orderShipping?: boolean
+  orderShippingZone?: boolean
+  orderRequiresDeposit?: boolean
+  orderDepositAmount?: boolean
+  orderPolicy?: boolean
+  orderRequiresCedula?: boolean
   businessHours?: boolean
   waSessionId?: boolean
   staffLabel?: boolean
@@ -6482,6 +7052,12 @@ export type StoreSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   hasParking?: boolean
   requiresCustomerAddress?: boolean
   requiresCustomerCedula?: boolean
+  orderShipping?: boolean
+  orderShippingZone?: boolean
+  orderRequiresDeposit?: boolean
+  orderDepositAmount?: boolean
+  orderPolicy?: boolean
+  orderRequiresCedula?: boolean
   businessHours?: boolean
   waSessionId?: boolean
   staffLabel?: boolean
@@ -6526,6 +7102,12 @@ export type StoreSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   hasParking?: boolean
   requiresCustomerAddress?: boolean
   requiresCustomerCedula?: boolean
+  orderShipping?: boolean
+  orderShippingZone?: boolean
+  orderRequiresDeposit?: boolean
+  orderDepositAmount?: boolean
+  orderPolicy?: boolean
+  orderRequiresCedula?: boolean
   businessHours?: boolean
   waSessionId?: boolean
   staffLabel?: boolean
@@ -6570,6 +7152,12 @@ export type StoreSelectScalar = {
   hasParking?: boolean
   requiresCustomerAddress?: boolean
   requiresCustomerCedula?: boolean
+  orderShipping?: boolean
+  orderShippingZone?: boolean
+  orderRequiresDeposit?: boolean
+  orderDepositAmount?: boolean
+  orderPolicy?: boolean
+  orderRequiresCedula?: boolean
   businessHours?: boolean
   waSessionId?: boolean
   staffLabel?: boolean
@@ -6587,7 +7175,7 @@ export type StoreSelectScalar = {
   updatedAt?: boolean
 }
 
-export type StoreOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"storeId" | "name" | "phone" | "ownerName" | "adminPhone" | "description" | "address" | "neighborhood" | "directions" | "googleMapsUrl" | "email" | "website" | "instagram" | "facebook" | "tiktok" | "paymentMethods" | "paymentAccount" | "requiresDeposit" | "depositAmount" | "minAdvanceMinutes" | "cancellationPolicy" | "hasDelivery" | "deliveryZone" | "hasParking" | "requiresCustomerAddress" | "requiresCustomerCedula" | "businessHours" | "waSessionId" | "staffLabel" | "slug" | "defaultServiceId" | "isActive" | "autoConfirmAppointments" | "primaryColor" | "secondaryColor" | "accentColor" | "subscriptionStatus" | "subscriptionEnd" | "apiBlocked" | "createdAt" | "updatedAt", ExtArgs["result"]["store"]>
+export type StoreOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"storeId" | "name" | "phone" | "ownerName" | "adminPhone" | "description" | "address" | "neighborhood" | "directions" | "googleMapsUrl" | "email" | "website" | "instagram" | "facebook" | "tiktok" | "paymentMethods" | "paymentAccount" | "requiresDeposit" | "depositAmount" | "minAdvanceMinutes" | "cancellationPolicy" | "hasDelivery" | "deliveryZone" | "hasParking" | "requiresCustomerAddress" | "requiresCustomerCedula" | "orderShipping" | "orderShippingZone" | "orderRequiresDeposit" | "orderDepositAmount" | "orderPolicy" | "orderRequiresCedula" | "businessHours" | "waSessionId" | "staffLabel" | "slug" | "defaultServiceId" | "isActive" | "autoConfirmAppointments" | "primaryColor" | "secondaryColor" | "accentColor" | "subscriptionStatus" | "subscriptionEnd" | "apiBlocked" | "createdAt" | "updatedAt", ExtArgs["result"]["store"]>
 export type StoreInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   customers?: boolean | Prisma.Store$customersArgs<ExtArgs>
   conversations?: boolean | Prisma.Store$conversationsArgs<ExtArgs>
@@ -6661,6 +7249,12 @@ export type $StorePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     hasParking: boolean
     requiresCustomerAddress: boolean
     requiresCustomerCedula: boolean
+    orderShipping: boolean
+    orderShippingZone: string | null
+    orderRequiresDeposit: boolean
+    orderDepositAmount: string | null
+    orderPolicy: string | null
+    orderRequiresCedula: boolean
     businessHours: runtime.JsonValue | null
     waSessionId: string | null
     staffLabel: string | null
@@ -7143,6 +7737,12 @@ export interface StoreFieldRefs {
   readonly hasParking: Prisma.FieldRef<"Store", 'Boolean'>
   readonly requiresCustomerAddress: Prisma.FieldRef<"Store", 'Boolean'>
   readonly requiresCustomerCedula: Prisma.FieldRef<"Store", 'Boolean'>
+  readonly orderShipping: Prisma.FieldRef<"Store", 'Boolean'>
+  readonly orderShippingZone: Prisma.FieldRef<"Store", 'String'>
+  readonly orderRequiresDeposit: Prisma.FieldRef<"Store", 'Boolean'>
+  readonly orderDepositAmount: Prisma.FieldRef<"Store", 'String'>
+  readonly orderPolicy: Prisma.FieldRef<"Store", 'String'>
+  readonly orderRequiresCedula: Prisma.FieldRef<"Store", 'Boolean'>
   readonly businessHours: Prisma.FieldRef<"Store", 'Json'>
   readonly waSessionId: Prisma.FieldRef<"Store", 'String'>
   readonly staffLabel: Prisma.FieldRef<"Store", 'String'>

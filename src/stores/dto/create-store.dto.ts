@@ -42,6 +42,14 @@ export class CreateStoreDto {
   @IsBoolean() @IsOptional() @Type(() => Boolean) requiresCustomerAddress?: boolean;
   @IsBoolean() @IsOptional() @Type(() => Boolean) requiresCustomerCedula?: boolean;
 
+  // Pedidos de productos (los de arriba —domicilio, anticipo, cancelación, datos— son de citas)
+  @IsBoolean() @IsOptional() @Type(() => Boolean) orderShipping?: boolean;
+  @IsString()  @IsOptional() orderShippingZone?: string;
+  @IsBoolean() @IsOptional() @Type(() => Boolean) orderRequiresDeposit?: boolean;
+  @IsString()  @IsOptional() orderDepositAmount?: string;
+  @IsString()  @IsOptional() orderPolicy?: string;
+  @IsBoolean() @IsOptional() @Type(() => Boolean) orderRequiresCedula?: boolean;
+
   // Horarios
   @IsObject() @IsOptional() businessHours?: Record<string, any>;
 

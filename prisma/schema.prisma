@@ -88,6 +88,16 @@ model Store {
   requiresCustomerAddress Boolean @default(false) @map("requires_customer_address")
   requiresCustomerCedula  Boolean @default(false) @map("requires_customer_cedula")
 
+  // ── Pedidos de productos (separado de la config de citas de arriba) ──
+  // hasDelivery/requiresDeposit/cancellationPolicy/requiresCustomer* son de CITAS;
+  // estos son los equivalentes para PEDIDOS. Ver plan 2026-10-06-config-productos-servicios.
+  orderShipping        Boolean @default(false) @map("order_shipping")
+  orderShippingZone    String? @map("order_shipping_zone")
+  orderRequiresDeposit Boolean @default(false) @map("order_requires_deposit")
+  orderDepositAmount   String? @map("order_deposit_amount")
+  orderPolicy          String? @map("order_policy")
+  orderRequiresCedula  Boolean @default(false) @map("order_requires_cedula")
+
   // Horarios de atención
   businessHours   Json?    @map("business_hours")
 

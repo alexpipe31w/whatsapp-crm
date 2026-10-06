@@ -91,6 +91,25 @@ const STARTUP_MIGRATIONS = [
              WHERE (c->>'provider' = 'groq'   AND c->>'model' ~* '^(llama[-0-9]|meta-llama/llama-[34]|mixtral|gemma)')
                 OR (c->>'provider' = 'gemini' AND c->>'model' ~* '^gemini-(2[.]0|1[.]5|1[.]0|pro)')
           )`,
+  // ── Config de PEDIDOS separada de la de citas (2026-10-06) ──
+  // Booleanos: columna nullable → copia del valor de citas SOLO donde aún es NULL →
+  // default → NOT NULL. Re-ejecutarlo no cambia nada. Los de texto nacen vacíos (en
+  // ellos NULL es válido y un backfill los pisaría en cada arranque).
+  `ALTER TABLE stores ADD COLUMN IF NOT EXISTS order_shipping BOOLEAN`,
+  `UPDATE stores SET order_shipping = has_delivery WHERE order_shipping IS NULL`,
+  `ALTER TABLE stores ALTER COLUMN order_shipping SET DEFAULT false`,
+  `ALTER TABLE stores ALTER COLUMN order_shipping SET NOT NULL`,
+  `ALTER TABLE stores ADD COLUMN IF NOT EXISTS order_requires_deposit BOOLEAN`,
+  `UPDATE stores SET order_requires_deposit = requires_deposit WHERE order_requires_deposit IS NULL`,
+  `ALTER TABLE stores ALTER COLUMN order_requires_deposit SET DEFAULT false`,
+  `ALTER TABLE stores ALTER COLUMN order_requires_deposit SET NOT NULL`,
+  `ALTER TABLE stores ADD COLUMN IF NOT EXISTS order_requires_cedula BOOLEAN`,
+  `UPDATE stores SET order_requires_cedula = requires_customer_cedula WHERE order_requires_cedula IS NULL`,
+  `ALTER TABLE stores ALTER COLUMN order_requires_cedula SET DEFAULT false`,
+  `ALTER TABLE stores ALTER COLUMN order_requires_cedula SET NOT NULL`,
+  `ALTER TABLE stores ADD COLUMN IF NOT EXISTS order_shipping_zone TEXT`,
+  `ALTER TABLE stores ADD COLUMN IF NOT EXISTS order_deposit_amount TEXT`,
+  `ALTER TABLE stores ADD COLUMN IF NOT EXISTS order_policy TEXT`,
 ];
 
 @Injectable()
