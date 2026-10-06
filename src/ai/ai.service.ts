@@ -1960,6 +1960,11 @@ export class AiService {
     // Para órdenes el nombre del cliente es opcional — se usa "Cliente general" si no hay
     const needsName = !customer.name;
     const needsCustomerData = false;
+    // El nombre de WhatsApp suele ser una sola palabra o un apodo ("Alex"): si el cliente
+    // da su nombre completo para el envío, ese reemplaza al de WhatsApp.
+    const wordCount = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
+    const shouldSaveName = (n?: string | null): n is string =>
+      !!n && (needsName || (wordCount(customer.name ?? '') < 2 && wordCount(n) >= 2));
 
     // ── Caso 1: extracción completa cacheada + cliente confirma ───────────────
     if (
@@ -1985,16 +1990,11 @@ export class AiService {
       extracted = { ...cached, complete: true };
       this.pendingExtractions.delete(conversationId);
 
-    // ── Caso 2: había items, faltaba dirección, llega dirección Y ya tenemos nombre ──
-    } else if (
-      cached?.items?.length &&
-      !cached.deliveryAddress &&
-      ADDRESS_RE.test(latestMessage) &&
-      !needsCustomerData
-    ) {
-      this.logger.log(`[Orden] Completando con dirección para ${conversationId}`);
-      extracted = { ...cached, deliveryAddress: latestMessage.trim(), complete: true };
-      this.pendingExtractions.delete(conversationId);
+    // (Antes había un "Caso 2": si llegaba algo con forma de dirección creaba la orden
+    // al instante con el mensaje ENTERO como dirección y sin resumen ni confirmación.
+    // Frutatza 2026-10-06: dirección = "nombre + ciudad + calle + celular" y el cliente
+    // nunca vio el total. Ahora ese mensaje pasa por el extractor, la IA muestra el
+    // resumen y la orden se crea con el "sí" (Caso 1 / 1.5).)
 
     // ── Caso 3: correr el extractor ───────────────────────────────────────────
     } else {
@@ -2108,7 +2108,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
         this.logger.log(`[Orden] Extracción: complete=${extracted.complete} reason=${extracted.reason}`);
 
         // Guardar nombre del cliente proactivamente aunque la orden aún no esté completa
-        if (needsName && extracted.customerName && !extracted.complete) {
+        if (shouldSaveName(extracted.customerName) && !extracted.complete) {
           this.prisma.customer.update({
             where: { customerId: customer.customerId },
             data: {
@@ -2158,7 +2158,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
 
     try {
       // Actualizar datos del cliente si se recopilaron ahora
-      if (needsName && extracted.customerName) {
+      if (shouldSaveName(extracted.customerName)) {
         await this.prisma.customer.update({
           where: { customerId: customer.customerId },
           data: {
