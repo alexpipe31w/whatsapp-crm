@@ -117,8 +117,14 @@ async function useDBAuthState(prisma: PrismaService, storeId: string) {
   function serialize(obj: any): any {
     return JSON.parse(JSON.stringify(obj, BufferJSON.replacer));
   }
+  // El replacer es OBLIGATORIO también aquí: sin él, JSON.stringify convierte un Buffer
+  // en {type:'Buffer', data:[...números]} y el reviver de Baileys solo restaura data en
+  // base64 → keys.get devolvía objetos en vez de Buffers. Tras cada reinicio (cuando la
+  // caché en memoria de makeCacheableSignalKeyStore está vacía) el tctoken salía así y
+  // todo envío a un @lid fallaba con 'invalid children for header "tctoken"'.
+  // Incidente Frutatza 2026-10-06.
   function deserialize(obj: any): any {
-    return JSON.parse(JSON.stringify(obj), BufferJSON.reviver);
+    return JSON.parse(JSON.stringify(obj, BufferJSON.replacer), BufferJSON.reviver);
   }
 
   async function loadFromDB(): Promise<Record<string, any>> {
