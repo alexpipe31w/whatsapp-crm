@@ -10,6 +10,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { SyncService } from '../integrations/sync.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { formatBusinessHoursForAI } from '../utils/business-hours.util';
+import { isLidIdentity } from '../utils/wa-identity.util';
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
@@ -45,7 +46,9 @@ const BUY_INTENT_CORRECTION =
   '(producto, precio, envío o disponibilidad). Eso SIEMPRE es del negocio aunque el producto ' +
   'no esté en el catálogo: responde (si no lo tienes, dilo y ofrece lo más parecido). ' +
   'Solo responde [IGNORAR] si es publicidad de un tercero ofreciendo SUS productos.';
-const APPOINTMENT_INTENT_RE =/\b(agendar|agenda|cita|visita|visita técnica|técnico|técnica|programar|reservar|reserva|turno|appointment|quiero una cita|necesito una visita|instalar|instalación|mantenimiento|corte|sesión)\b/i;
+// Mensaje de la IA que habla de un PEDIDO de productos (no de una cita).
+const ORDER_CONTEXT_RE = /pedido|env[ií]o|enviar|direcci[oó]n|entrega|domicilio|unidades?|presentaci[oó]n/i;
+const APPOINTMENT_INTENT_RE = /\b(agendar|agenda|cita|visita|visita técnica|técnico|técnica|programar|reservar|reserva|turno|appointment|quiero una cita|necesito una visita|instalar|instalación|mantenimiento|corte|sesión)\b/i;
 
 // Confirmaciones — el mensaje debe SER una confirmación, no solo CONTENER una.
 // Antes el regex usaba esWord() para buscar la palabra en cualquier parte de la
@@ -1495,8 +1498,12 @@ export class AiService {
 
       const hasCatalog           = products.length > 0 || services.length > 0;
       const hasPurchaseIntent    = PURCHASE_INTENT_RE.test(userMessage);
-      const hasAppointmentIntent = APPOINTMENT_INTENT_RE.test(userMessage);
-      const hasPendingOrder      = this.pendingExtractions.has(conversationId);
+      // Una tienda SIN servicios solo vende productos: el flujo de citas no aplica nunca.
+      // Sin esto un "¿Todo correcto?" del pedido + "Si" caía en el guard de citas y
+      // respondía "¿qué servicio, con qué profesional?" (Frutatza 2026-10-06).
+      const offersAppointments   = services.length > 0;
+      const hasAppointmentIntent = offersAppointments && APPOINTMENT_INTENT_RE.test(userMessage);
+      const hasPendingOrder     = this.pendingExtractions.has(conversationId);
       const hasPendingAppt       = this.pendingAppointments.has(conversationId);
 
       // Detectar día de semana o confirmación dentro del contexto de agendamiento previo
@@ -1518,10 +1525,17 @@ export class AiService {
       // mencionar "profesional"/"horario", palabras comunes en cualquier charla de
       // barbería) para no añadir llamadas de más al extractor ni falsos positivos.
       const lastAiMsg = [...recentHistory].reverse().find((m: any) => m.isAiResponse);
-      const aiAskedApptConfirmation = !!lastAiMsg && /¿\s*(confirmas?|todo\s+(bien|correcto|ok)|es\s+correcto|procedo)\b|te\s+agendar[ée]|qued[oó]\s+(lista|registrada|agendada|confirmada)/i.test(lastAiMsg.content);
-      const hasApptContextHint =
+      // Un "¿Todo correcto?" sobre un PEDIDO (dirección, envío…) no es confirmación de cita.
+      const aiAskedApptConfirmation = !!lastAiMsg &&
+        !ORDER_CONTEXT_RE.test(lastAiMsg.content) &&
+        /¿\s*(confirmas?|todo\s+(bien|correcto|ok)|es\s+correcto|procedo)\b|te\s+agendar[ée]|qued[oó]\s+(lista|registrada|agendada|confirmada)/i.test(lastAiMsg.content);
+      const hasApptContextHint = offersAppointments && (
         (APPT_CONTEXT_RE.test(userMessage) && prevHadApptCtx) ||
-        (CONFIRMATION_RE.test(userMessage.trim()) && aiAskedApptConfirmation);
+        (CONFIRMATION_RE.test(userMessage.trim()) && aiAskedApptConfirmation));
+      // La IA viene armando un pedido (pidió dirección, presentación, confirmación…): el
+      // siguiente mensaje ("Cra 47 #20-48", "la de 180", "sí") ya no trae palabras de
+      // compra, pero necesita el catálogo completo y el extractor igual.
+      const aiInOrderFlow = !hasApptContextHint && !!lastAiMsg && ORDER_CONTEXT_RE.test(lastAiMsg.content);
 
       // ── Consulta pura de horario → link de reservas ─────────────────────────
       // Solo cuando el cliente pregunta por disponibilidad/horario sin intención
@@ -1637,7 +1651,7 @@ export class AiService {
         hasCatalog &&
         history.length >= 2 &&
         !inApptContext &&
-        (hasPurchaseIntent || hasPendingOrder) &&
+        (hasPurchaseIntent || hasPendingOrder || aiInOrderFlow) &&
         !this.orderInProgress.has(conversationId);
 
       if (shouldTryOrder) {
@@ -1736,7 +1750,7 @@ export class AiService {
 
       // Incluir catálogo completo solo cuando hay intención real de compra/cita/consulta
       const CATALOG_QUERY_RE = /\b(servicio|servicios|producto|productos|cat[aá]logo|precio|precios|tienen|tienes|ofrecen|disponible|cu[aá]nto|descuento|paquete|qu[eé]\s+(hay|tienen|ofrecen|tienes))\b/i;
-      const includeCatalog = hasPurchaseIntent || hasAppointmentIntent || hasPendingOrder || hasPendingAppt || CATALOG_QUERY_RE.test(userMessage);
+      const includeCatalog = hasPurchaseIntent || hasAppointmentIntent || hasPendingOrder || aiInOrderFlow || hasPendingAppt || CATALOG_QUERY_RE.test(userMessage);
 
       // Inyectar datos del caché de cita incompleta para que el LLM principal no recalcule fechas
       const cachedAppt = this.pendingAppointments.get(conversationId);
@@ -2044,7 +2058,7 @@ No incluyas el nombre en deliveryAddress ni la dirección en customerName.
 REGLAS ESTRICTAS:
 1. "complete":true SOLO si se cumplen TODAS las condiciones simultáneamente:
    a) Al menos un producto/servicio del catálogo con cantidad
-   b) Dirección con calle, carrera, barrio o similar (solo ciudad NO es suficiente)
+   b) Dirección con calle, carrera, barrio o similar (solo ciudad NO es suficiente) Y la ciudad o municipio (sin ciudad → false)
    c) Confirmación explícita del cliente (sí, confirmo, listo, dale, ok, etc.)
    d) Si se requieren datos del cliente: nombre presente${requiresCedula && !customer.cedula ? `
    e) Cédula del cliente presente (este negocio la exige para la guía de envío)` : ''}
@@ -2060,7 +2074,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
   "complete": boolean,
   "items": [{"itemType":"producto"|"servicio","productId":"uuid o null","serviceId":"uuid o null","variantId":"uuid o null","serviceVariantId":"uuid o null","quantity":number,"description":"nombre legible"}],
   "deliveryAddress": "string o null",
-  "notes": "string o null",
+  "notes": "string o null (incluye aquí el celular de contacto si el cliente lo dio)",
   "reason": "explicación breve",
   "customerName": "nombre completo del cliente o null",
   "customerCedula": "número de cédula o null"
@@ -3481,18 +3495,35 @@ REGLAS:
       : `- Si el cliente pregunta por métodos de pago: "Un asesor te contactará con esa información."`;
 
     const requiresCedula = !!(store as any)?.requiresCustomerCedula && !customer.cedula;
-    const cedulaLine = requiresCedula ? `\n  e) Número de cédula del cliente (obligatorio para la guía de envío)` : '';
-    const pedidoAsks = ['tu nombre completo', 'dirección de entrega', requiresCedula ? 'número de cédula' : null].filter(Boolean).join(', ');
+    // Cliente que escribe por LID: no tenemos su número y la transportadora lo necesita.
+    const needsPhone = isLidIdentity(customer.phone ?? '');
+    const pedidoAsks = [
+      'nombre completo de quien recibe',
+      'dirección completa con barrio',
+      'ciudad o municipio',
+      needsPhone ? 'un número de celular de contacto' : null,
+      requiresCedula ? 'número de cédula' : null,
+    ].filter(Boolean).join(', ');
 
+    // El nombre que trae WhatsApp ("Alex", un apodo, un emoji) NO sirve para una guía de
+    // envío: antes, con nombre de WhatsApp, la IA ni lo pedía ni pedía ciudad ni la
+    // presentación (Frutatza 2026-10-06: confirmó "2 mermeladas, Cra47#20-48" sin más).
     const flujoSection = `FLUJO DE TOMA DE ORDEN (PRODUCTOS Y SERVICIOS):
 
-Para crear un pedido necesito:
-  a) Productos o servicios con cantidad
-  b) Dirección de entrega completa
-  c) ${!customer.name ? 'Nombre completo del cliente' : '(nombre ya registrado)'}
-  d) Confirmación explícita${cedulaLine}
+Para crear un pedido necesito TODO esto:
+  a) Producto(s) con cantidad. Si el producto tiene presentaciones/variantes en el catálogo (ej. 50 g o 180 g), la presentación elegida: si no la dijo, PREGÚNTALA mostrando cada opción con su precio. NUNCA la asumas.
+  b) Nombre completo de quien recibe (nombre y apellido). El nombre de WhatsApp${customer.name ? ` ("${customer.name}")` : ''} NO cuenta: pídelo salvo que el cliente ya lo haya escrito en esta conversación.
+  c) Dirección completa con barrio.
+  d) Ciudad o municipio.${needsPhone ? `
+  e) Número de celular de contacto (no lo tenemos: este cliente escribe sin número visible).` : ''}${requiresCedula ? `
+  f) Número de cédula (obligatorio para la guía de envío).` : ''}
+  g) Confirmación explícita del cliente DESPUÉS de ver el resumen.
 
-${requiresCedula ? `CÉDULA OBLIGATORIA: este negocio necesita el número de cédula del cliente para generar la guía de envío. Pídela junto con la dirección (no por separado) y NO confirmes el pedido sin ella.\n` : ''}${!customer.name ? `IMPORTANTE: Cuando el cliente muestre intención de compra PIDE todo de una:\n"Para registrar tu pedido necesito ${pedidoAsks}."` : (requiresCedula ? `IMPORTANTE: cuando el cliente vaya a comprar, pídele dirección de entrega y número de cédula juntos.` : '')}
+CÓMO PEDIRLO:
+- En cuanto haya intención de compra, pide en UN solo mensaje todo lo que falte: presentación (si aplica) y "${pedidoAsks}". No lo pidas dato por dato.
+- Cuando tengas todo, manda el RESUMEN: producto, presentación, cantidad, precio unitario y total de productos, nombre, dirección, ciudad${needsPhone ? ', celular' : ''}. Pide SOLO confirmación.
+- Si falta algo, NO muestres el resumen ni pidas confirmación: pide lo que falta.${requiresCedula ? `
+- CÉDULA OBLIGATORIA: pídela junto con la dirección y NO confirmes el pedido sin ella.` : ''}
 
 ANTI-LOOP:
 - Si un dato ya está en DATOS YA RECOPILADOS, NO lo vuelvas a pedir.
