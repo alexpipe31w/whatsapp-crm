@@ -150,7 +150,12 @@ export class SyncService {
     });
   }
 
-  async emitStockChanged(tx: Tx, storeId: string, ref: { productId?: string; variantId?: string }) {
+  /**
+   * `delta`: movimiento (venta -n). StockUp lo SUMA en vez de fijar el absoluto,
+   * así una venta aquí y una reserva allí a la vez no se pisan. Sin delta es
+   * una fijación (edición manual del inventario).
+   */
+  async emitStockChanged(tx: Tx, storeId: string, ref: { productId?: string; variantId?: string }, delta?: number) {
     if (!(await this.getConnection(storeId))) return; // no-op barato: evita el findFirst en el hot path
     if (ref.variantId) {
       const v = await tx.productVariant.findFirst({
@@ -162,6 +167,7 @@ export class SyncService {
         productSourceId: v.product.productId, productTargetId: v.product.stockupProductId,
         variantSourceId: v.variantId, variantTargetId: v.stockupVariantId,
         stock: v.stock,
+        ...(delta !== undefined && { delta }),
       });
     } else if (ref.productId) {
       const p = await tx.product.findFirst({ where: { productId: ref.productId, storeId } });
@@ -170,6 +176,7 @@ export class SyncService {
         productSourceId: p.productId, productTargetId: p.stockupProductId,
         variantSourceId: null, variantTargetId: null,
         stock: p.stock,
+        ...(delta !== undefined && { delta }),
       });
     }
   }
@@ -402,6 +409,37 @@ export class SyncService {
         // El <= en empate de timestamps es deliberado: gana el primero
         // commiteado y se evita re-aplicar un duplicado.
         const p = envelope.payload;
+
+        // Movimiento de StockUp (reserva -n, liberación +n, venta manual -n):
+        // se SUMA. Fijar el absoluto perdía ventas locales concurrentes. Un
+        // delta más viejo que la última fijación aplicada (stockupSyncedAt) ya
+        // está contado en ella → se salta; el delta no mueve stockupSyncedAt
+        // para no hacer saltar una fijación anterior que llegue tarde. Espejo
+        // de StockUp `api/integrations/crm/events`.
+        if (Number.isInteger(p.delta)) {
+          let stockAfter: number;
+          if (p.variantSourceId) {
+            const v = await tx.productVariant.findFirst({ where: { stockupVariantId: p.variantSourceId, product: { storeId } } });
+            if (!v) return { ok: true, skipped: true };
+            if (v.stockupSyncedAt && occurredAt <= v.stockupSyncedAt) return { ok: true, skipped: true };
+            ({ stock: stockAfter } = await tx.productVariant.update({
+              where: { variantId: v.variantId }, data: { stock: { increment: p.delta } }, select: { stock: true },
+            }));
+          } else {
+            const prod = await tx.product.findFirst({ where: { storeId, stockupProductId: p.productSourceId } });
+            if (!prod) return { ok: true, skipped: true };
+            if (prod.stockupSyncedAt && occurredAt <= prod.stockupSyncedAt) return { ok: true, skipped: true };
+            ({ stock: stockAfter } = await tx.product.update({
+              where: { productId: prod.productId }, data: { stock: { increment: p.delta } }, select: { stock: true },
+            }));
+          }
+          if (stockAfter < 0) {
+            // No se recorta: recortar rompe la suma de los deltas siguientes.
+            this.logger.warn(`[sync-stock-negativo] evento ${envelope.eventId} store ${storeId} stock ${stockAfter}`);
+          }
+          break;
+        }
+
         if (p.variantSourceId) {
           const v = await tx.productVariant.findFirst({
             where: { stockupVariantId: p.variantSourceId, product: { storeId } },

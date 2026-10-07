@@ -84,7 +84,7 @@ export class OrdersService {
               `Stock insuficiente para la variante (disponible: ${variant.stock})`,
             );
           }
-          await this.sync.emitStockChanged(tx, dto.storeId!, { variantId: item.variantId });
+          await this.sync.emitStockChanged(tx, dto.storeId!, { variantId: item.variantId }, -item.quantity);
         } else if (item.productId) {
           const result = await tx.product.updateMany({
             where: { productId: item.productId, stock: { gte: item.quantity }, storeId: dto.storeId },
@@ -99,7 +99,7 @@ export class OrdersService {
               `Stock insuficiente para "${product.name}" (disponible: ${product.stock})`,
             );
           }
-          await this.sync.emitStockChanged(tx, dto.storeId!, { productId: item.productId });
+          await this.sync.emitStockChanged(tx, dto.storeId!, { productId: item.productId }, -item.quantity);
         }
 
         if (item.serviceId) {

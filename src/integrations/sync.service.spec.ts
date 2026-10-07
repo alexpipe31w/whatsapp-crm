@@ -124,6 +124,49 @@ describe('applyRemoteEvent — orden evento-contra-evento (no updatedAt local)',
   });
 });
 
+describe('applyRemoteEvent — stock.changed con delta (movimiento de StockUp)', () => {
+  const ev = (occurredAt: string, delta: number) => ({
+    eventId: `e-${occurredAt}`, type: 'stock.changed', occurredAt,
+    payload: { productSourceId: 'sp1', variantSourceId: null, stock: 0, delta },
+  });
+
+  it('suma el delta en vez de fijar el absoluto y no mueve stockupSyncedAt', async () => {
+    const { service, tx } = makeHarness();
+    tx.product.findFirst.mockResolvedValue({ productId: 'p1', stockupSyncedAt: null });
+
+    const r = await service.applyRemoteEvent('store1', ev('2026-01-01T13:00:00Z', -2));
+
+    expect(r.ok).toBe(true);
+    expect(tx.product.update).toHaveBeenCalledWith({
+      where: { productId: 'p1' }, data: { stock: { increment: -2 } }, select: { stock: true },
+    });
+  });
+
+  it('delta más viejo que la última fijación se salta (ya está contado en ella)', async () => {
+    const { service, tx } = makeHarness();
+    tx.product.findFirst.mockResolvedValue({ productId: 'p1', stockupSyncedAt: new Date('2026-01-01T12:00:00Z') });
+
+    const r = await service.applyRemoteEvent('store1', ev('2026-01-01T11:00:00Z', -1));
+
+    expect(r).toEqual({ ok: true, skipped: true });
+    expect(tx.product.update).not.toHaveBeenCalled();
+  });
+
+  it('variante: incrementa por variantId', async () => {
+    const { service, tx } = makeHarness();
+    tx.productVariant.findFirst.mockResolvedValue({ variantId: 'v1', stockupSyncedAt: null });
+
+    await service.applyRemoteEvent('store1', {
+      eventId: 'e-v', type: 'stock.changed', occurredAt: '2026-01-01T13:00:00Z',
+      payload: { productSourceId: 'sp1', variantSourceId: 'sv1', stock: 0, delta: 3 },
+    });
+
+    expect(tx.productVariant.update).toHaveBeenCalledWith({
+      where: { variantId: 'v1' }, data: { stock: { increment: 3 } }, select: { stock: true },
+    });
+  });
+});
+
 describe('applyRemoteEvent — fast-path de dedupe', () => {
   it('evento ya en el inbox: skip sin abrir transacción', async () => {
     const { service, prisma } = makeHarness();

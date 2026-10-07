@@ -2297,14 +2297,14 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
                 data:  { stock: { decrement: op.quantity } },
               });
               if (r.count === 0) throw new Error('STOCK_OUT');
-              await this.sync.emitStockChanged(tx, storeId, { variantId: op.variantId });
+              await this.sync.emitStockChanged(tx, storeId, { variantId: op.variantId }, -op.quantity);
             } else if (op.productId) {
               const r = await tx.product.updateMany({
                 where: { productId: op.productId, stock: { gte: op.quantity }, storeId },
                 data:  { stock: { decrement: op.quantity } },
               });
               if (r.count === 0) throw new Error('STOCK_OUT');
-              await this.sync.emitStockChanged(tx, storeId, { productId: op.productId });
+              await this.sync.emitStockChanged(tx, storeId, { productId: op.productId }, -op.quantity);
             }
           }
           return tx.order.create({
