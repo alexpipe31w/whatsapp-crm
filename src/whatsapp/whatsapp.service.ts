@@ -14,6 +14,7 @@ import { AdminAssistantService } from '../admin-assistant/admin-assistant.servic
 import {
   isLidIdentity, lidIdentity, resolveJid, phoneFromJid, lidUserFromJid, jidFromPhone,
 } from '../utils/wa-identity.util';
+import { computeReconnectDelay, FORBIDDEN_STATUS } from './reconnect-delay';
 
 const WHISPER_TIMEOUT_MS    = 25_000;
 const WHISPER_MODEL         = 'whisper-large-v3-turbo';
@@ -32,11 +33,6 @@ const SEND_RETRY_ATTEMPTS          = 4;
 const SEND_RETRY_DELAY_MS          = 1_500;
 const SEND_NOT_ACCEPTABLE_DELAY_MS = 6_000; // sesión Signal en renegociación, esperar más
 
-const RECONNECT_DELAYS: Record<number, number> = {
-  408: 5_000,
-  440: 8_000,
-};
-const DEFAULT_RECONNECT_DELAY = 3_000;
 // Código 408 = QR timeout (nadie escaneó). Tras MAX_QR_ATTEMPTS el loop se detiene.
 const MAX_QR_ATTEMPTS = 3;
 // Código 401 = loggedOut. Reintentos con los mismos creds antes de borrar la sesión:
@@ -343,6 +339,8 @@ export class WhatsappService implements OnModuleInit {
   // pérdida de red del teléfono) se recupera reconectando con los MISMOS creds; solo
   // si el 401 persiste tras MAX_LOGGED_OUT_RETRIES se trata como logout definitivo.
   private readonly loggedOutAttempts = new Map<string, number>();
+  // Cierres consecutivos sin 'open' — alimenta el backoff de reconexión.
+  private readonly reconnectFailures = new Map<string, number>();
   private readonly processedMsgIds  = new Set<string>();
   // Pares "<storeId>:<waLid>" cuya ficha de cliente ya se cruzó en esta ejecución.
   // Evita repetir la transacción de fusión en cada mensaje del mismo cliente.
@@ -496,6 +494,7 @@ export class WhatsappService implements OnModuleInit {
       this.reconnecting.delete(storeId);
       this.qrAttempts.delete(storeId);
       this.loggedOutAttempts.delete(storeId);
+      this.reconnectFailures.delete(storeId);
       await this.prisma.store.update({
         where: { storeId },
         data:  { waSessionId: storeId },
@@ -532,6 +531,19 @@ export class WhatsappService implements OnModuleInit {
     } catch { /* JSON circular — dejar solo el message */ }
 
     this.logger.warn(`Conexión cerrada para ${storeId} — código: ${statusCode} — motivo: ${discDetail}`);
+
+    // 403: la cuenta está suspendida o en revisión. Parar en seco y CONSERVAR los
+    // creds: si Meta la reactiva, se reconecta con /connect sin escanear otro QR.
+    if (statusCode === FORBIDDEN_STATUS) {
+      this.logger.error(`Store ${storeId}: WhatsApp rechazó la cuenta (403) — reconexión automática DETENIDA, sesión conservada. Revisar el teléfono de la tienda; reconectar con /connect solo cuando Meta la reactive.`);
+      this.sockets.delete(storeId);
+      this.qrCodes.delete(storeId);
+      this.reconnecting.delete(storeId);
+      this.qrAttempts.delete(storeId);
+      this.loggedOutAttempts.delete(storeId);
+      this.reconnectFailures.delete(storeId);
+      return;
+    }
 
     if (loggedOut) {
       const loAttempts = (this.loggedOutAttempts.get(storeId) ?? 0) + 1;
@@ -584,8 +596,10 @@ export class WhatsappService implements OnModuleInit {
     }
 
     this.reconnecting.add(storeId);
-    const delay = RECONNECT_DELAYS[statusCode ?? -1] ?? DEFAULT_RECONNECT_DELAY;
-    this.logger.log(`Reconectando ${storeId} en ${delay}ms... (intento QR: ${this.qrAttempts.get(storeId) ?? 1}/${MAX_QR_ATTEMPTS})`);
+    const failures = (this.reconnectFailures.get(storeId) ?? 0) + 1;
+    this.reconnectFailures.set(storeId, failures);
+    const delay = computeReconnectDelay(statusCode, failures);
+    this.logger.log(`Reconectando ${storeId} en ${delay}ms... (cierre seguido nº ${failures}, intento QR: ${this.qrAttempts.get(storeId) ?? 1}/${MAX_QR_ATTEMPTS})`);
 
     setTimeout(() => {
       this.reconnecting.delete(storeId);
@@ -1419,6 +1433,7 @@ export class WhatsappService implements OnModuleInit {
     this.reconnecting.delete(storeId);
     this.qrAttempts.delete(storeId);
     this.loggedOutAttempts.delete(storeId);
+    this.reconnectFailures.delete(storeId);
 
     if (sock) {
       try { await sock.logout(); } catch {
