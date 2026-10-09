@@ -1,54 +1,15 @@
 import { NestFactory } from '@nestjs/core';
+import { Logger } from '@nestjs/common';
 import { AppModule } from './app.module';
-import { ValidationPipe, Logger } from '@nestjs/common';
-import compression from 'compression';
-import helmet from 'helmet';
+import { configureApp } from './app.setup';
 import { PrismaService } from './prisma/prisma.service';
 
 async function bootstrap() {
   // rawBody: necesario para verificar firmas HMAC del sync StockUp (integrations)
   const app = await NestFactory.create(AppModule, { rawBody: true });
+  configureApp(app);
 
-  // Seguridad: cabeceras HTTP hardening
-  app.use(helmet({
-    crossOriginResourcePolicy: { policy: 'cross-origin' },
-    contentSecurityPolicy: false,
-  }));
-
-  // Compresión gzip — reduce payload hasta 70% en respuestas JSON
-  app.use(compression());
-
-  const allowedOrigins = process.env.ALLOWED_ORIGINS
-    ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
-    : ['http://localhost:3000', 'http://localhost:3001'];
-
-  // Orígenes de Capacitor (Android usa https://localhost por androidScheme:'https', iOS usa capacitor://localhost)
-  const capacitorOrigins = ['https://localhost', 'capacitor://localhost', 'ionic://localhost'];
-
-  app.enableCors({
-    origin: (origin, callback) => {
-      // Permitir requests sin origin (Postman, curl) o desde app nativa Capacitor
-      if (!origin) return callback(null, true);
-      if (capacitorOrigins.includes(origin)) return callback(null, true);
-      if (allowedOrigins.some(o => o === '*' || origin === o)) {
-        return callback(null, true);
-      }
-      callback(new Error(`CORS: origen no permitido: ${origin}`));
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-request-id'],
-  });
-
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    forbidNonWhitelisted: true,
-    transform: true,
-  }));
-
-  app.setGlobalPrefix('api');
-
-  // Health check fuera del prefijo /api — para Render/Railway uptime checks
+  // Health check fuera del prefijo /api — para uptime checks
   const httpAdapter = app.getHttpAdapter();
   const prisma = app.get(PrismaService);
 

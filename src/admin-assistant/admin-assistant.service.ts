@@ -62,6 +62,7 @@ export class AdminAssistantService implements OnModuleDestroy {
     private readonly customers: CustomersService,
   ) {
     this.cleanupTimer = setInterval(() => this.cleanSessions(), 30 * 60 * 1000);
+    this.cleanupTimer.unref(); // no mantiene vivo el proceso (tests, apagado)
   }
 
   onModuleDestroy() {

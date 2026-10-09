@@ -25,7 +25,7 @@ setInterval(() => {
   for (const [id, reg] of store.entries()) {
     if (reg.expiresAt < now) store.delete(id);
   }
-}, 5 * 60 * 1000);
+}, 5 * 60 * 1000).unref(); // no mantiene vivo el proceso: limpieza de fondo, no trabajo pendiente
 
 export const RegistrationStore = {
   create(data: Omit<PendingRegistration, 'code' | 'expiresAt'>): { sessionId: string; code: string } {
