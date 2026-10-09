@@ -1299,6 +1299,7 @@ git stash push -- src/generated        # última vez: después ya no está en gi
 git pull --ff-only
 pg_dump -d instapod -Fc -f ~/backups/instapod-antes-fase0.dump
 npx prisma migrate resolve --applied 20261010000000_consolidar_migraciones_de_arranque
+npx prisma migrate deploy              # aplica 20261010000001_alinear_produccion_con_esquema
 npx prisma migrate status              # Expected: "Database schema is up to date!"
 npm ci
 npm run build
@@ -1348,4 +1349,7 @@ Correr `/code-review high` sobre la rama y aplicar lo que salga. Después, con O
 
 ## Hallazgos
 
-(Se rellena durante la ejecución: tests existentes que salían a red, diferencias entre esquema y producción, bugs reales encontrados por la prueba de humo.)
+- **Task 3:** el `network.ts` original fallaba ABIERTO en Node 20 y 24: `net.connect()` llama a `Socket.prototype.connect` con los argumentos normalizados en un array, el host caía a `'localhost'` y la conexión pasaba. Arreglado (`Array.isArray(args[0])`) y verificado en Node 20.20 y 24.14.
+- **Revisión tanda 1 (Importante):** el `.env` local tiene `DATABASE_URL` hacia el túnel de producción. Un spec unitario que instancie `PrismaService` de verdad (con el túnel abierto) tocaría producción: el proyecto `unit` no fijaba la BD. Arreglo en la tanda 3: `setup-unit.ts` fija `DATABASE_URL` a la de tests, y el candado de red veta también el puerto del túnel aunque sea localhost.
+- **Task 6:** la migración consolidada incluye mucha deriva antigua de `db push` (columnas de `stores`, `appointments`, `orders`, `customers`, `ai_configurations` y tablas `daily_reports`, `admin_audit_logs`, `subscription_*`, `staff`). Ningún DROP. Prisma 6.19 no marca el índice parcial `customers_store_wa_lid_key` como diferencia (el Step 5 dio "No difference detected").
+- **Task 6, Step 6 (producción, solo lectura, ejecutado en el pod):** a producción no le falta nada del esquema; solo diferencias cosméticas de las antiguas STARTUP_MIGRATIONS (TIMESTAMP(6) vs (3), dos FK sin `ON UPDATE CASCADE`, `DEFAULT now()` en `stockup_connections.updated_at`) → nueva migración `20261010000001_alinear_produccion_con_esquema`. Ensayado sobre una copia de la ESTRUCTURA de producción (sin datos) en `crm_prodcopy_test`: resolve + deploy → "up to date"; la única diferencia restante son las tablas `_bak_frutatza_prompt_20261006` y `..._20261006b` (copias manuales del prompt de Frutatza del 2026-10-06; no son de la app, no se tocan sin OK de Alex).
