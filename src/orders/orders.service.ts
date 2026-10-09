@@ -1,6 +1,7 @@
 import {
-  Injectable, NotFoundException, BadRequestException, ForbiddenException,
+  Injectable, NotFoundException, BadRequestException, ForbiddenException, ConflictException,
 } from '@nestjs/common';
+import { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { SyncService } from '../integrations/sync.service';
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -86,6 +87,15 @@ export class OrdersService {
           }
           await this.sync.emitStockChanged(tx, dto.storeId!, { variantId: item.variantId }, -item.quantity);
         } else if (item.productId) {
+          // Con variantes activas el stock vive en cada variante: sin variantId se
+          // descontaba el del producto base, que no corresponde a ningún sabor/talla.
+          const withVariants = await tx.product.findFirst({
+            where:  { productId: item.productId, storeId: dto.storeId, variants: { some: { isActive: true } } },
+            select: { name: true },
+          });
+          if (withVariants)
+            throw new BadRequestException(`"${withVariants.name}" tiene variantes: elige cuál antes de agregarlo al pedido.`);
+
           const result = await tx.product.updateMany({
             where: { productId: item.productId, stock: { gte: item.quantity }, storeId: dto.storeId },
             data:  { stock: { decrement: item.quantity } },
@@ -198,15 +208,58 @@ export class OrdersService {
       }
     }
 
-    // FIX: solo actualizar status — no pasar el DTO completo a Prisma
-    return this.prisma.order.update({
-      where: { orderId },
-      data:  { status: dto.status },
-      include: {
-        customer:   true,
-        orderItems: { include: { product: true, service: true } },
-      },
+    const cancelling = !!dto.status && dto.status !== order.status && dto.status === 'cancelled';
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      if (dto.status && dto.status !== order.status) {
+        // Reclamo atómico desde el estado leído: de dos cancelaciones simultáneas
+        // solo una gana, y el stock se devuelve una sola vez.
+        const claim = await tx.order.updateMany({
+          where: { orderId, storeId: order.storeId, status: order.status },
+          data:  { status: dto.status },
+        });
+        if (claim.count === 0)
+          throw new ConflictException('El pedido cambió de estado mientras tanto. Recarga e inténtalo de nuevo.');
+        if (cancelling) await this.restoreStock(tx, order.storeId, orderId);
+      }
+
+      return tx.order.findUnique({
+        where: { orderId },
+        include: {
+          customer:   true,
+          orderItems: { include: { product: true, service: true } },
+        },
+      });
     });
+
+    if (cancelling) this.sync.kick();
+    return updated;
+  }
+
+  /**
+   * Devuelve al inventario lo que descontó `create` (misma regla: variante si
+   * la hay, si no el producto) y avisa a StockUp con un delta positivo.
+   */
+  private async restoreStock(tx: Prisma.TransactionClient, storeId: string, orderId: string) {
+    const items = await tx.orderItem.findMany({
+      where:  { orderId },
+      select: { productId: true, variantId: true, quantity: true },
+    });
+    for (const item of items) {
+      if (item.variantId) {
+        const r = await tx.productVariant.updateMany({
+          where: { variantId: item.variantId, product: { storeId } },
+          data:  { stock: { increment: item.quantity } },
+        });
+        if (r.count > 0) await this.sync.emitStockChanged(tx, storeId, { variantId: item.variantId }, item.quantity);
+      } else if (item.productId) {
+        const r = await tx.product.updateMany({
+          where: { productId: item.productId, storeId },
+          data:  { stock: { increment: item.quantity } },
+        });
+        if (r.count > 0) await this.sync.emitStockChanged(tx, storeId, { productId: item.productId }, item.quantity);
+      }
+    }
   }
 
   async getSummaryForAI(orderId: string): Promise<string> {
