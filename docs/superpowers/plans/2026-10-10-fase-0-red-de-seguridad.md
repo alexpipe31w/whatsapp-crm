@@ -1294,18 +1294,36 @@ git commit -m "chore: script de deploy del pod con copia de BD antes de migrar"
 Producción ya tiene todo lo que crea la migración consolidada (lo verificó la Task 6, Step 6). Por eso, **antes** del primer `deploy-pod.sh`, en el pod:
 
 ```bash
+set -euo pipefail
 cd ~/app
-git stash push -- src/generated        # última vez: después ya no está en git
+git checkout -- src/generated          # descarta el cliente generado local; después ya no está en git
 git pull --ff-only
+
+# Copia de seguridad, comprobada antes de seguir
+mkdir -p ~/backups
 pg_dump -d instapod -Fc -f ~/backups/instapod-antes-fase0.dump
+ls -lh ~/backups/instapod-antes-fase0.dump
+[ -s ~/backups/instapod-antes-fase0.dump ]
+
+# Comprobaciones previas (todas deben dar lo esperado; si no, parar)
+psql -d instapod -At -c "SELECT count(*), count(*) FILTER (WHERE finished_at IS NOT NULL AND rolled_back_at IS NULL) FROM _prisma_migrations"   # Expected: 16|16
+psql -d instapod -At -c "SELECT conname FROM pg_constraint WHERE conname IN ('stockup_connections_store_id_fkey','sync_outbox_store_id_fkey') ORDER BY 1"   # Expected: las 2 FK
+psql -d instapod -At -c "SELECT (SELECT count(*) FROM stockup_connections c WHERE NOT EXISTS (SELECT 1 FROM stores s WHERE s.id = c.store_id)) + (SELECT count(*) FROM sync_outbox o WHERE NOT EXISTS (SELECT 1 FROM stores s WHERE s.id = o.store_id))"   # Expected: 0 huérfanos
+psql -d instapod -At -c "SELECT count(*) FROM pg_stat_activity WHERE xact_start < now() - interval '1 minute' AND pid <> pg_backend_pid()"   # Expected: 0
+
+# Antes del resolve: solo deben aparecer pendientes 20261010000000_* y 20261010000001_*. Si aparece otra, PARAR.
+npx prisma migrate status || true
+
+npm ci
+npx tsc --noEmit -p tsconfig.build.json
 npx prisma migrate resolve --applied 20261010000000_consolidar_migraciones_de_arranque
 npx prisma migrate deploy              # aplica 20261010000001_alinear_produccion_con_esquema
 npx prisma migrate status              # Expected: "Database schema is up to date!"
-npm ci
 npm run build
 sudo systemctl restart app.service
-sleep 15 && curl -fsS localhost:3000/health
-git stash drop                          # el stash del cliente generado ya no sirve
+
+# Health con reintentos (20 x 3 s)
+for i in $(seq 1 20); do curl -fsS localhost:3000/health && break; sleep 3; done
 ```
 
 Expected: `migrate status` al día y `/health` → `{"status":"ok","db":"connected",...}`. A partir de aquí, todos los deploys con `bash ~/app/scripts/deploy-pod.sh`.
@@ -1355,3 +1373,7 @@ Correr `/code-review high` sobre la rama y aplicar lo que salga. Después, con O
 - **Task 6, Step 6 (producción, solo lectura, ejecutado en el pod):** a producción no le falta nada del esquema; solo diferencias cosméticas de las antiguas STARTUP_MIGRATIONS (TIMESTAMP(6) vs (3), dos FK sin `ON UPDATE CASCADE`, `DEFAULT now()` en `stockup_connections.updated_at`) → nueva migración `20261010000001_alinear_produccion_con_esquema`. Ensayado sobre una copia de la ESTRUCTURA de producción (sin datos) en `crm_prodcopy_test`: resolve + deploy → "up to date"; la única diferencia restante son las tablas `_bak_frutatza_prompt_20261006` y `..._20261006b` (copias manuales del prompt de Frutatza del 2026-10-06; no son de la app, no se tocan sin OK de Alex).
 
 - **Task 10:** (a) Baileys es ESM puro y Jest (CommonJS) no lo carga: `test/support/app.ts` lo sustituye con `jest.mock('@whiskeysockets/baileys', () => ({}))` (el import estático de `whatsapp.service.ts` ya no revienta; WhatsappService va con el doble). (b) Tras pasar 5/5, Jest tardaba ~30 s en salir: `PrismaService.onModuleDestroy` hacía `$disconnect()` pero el adaptador NO cierra el `Pool` de pg que se le pasa, y las conexiones ociosas vivían `idleTimeoutMillis` (30 s). Arreglo mínimo en `src/prisma/prisma.service.ts` (guarda el pool y hace `pool.end()`; también mejora el apagado de producción) y `closeTestPrisma` llama a `onModuleDestroy`. Sin bugs reales de aislamiento ni de concurrencia: los 5 tests pasan sin `it.failing`.
+
+- **STARTUP_MIGRATIONS eliminadas:** con ellas se van los UPDATE de saneamiento (modelos de IA retirados, `max_tokens < 2000`). En producción ya se aplicaron y queda la normalización en memoria de `providers.ts`, pero una tienda puede volver a bajar `max_tokens` desde el panel. Anotado para el bloque 4 (IA).
+- **Deploy y `dist`:** `nest build` borra `dist` antes de compilar (`deleteOutDir`). Mitigado en `deploy-pod.sh` con un `tsc --noEmit` previo; el build atómico en `dist-next` queda para el bloque 1 (deploy con dos servicios).
+- **Hosts locales duplicados** en `test/support/guard.ts` y `network.ts`. No tocar ahora.
