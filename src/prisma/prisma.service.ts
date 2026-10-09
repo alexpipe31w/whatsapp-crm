@@ -6,6 +6,7 @@ import { PrismaClient } from '../generated/prisma/client';
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PrismaService.name);
+  private readonly pool: Pool;
 
   constructor() {
     // Pool de conexiones — Render Starter tiene límites, max 10 evita saturar
@@ -17,6 +18,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     });
     const adapter = new PrismaPg(pool);
     super({ adapter });
+    this.pool = pool;
   }
 
   async onModuleInit() {
@@ -26,6 +28,9 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
 
   async onModuleDestroy() {
     await this.$disconnect();
+    // El adaptador no cierra el pool que le pasamos: sin esto las conexiones ociosas
+    // sobreviven 30 s al apagado (cuelga Jest y retrasa el cierre del proceso).
+    await this.pool.end().catch(() => undefined);
     this.logger.log('Desconectado de la base de datos');
   }
 }

@@ -28,6 +28,6 @@ export async function resetDb(): Promise<void> {
 }
 
 export async function closeTestPrisma(): Promise<void> {
-  if (client) await client.$disconnect();
+  if (client) await client.onModuleDestroy(); // también cierra el pool de pg
   client = null;
 }
