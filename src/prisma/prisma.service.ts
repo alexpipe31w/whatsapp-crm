@@ -29,8 +29,11 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   async onModuleDestroy() {
     await this.$disconnect();
     // El adaptador no cierra el pool que le pasamos: sin esto las conexiones ociosas
-    // sobreviven 30 s al apagado (cuelga Jest y retrasa el cierre del proceso).
-    await this.pool.end().catch(() => undefined);
+    // sobreviven 30 s (cuelga Jest). Sirve para los tests: en producción no se llaman los
+    // hooks de destrucción porque main.ts no usa enableShutdownHooks().
+    await this.pool
+      .end()
+      .catch((err) => this.logger.warn(`No se pudo cerrar el pool de pg: ${err?.message ?? err}`));
     this.logger.log('Desconectado de la base de datos');
   }
 }
