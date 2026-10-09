@@ -25,6 +25,10 @@ describe('installNetworkGuard', () => {
     expect(msg).not.toMatch(/net-guard/);
   });
 
+  it('veta el puerto del túnel a producción aunque el host sea localhost', async () => {
+    await expect(tryConnect('127.0.0.1', 54 * 100 + 33)).resolves.toMatch(/net-guard/);
+  });
+
   it('instalarlo dos veces no lo duplica', async () => {
     installNetworkGuard();
     await expect(tryConnect('graph.facebook.com', 443)).resolves.toMatch(/net-guard/);
