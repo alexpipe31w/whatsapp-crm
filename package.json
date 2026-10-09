@@ -13,11 +13,13 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:cov": "jest --coverage",
-    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test": "jest --selectProjects unit",
+    "test:watch": "jest --selectProjects unit --watch",
+    "test:cov": "jest --selectProjects unit --coverage",
+    "test:int": "jest --selectProjects int --runInBand",
+    "test:all": "npm test && npm run test:int",
+    "test:db": "ts-node --transpile-only scripts/test-db.ts",
+    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.100.1",
@@ -84,20 +86,47 @@
     "typescript-eslint": "^8.20.0"
   },
   "jest": {
-    "moduleFileExtensions": [
-      "js",
-      "json",
-      "ts"
-    ],
-    "rootDir": "src",
-    "testRegex": ".*\\.spec\\.ts$",
-    "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
-    },
-    "collectCoverageFrom": [
-      "**/*.(t|j)s"
-    ],
-    "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "projects": [
+      {
+        "displayName": "unit",
+        "rootDir": ".",
+        "moduleFileExtensions": [
+          "js",
+          "json",
+          "ts"
+        ],
+        "testMatch": [
+          "<rootDir>/src/**/*.spec.ts",
+          "<rootDir>/test/support/**/*.spec.ts"
+        ],
+        "transform": {
+          "^.+\\.(t|j)s$": "ts-jest"
+        },
+        "setupFiles": [
+          "<rootDir>/test/support/setup-unit.ts"
+        ],
+        "testEnvironment": "node"
+      },
+      {
+        "displayName": "int",
+        "rootDir": ".",
+        "moduleFileExtensions": [
+          "js",
+          "json",
+          "ts"
+        ],
+        "testMatch": [
+          "<rootDir>/test/**/*.int-spec.ts"
+        ],
+        "transform": {
+          "^.+\\.(t|j)s$": "ts-jest"
+        },
+        "setupFiles": [
+          "<rootDir>/test/support/setup-env.ts"
+        ],
+        "testEnvironment": "node",
+        "testTimeout": 30000
+      }
+    ]
   }
 }
