@@ -1,3 +1,7 @@
+// Baileys es ESM puro y Jest (CommonJS) no lo carga; WhatsappService va sustituido por el doble,
+// así que basta con un módulo vacío para que el import de whatsapp.service.ts no falle.
+jest.mock('@whiskeysockets/baileys', () => ({}));
+
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { AppModule } from '../../src/app.module';
