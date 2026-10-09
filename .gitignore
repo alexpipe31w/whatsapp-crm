@@ -58,10 +58,9 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 /generated/prisma
 sessions/
 
-# Prisma engine binaries (platform-specific, regenerated on build)
-src/generated/prisma/query_engine-*.node
-src/generated/prisma/query_engine-*.node.tmp*
-src/generated/prisma/libquery_engine-*
+# Cliente Prisma: se genera en `npm install` (postinstall) y en `npm run build`.
+# Commitearlo generado en Windows tumbó producción (2026-06) y obligaba a stash en cada pull.
+src/generated/
 
 # Volcados de diagnostico: pueden contener claves de API y datos de clientes
 scripts/backups/
