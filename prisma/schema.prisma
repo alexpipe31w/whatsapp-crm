@@ -154,7 +154,12 @@ model Customer {
   // direcciona por LID y no entrega el número, es "lid:<user>" — ver waLid.
   phone      String   @db.VarChar(32)
   // LID de WhatsApp cuando se conoce, tanto si además tenemos teléfono como si no.
-  // Índice único parcial por tienda creado en STARTUP_MIGRATIONS (Prisma no los declara).
+  // Índice único parcial por tienda `customers_store_wa_lid_key` (WHERE wa_lid IS NOT NULL),
+  // creado a mano en la migración 20261010000000_consolidar_migraciones_de_arranque
+  // porque Prisma no declara índices parciales.
+  // ATENCIÓN: en este repo NUNCA usar `prisma db push` ni `prisma migrate dev` contra una
+  // BD con datos: borrarían ese índice. Las migraciones nuevas se generan con
+  // `prisma migrate diff ... --script` y se revisan a mano.
   waLid      String?  @map("wa_lid") @db.VarChar(32)
   name       String?  @db.VarChar(100)
   cedula     String?  @db.VarChar(20)
@@ -826,7 +831,7 @@ model SyncOutbox {
 
   store Store @relation(fields: [storeId], references: [storeId], onDelete: Cascade)
 
-  @@index([status, nextRetryAt])
+  @@index([status, nextRetryAt], map: "sync_outbox_status_retry")
   @@map("sync_outbox")
 }
 
