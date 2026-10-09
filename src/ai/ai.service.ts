@@ -2214,6 +2214,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
       // Decrementos de stock a aplicar atómicamente junto con la creación de la orden.
       // Solo productos/variantes (los servicios no manejan stock).
       const stockOps: { productId?: string; variantId?: string; quantity: number }[] = [];
+      const needsVariant: string[] = [];
       let total = 0;
 
       for (const item of extracted.items) {
@@ -2256,6 +2257,13 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
             stockOps.push({ variantId: item.variantId, quantity: item.quantity });
             orderItemsSummary.push(`• ${item.description ?? `${product.name} - ${variant.name}`} x${item.quantity} — $${subtotal.toLocaleString('es-CO')}`);
           } else {
+            // Con variantes el stock vive en cada una: sin variantId se descontaba
+            // el producto base. Se pregunta en vez de adivinar.
+            if (product.variants?.length) {
+              this.logger.warn(`[Orden] Falta variante: ${product.name}`);
+              needsVariant.push(`${product.name} (${product.variants.map((v: any) => v.name).join(', ')})`);
+              continue;
+            }
             if (product.stock < item.quantity) { this.logger.warn(`[Orden] Stock insuficiente: ${product.name}`); continue; }
             const unitPrice = Number(product.salePrice);
             const subtotal  = unitPrice * item.quantity;
@@ -2269,6 +2277,14 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
             orderItemsSummary.push(`• ${item.description ?? product.name} x${item.quantity} — $${subtotal.toLocaleString('es-CO')}`);
           }
         }
+      }
+
+      // Sin pedido parcial: si falta elegir una variante no se crea nada todavía.
+      if (needsVariant.length > 0) {
+        return {
+          created: false,
+          message: `Para registrar tu pedido necesito saber qué opción quieres de: ${needsVariant.join('; ')}. ¿Cuál prefieres?`,
+        };
       }
 
       if (orderItemsData.length === 0) {
