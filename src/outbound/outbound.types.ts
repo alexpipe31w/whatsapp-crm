@@ -3,10 +3,21 @@
  * El gateway del bloque 1c leerá esta misma tabla: no cambiar los valores que se
  * guardan en BD (kind, status) sin migración.
  */
-export const OUTBOUND_KINDS = ['reply', 'notification', 'reminder', 'campaign'] as const;
+export const OUTBOUND_KINDS = [
+  'reply',
+  'notification',
+  'reminder',
+  'campaign',
+] as const;
 export type OutboundKind = (typeof OUTBOUND_KINDS)[number];
 
-export const OUTBOUND_STATUSES = ['pending', 'sending', 'sent', 'failed', 'skipped'] as const;
+export const OUTBOUND_STATUSES = [
+  'pending',
+  'sending',
+  'sent',
+  'failed',
+  'skipped',
+] as const;
 export type OutboundStatus = (typeof OUTBOUND_STATUSES)[number];
 
 /** Menor = antes. Respuestas > avisos y recordatorios > campañas (spec). */
