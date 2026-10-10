@@ -1,9 +1,10 @@
-import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { EmailService } from '../email/email.service';
-import { WhatsappService } from '../whatsapp/whatsapp.service';
+import { OutboundService } from '../outbound/outbound.service';
+import { outboundKeys } from '../outbound/outbound-keys';
 
 @Injectable()
 export class ReportsService {
@@ -13,8 +14,7 @@ export class ReportsService {
     private readonly prisma:        PrismaService,
     private readonly notifications: NotificationsService,
     private readonly email:         EmailService,
-    @Inject(forwardRef(() => WhatsappService))
-    private readonly whatsapp:      WhatsappService,
+    private readonly outbound:      OutboundService,
   ) {}
 
   // 9pm Colombia = 02:00 UTC
@@ -34,11 +34,14 @@ export class ReportsService {
     this.logger.log(`✅ Reportes enviados a ${stores.length} tiendas`);
   }
 
-  async generateAndSendReport(storeId: string): Promise<void> {
+  // manualRequestId: cada "generar reporte" del panel es una petición distinta; el del
+  // cron usa la fecha (un reporte por día aunque el cron corra dos veces).
+  async generateAndSendReport(storeId: string, opts: { manualRequestId?: string } = {}): Promise<void> {
     try {
       const now      = new Date();
       const tzOffset = -5 * 60;
       const localNow = new Date(now.getTime() + tzOffset * 60 * 1000);
+      const localDate = localNow.toISOString().slice(0, 10);
       const todayStart = new Date(Date.UTC(
         localNow.getUTCFullYear(), localNow.getUTCMonth(), localNow.getUTCDate(),
         5, 0, 0, 0,
@@ -173,7 +176,13 @@ export class ReportsService {
 
       await Promise.allSettled([
         store.adminPhone
-          ? this.whatsapp.sendMessage(storeId, store.adminPhone, waMsg).catch(() => {})
+          ? this.outbound.enqueue({
+              storeId, to: store.adminPhone, text: waMsg, kind: 'notification',
+              key: opts.manualRequestId
+                ? outboundKeys.manualReport(storeId, opts.manualRequestId)
+                : outboundKeys.dailyReport(storeId, localDate),
+            }).catch((err: any) =>
+              this.logger.error(`[reportes] reporte no encolado (store ${storeId}): ${err.message}`))
           : Promise.resolve(),
         adminEmail
           ? this.email.send(adminEmail, `Reporte del día — ${store.name}`, htmlEmail).catch(() => {})
@@ -211,6 +220,7 @@ export class ReportsService {
       const now        = new Date();
       const tzOffset   = -5 * 60;
       const localNow   = new Date(now.getTime() + tzOffset * 60 * 1000);
+      const localDate  = localNow.toISOString().slice(0, 10);
       const todayStart = new Date(Date.UTC(
         localNow.getUTCFullYear(), localNow.getUTCMonth(), localNow.getUTCDate(),
         5, 0, 0, 0,
@@ -260,7 +270,10 @@ export class ReportsService {
         lines.join('\n') +
         nudge;
 
-      await this.whatsapp.sendMessage(store.storeId, store.adminPhone, msg);
+      await this.outbound.enqueue({
+        storeId: store.storeId, to: store.adminPhone, text: msg, kind: 'notification',
+        key: outboundKeys.morningBriefing(store.storeId, localDate),
+      });
       this.logger.log(`☀️ Briefing matutino enviado: ${store.name} (${appointments.length} citas)`);
     } catch (err: any) {
       this.logger.error(`Error briefing matutino tienda ${store.storeId}: ${err.message}`);
