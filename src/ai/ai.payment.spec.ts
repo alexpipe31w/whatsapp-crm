@@ -5,7 +5,7 @@ import { AiService } from './ai.service';
 
 // buildPaymentBlock es privado: se prueba a través de la instancia, sin dependencias
 // (no toca Prisma ni notificaciones).
-const svc = new AiService(null as any, null as any, null as any) as any;
+const svc = new AiService(null as any, null as any, null as any, null as any) as any;
 
 describe('buildPaymentBlock — la config de pago de la tienda llega al cliente', () => {
   it('usa los métodos y la cuenta del perfil de la tienda cuando la config de IA no trae lista (caso Frutatza)', () => {

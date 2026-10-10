@@ -75,15 +75,21 @@ export class RemindersService {
       if (w.sentAt !== null) continue;
       if (appt.scheduledAt > w.limit) continue;
 
-      const updated = await this.prisma.appointment.updateMany({
-        where: { appointmentId: appt.appointmentId, [w.dbField]: null },
-        data:  { [w.dbField]: now },
+      // Reclamo + encolado en UNA transacción: si encolar falla, la marca no queda
+      // puesta y el siguiente cron lo reintenta (antes se marcaba y se perdía).
+      const claimed = await this.prisma.$transaction(async (tx) => {
+        const updated = await tx.appointment.updateMany({
+          where: { appointmentId: appt.appointmentId, [w.dbField]: null },
+          data:  { [w.dbField]: now },
+        });
+        if (updated.count === 0) return false;
+        await this.notifications.notifyReminder(appt, w.field, tx);
+        return true;
       });
+      if (!claimed) continue;
 
-      if (updated.count === 0) continue;
-
-      await this.notifications.notifyReminder(appt, w.field);
-      this.logger.log(`✅ Recordatorio ${w.field} enviado — cita ${appt.appointmentId}`);
+      this.notifications.wake();
+      this.logger.log(`✅ Recordatorio ${w.field} encolado — cita ${appt.appointmentId}`);
     }
   }
 

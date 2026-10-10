@@ -1,15 +1,11 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { EmailModule } from '../email/email.module';
-import { WhatsappModule } from '../whatsapp/whatsapp.module';
+import { OutboundModule } from '../outbound/outbound.module';
 
 @Module({
-  imports: [
-    PrismaModule,
-    EmailModule,
-    forwardRef(() => WhatsappModule),
-  ],
+  imports: [PrismaModule, EmailModule, OutboundModule],
   providers:  [NotificationsService],
   exports:    [NotificationsService],
 })

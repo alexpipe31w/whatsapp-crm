@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { validate } from './config/env.validation';
 import { PrismaModule } from './prisma/prisma.module';
+import { OutboundModule } from './outbound/outbound.module';
 import { CleanupModule } from './cleanup/cleanup.module';
 import { StoresModule } from './stores/stores.module';
 import { CustomersModule } from './customers/customers.module';
@@ -38,6 +39,7 @@ import { IntegrationsModule } from './integrations/integrations.module';
     }),
     ScheduleModule.forRoot(),
     PrismaModule,
+    OutboundModule,
     CleanupModule,
     StoresModule,
     CustomersModule,

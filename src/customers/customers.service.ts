@@ -11,6 +11,14 @@ export class CustomersService {
 
   // FIX: race condition — si dos mensajes llegan al mismo tiempo para un cliente
   // nuevo, el upsert puede fallar con P2002 en versiones antiguas de Prisma.
+  /** El cliente nos escribió: memoria duradera para campañas (Baileys) y la ventana de 24 h (bloque 8). */
+  async touchInbound(customerId: string): Promise<void> {
+    await this.prisma.customer.update({
+      where: { customerId },
+      data:  { lastInboundAt: new Date() },
+    });
+  }
+
   async findOrCreate(dto: CreateCustomerDto) {
     const storeId = dto.storeId!;
     // Cliente que WhatsApp direcciona por LID sin dar su número: su identidad es

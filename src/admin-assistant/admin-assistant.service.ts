@@ -1,6 +1,9 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CustomersService } from '../customers/customers.service';
+import { OutboundService } from '../outbound/outbound.service';
+import { outboundKeys } from '../outbound/outbound-keys';
+import { NotificationsService } from '../notifications/notifications.service';
 import { AppointmentStatus } from '../generated/prisma/enums';
 import { createCompletion } from '../ai/providers';
 import {
@@ -51,15 +54,12 @@ export class AdminAssistantService implements OnModuleDestroy {
   private readonly logger   = new Logger(AdminAssistantService.name);
   private readonly sessions = new Map<string, Session>();
   private readonly cleanupTimer: ReturnType<typeof setInterval>;
-  private notifyFn?: (storeId: string, phone: string, message: string) => Promise<void>;
-
-  setNotifyFn(fn: (storeId: string, phone: string, message: string) => Promise<void>): void {
-    this.notifyFn = fn;
-  }
 
   constructor(
-    private readonly prisma:    PrismaService,
-    private readonly customers: CustomersService,
+    private readonly prisma:        PrismaService,
+    private readonly customers:     CustomersService,
+    private readonly outbound:      OutboundService,
+    private readonly notifications: NotificationsService,
   ) {
     this.cleanupTimer = setInterval(() => this.cleanSessions(), 30 * 60 * 1000);
     this.cleanupTimer.unref(); // no mantiene vivo el proceso (tests, apagado)
@@ -71,7 +71,7 @@ export class AdminAssistantService implements OnModuleDestroy {
 
   // ─── Punto de entrada principal ───────────────────────────────────────────
 
-  async handle(storeId: string, adminPhone: string, content: string): Promise<string> {
+  async handle(storeId: string, adminPhone: string, content: string, turnId: string): Promise<string> {
     try {
       const [context, aiConfig] = await Promise.all([
         this.buildContext(storeId),
@@ -141,7 +141,7 @@ export class AdminAssistantService implements OnModuleDestroy {
           const actionType = match[1];
           let   actionParams: any = {};
           try { actionParams = JSON.parse(match[2]); } catch { /* ignore */ }
-          actionResults.push(await this.executeAction(storeId, actionType, actionParams));
+          actionResults.push(await this.executeAction(storeId, actionType, actionParams, { turnId }));
         }
 
         reply = [visibleText, ...actionResults].filter(Boolean).join('\n\n');
@@ -530,7 +530,10 @@ REGLAS:
 
   // ─── Ejecutar acciones ────────────────────────────────────────────────────
 
-  private async executeAction(storeId: string, actionType: string, params: any): Promise<string> {
+  // ctx.turnId: id del mensaje del dueño que originó la acción (clave de lo que se envía).
+  private async executeAction(
+    storeId: string, actionType: string, params: any, ctx: { turnId: string },
+  ): Promise<string> {
     this.logger.log(`[AdminAssistant] Ejecutando acción ${actionType} para ${storeId}`);
 
     try {
@@ -689,13 +692,16 @@ REGLAS:
             where: { appointmentId: appt.appointmentId },
             data:  { status: 'CANCELLED', cancelReason: params.reason ?? 'Cancelada por admin' },
           });
-          if (this.notifyFn && appt.customer?.phone) {
+          if (appt.customer?.phone) {
             const msg = `❌ *Tu cita fue cancelada*\n\n` +
               `📆 ${fmtApptDate(appt.scheduledAt)}\n` +
               `🕐 ${fmtApptTime(appt.scheduledAt)}` +
               (params.reason ? `\n\n📝 Motivo: ${params.reason}` : '') +
               `\n\nSi quieres reagendar, escríbenos cuando gustes.`;
-            this.notifyFn(storeId, appt.customer.phone, msg).catch(() => {});
+            await this.outbound.enqueue({
+              storeId, to: appt.customer.phone, text: msg, kind: 'notification',
+              key: outboundKeys.apptCancelledByAdmin(appt.appointmentId),
+            });
           }
           return `✅ Cita de ${appt.customer?.name ?? 'cliente'} cancelada correctamente.`;
         }
@@ -704,19 +710,14 @@ REGLAS:
           const resolved = await this.resolveTargetAppointment(storeId, params, [AppointmentStatus.PENDING], 'confirmar');
           if ('reply' in resolved) return resolved.reply;
           const appt = resolved.appt;
-          await this.prisma.appointment.update({
-            where: { appointmentId: appt.appointmentId },
+          // Solo si sigue PENDING (el panel o la autoconfirmación pudieron adelantarse).
+          const claimed = await this.prisma.appointment.updateMany({
+            where: { appointmentId: appt.appointmentId, status: 'PENDING' },
             data:  { status: 'CONFIRMED' },
           });
-          if (this.notifyFn && appt.customer?.phone) {
-            const msg = `✅ *¡Tu cita está confirmada!*\n\n` +
-              (appt.service?.name ? `✂️ ${appt.service.name}\n` : '') +
-              `📆 ${fmtApptDate(appt.scheduledAt)}\n` +
-              `🕐 ${fmtApptTime(appt.scheduledAt)}` +
-              (appt.agreedPrice ? `\n💰 Precio: $${Math.round(Number(appt.agreedPrice)).toLocaleString('es-CO')}` : '') +
-              `\n\n¡Te esperamos! 😊`;
-            this.notifyFn(storeId, appt.customer.phone, msg).catch(() => {});
-          }
+          if (claimed.count === 0) return '❌ Esa cita ya no está pendiente.';
+          // Mismo aviso y MISMA clave que el panel y la autoconfirmación: nunca dos.
+          if (appt.customer?.phone) await this.notifications.notifyAppointmentConfirmed(appt);
           return `✅ Cita de ${appt.customer?.name ?? 'cliente'} confirmada.`;
         }
 
@@ -778,11 +779,11 @@ REGLAS:
             return '❌ Necesito el nombre o el teléfono del cliente para enviar el mensaje.';
           }
 
-          if (!this.notifyFn) {
-            return '❌ El servicio de mensajería no está disponible ahora mismo.';
-          }
-
-          await this.notifyFn(storeId, targetPhone, message.trim());
+          const queued = await this.outbound.enqueue({
+            storeId, to: targetPhone, text: message.trim(), kind: 'reply',
+            key: outboundKeys.adminToCustomer(storeId, ctx.turnId, targetPhone),
+          });
+          if (queued === 'invalid') return '❌ Ese cliente no tiene un número de WhatsApp.';
 
           const displayName = customerName?.trim() ?? targetPhone;
           return `✅ Mensaje enviado a *${displayName}*:\n_"${message.trim()}"_`;

@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 import { Prisma } from '../generated/prisma/client';
 import { createCompletion, PROVIDER_CONFIG, AIProvider } from './providers';
 import {
@@ -9,6 +10,8 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { SyncService } from '../integrations/sync.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { OutboundService } from '../outbound/outbound.service';
+import { outboundGroups, outboundKeys } from '../outbound/outbound-keys';
 import { formatBusinessHoursForAI } from '../utils/business-hours.util';
 import { isLidIdentity } from '../utils/wa-identity.util';
 import { orderConfig, orderPolicyRule, apptDepositText, apptCancelNote } from './store-config.util';
@@ -723,7 +726,7 @@ interface StoreSettings {
 }
 
 @Injectable()
-export class AiService {
+export class AiService implements OnModuleInit {
   private readonly logger = new Logger(AiService.name);
 
   private readonly configCache           = new Map<string, CacheEntry<any>>();
@@ -738,50 +741,64 @@ export class AiService {
   // Citas ya creadas en esta conversación — se inyectan en el prompt del extractor
   // para que el LLM no las vuelva a extraer cuando el cliente pide una segunda cita.
   private readonly conversationCreatedAppts = new Map<string, Array<{scheduledDate: string; scheduledTime: string; type: string}>>();
-  private readonly pendingConfirmTimers = new Map<string, NodeJS.Timeout>();
-  private sendFn: ((storeId: string, phone: string, message: string) => Promise<void>) | null = null;
 
   constructor(
     private readonly prisma:        PrismaService,
     private readonly notifications: NotificationsService,
     private readonly sync:          SyncService,
+    private readonly outbound:      OutboundService,
   ) {}
+
+  async onModuleInit(): Promise<void> {
+    // pendingAppointments vive en memoria: tras un reinicio, un "¿Confirmamos?" pendiente
+    // llegaría a una IA que ya no recuerda la cita. Se cancelan (el bloque 4 lo quitará
+    // cuando ese estado viva en BD).
+    await this.outbound.cancelGroupsByPrefix('confirm-nudge:', 'reinicio: la IA perdió la cita pendiente');
+  }
 
   // ─── Recordatorio de confirmación de cita ────────────────────────────────────
 
-  setSendFn(fn: (storeId: string, phone: string, message: string) => Promise<void>): void {
-    this.sendFn = fn;
+  // El recordatorio va a la cola (wa_outbound) con not_before = +5 min: queda trazado,
+  // con reintentos, y un solo pendiente por conversación (grupo). Antes era un setTimeout.
+  // Las dos funciones son síncronas para no tocar a sus llamadores: el trabajo va en
+  // segundo plano, ENCADENADO por conversación (en un mismo turno se puede programar y
+  // cancelar seguido; sin la cadena la cancelación podía llegar antes que el alta y el
+  // recordatorio quedaba vivo).
+  private readonly nudgeChain = new Map<string, Promise<void>>();
+
+  private chainNudge(conversationId: string, label: string, op: () => Promise<void>): void {
+    const prev = this.nudgeChain.get(conversationId) ?? Promise.resolve();
+    const next = prev
+      .then(op)
+      .catch((err: any) =>
+        this.logger.error(`[Cita] recordatorio no ${label} (conv ${conversationId}): ${err.message}`));
+    this.nudgeChain.set(conversationId, next);
+    void next.finally(() => {
+      if (this.nudgeChain.get(conversationId) === next) this.nudgeChain.delete(conversationId);
+    });
   }
 
   private scheduleConfirmReminder(conversationId: string, storeId: string, phone: string): void {
-    const existing = this.pendingConfirmTimers.get(conversationId);
-    if (existing) clearTimeout(existing);
-
-    const timer = setTimeout(async () => {
-      this.pendingConfirmTimers.delete(conversationId);
-      if (!this.pendingAppointments.has(conversationId) || !this.sendFn) return;
-
-      const reminder = '¿Confirmamos tu cita? Responde *Sí* para agendarla o *No* si prefieres otro horario. 😊';
-      try {
-        await this.prisma.message.create({
-          data: { conversationId, storeId, content: reminder, type: 'text', sender: 'store', isAiResponse: true },
-        });
-        await this.sendFn(storeId, phone, reminder);
-        this.logger.log(`[Cita] 🔔 Recordatorio enviado a ${phone} (conv ${conversationId.slice(-8)})`);
-      } catch (err: any) {
-        this.logger.warn(`[Cita] No se pudo enviar recordatorio: ${err.message}`);
-      }
-    }, CONFIRM_REMINDER_MS);
-
-    this.pendingConfirmTimers.set(conversationId, timer);
+    const group = outboundGroups.confirmNudge(conversationId);
+    const text  = '¿Confirmamos tu cita? Responde *Sí* para agendarla o *No* si prefieres otro horario. 😊';
+    this.chainNudge(conversationId, 'programado', async () => {
+      await this.prisma.$transaction(async (tx) => {
+        await this.outbound.cancelGroup(group, 'reprogramado', tx);
+        await this.outbound.enqueue({
+          storeId, to: phone, text, kind: 'reply', groupKey: group,
+          key:       outboundKeys.confirmNudge(conversationId, randomUUID()),
+          notBefore: new Date(Date.now() + CONFIRM_REMINDER_MS),
+          record:    { conversationId },
+        }, tx);
+      });
+      this.outbound.wake();
+    });
   }
 
   private cancelConfirmReminder(conversationId: string): void {
-    const t = this.pendingConfirmTimers.get(conversationId);
-    if (t) {
-      clearTimeout(t);
-      this.pendingConfirmTimers.delete(conversationId);
-    }
+    this.chainNudge(conversationId, 'cancelado', async () => {
+      await this.outbound.cancelGroup(outboundGroups.confirmNudge(conversationId), 'ya no hace falta');
+    });
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -900,7 +917,8 @@ export class AiService {
       data:  { paymentProofUrl: excerpt },
     });
 
-    this.notifications.notifyPaymentProofDetected(appt as any, excerpt).catch(() => {});
+    this.notifications.notifyPaymentProofDetected(appt as any, excerpt).catch((err: any) =>
+      this.logger.error(`[Notif] comprobante no encolado (cita ${appt.appointmentId}): ${err.message}`));
     return 'Recibido ✅ Tu comprobante fue enviado al admin para verificación. Te confirmaremos en breve.';
   }
 
@@ -1022,7 +1040,8 @@ export class AiService {
         this.notifications.notifyPendingAction(
           { ...appt, pendingAction: 'RESCHEDULE_REQUESTED', pendingActionData: { newDate, newTime } } as any,
           'reschedule',
-        ).catch(() => {});
+        ).catch((err: any) =>
+          this.logger.error(`[Notif] solicitud no encolada (cita ${appt.appointmentId}): ${err.message}`));
 
         const fechaFormateada = newScheduledAt.toLocaleDateString('es-CO', {
           weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/Bogota',
@@ -1057,7 +1076,8 @@ export class AiService {
         pendingActionReason: userMessage.slice(0, 500),
       },
     });
-    this.notifications.notifyPendingAction(appt as any, 'cancel').catch(() => {});
+    this.notifications.notifyPendingAction(appt as any, 'cancel').catch((err: any) =>
+      this.logger.error(`[Notif] solicitud no encolada (cita ${appt.appointmentId}): ${err.message}`));
 
     // La política de cancelación de citas configurada por la tienda va con la respuesta.
     return '🗑 Tu solicitud de *cancelación* fue enviada al equipo. Un asesor la procesará y te confirmará en breve ✅' + apptCancelNote(store);
@@ -1146,7 +1166,8 @@ export class AiService {
     this.notifications.notifyPendingAction(
       { ...appt, pendingAction: 'RESCHEDULE_REQUESTED', pendingActionData: { newDate, newTime } } as any,
       'reschedule',
-    ).catch(() => {});
+    ).catch((err: any) =>
+      this.logger.error(`[Notif] solicitud no encolada (cita ${appt.appointmentId}): ${err.message}`));
 
     const fechaFormateada = newScheduledAt.toLocaleDateString('es-CO', {
       weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/Bogota',
@@ -3086,7 +3107,8 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
               storeId, customer.customerId, groupStaffId, at, ends, D, extracted, `Persona ${k + 1} de ${N}`,
             );
             createdGroup.push({ appt, at });
-            this.notifications.notifyAppointmentCreated(appt as any).catch(() => {});
+            this.notifications.notifyAppointmentCreated(appt as any).catch((err: any) =>
+              this.logger.error(`[Notif] cita creada no encolada (cita ${appt.appointmentId}): ${err.message}`));
           } catch (e: any) {
             this.logger.warn(`[Cita][Grupo] Falló la cita ${k + 1}/${N}: ${e?.message}`);
             break; // no revertir las ya creadas (mismo criterio que citas múltiples actuales)
@@ -3302,7 +3324,8 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
       this.pendingAppointments.delete(conversationId);
       this.cancelConfirmReminder(conversationId);
       this.logger.log(`✅ [Cita] ${appointment.appointmentId} — ${extracted.scheduledDate} ${extracted.scheduledTime}`);
-      this.notifications.notifyAppointmentCreated(appointment as any).catch(() => {});
+      this.notifications.notifyAppointmentCreated(appointment as any).catch((err: any) =>
+        this.logger.error(`[Notif] cita creada no encolada (cita ${appointment.appointmentId}): ${err.message}`));
 
       // Registrar cita creada para que el extractor no la vuelva a extraer
       const created = this.conversationCreatedAppts.get(conversationId) ?? [];

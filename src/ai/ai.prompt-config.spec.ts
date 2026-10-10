@@ -4,7 +4,7 @@ jest.mock('@whiskeysockets/baileys', () => ({}));
 import { AiService } from './ai.service';
 
 // La config de la tienda tiene que CAMBIAR el prompt, no solo aparecer como texto.
-const svc = new AiService(null as any, null as any, null as any) as any;
+const svc = new AiService(null as any, null as any, null as any, null as any) as any;
 
 const product = { productId: 'p1', name: 'Dulce', salePrice: 8000, stock: 5, variants: [] };
 const service = { serviceId: 's1', name: 'Corte', basePrice: 20000 };

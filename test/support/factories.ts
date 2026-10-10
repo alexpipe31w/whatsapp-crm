@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import type { Prisma } from '../../src/generated/prisma/client';
 import { testPrisma } from './db';
 import { TokenUser } from './auth';
 
@@ -32,10 +33,37 @@ export async function createStoreWithAdmin(label = 'tienda'): Promise<StoreWithA
   };
 }
 
-export async function createCustomer(storeId: string, name = 'Cliente') {
+export async function createCustomer(
+  storeId: string,
+  name = 'Cliente',
+  opts: { phone?: string; lastInboundAt?: Date | null; acceptsMarketing?: boolean } = {},
+) {
   const n = next();
   return testPrisma().customer.create({
-    data: { storeId, phone: `57310000${String(n).padStart(4, '0')}`, name },
+    data: {
+      storeId,
+      phone: opts.phone ?? `57310000${String(n).padStart(4, '0')}`,
+      name,
+      lastInboundAt: opts.lastInboundAt ?? null,
+      acceptsMarketing: opts.acceptsMarketing ?? true,
+    },
+  });
+}
+
+export async function createConversation(storeId: string, customerId: string, status = 'active') {
+  return testPrisma().conversation.create({ data: { storeId, customerId, status } });
+}
+
+/** Cita mínima. Por defecto mañana a las 15:00 UTC, PENDING. */
+export async function createAppointment(
+  storeId: string,
+  customerId: string,
+  over: Partial<Prisma.AppointmentUncheckedCreateInput> = {},
+) {
+  const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  tomorrow.setUTCHours(15, 0, 0, 0);
+  return testPrisma().appointment.create({
+    data: { storeId, customerId, scheduledAt: tomorrow, ...over },
   });
 }
 

@@ -1,5 +1,5 @@
 import {
-  Injectable, Logger, OnModuleInit, Inject, forwardRef,
+  Injectable, Logger, OnModuleInit,
 } from '@nestjs/common';
 import { Boom } from '@hapi/boom';
 import P from 'pino';
@@ -12,9 +12,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { BlockedService } from '../blocked/blocked.service';
 import { AdminAssistantService } from '../admin-assistant/admin-assistant.service';
 import {
-  isLidIdentity, lidIdentity, resolveJid, phoneFromJid, lidUserFromJid, jidFromPhone,
+  isLidIdentity, lidIdentity, resolveJid, phoneFromJid, lidUserFromJid,
 } from '../utils/wa-identity.util';
 import { computeReconnectDelay, FORBIDDEN_STATUS } from './reconnect-delay';
+import { randomUUID } from 'node:crypto';
+import { WaNotConnectedError } from './send-errors';
+import { WaTransport } from './wa-transport';
+import { OutboundService } from '../outbound/outbound.service';
+import { outboundKeys, turnIdFor } from '../outbound/outbound-keys';
 
 const WHISPER_TIMEOUT_MS    = 25_000;
 const WHISPER_MODEL         = 'whisper-large-v3-turbo';
@@ -26,12 +31,8 @@ const AUDIO_RATE_MAX        = 5;             // máx 5 audios por minuto por nú
 // ─── Constantes ──────────────────────────────────────────────────────────────
 
 const MSG_DEBOUNCE_MS        = 3_000;
-const MSG_DEDUP_TTL_MS       = 10 * 60 * 1000;
 const HISTORY_SYNC_WINDOW_MS = 24 * 60 * 60 * 1000;
 const MAX_CONTENT_LENGTH     = 4_000; // caracteres máximos que se pasan a la IA
-const SEND_RETRY_ATTEMPTS          = 4;
-const SEND_RETRY_DELAY_MS          = 1_500;
-const SEND_NOT_ACCEPTABLE_DELAY_MS = 6_000; // sesión Signal en renegociación, esperar más
 
 // Código 408 = QR timeout (nadie escaneó). Tras MAX_QR_ATTEMPTS el loop se detiene.
 const MAX_QR_ATTEMPTS = 3;
@@ -299,35 +300,10 @@ function sanitizeContent(content: string): string {
     .slice(0, MAX_CONTENT_LENGTH);
 }
 
-/**
- * Pausa con retry — espera delay ms entre intentos.
- */
-async function withRetry<T>(
-  fn: () => Promise<T>,
-  attempts: number,
-  delayMs: number,
-  label: string,
-  logger: Logger,
-): Promise<T> {
-  let lastErr: any;
-  for (let i = 0; i < attempts; i++) {
-    try {
-      return await fn();
-    } catch (err: any) {
-      lastErr = err;
-      if (i < attempts - 1) {
-        logger.warn(`${label} — intento ${i + 1}/${attempts} falló: ${err.message}. Reintentando en ${delayMs}ms...`);
-        await new Promise(r => setTimeout(r, delayMs));
-      }
-    }
-  }
-  throw lastErr;
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Injectable()
-export class WhatsappService implements OnModuleInit {
+export class WhatsappService implements OnModuleInit, WaTransport {
   private readonly logger = new Logger(WhatsappService.name);
 
   private readonly sockets         = new Map<string, any>();
@@ -341,7 +317,6 @@ export class WhatsappService implements OnModuleInit {
   private readonly loggedOutAttempts = new Map<string, number>();
   // Cierres consecutivos sin 'open' — alimenta el backoff de reconexión.
   private readonly reconnectFailures = new Map<string, number>();
-  private readonly processedMsgIds  = new Set<string>();
   // Pares "<storeId>:<waLid>" cuya ficha de cliente ya se cruzó en esta ejecución.
   // Evita repetir la transacción de fusión en cada mensaje del mismo cliente.
   private readonly reconciledLids   = new Set<string>();
@@ -351,30 +326,24 @@ export class WhatsappService implements OnModuleInit {
     contents: string[];
     timer: ReturnType<typeof setTimeout>;
     pushName?: string;
+    // Id de WhatsApp del último mensaje del lote: identifica el "turno" (clave de la respuesta).
+    lastMsgId?: string;
   }>();
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly aiService: AiService,
     private readonly conversationsService: ConversationsService,
-    @Inject(forwardRef(() => MessagesService))
     private readonly messagesService: MessagesService,
     private readonly customersService: CustomersService,
     private readonly blockedService: BlockedService,
     private readonly adminAssistant: AdminAssistantService,
+    private readonly outbound: OutboundService,
   ) {}
 
   // ─── Ciclo de vida ──────────────────────────────────────────────────────────
 
   async onModuleInit(): Promise<void> {
-    // Registrar callback para que AiService pueda enviar recordatorios proactivos
-    this.aiService.setSendFn((storeId, phone, message) =>
-      this.sendMessage(storeId, phone, message),
-    );
-    this.adminAssistant.setNotifyFn((storeId, phone, message) =>
-      this.sendMessage(storeId, phone, message),
-    );
-
     try {
       const sessions = await this.prisma.whatsappSession.findMany({
         include: { store: { select: { isActive: true, name: true } } },
@@ -752,17 +721,6 @@ export class WhatsappService implements OnModuleInit {
       return;
     }
 
-    // Deduplicación
-    const msgId = msg.key?.id;
-    if (msgId) {
-      if (this.processedMsgIds.has(msgId)) {
-        this.logger.debug(`Mensaje duplicado ignorado: ${msgId}`);
-        return;
-      }
-      this.processedMsgIds.add(msgId);
-      setTimeout(() => this.processedMsgIds.delete(msgId), MSG_DEDUP_TTL_MS);
-    }
-
     const jid = resolveJid(msg.key);
     if (!jid) {
       this.logger.warn(`Mensaje descartado sin jid — key: ${JSON.stringify(msg.key ?? {})}`);
@@ -819,6 +777,23 @@ export class WhatsappService implements OnModuleInit {
       return;
     }
 
+    // Dedupe persistente y POR TIENDA: una reentrega de WhatsApp (p. ej. tras reiniciar)
+    // no se procesa dos veces. El de memoria se perdía al reiniciar y era global.
+    // Si la BD falla aquí, el error sube: sin BD tampoco se podría guardar ni responder.
+    const msgId: string | undefined = msg.key?.id || undefined;
+    if (msgId) {
+      const { count } = await this.prisma.waInbound.createMany({
+        data: [{ storeId, providerMessageId: msgId }],
+        skipDuplicates: true,
+      });
+      if (count === 0) {
+        this.logger.debug(`[inbound] duplicado ignorado store=${storeId} id=${msgId}`);
+        return;
+      }
+    } else {
+      this.logger.warn(`[inbound] mensaje sin id de WhatsApp: no se puede deduplicar (store ${storeId})`);
+    }
+
     // Verificar si está bloqueado
     const blocked = await this.blockedService.isBlocked(storeId, phone).catch(() => false);
     if (blocked) {
@@ -834,7 +809,7 @@ export class WhatsappService implements OnModuleInit {
 
     // Resto de media (imagen, video, doc, sticker)
     if (MEDIA_TYPES.has(messageType)) {
-      await this.handleMediaMessage(storeId, phone, messageType, sock, pushName);
+      await this.handleMediaMessage(storeId, phone, messageType, pushName, msg.key?.id);
       return;
     }
 
@@ -851,7 +826,7 @@ export class WhatsappService implements OnModuleInit {
 
     this.logger.log(`📩 Mensaje de ${phone}: ${content.slice(0, 100)}${content.length > 100 ? '...' : ''}`);
 
-    this.bufferAndProcess(storeId, phone, content, sock, pushName);
+    this.bufferAndProcess(storeId, phone, content, pushName, msg.key?.id);
   }
 
   // ─── Comando interno del dueño: !stop dentro del chat del cliente ───────────
@@ -892,8 +867,8 @@ export class WhatsappService implements OnModuleInit {
     storeId: string,
     phone: string,
     content: string,
-    sock: any,
     pushName?: string,
+    msgId?: string,
   ): void {
     const key      = `${storeId}:${phone}`;
     const existing = this.messageBuffers.get(key);
@@ -902,9 +877,10 @@ export class WhatsappService implements OnModuleInit {
       clearTimeout(existing.timer);
       existing.contents.push(content);
       if (pushName) existing.pushName = pushName;
+      if (msgId) existing.lastMsgId = msgId;
       this.logger.debug(`📥 Buffer [${key}] — ${existing.contents.length} msgs acumulados`);
     } else {
-      this.messageBuffers.set(key, { contents: [content], timer: null!, pushName });
+      this.messageBuffers.set(key, { contents: [content], timer: null!, pushName, lastMsgId: msgId });
     }
 
     const buffer = this.messageBuffers.get(key)!;
@@ -920,7 +896,7 @@ export class WhatsappService implements OnModuleInit {
       }
 
       this.enqueueMessage(key, () =>
-        this.handleIncomingMessage(storeId, phone, combined, sock, buffer.pushName),
+        this.handleIncomingMessage(storeId, phone, combined, buffer.pushName, turnIdFor(buffer.lastMsgId)),
       );
     }, MSG_DEBOUNCE_MS);
   }
@@ -959,7 +935,7 @@ export class WhatsappService implements OnModuleInit {
   ): Promise<void> {
     const pushName: string | undefined =
       typeof msg.pushName === 'string' && msg.pushName.trim() ? msg.pushName.trim() : undefined;
-    const fallback = () => this.handleMediaMessage(storeId, phone, 'audioMessage', sock, pushName);
+    const fallback = () => this.handleMediaMessage(storeId, phone, 'audioMessage', pushName, msg.key?.id);
 
     try {
       // ── 1. Rate limit — máx AUDIO_RATE_MAX audios/min por número ──────────
@@ -999,13 +975,13 @@ export class WhatsappService implements OnModuleInit {
       // ── 3. Validar duración y tamaño ANTES de descargar ───────────────────
       if (durationS > AUDIO_MAX_SECONDS) {
         this.logger.warn(`[Audio] ${phone}: audio de ${durationS}s excede límite de ${AUDIO_MAX_SECONDS}s`);
-        const jid = jidFromPhone(phone);
-        await this.safeSend(
-          sock, jid,
-          `El audio es demasiado largo (máximo ${Math.floor(AUDIO_MAX_SECONDS / 60)} min). ¿Puedes contarme en texto qué necesitas?`,
-          phone,
+        await this.outbound.enqueue({
           storeId,
-        );
+          to:   phone,
+          text: `El audio es demasiado largo (máximo ${Math.floor(AUDIO_MAX_SECONDS / 60)} min). ¿Puedes contarme en texto qué necesitas?`,
+          kind: 'reply',
+          key:  outboundKeys.audioTooLong(storeId, turnIdFor(msg.key?.id)),
+        });
         return;
       }
       if (fileBytes > AUDIO_MAX_BYTES) {
@@ -1056,7 +1032,7 @@ export class WhatsappService implements OnModuleInit {
 
       // ── 6. Procesar la transcripción como mensaje de texto normal ─────────
       // El buffer ya no se referencia aquí — puede ser GC'd inmediatamente
-      this.bufferAndProcess(storeId, phone, transcription, sock, pushName);
+      this.bufferAndProcess(storeId, phone, transcription, pushName, msg.key?.id);
 
     } catch (err: any) {
       this.logger.error(`[Audio] Error procesando audio de ${phone}: ${err.message}`);
@@ -1165,26 +1141,31 @@ export class WhatsappService implements OnModuleInit {
     storeId: string,
     phone: string,
     messageType: string,
-    sock: any,
     pushName?: string,
+    msgId?: string,
   ): Promise<void> {
+    // Sticker (o tipo sin acuse): se ignora entero. Antes pasaba la conversación a
+    // pending_human y registraba un error al guardar un mensaje vacío.
+    const reply = this.getMediaReply(messageType);
+    if (!reply) return;
+
     try {
-      const jid          = jidFromPhone(phone);
       const customer     = await this.customersService.findOrCreate({ storeId, phone, pushName });
+      await this.customersService.touchInbound(customer.customerId).catch((err: any) =>
+        this.logger.warn(`[inbound] last_inbound_at no actualizado (customer ${customer.customerId}): ${err.message}`),
+      );
       const conversation = await this.conversationsService.findOrCreate(
         customer.customerId, storeId,
       );
 
       if (conversation.status === 'human' || conversation.status === 'closed') return;
 
-      const reply = this.getMediaReply(messageType);
-
       await this.prisma.conversation.update({
         where: { conversationId: conversation.conversationId },
         data:  { status: 'pending_human' },
       });
 
-      await this.messagesService.create({
+      await this.messagesService.record({
         conversationId: conversation.conversationId,
         storeId,
         content:      `[${messageType.replace('Message', '')}]`,
@@ -1193,9 +1174,12 @@ export class WhatsappService implements OnModuleInit {
         isAiResponse: false,
       });
 
-      await this.safeSend(sock, jid, reply, phone, storeId);
+      await this.outbound.enqueue({
+        storeId, to: phone, text: reply, kind: 'reply',
+        key: outboundKeys.mediaAck(storeId, turnIdFor(msgId)),
+      });
 
-      await this.messagesService.create({
+      await this.messagesService.record({
         conversationId: conversation.conversationId,
         storeId,
         content:      reply,
@@ -1210,7 +1194,7 @@ export class WhatsappService implements OnModuleInit {
     }
   }
 
-  private getMediaReply(messageType: string): string {
+  private getMediaReply(messageType: string): string | null {
     if (messageType === 'audioMessage') {
       return `¡Hola! 😊 Por el momento no puedo escuchar audios. ¿Puedes contarme en texto qué necesitas? Si prefieres hablar con un asesor, dímelo y te conecto ahora mismo.`;
     }
@@ -1224,7 +1208,7 @@ export class WhatsappService implements OnModuleInit {
       return `¡Gracias! 😊 En un momento un asesor revisa tu documento y te responde personalmente. 🙌`;
     }
     if (messageType === 'stickerMessage') {
-      return null as any; // Ignorar stickers completamente
+      return null; // Ignorar stickers completamente
     }
     return `¡Gracias por tu mensaje! 😊 En un momento un asesor te responde personalmente. 🙌`;
   }
@@ -1235,29 +1219,33 @@ export class WhatsappService implements OnModuleInit {
     storeId: string,
     phone: string,
     content: string,
-    sock: any,
-    pushName?: string,
+    pushName: string | undefined,
+    turnId: string,
   ): Promise<void> {
-    const jid = jidFromPhone(phone);
-
     try {
       // ── Admin Personal Assistant ───────────────────────────────────────────
       const isAdmin = await this.adminAssistant.isAdminPhone(storeId, phone);
       if (isAdmin) {
         this.logger.log(`🔑 Mensaje del admin (${phone}) → Admin Assistant`);
-        const reply = await this.adminAssistant.handle(storeId, phone, content);
-        await this.safeSend(sock, jid, reply, phone, storeId);
+        const reply = await this.adminAssistant.handle(storeId, phone, content, turnId);
+        await this.outbound.enqueue({
+          storeId, to: phone, text: reply, kind: 'reply',
+          key: outboundKeys.adminReply(storeId, turnId),
+        });
         return;
       }
 
       // Obtener/crear cliente y conversación
       const customer = await this.customersService.findOrCreate({ storeId, phone, pushName });
+      await this.customersService.touchInbound(customer.customerId).catch((err: any) =>
+        this.logger.warn(`[inbound] last_inbound_at no actualizado (customer ${customer.customerId}): ${err.message}`),
+      );
       const conversation = await this.conversationsService.findOrCreate(
         customer.customerId, storeId,
       );
 
       // Guardar mensaje del cliente
-      await this.messagesService.create({
+      await this.messagesService.record({
         conversationId: conversation.conversationId,
         storeId,
         content,
@@ -1303,16 +1291,23 @@ export class WhatsappService implements OnModuleInit {
           `Entendido, ahora mismo te conecto con un asesor. ` +
           `Por favor espera un momento, pronto alguien te atenderá. 😊`;
 
-        await this.safeSend(sock, jid, handoffReply, phone, storeId);
+        await this.outbound.enqueue({
+          storeId, to: phone, text: handoffReply, kind: 'reply',
+          key: outboundKeys.handoff(storeId, turnId),
+        });
 
-        await this.messagesService.create({
+        // isAiResponse: true = texto automático. Con false, MessagesService lo tomaba por
+        // un mensaje del asesor y lo volvía a enviar (el aviso salía dos veces).
+        await this.messagesService.record({
           conversationId: conversation.conversationId,
           storeId,
           content:      handoffReply,
           type:         'text',
           sender:       'store',
-          isAiResponse: false,
-        }).catch(() => {});
+          isAiResponse: true,
+        }).catch(err => this.logger.warn(
+          `No se pudo guardar aviso de asesor (conv ${conversation.conversationId}): ${err.message}`,
+        ));
 
         this.logger.log(
           `🚨 ${phone} solicitó asesor → conv ${conversation.conversationId} HUMAN`,
@@ -1334,8 +1329,8 @@ export class WhatsappService implements OnModuleInit {
 
       if (!aiReply || !aiReply.trim()) return;
 
-      // Guardar respuesta de la IA ANTES de enviar (si el envío falla, queda el registro)
-      await this.messagesService.create({
+      // Guardar respuesta de la IA ANTES de encolar (la IA la necesita en su historial)
+      await this.messagesService.record({
         conversationId: conversation.conversationId,
         storeId,
         content:      aiReply,
@@ -1344,75 +1339,15 @@ export class WhatsappService implements OnModuleInit {
         isAiResponse: true,
       }).catch(err => this.logger.warn(`No se pudo guardar respuesta IA: ${err.message}`));
 
-      // Enviar al cliente con retry
-      await this.safeSend(sock, jid, aiReply, phone, storeId);
+      await this.outbound.enqueue({
+        storeId, to: phone, text: aiReply, kind: 'reply',
+        key: outboundKeys.aiReply(storeId, turnId),
+      });
       this.logger.log(`🤖 IA respondió a ${phone}`);
 
     } catch (err: any) {
       this.logger.error(`[handleIncomingMessage] ${phone}: ${err.message}`);
       // No propagar — no queremos que un error de un cliente rompa los demás
-    }
-  }
-
-  // ─── Envío seguro con retry ───────────────────────────────────────────────────
-
-  private async safeSend(
-    sock: any,
-    jid: string,
-    text: string,
-    phoneLabel: string,
-    storeId?: string,
-  ): Promise<void> {
-    if (!text?.trim()) return;
-
-    const MAX_WA_LENGTH = 4096;
-    const chunks: string[] = [];
-
-    if (text.length > MAX_WA_LENGTH) {
-      let remaining = text;
-      while (remaining.length > 0) {
-        let cut = MAX_WA_LENGTH;
-        if (remaining.length > MAX_WA_LENGTH) {
-          const lastNewline = remaining.lastIndexOf('\n', MAX_WA_LENGTH);
-          if (lastNewline > MAX_WA_LENGTH * 0.7) cut = lastNewline + 1;
-        }
-        chunks.push(remaining.slice(0, cut));
-        remaining = remaining.slice(cut);
-      }
-    } else {
-      chunks.push(text);
-    }
-
-    for (const chunk of chunks) {
-      let lastErr: any;
-      for (let i = 0; i < SEND_RETRY_ATTEMPTS; i++) {
-        try {
-          // En reintentos, buscar socket fresco en caso de reconexión
-          const currentSock = (storeId && i > 0) ? (this.sockets.get(storeId) ?? sock) : sock;
-          await currentSock.sendMessage(jid, { text: chunk });
-          lastErr = null;
-          break;
-        } catch (err: any) {
-          lastErr = err;
-          if (i < SEND_RETRY_ATTEMPTS - 1) {
-            const isNotAcceptable = String(err?.message ?? '').includes('not-acceptable');
-            const delay = isNotAcceptable ? SEND_NOT_ACCEPTABLE_DELAY_MS : SEND_RETRY_DELAY_MS;
-            if (isNotAcceptable) {
-              this.logger.warn(
-                `sendMessage a ${phoneLabel} — not-acceptable (sesión renegociando), ` +
-                `reintentando en ${delay}ms... (${i + 1}/${SEND_RETRY_ATTEMPTS})`,
-              );
-            } else {
-              this.logger.warn(
-                `sendMessage a ${phoneLabel} — intento ${i + 1}/${SEND_RETRY_ATTEMPTS} ` +
-                `falló: ${err.message}. Reintentando en ${delay}ms...`,
-              );
-            }
-            await new Promise(r => setTimeout(r, delay));
-          }
-        }
-      }
-      if (lastErr) throw lastErr;
     }
   }
 
@@ -1447,11 +1382,17 @@ export class WhatsappService implements OnModuleInit {
     ]);
   }
 
-  async sendMessage(storeId: string, phone: string, content: string): Promise<void> {
+  /** Un trozo, un intento (contrato de WaTransport). El troceo y los reintentos son del despachador. */
+  async sendPart(storeId: string, jid: string, text: string): Promise<string> {
     const sock = this.sockets.get(storeId);
-    if (!sock) throw new Error(`No hay socket activo para store: ${storeId}`);
-    const jid = jidFromPhone(phone);
-    await this.safeSend(sock, jid, content, phone, storeId);
-    this.logger.log(`📤 Mensaje enviado a ${phone}`);
+    if (!sock?.user) throw new WaNotConnectedError(storeId);
+    const res = await sock.sendMessage(jid, { text });
+    const id: string | undefined = res?.key?.id;
+    if (!id) {
+      // WhatsApp lo aceptó (no lanzó): reintentar lo duplicaría. Se registra y se sigue.
+      this.logger.warn(`[outbound] sendMessage sin id de WhatsApp (store ${storeId})`);
+      return `sin-id-${randomUUID()}`;
+    }
+    return id;
   }
 }

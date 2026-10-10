@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CustomersService } from '../customers/customers.service';
 import { AppointmentsService } from '../appointments/appointments.service';
@@ -25,6 +25,8 @@ const normalizePhone = (p: string) => p.replace(/\D/g, '');
 
 @Injectable()
 export class PublicService {
+  private readonly logger = new Logger(PublicService.name);
+
   constructor(
     private readonly prisma:       PrismaService,
     private readonly customers:    CustomersService,
@@ -253,7 +255,8 @@ export class PublicService {
       source:           AppointmentSource.API,
     });
 
-    this.notifications.notifyAppointmentCreated(appointment as any, 'public').catch(() => {});
+    this.notifications.notifyAppointmentCreated(appointment as any, 'public').catch((err: any) =>
+      this.logger.error(`[Notif] cita creada no encolada (cita ${appointment.appointmentId}): ${err.message}`));
 
     return {
       appointmentId: appointment.appointmentId,
