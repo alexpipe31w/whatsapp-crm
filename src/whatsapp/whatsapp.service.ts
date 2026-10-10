@@ -12,7 +12,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { BlockedService } from '../blocked/blocked.service';
 import { AdminAssistantService } from '../admin-assistant/admin-assistant.service';
 import {
-  isLidIdentity, lidIdentity, resolveJid, phoneFromJid, lidUserFromJid, jidFromPhone,
+  isLidIdentity, lidIdentity, resolveJid, phoneFromJid, lidUserFromJid,
 } from '../utils/wa-identity.util';
 import { computeReconnectDelay, FORBIDDEN_STATUS } from './reconnect-delay';
 import { randomUUID } from 'node:crypto';
@@ -33,9 +33,6 @@ const AUDIO_RATE_MAX        = 5;             // máx 5 audios por minuto por nú
 const MSG_DEBOUNCE_MS        = 3_000;
 const HISTORY_SYNC_WINDOW_MS = 24 * 60 * 60 * 1000;
 const MAX_CONTENT_LENGTH     = 4_000; // caracteres máximos que se pasan a la IA
-const SEND_RETRY_ATTEMPTS          = 4;
-const SEND_RETRY_DELAY_MS          = 1_500;
-const SEND_NOT_ACCEPTABLE_DELAY_MS = 6_000; // sesión Signal en renegociación, esperar más
 
 // Código 408 = QR timeout (nadie escaneó). Tras MAX_QR_ATTEMPTS el loop se detiene.
 const MAX_QR_ATTEMPTS = 3;
@@ -301,31 +298,6 @@ function sanitizeContent(content: string): string {
     .replace(/https?:\/\/\S{80,}/g, '[URL]')             // URLs largas
     .trim()
     .slice(0, MAX_CONTENT_LENGTH);
-}
-
-/**
- * Pausa con retry — espera delay ms entre intentos.
- */
-async function withRetry<T>(
-  fn: () => Promise<T>,
-  attempts: number,
-  delayMs: number,
-  label: string,
-  logger: Logger,
-): Promise<T> {
-  let lastErr: any;
-  for (let i = 0; i < attempts; i++) {
-    try {
-      return await fn();
-    } catch (err: any) {
-      lastErr = err;
-      if (i < attempts - 1) {
-        logger.warn(`${label} — intento ${i + 1}/${attempts} falló: ${err.message}. Reintentando en ${delayMs}ms...`);
-        await new Promise(r => setTimeout(r, delayMs));
-      }
-    }
-  }
-  throw lastErr;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1379,68 +1351,6 @@ export class WhatsappService implements OnModuleInit, WaTransport {
     }
   }
 
-  // ─── Envío seguro con retry ───────────────────────────────────────────────────
-
-  private async safeSend(
-    sock: any,
-    jid: string,
-    text: string,
-    phoneLabel: string,
-    storeId?: string,
-  ): Promise<void> {
-    if (!text?.trim()) return;
-
-    const MAX_WA_LENGTH = 4096;
-    const chunks: string[] = [];
-
-    if (text.length > MAX_WA_LENGTH) {
-      let remaining = text;
-      while (remaining.length > 0) {
-        let cut = MAX_WA_LENGTH;
-        if (remaining.length > MAX_WA_LENGTH) {
-          const lastNewline = remaining.lastIndexOf('\n', MAX_WA_LENGTH);
-          if (lastNewline > MAX_WA_LENGTH * 0.7) cut = lastNewline + 1;
-        }
-        chunks.push(remaining.slice(0, cut));
-        remaining = remaining.slice(cut);
-      }
-    } else {
-      chunks.push(text);
-    }
-
-    for (const chunk of chunks) {
-      let lastErr: any;
-      for (let i = 0; i < SEND_RETRY_ATTEMPTS; i++) {
-        try {
-          // En reintentos, buscar socket fresco en caso de reconexión
-          const currentSock = (storeId && i > 0) ? (this.sockets.get(storeId) ?? sock) : sock;
-          await currentSock.sendMessage(jid, { text: chunk });
-          lastErr = null;
-          break;
-        } catch (err: any) {
-          lastErr = err;
-          if (i < SEND_RETRY_ATTEMPTS - 1) {
-            const isNotAcceptable = String(err?.message ?? '').includes('not-acceptable');
-            const delay = isNotAcceptable ? SEND_NOT_ACCEPTABLE_DELAY_MS : SEND_RETRY_DELAY_MS;
-            if (isNotAcceptable) {
-              this.logger.warn(
-                `sendMessage a ${phoneLabel} — not-acceptable (sesión renegociando), ` +
-                `reintentando en ${delay}ms... (${i + 1}/${SEND_RETRY_ATTEMPTS})`,
-              );
-            } else {
-              this.logger.warn(
-                `sendMessage a ${phoneLabel} — intento ${i + 1}/${SEND_RETRY_ATTEMPTS} ` +
-                `falló: ${err.message}. Reintentando en ${delay}ms...`,
-              );
-            }
-            await new Promise(r => setTimeout(r, delay));
-          }
-        }
-      }
-      if (lastErr) throw lastErr;
-    }
-  }
-
   // ─── API pública ─────────────────────────────────────────────────────────────
 
   getQR(storeId: string): string | null {
@@ -1484,13 +1394,5 @@ export class WhatsappService implements OnModuleInit, WaTransport {
       return `sin-id-${randomUUID()}`;
     }
     return id;
-  }
-
-  async sendMessage(storeId: string, phone: string, content: string): Promise<void> {
-    const sock = this.sockets.get(storeId);
-    if (!sock) throw new Error(`No hay socket activo para store: ${storeId}`);
-    const jid = jidFromPhone(phone);
-    await this.safeSend(sock, jid, content, phone, storeId);
-    this.logger.log(`📤 Mensaje enviado a ${phone}`);
   }
 }

@@ -46,15 +46,6 @@ export class FakeWhatsapp implements WaTransport {
     this.offline.delete(storeId);
   }
 
-  /** Compatibilidad hasta la Task 15 (sitios aún no migrados a la cola). */
-  async sendMessage(
-    storeId: string,
-    phone: string,
-    message: string,
-  ): Promise<void> {
-    this.sent.push({ storeId, jid: phone, message });
-  }
-
   async connectStore(storeId: string): Promise<any> {
     this.connected.add(storeId);
     return { status: 'connected' };

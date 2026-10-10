@@ -3041,3 +3041,10 @@ git commit -m "refactor(whatsapp): fuera sendMessage, safeSend y withRetry: todo
 - **Test extra (Task 7):** carrera de reclamo con otra fila de la tienda en `sending` → `claim` devuelve `null`. Verificado por mutación que el 23505 llega con el nombre del índice.
 - **Cliente Prisma:** `src/generated` no está en git; en una copia nueva hace falta `npx prisma generate` antes de los tests.
 - **Filtro de Jest 30:** `--testPathPatterns <patrón>` (no `npm test -- ruta`).
+- **Cuelgue de Jest (Task 8-9):** el dedupe en memoria dejaba un `setTimeout` de 10 min por mensaje; con el `WhatsappService` real Jest no terminaba. Desapareció al pasar el dedupe a `wa_inbound` (verificado: el proceso sale solo). Además el dedupe viejo era GLOBAL entre tiendas (bug, cubierto por test).
+- **Recordatorio "¿Confirmamos?" (Task 12):** programar y cancelar van ENCADENADOS por conversación (`nudgeChain`). El flujo de la IA programa (ai.service ~2820) y la validación del mismo turno puede cancelar (~2921+); sin la cadena el cancel llegaba antes que el alta y el recordatorio quedaba vivo. Test que lo reproducía 3/3 antes del arreglo.
+- **Token `OUTBOUND_CONFIG` (Task 14):** vive en `src/outbound/outbound.tokens.ts` (el módulo lo reexporta). En el módulo provocaba un ciclo de imports y llegaba `undefined` a `@Inject` del servicio de mantenimiento.
+- **Test de purga concurrente:** determinista, con la conexión del test reteniendo el `pg_advisory_xact_lock`.
+- **`PublicService`** no tenía logger: se le añadió para registrar el fallo de encolar en vez del `catch` vacío.
+- **Tests unitarios de la IA** (`ai.payment.spec.ts`, `ai.prompt-config.spec.ts`) construyen `AiService` a mano: ganaron un 4.º `null` por `OutboundService`.
+- **Lint de lo nuevo:** 0 errores; quedan 6 avisos `no-unsafe-argument` de `getHttpServer()` (supertest), el mismo patrón que `orders.int-spec.ts`.

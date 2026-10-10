@@ -11,7 +11,7 @@ export async function waitFor<T>(
   let last: T;
   do {
     last = await check();
-    if (last) return last as NonNullable<T>;
+    if (last) return last;
     await sleep(everyMs);
   } while (Date.now() < until);
   throw new Error(
