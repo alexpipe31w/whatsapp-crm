@@ -141,6 +141,8 @@ model Store {
   staff           Staff[]
   stockupConnection StockupConnection?
   syncOutbox        SyncOutbox[]
+  waOutbound        WaOutbound[]
+  waInbound         WaInbound[]
 
   @@map("stores")
 }
@@ -173,6 +175,11 @@ model Customer {
 
   // Segmentación para campañas
   acceptsMarketing Boolean @default(true) @map("accepts_marketing")
+  // Último mensaje recibido de este cliente por WhatsApp. Los mensajes se purgan a las
+  // 24 h (CleanupService), así que esta columna es la única memoria duradera de "ya
+  // nos escribió": decide a quién se le pueden mandar campañas (spec, Baileys) y en el
+  // bloque 8 la ventana de 24 h de Cloud API.
+  lastInboundAt DateTime? @map("last_inbound_at")
 
   // Resumen de la última conversación — lo usa la IA como contexto en nuevas charlas
   lastConversationSummary String? @map("last_conversation_summary") @db.Text
@@ -188,6 +195,7 @@ model Customer {
   @@unique([storeId, phone])
   @@index([storeId, createdAt])
   @@index([storeId, totalSpent])
+  @@index([storeId, lastInboundAt])
   @@map("customers")
 }
 
@@ -842,4 +850,55 @@ model SyncInbox {
   processedAt DateTime @default(now()) @map("processed_at")
 
   @@map("sync_inbox")
+}
+
+// ─── Cola de salida de WhatsApp (bloque 1a) ───────────────────────────────────
+// Todo envío por WhatsApp pasa por aquí. idempotency_key UNIQUE = nunca dos veces.
+// Índice único PARCIAL `wa_outbound_one_sending_per_store` (WHERE status='sending'),
+// creado a mano en la migración 20261010000002: Prisma no declara índices parciales.
+// NUNCA `prisma db push` / `migrate dev` / `migrate reset`: lo borrarían.
+model WaOutbound {
+  id                 String    @id @default(uuid())
+  storeId            String    @map("store_id")
+  toJid              String    @map("to_jid") @db.VarChar(64)
+  payload            Json
+  kind               String    @db.VarChar(16)
+  priority           Int
+  idempotencyKey     String    @unique @map("idempotency_key") @db.VarChar(200)
+  groupKey           String?   @map("group_key") @db.VarChar(120)
+  notBefore          DateTime  @default(now()) @map("not_before")
+  expiresAt          DateTime? @map("expires_at")
+  status             String    @default("pending") @db.VarChar(16)
+  attempts           Int       @default(0)
+  lastError          String?   @map("last_error") @db.VarChar(500)
+  claimToken         String?   @map("claim_token") @db.VarChar(64)
+  lockedUntil        DateTime? @map("locked_until")
+  providerMessageIds String[]  @default([]) @map("provider_message_ids")
+  deliveryStatus     String?   @map("delivery_status") @db.VarChar(16)
+  sentAt             DateTime? @map("sent_at")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  store Store @relation(fields: [storeId], references: [storeId], onDelete: Cascade)
+
+  @@index([status, notBefore, priority])
+  @@index([storeId, status])
+  @@index([groupKey, status])
+  @@map("wa_outbound")
+}
+
+// ─── Dedupe de entrada de WhatsApp (bloque 1a, mínima) ────────────────────────
+// Ids de mensajes ya vistos por tienda. En el bloque 1c se amplía (payload, estado,
+// reclamo) añadiendo columnas con DEFAULT, sin renombrar.
+model WaInbound {
+  id                String   @id @default(uuid())
+  storeId           String   @map("store_id")
+  providerMessageId String   @map("provider_message_id") @db.VarChar(128)
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  store Store @relation(fields: [storeId], references: [storeId], onDelete: Cascade)
+
+  @@unique([storeId, providerMessageId])
+  @@index([createdAt])
+  @@map("wa_inbound")
 }
