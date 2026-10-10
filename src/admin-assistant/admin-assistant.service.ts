@@ -71,7 +71,7 @@ export class AdminAssistantService implements OnModuleDestroy {
 
   // ─── Punto de entrada principal ───────────────────────────────────────────
 
-  async handle(storeId: string, adminPhone: string, content: string): Promise<string> {
+  async handle(storeId: string, adminPhone: string, content: string, turnId: string): Promise<string> {
     try {
       const [context, aiConfig] = await Promise.all([
         this.buildContext(storeId),

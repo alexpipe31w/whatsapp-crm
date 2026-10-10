@@ -1,5 +1,5 @@
 import {
-  Injectable, NotFoundException, ForbiddenException,
+  Injectable, NotFoundException, ForbiddenException, BadRequestException,
   Inject, forwardRef, Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
@@ -15,6 +15,42 @@ export class MessagesService {
     @Inject(forwardRef(() => WhatsappService))
     private whatsapp: WhatsappService,
   ) {}
+
+  /** Guarda un mensaje en el historial. NUNCA envía por WhatsApp (lo usa el flujo de entrada). */
+  async record(dto: CreateMessageDto) {
+    const conv = await this.prisma.conversation.findUnique({
+      where: { conversationId: dto.conversationId },
+    });
+    if (!conv) throw new NotFoundException('Conversación no encontrada');
+    if (conv.storeId !== dto.storeId) {
+      throw new ForbiddenException('El mensaje no pertenece a esta tienda');
+    }
+    if (!dto.content?.trim()) {
+      throw new BadRequestException('El contenido del mensaje no puede estar vacío');
+    }
+    const content = dto.content.length > 65_536 ? dto.content.slice(0, 65_536) : dto.content;
+    const sender = dto.sender ?? (dto.isAiResponse ? 'store' : 'customer');
+
+    const message = await this.prisma.message.create({
+      data: {
+        conversationId: dto.conversationId,
+        storeId:        conv.storeId,
+        content,
+        type:           dto.type ?? 'text',
+        isAiResponse:   dto.isAiResponse ?? false,
+        sender,
+      },
+    });
+
+    await this.prisma.conversation.update({
+      where: { conversationId: dto.conversationId },
+      data:  { lastMessageAt: new Date() },
+    }).catch(err => this.logger.warn(
+      `lastMessageAt no actualizado (conv ${dto.conversationId}): ${err.message}`,
+    ));
+
+    return message;
+  }
 
   async create(dto: CreateMessageDto) {
     const conv = await this.prisma.conversation.findUnique({

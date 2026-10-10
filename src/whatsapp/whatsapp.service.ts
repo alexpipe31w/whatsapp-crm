@@ -18,6 +18,8 @@ import { computeReconnectDelay, FORBIDDEN_STATUS } from './reconnect-delay';
 import { randomUUID } from 'node:crypto';
 import { WaNotConnectedError } from './send-errors';
 import { WaTransport } from './wa-transport';
+import { OutboundService } from '../outbound/outbound.service';
+import { outboundKeys, turnIdFor } from '../outbound/outbound-keys';
 
 const WHISPER_TIMEOUT_MS    = 25_000;
 const WHISPER_MODEL         = 'whisper-large-v3-turbo';
@@ -354,6 +356,8 @@ export class WhatsappService implements OnModuleInit, WaTransport {
     contents: string[];
     timer: ReturnType<typeof setTimeout>;
     pushName?: string;
+    // Id de WhatsApp del último mensaje del lote: identifica el "turno" (clave de la respuesta).
+    lastMsgId?: string;
   }>();
 
   constructor(
@@ -365,6 +369,7 @@ export class WhatsappService implements OnModuleInit, WaTransport {
     private readonly customersService: CustomersService,
     private readonly blockedService: BlockedService,
     private readonly adminAssistant: AdminAssistantService,
+    private readonly outbound: OutboundService,
   ) {}
 
   // ─── Ciclo de vida ──────────────────────────────────────────────────────────
@@ -837,7 +842,7 @@ export class WhatsappService implements OnModuleInit, WaTransport {
 
     // Resto de media (imagen, video, doc, sticker)
     if (MEDIA_TYPES.has(messageType)) {
-      await this.handleMediaMessage(storeId, phone, messageType, sock, pushName);
+      await this.handleMediaMessage(storeId, phone, messageType, pushName, msg.key?.id);
       return;
     }
 
@@ -854,7 +859,7 @@ export class WhatsappService implements OnModuleInit, WaTransport {
 
     this.logger.log(`📩 Mensaje de ${phone}: ${content.slice(0, 100)}${content.length > 100 ? '...' : ''}`);
 
-    this.bufferAndProcess(storeId, phone, content, sock, pushName);
+    this.bufferAndProcess(storeId, phone, content, pushName, msg.key?.id);
   }
 
   // ─── Comando interno del dueño: !stop dentro del chat del cliente ───────────
@@ -895,8 +900,8 @@ export class WhatsappService implements OnModuleInit, WaTransport {
     storeId: string,
     phone: string,
     content: string,
-    sock: any,
     pushName?: string,
+    msgId?: string,
   ): void {
     const key      = `${storeId}:${phone}`;
     const existing = this.messageBuffers.get(key);
@@ -905,9 +910,10 @@ export class WhatsappService implements OnModuleInit, WaTransport {
       clearTimeout(existing.timer);
       existing.contents.push(content);
       if (pushName) existing.pushName = pushName;
+      if (msgId) existing.lastMsgId = msgId;
       this.logger.debug(`📥 Buffer [${key}] — ${existing.contents.length} msgs acumulados`);
     } else {
-      this.messageBuffers.set(key, { contents: [content], timer: null!, pushName });
+      this.messageBuffers.set(key, { contents: [content], timer: null!, pushName, lastMsgId: msgId });
     }
 
     const buffer = this.messageBuffers.get(key)!;
@@ -923,7 +929,7 @@ export class WhatsappService implements OnModuleInit, WaTransport {
       }
 
       this.enqueueMessage(key, () =>
-        this.handleIncomingMessage(storeId, phone, combined, sock, buffer.pushName),
+        this.handleIncomingMessage(storeId, phone, combined, buffer.pushName, turnIdFor(buffer.lastMsgId)),
       );
     }, MSG_DEBOUNCE_MS);
   }
@@ -962,7 +968,7 @@ export class WhatsappService implements OnModuleInit, WaTransport {
   ): Promise<void> {
     const pushName: string | undefined =
       typeof msg.pushName === 'string' && msg.pushName.trim() ? msg.pushName.trim() : undefined;
-    const fallback = () => this.handleMediaMessage(storeId, phone, 'audioMessage', sock, pushName);
+    const fallback = () => this.handleMediaMessage(storeId, phone, 'audioMessage', pushName, msg.key?.id);
 
     try {
       // ── 1. Rate limit — máx AUDIO_RATE_MAX audios/min por número ──────────
@@ -1002,13 +1008,13 @@ export class WhatsappService implements OnModuleInit, WaTransport {
       // ── 3. Validar duración y tamaño ANTES de descargar ───────────────────
       if (durationS > AUDIO_MAX_SECONDS) {
         this.logger.warn(`[Audio] ${phone}: audio de ${durationS}s excede límite de ${AUDIO_MAX_SECONDS}s`);
-        const jid = jidFromPhone(phone);
-        await this.safeSend(
-          sock, jid,
-          `El audio es demasiado largo (máximo ${Math.floor(AUDIO_MAX_SECONDS / 60)} min). ¿Puedes contarme en texto qué necesitas?`,
-          phone,
+        await this.outbound.enqueue({
           storeId,
-        );
+          to:   phone,
+          text: `El audio es demasiado largo (máximo ${Math.floor(AUDIO_MAX_SECONDS / 60)} min). ¿Puedes contarme en texto qué necesitas?`,
+          kind: 'reply',
+          key:  outboundKeys.audioTooLong(storeId, turnIdFor(msg.key?.id)),
+        });
         return;
       }
       if (fileBytes > AUDIO_MAX_BYTES) {
@@ -1059,7 +1065,7 @@ export class WhatsappService implements OnModuleInit, WaTransport {
 
       // ── 6. Procesar la transcripción como mensaje de texto normal ─────────
       // El buffer ya no se referencia aquí — puede ser GC'd inmediatamente
-      this.bufferAndProcess(storeId, phone, transcription, sock, pushName);
+      this.bufferAndProcess(storeId, phone, transcription, pushName, msg.key?.id);
 
     } catch (err: any) {
       this.logger.error(`[Audio] Error procesando audio de ${phone}: ${err.message}`);
@@ -1168,11 +1174,15 @@ export class WhatsappService implements OnModuleInit, WaTransport {
     storeId: string,
     phone: string,
     messageType: string,
-    sock: any,
     pushName?: string,
+    msgId?: string,
   ): Promise<void> {
+    // Sticker (o tipo sin acuse): se ignora entero. Antes pasaba la conversación a
+    // pending_human y registraba un error al guardar un mensaje vacío.
+    const reply = this.getMediaReply(messageType);
+    if (!reply) return;
+
     try {
-      const jid          = jidFromPhone(phone);
       const customer     = await this.customersService.findOrCreate({ storeId, phone, pushName });
       const conversation = await this.conversationsService.findOrCreate(
         customer.customerId, storeId,
@@ -1180,14 +1190,12 @@ export class WhatsappService implements OnModuleInit, WaTransport {
 
       if (conversation.status === 'human' || conversation.status === 'closed') return;
 
-      const reply = this.getMediaReply(messageType);
-
       await this.prisma.conversation.update({
         where: { conversationId: conversation.conversationId },
         data:  { status: 'pending_human' },
       });
 
-      await this.messagesService.create({
+      await this.messagesService.record({
         conversationId: conversation.conversationId,
         storeId,
         content:      `[${messageType.replace('Message', '')}]`,
@@ -1196,9 +1204,12 @@ export class WhatsappService implements OnModuleInit, WaTransport {
         isAiResponse: false,
       });
 
-      await this.safeSend(sock, jid, reply, phone, storeId);
+      await this.outbound.enqueue({
+        storeId, to: phone, text: reply, kind: 'reply',
+        key: outboundKeys.mediaAck(storeId, turnIdFor(msgId)),
+      });
 
-      await this.messagesService.create({
+      await this.messagesService.record({
         conversationId: conversation.conversationId,
         storeId,
         content:      reply,
@@ -1213,7 +1224,7 @@ export class WhatsappService implements OnModuleInit, WaTransport {
     }
   }
 
-  private getMediaReply(messageType: string): string {
+  private getMediaReply(messageType: string): string | null {
     if (messageType === 'audioMessage') {
       return `¡Hola! 😊 Por el momento no puedo escuchar audios. ¿Puedes contarme en texto qué necesitas? Si prefieres hablar con un asesor, dímelo y te conecto ahora mismo.`;
     }
@@ -1227,7 +1238,7 @@ export class WhatsappService implements OnModuleInit, WaTransport {
       return `¡Gracias! 😊 En un momento un asesor revisa tu documento y te responde personalmente. 🙌`;
     }
     if (messageType === 'stickerMessage') {
-      return null as any; // Ignorar stickers completamente
+      return null; // Ignorar stickers completamente
     }
     return `¡Gracias por tu mensaje! 😊 En un momento un asesor te responde personalmente. 🙌`;
   }
@@ -1238,18 +1249,19 @@ export class WhatsappService implements OnModuleInit, WaTransport {
     storeId: string,
     phone: string,
     content: string,
-    sock: any,
-    pushName?: string,
+    pushName: string | undefined,
+    turnId: string,
   ): Promise<void> {
-    const jid = jidFromPhone(phone);
-
     try {
       // ── Admin Personal Assistant ───────────────────────────────────────────
       const isAdmin = await this.adminAssistant.isAdminPhone(storeId, phone);
       if (isAdmin) {
         this.logger.log(`🔑 Mensaje del admin (${phone}) → Admin Assistant`);
-        const reply = await this.adminAssistant.handle(storeId, phone, content);
-        await this.safeSend(sock, jid, reply, phone, storeId);
+        const reply = await this.adminAssistant.handle(storeId, phone, content, turnId);
+        await this.outbound.enqueue({
+          storeId, to: phone, text: reply, kind: 'reply',
+          key: outboundKeys.adminReply(storeId, turnId),
+        });
         return;
       }
 
@@ -1260,7 +1272,7 @@ export class WhatsappService implements OnModuleInit, WaTransport {
       );
 
       // Guardar mensaje del cliente
-      await this.messagesService.create({
+      await this.messagesService.record({
         conversationId: conversation.conversationId,
         storeId,
         content,
@@ -1306,16 +1318,23 @@ export class WhatsappService implements OnModuleInit, WaTransport {
           `Entendido, ahora mismo te conecto con un asesor. ` +
           `Por favor espera un momento, pronto alguien te atenderá. 😊`;
 
-        await this.safeSend(sock, jid, handoffReply, phone, storeId);
+        await this.outbound.enqueue({
+          storeId, to: phone, text: handoffReply, kind: 'reply',
+          key: outboundKeys.handoff(storeId, turnId),
+        });
 
-        await this.messagesService.create({
+        // isAiResponse: true = texto automático. Con false, MessagesService lo tomaba por
+        // un mensaje del asesor y lo volvía a enviar (el aviso salía dos veces).
+        await this.messagesService.record({
           conversationId: conversation.conversationId,
           storeId,
           content:      handoffReply,
           type:         'text',
           sender:       'store',
-          isAiResponse: false,
-        }).catch(() => {});
+          isAiResponse: true,
+        }).catch(err => this.logger.warn(
+          `No se pudo guardar aviso de asesor (conv ${conversation.conversationId}): ${err.message}`,
+        ));
 
         this.logger.log(
           `🚨 ${phone} solicitó asesor → conv ${conversation.conversationId} HUMAN`,
@@ -1337,8 +1356,8 @@ export class WhatsappService implements OnModuleInit, WaTransport {
 
       if (!aiReply || !aiReply.trim()) return;
 
-      // Guardar respuesta de la IA ANTES de enviar (si el envío falla, queda el registro)
-      await this.messagesService.create({
+      // Guardar respuesta de la IA ANTES de encolar (la IA la necesita en su historial)
+      await this.messagesService.record({
         conversationId: conversation.conversationId,
         storeId,
         content:      aiReply,
@@ -1347,8 +1366,10 @@ export class WhatsappService implements OnModuleInit, WaTransport {
         isAiResponse: true,
       }).catch(err => this.logger.warn(`No se pudo guardar respuesta IA: ${err.message}`));
 
-      // Enviar al cliente con retry
-      await this.safeSend(sock, jid, aiReply, phone, storeId);
+      await this.outbound.enqueue({
+        storeId, to: phone, text: aiReply, kind: 'reply',
+        key: outboundKeys.aiReply(storeId, turnId),
+      });
       this.logger.log(`🤖 IA respondió a ${phone}`);
 
     } catch (err: any) {

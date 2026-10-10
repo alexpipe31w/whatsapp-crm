@@ -6,12 +6,12 @@ export async function waitFor<T>(
   check: () => Promise<T> | T,
   timeoutMs = 8_000,
   everyMs = 100,
-): Promise<T> {
+): Promise<NonNullable<T>> {
   const until = Date.now() + timeoutMs;
   let last: T;
   do {
     last = await check();
-    if (last) return last;
+    if (last) return last as NonNullable<T>;
     await sleep(everyMs);
   } while (Date.now() < until);
   throw new Error(
