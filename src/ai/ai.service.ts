@@ -900,7 +900,8 @@ export class AiService {
       data:  { paymentProofUrl: excerpt },
     });
 
-    this.notifications.notifyPaymentProofDetected(appt as any, excerpt).catch(() => {});
+    this.notifications.notifyPaymentProofDetected(appt as any, excerpt).catch((err: any) =>
+      this.logger.error(`[Notif] comprobante no encolado (cita ${appt.appointmentId}): ${err.message}`));
     return 'Recibido ✅ Tu comprobante fue enviado al admin para verificación. Te confirmaremos en breve.';
   }
 
@@ -1022,7 +1023,8 @@ export class AiService {
         this.notifications.notifyPendingAction(
           { ...appt, pendingAction: 'RESCHEDULE_REQUESTED', pendingActionData: { newDate, newTime } } as any,
           'reschedule',
-        ).catch(() => {});
+        ).catch((err: any) =>
+          this.logger.error(`[Notif] solicitud no encolada (cita ${appt.appointmentId}): ${err.message}`));
 
         const fechaFormateada = newScheduledAt.toLocaleDateString('es-CO', {
           weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/Bogota',
@@ -1057,7 +1059,8 @@ export class AiService {
         pendingActionReason: userMessage.slice(0, 500),
       },
     });
-    this.notifications.notifyPendingAction(appt as any, 'cancel').catch(() => {});
+    this.notifications.notifyPendingAction(appt as any, 'cancel').catch((err: any) =>
+      this.logger.error(`[Notif] solicitud no encolada (cita ${appt.appointmentId}): ${err.message}`));
 
     // La política de cancelación de citas configurada por la tienda va con la respuesta.
     return '🗑 Tu solicitud de *cancelación* fue enviada al equipo. Un asesor la procesará y te confirmará en breve ✅' + apptCancelNote(store);
@@ -1146,7 +1149,8 @@ export class AiService {
     this.notifications.notifyPendingAction(
       { ...appt, pendingAction: 'RESCHEDULE_REQUESTED', pendingActionData: { newDate, newTime } } as any,
       'reschedule',
-    ).catch(() => {});
+    ).catch((err: any) =>
+      this.logger.error(`[Notif] solicitud no encolada (cita ${appt.appointmentId}): ${err.message}`));
 
     const fechaFormateada = newScheduledAt.toLocaleDateString('es-CO', {
       weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/Bogota',
@@ -3086,7 +3090,8 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
               storeId, customer.customerId, groupStaffId, at, ends, D, extracted, `Persona ${k + 1} de ${N}`,
             );
             createdGroup.push({ appt, at });
-            this.notifications.notifyAppointmentCreated(appt as any).catch(() => {});
+            this.notifications.notifyAppointmentCreated(appt as any).catch((err: any) =>
+              this.logger.error(`[Notif] cita creada no encolada (cita ${appt.appointmentId}): ${err.message}`));
           } catch (e: any) {
             this.logger.warn(`[Cita][Grupo] Falló la cita ${k + 1}/${N}: ${e?.message}`);
             break; // no revertir las ya creadas (mismo criterio que citas múltiples actuales)
@@ -3302,7 +3307,8 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto adicional):
       this.pendingAppointments.delete(conversationId);
       this.cancelConfirmReminder(conversationId);
       this.logger.log(`✅ [Cita] ${appointment.appointmentId} — ${extracted.scheduledDate} ${extracted.scheduledTime}`);
-      this.notifications.notifyAppointmentCreated(appointment as any).catch(() => {});
+      this.notifications.notifyAppointmentCreated(appointment as any).catch((err: any) =>
+        this.logger.error(`[Notif] cita creada no encolada (cita ${appointment.appointmentId}): ${err.message}`));
 
       // Registrar cita creada para que el extractor no la vuelva a extraer
       const created = this.conversationCreatedAppts.get(conversationId) ?? [];

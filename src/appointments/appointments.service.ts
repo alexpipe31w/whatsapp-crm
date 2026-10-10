@@ -1,5 +1,5 @@
 import {
-  Injectable, NotFoundException, ForbiddenException, BadRequestException,
+  Injectable, NotFoundException, ForbiddenException, BadRequestException, ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '../generated/prisma/client';
@@ -8,6 +8,7 @@ import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { CreateWalkInDto } from './dto/create-walk-in.dto';
 import { AppointmentStatus, AppointmentSource } from '../generated/prisma/enums';
 import { isWithinBusinessHours, BusinessHoursJson } from '../utils/business-hours.util';
+import { NotificationsService } from '../notifications/notifications.service';
 
 // ─── Selectores reutilizables ─────────────────────────────────────────────────
 
@@ -50,7 +51,10 @@ const APPOINTMENT_INCLUDE = {
 
 @Injectable()
 export class AppointmentsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma:        PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   // ─── Helpers privados ──────────────────────────────────────────────────────
 
@@ -323,6 +327,9 @@ export class AppointmentsService {
     storeId: string,
     dto: UpdateAppointmentDto,
     performedById?: string,
+    // expectStatus: la cita debe seguir en ese estado al bloquearla (si no, 409). Lo usa la
+    // autoconfirmación para no confirmar una cita que el dueño acaba de cancelar.
+    opts: { expectStatus?: AppointmentStatus } = {},
   ): Promise<{ appointment: any; notificationTrigger?: string }> {
     const current = await this.findAndVerify(appointmentId, storeId);
 
@@ -365,10 +372,6 @@ export class AppointmentsService {
       notificationTrigger = 'action_rejected';
     }
 
-    if (!notificationTrigger && dto.status === AppointmentStatus.CONFIRMED) {
-      notificationTrigger = 'confirmed';
-    }
-
     if (dto.paymentStatus === 'PAID' && current.paymentStatus !== 'PAID') {
       notificationTrigger = notificationTrigger ?? 'payment_confirmed';
     }
@@ -389,7 +392,25 @@ export class AppointmentsService {
       dto.staffId !== undefined;
     const willBeCancelled = (resolvedStatus ?? current.status) === AppointmentStatus.CANCELLED;
 
+    // "Confirmada" solo si no lo estaba o si cambió la hora: re-guardar una cita ya
+    // confirmada no vuelve a avisar al cliente. (Antes se avisaba cada vez.)
+    const scheduledAtChanged = newScheduledAt.getTime() !== current.scheduledAt.getTime();
+    if (
+      !notificationTrigger && dto.status === AppointmentStatus.CONFIRMED &&
+      (current.status !== AppointmentStatus.CONFIRMED || scheduledAtChanged)
+    ) {
+      notificationTrigger = 'confirmed';
+    }
+
     const appointment = await this.prisma.$transaction(async (tx) => {
+      if (opts.expectStatus) {
+        const [locked] = await tx.$queryRaw<{ status: string }[]>`
+          SELECT status FROM appointments WHERE appointment_id = ${appointmentId} FOR UPDATE`;
+        if (locked?.status !== opts.expectStatus) {
+          throw new ConflictException(`La cita ya no está ${opts.expectStatus}`);
+        }
+      }
+
       // Conflict check inside the transaction to prevent double-booking race conditions
       if (effectiveStaffId && scheduleChanged && !willBeCancelled) {
         const newEndsAt = endsAt ?? new Date(newScheduledAt.getTime() + 30 * 60_000);
@@ -514,9 +535,28 @@ export class AppointmentsService {
         }
       }
 
+      // El aviso al cliente nace en la MISMA transacción que el cambio de estado.
+      // pendingAction/pendingActionAt se leen de `current`: en `updated` ya están a null
+      // (antes una reprogramación aprobada se anunciaba como cancelación).
+      if (notificationTrigger === 'confirmed') {
+        await this.notifications.notifyAppointmentConfirmed(updated as any, tx);
+      } else if (
+        notificationTrigger === 'action_approved_cancel' ||
+        notificationTrigger === 'action_approved_reschedule'
+      ) {
+        await this.notifications.notifyActionResolved(
+          { ...(updated as any), pendingAction: current.pendingAction }, true, undefined, current.pendingActionAt, tx,
+        );
+      } else if (notificationTrigger === 'action_rejected') {
+        await this.notifications.notifyActionResolved(
+          { ...(updated as any), pendingAction: current.pendingAction }, false, dto.rejectionReason, current.pendingActionAt, tx,
+        );
+      }
+
       return updated;
     });
 
+    if (notificationTrigger) this.notifications.wake();
     return { appointment, notificationTrigger };
   }
 

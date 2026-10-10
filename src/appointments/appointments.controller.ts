@@ -4,7 +4,6 @@ import {
   HttpCode, HttpStatus,
 } from '@nestjs/common';
 import { AppointmentsService } from './appointments.service';
-import { NotificationsService } from '../notifications/notifications.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { CreateWalkInDto } from './dto/create-walk-in.dto';
@@ -15,7 +14,6 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 export class AppointmentsController {
   constructor(
     private readonly appointmentsService: AppointmentsService,
-    private readonly notifications:       NotificationsService,
   ) {}
 
   @Get('stats')
@@ -66,35 +64,9 @@ export class AppointmentsController {
     @Body() dto: UpdateAppointmentDto,
     @Request() req: any,
   ) {
-    const { appointment, notificationTrigger } =
+    // El aviso al cliente lo encola update() dentro de su transacción.
+    const { appointment } =
       await this.appointmentsService.update(id, req.user.storeId, dto, req.user.userId);
-
-    if (notificationTrigger) {
-      setImmediate(async () => {
-        try {
-          if (notificationTrigger === 'confirmed') {
-            await this.notifications.notifyAppointmentConfirmed(appointment);
-          } else if (
-            notificationTrigger === 'action_approved_cancel' ||
-            notificationTrigger === 'action_approved_reschedule'
-          ) {
-            const pendingActionForMsg = dto.pendingActionResolution === 'approved'
-              ? (appointment.pendingAction ?? 'CANCEL_REQUESTED')
-              : null;
-            await this.notifications.notifyActionResolved(
-              { ...appointment, pendingAction: pendingActionForMsg },
-              true,
-            );
-          } else if (notificationTrigger === 'action_rejected') {
-            await this.notifications.notifyActionResolved(
-              appointment, false, dto.rejectionReason,
-            );
-          }
-        } catch {
-          // Errors already logged inside NotificationsService
-        }
-      });
-    }
 
     return appointment;
   }

@@ -1,8 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { ConflictException, Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { AppointmentsService } from '../appointments/appointments.service';
-import { NotificationsService } from '../notifications/notifications.service';
 import { AppointmentStatus } from '../generated/prisma/enums';
 
 // Margen tras crearse la cita antes de autoconfirmarla. Muchas veces el barbero/admin
@@ -19,7 +18,6 @@ export class AutoConfirmService {
   constructor(
     private readonly prisma:        PrismaService,
     private readonly appointments:  AppointmentsService,
-    private readonly notifications: NotificationsService,
   ) {}
 
   @Cron('*/5 * * * *', { name: 'auto-confirm-appointments', timeZone: 'UTC' })
@@ -44,17 +42,22 @@ export class AutoConfirmService {
 
     for (const p of pending) {
       try {
-        const { appointment, notificationTrigger } = await this.appointments.update(
+        // expectStatus: si el dueño la canceló/confirmó en este instante, no se pisa.
+        // El aviso al cliente lo encola update() en la misma transacción.
+        await this.appointments.update(
           p.appointmentId,
           p.storeId,
           { status: AppointmentStatus.CONFIRMED },
+          undefined,
+          { expectStatus: AppointmentStatus.PENDING },
         );
-        if (notificationTrigger === 'confirmed') {
-          await this.notifications.notifyAppointmentConfirmed(appointment);
-        }
         this.logger.log(`✅ Cita ${p.appointmentId} autoconfirmada`);
       } catch (err: any) {
-        this.logger.error(`Error autoconfirmando cita ${p.appointmentId}: ${err.message}`);
+        if (err instanceof ConflictException) {
+          this.logger.log(`Cita ${p.appointmentId} cambió de estado antes de autoconfirmar: se deja`);
+        } else {
+          this.logger.error(`Error autoconfirmando cita ${p.appointmentId}: ${err.message}`);
+        }
       }
     }
   }

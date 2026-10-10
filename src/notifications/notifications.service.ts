@@ -1,7 +1,9 @@
-import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
-import { WhatsappService } from '../whatsapp/whatsapp.service';
+import { Prisma } from '../generated/prisma/client';
+import { OutboundService } from '../outbound/outbound.service';
+import { outboundKeys } from '../outbound/outbound-keys';
 
 type Appt = {
   appointmentId: string;
@@ -15,6 +17,7 @@ type Appt = {
   pendingAction?: string | null;
   pendingActionReason?: string | null;
   pendingActionData?: any;
+  pendingActionAt?: Date | null;
   customer: { name?: string | null; phone: string; };
   service?: { name: string } | null;
 };
@@ -26,8 +29,7 @@ export class NotificationsService {
   constructor(
     private readonly prisma:    PrismaService,
     private readonly email:     EmailService,
-    @Inject(forwardRef(() => WhatsappService))
-    private readonly whatsapp:  WhatsappService,
+    private readonly outbound:  OutboundService,
   ) {}
 
   private formatDate(d: Date): string {
@@ -67,22 +69,22 @@ export class NotificationsService {
     return store?.adminPhone ?? null;
   }
 
-  private async sendWA(storeId: string, phone: string, msg: string, opts?: { customerFacing?: boolean; appointmentId?: string }): Promise<void> {
-    try {
-      await this.whatsapp.sendMessage(storeId, phone, msg);
-    } catch (err: any) {
-      // Una notificación al cliente que falla en silencio deja al negocio creyendo
-      // que el cliente fue avisado cuando no fue así — se eleva a error para que
-      // quede visible en monitoreo, no enterrada como un warning más.
-      if (opts?.customerFacing) {
-        this.logger.error(
-          `[Notif] Cliente NO notificado (store ${storeId}${opts.appointmentId ? `, cita ${opts.appointmentId}` : ''}): ` +
-          `falló envío WA a ${phone} — ${err.message}`,
-        );
-      } else {
-        this.logger.warn(`WA send failed to ${phone}: ${err.message}`);
-      }
-    }
+  /**
+   * Encola un aviso por WhatsApp (wa_outbound): la clave lo hace idempotente y los
+   * reintentos son de la cola. Con `tx`, nace dentro de la transacción del llamador.
+   * Si falla encolar, el error sube: el llamador decide (rollback o log).
+   */
+  private async queueWA(
+    input: { storeId: string; to: string; text: string; kind: 'notification' | 'reminder'; key: string; expiresAt?: Date },
+    tx?: Prisma.TransactionClient,
+  ): Promise<void> {
+    const result = await this.outbound.enqueue(input, tx);
+    if (result === 'invalid') this.logger.warn(`[Notif] sin destino WhatsApp: no se encola key=${input.key}`);
+  }
+
+  /** Avisar al despachador tras el commit, cuando se encoló con `tx`. */
+  wake(): void {
+    this.outbound.wake();
   }
 
   private async sendEmail(to: string, subject: string, html: string): Promise<void> {
@@ -144,12 +146,14 @@ export class NotificationsService {
     ]);
 
     await Promise.allSettled([
-      adminPhone ? this.withRetry(() => this.sendWA(appt.storeId, adminPhone, waMsg)) : Promise.resolve(),
+      adminPhone
+        ? this.queueWA({ storeId: appt.storeId, to: adminPhone, text: waMsg, kind: 'notification', key: outboundKeys.apptCreatedAdmin(appt.appointmentId) })
+        : Promise.resolve(),
       adminEmail ? this.withRetry(() => this.sendEmail(adminEmail, `Nueva cita: ${cliente} — ${fecha}`, htmlEmail)) : Promise.resolve(),
     ]);
   }
 
-  async notifyAppointmentConfirmed(appt: Appt): Promise<void> {
+  async notifyAppointmentConfirmed(appt: Appt, tx?: Prisma.TransactionClient): Promise<void> {
     const servicio = this.serviceName(appt);
     const fecha    = this.formatDate(appt.scheduledAt);
     const hora     = this.formatTime(appt.scheduledAt);
@@ -162,10 +166,13 @@ export class NotificationsService {
       (appt.agreedPrice ? `\n💰 Precio: ${this.formatMoney(appt.agreedPrice)}` : '') +
       `\n\n¡Te esperamos! 😊`;
 
-    await this.withRetry(() => this.sendWA(appt.storeId, appt.customer.phone, waMsg, { customerFacing: true, appointmentId: appt.appointmentId }));
+    await this.queueWA({
+      storeId: appt.storeId, to: appt.customer.phone, text: waMsg, kind: 'notification',
+      key: outboundKeys.apptConfirmed(appt.appointmentId, appt.scheduledAt),
+    }, tx);
   }
 
-  async notifyReminder(appt: Appt, window: '8h' | '2h' | '1h'): Promise<void> {
+  async notifyReminder(appt: Appt, window: '8h' | '2h' | '1h', tx?: Prisma.TransactionClient): Promise<void> {
     const servicio = this.serviceName(appt);
     const fecha    = this.formatDate(appt.scheduledAt);
     const hora     = this.formatTime(appt.scheduledAt);
@@ -179,7 +186,11 @@ export class NotificationsService {
       (appt.address ? `\n📍 ${appt.address}` : '') +
       `\n\nSi necesitas cancelar o reprogramar, escríbenos con anticipación.`;
 
-    await this.withRetry(() => this.sendWA(appt.storeId, appt.customer.phone, waMsg, { customerFacing: true, appointmentId: appt.appointmentId }));
+    // Caduca a la hora de la cita: un recordatorio que no salió a tiempo ya no sirve.
+    await this.queueWA({
+      storeId: appt.storeId, to: appt.customer.phone, text: waMsg, kind: 'reminder',
+      key: outboundKeys.apptReminder(appt.appointmentId, window), expiresAt: appt.scheduledAt,
+    }, tx);
   }
 
   async notifyPendingAction(appt: Appt, action: 'cancel' | 'reschedule'): Promise<void> {
@@ -192,6 +203,12 @@ export class NotificationsService {
       const d = appt.pendingActionData as any;
       nuevaFecha = d.newDate ? ` para el ${d.newDate}${d.newTime ? ' a las ' + d.newTime : ''}` : '';
     }
+
+    // Clave de la solicitud: reprogramar a la misma fecha/hora no vuelve a avisar.
+    const d = (appt.pendingActionData ?? {}) as { newDate?: string; newTime?: string };
+    const requestKey = action === 'reschedule'
+      ? `${d.newDate ?? ''}T${d.newTime ?? ''}`
+      : `cancel:${appt.scheduledAt.getTime()}`;
 
     const waMsg = `⚠️ *Solicitud de ${tipo}*\n\n` +
       `👤 ${cliente} quiere ${tipo} su cita del ${fecha}${nuevaFecha}.\n` +
@@ -208,12 +225,23 @@ export class NotificationsService {
     ]);
 
     await Promise.allSettled([
-      adminPhone ? this.withRetry(() => this.sendWA(appt.storeId, adminPhone, waMsg)) : Promise.resolve(),
+      adminPhone
+        ? this.queueWA({
+            storeId: appt.storeId, to: adminPhone, text: waMsg, kind: 'notification',
+            key: outboundKeys.apptPendingAction(appt.appointmentId, action, requestKey),
+          })
+        : Promise.resolve(),
       adminEmail ? this.withRetry(() => this.sendEmail(adminEmail, `Solicitud de ${tipo}: ${cliente}`, htmlEmail)) : Promise.resolve(),
     ]);
   }
 
-  async notifyActionResolved(appt: Appt, approved: boolean, reason?: string): Promise<void> {
+  async notifyActionResolved(
+    appt: Appt,
+    approved: boolean,
+    reason?: string,
+    requestedAt?: Date | null,
+    tx?: Prisma.TransactionClient,
+  ): Promise<void> {
     const action = appt.pendingAction === 'CANCEL_REQUESTED' ? 'cancelación' : 'reprogramación';
     let waMsg: string;
     if (approved) {
@@ -225,7 +253,10 @@ export class NotificationsService {
         (reason ? `\n\nMotivo: ${reason}` : '') +
         `\n\nContacta directamente si necesitas ayuda.`;
     }
-    await this.withRetry(() => this.sendWA(appt.storeId, appt.customer.phone, waMsg, { customerFacing: true, appointmentId: appt.appointmentId }));
+    await this.queueWA({
+      storeId: appt.storeId, to: appt.customer.phone, text: waMsg, kind: 'notification',
+      key: outboundKeys.apptResolved(appt.appointmentId, appt.pendingAction ?? 'NONE', approved, requestedAt),
+    }, tx);
   }
 
   async notifyPaymentProofDetected(appt: Appt, proofExcerpt: string): Promise<void> {
@@ -247,7 +278,12 @@ export class NotificationsService {
     ]);
 
     await Promise.allSettled([
-      adminPhone ? this.withRetry(() => this.sendWA(appt.storeId, adminPhone, waMsg)) : Promise.resolve(),
+      adminPhone
+        ? this.queueWA({
+            storeId: appt.storeId, to: adminPhone, text: waMsg, kind: 'notification',
+            key: outboundKeys.apptPaymentProof(appt.appointmentId, proofExcerpt),
+          })
+        : Promise.resolve(),
       adminEmail ? this.withRetry(() => this.sendEmail(adminEmail, `Comprobante de pago: ${cliente}`, htmlEmail)) : Promise.resolve(),
     ]);
   }
