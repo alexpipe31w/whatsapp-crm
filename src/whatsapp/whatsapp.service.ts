@@ -31,7 +31,6 @@ const AUDIO_RATE_MAX        = 5;             // máx 5 audios por minuto por nú
 // ─── Constantes ──────────────────────────────────────────────────────────────
 
 const MSG_DEBOUNCE_MS        = 3_000;
-const MSG_DEDUP_TTL_MS       = 10 * 60 * 1000;
 const HISTORY_SYNC_WINDOW_MS = 24 * 60 * 60 * 1000;
 const MAX_CONTENT_LENGTH     = 4_000; // caracteres máximos que se pasan a la IA
 const SEND_RETRY_ATTEMPTS          = 4;
@@ -346,7 +345,6 @@ export class WhatsappService implements OnModuleInit, WaTransport {
   private readonly loggedOutAttempts = new Map<string, number>();
   // Cierres consecutivos sin 'open' — alimenta el backoff de reconexión.
   private readonly reconnectFailures = new Map<string, number>();
-  private readonly processedMsgIds  = new Set<string>();
   // Pares "<storeId>:<waLid>" cuya ficha de cliente ya se cruzó en esta ejecución.
   // Evita repetir la transacción de fusión en cada mensaje del mismo cliente.
   private readonly reconciledLids   = new Set<string>();
@@ -760,17 +758,6 @@ export class WhatsappService implements OnModuleInit, WaTransport {
       return;
     }
 
-    // Deduplicación
-    const msgId = msg.key?.id;
-    if (msgId) {
-      if (this.processedMsgIds.has(msgId)) {
-        this.logger.debug(`Mensaje duplicado ignorado: ${msgId}`);
-        return;
-      }
-      this.processedMsgIds.add(msgId);
-      setTimeout(() => this.processedMsgIds.delete(msgId), MSG_DEDUP_TTL_MS);
-    }
-
     const jid = resolveJid(msg.key);
     if (!jid) {
       this.logger.warn(`Mensaje descartado sin jid — key: ${JSON.stringify(msg.key ?? {})}`);
@@ -825,6 +812,23 @@ export class WhatsappService implements OnModuleInit, WaTransport {
     if (IGNORED_TYPES.has(messageType)) {
       this.logger.debug(`Ignorando tipo interno (${messageType}) de ${phone}`);
       return;
+    }
+
+    // Dedupe persistente y POR TIENDA: una reentrega de WhatsApp (p. ej. tras reiniciar)
+    // no se procesa dos veces. El de memoria se perdía al reiniciar y era global.
+    // Si la BD falla aquí, el error sube: sin BD tampoco se podría guardar ni responder.
+    const msgId: string | undefined = msg.key?.id || undefined;
+    if (msgId) {
+      const { count } = await this.prisma.waInbound.createMany({
+        data: [{ storeId, providerMessageId: msgId }],
+        skipDuplicates: true,
+      });
+      if (count === 0) {
+        this.logger.debug(`[inbound] duplicado ignorado store=${storeId} id=${msgId}`);
+        return;
+      }
+    } else {
+      this.logger.warn(`[inbound] mensaje sin id de WhatsApp: no se puede deduplicar (store ${storeId})`);
     }
 
     // Verificar si está bloqueado
@@ -1184,6 +1188,9 @@ export class WhatsappService implements OnModuleInit, WaTransport {
 
     try {
       const customer     = await this.customersService.findOrCreate({ storeId, phone, pushName });
+      await this.customersService.touchInbound(customer.customerId).catch((err: any) =>
+        this.logger.warn(`[inbound] last_inbound_at no actualizado (customer ${customer.customerId}): ${err.message}`),
+      );
       const conversation = await this.conversationsService.findOrCreate(
         customer.customerId, storeId,
       );
@@ -1267,6 +1274,9 @@ export class WhatsappService implements OnModuleInit, WaTransport {
 
       // Obtener/crear cliente y conversación
       const customer = await this.customersService.findOrCreate({ storeId, phone, pushName });
+      await this.customersService.touchInbound(customer.customerId).catch((err: any) =>
+        this.logger.warn(`[inbound] last_inbound_at no actualizado (customer ${customer.customerId}): ${err.message}`),
+      );
       const conversation = await this.conversationsService.findOrCreate(
         customer.customerId, storeId,
       );
