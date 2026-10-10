@@ -3032,3 +3032,12 @@ git commit -m "refactor(whatsapp): fuera sendMessage, safeSend y withRetry: todo
 5. **Avisos al dueño desde la IA fuera de transacción** (cita creada, solicitudes, comprobantes): idempotentes por clave, pero si el proceso muere entre crear la cita y encolar, ese aviso se pierde (ventana de milisegundos). Se cierra cuando el bloque 4 meta el flujo de citas de la IA en transacciones.
 6. **`isConnected` miente** (da `true` con creds aunque el socket esté caído): una campaña puede encolarse con el número caído. Ya no se pierde (espera y caduca a las 72 h). El arreglo es de 1b.
 7. **Mensaje del asesor con WhatsApp caído**: antes devolvía 200 y el mensaje constaba como enviado aunque no saliera. Ahora queda encolado y su estado real está en `wa_outbound`; el panel todavía no lo muestra (1d).
+
+## Desviaciones durante la ejecución
+
+- **Lint:** el repo tiene ~5.400 avisos previos y el CI no pasa lint. Regla aplicada: los archivos NUEVOS salen con Prettier y ESLint a 0; los existentes no se reformatean (solo se tocan las líneas del cambio). El `npm run lint` de la Task 15 (lleva `--fix` sobre todo el repo) NO se ejecuta.
+- **Reloj (Task 7):** el despachador ya no compara con `now()` de Postgres. Todas las horas de `wa_outbound` salen del reloj de la app (`at(offsetMs)` → timestamp UTC sin zona, como Prisma). Motivo: mezclar dos relojes; en tests el Postgres de WSL va 100-250 ms por detrás y una fila recién encolada parecía "del futuro".
+- **Doble de WhatsApp:** `failNext(null, err)` = "este envío pasa, el siguiente falla" (en vez de espiar `sendPart`).
+- **Test extra (Task 7):** carrera de reclamo con otra fila de la tienda en `sending` → `claim` devuelve `null`. Verificado por mutación que el 23505 llega con el nombre del índice.
+- **Cliente Prisma:** `src/generated` no está en git; en una copia nueva hace falta `npx prisma generate` antes de los tests.
+- **Filtro de Jest 30:** `--testPathPatterns <patrón>` (no `npm test -- ruta`).

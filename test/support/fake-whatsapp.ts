@@ -17,20 +17,23 @@ export class FakeWhatsapp implements WaTransport {
   readonly sent: SentMessage[] = [];
   private readonly connected = new Set<string>();
   private readonly offline = new Set<string>();
-  private failures: unknown[] = [];
+  private failures: (Error | null)[] = [];
   private seq = 0;
 
   async onModuleInit(): Promise<void> {}
 
   async sendPart(storeId: string, jid: string, text: string): Promise<string> {
     if (this.offline.has(storeId)) throw new WaNotConnectedError(storeId);
-    if (this.failures.length > 0) throw this.failures.shift();
+    if (this.failures.length > 0) {
+      const failure = this.failures.shift();
+      if (failure) throw failure;
+    }
     this.sent.push({ storeId, jid, message: text });
     return `FAKE-${++this.seq}`;
   }
 
-  /** Los próximos envíos fallan con estos errores, en orden. */
-  failNext(...errors: unknown[]): void {
+  /** Los próximos envíos fallan con estos errores, en orden (`null` = ese envío pasa). */
+  failNext(...errors: (Error | null)[]): void {
     this.failures.push(...errors);
   }
 

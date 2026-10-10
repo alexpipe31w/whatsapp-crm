@@ -32,11 +32,25 @@ export async function createStoreWithAdmin(label = 'tienda'): Promise<StoreWithA
   };
 }
 
-export async function createCustomer(storeId: string, name = 'Cliente') {
+export async function createCustomer(
+  storeId: string,
+  name = 'Cliente',
+  opts: { phone?: string; lastInboundAt?: Date | null; acceptsMarketing?: boolean } = {},
+) {
   const n = next();
   return testPrisma().customer.create({
-    data: { storeId, phone: `57310000${String(n).padStart(4, '0')}`, name },
+    data: {
+      storeId,
+      phone: opts.phone ?? `57310000${String(n).padStart(4, '0')}`,
+      name,
+      lastInboundAt: opts.lastInboundAt ?? null,
+      acceptsMarketing: opts.acceptsMarketing ?? true,
+    },
   });
+}
+
+export async function createConversation(storeId: string, customerId: string, status = 'active') {
+  return testPrisma().conversation.create({ data: { storeId, customerId, status } });
 }
 
 export async function createProduct(storeId: string, opts: { name?: string; price?: number; stock?: number } = {}) {

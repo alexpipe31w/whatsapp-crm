@@ -10,6 +10,7 @@ import { BlockedModule } from '../blocked/blocked.module';
 import { AdminAssistantModule } from '../admin-assistant/admin-assistant.module';
 import { OutboundModule } from '../outbound/outbound.module';
 import { WA_TRANSPORT } from './wa-transport';
+import { OutboundDispatcher } from './outbound-dispatcher';
 
 @Module({
   imports: [
@@ -26,7 +27,8 @@ import { WA_TRANSPORT } from './wa-transport';
   providers: [
     WhatsappService,
     { provide: WA_TRANSPORT, useExisting: WhatsappService },
+    OutboundDispatcher,
   ],
-  exports: [WhatsappService, WA_TRANSPORT],
+  exports: [WhatsappService, WA_TRANSPORT, OutboundDispatcher],
 })
 export class WhatsappModule {}
