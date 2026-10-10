@@ -372,14 +372,6 @@ export class WhatsappService implements OnModuleInit, WaTransport {
   // ─── Ciclo de vida ──────────────────────────────────────────────────────────
 
   async onModuleInit(): Promise<void> {
-    // Registrar callback para que AiService pueda enviar recordatorios proactivos
-    this.aiService.setSendFn((storeId, phone, message) =>
-      this.sendMessage(storeId, phone, message),
-    );
-    this.adminAssistant.setNotifyFn((storeId, phone, message) =>
-      this.sendMessage(storeId, phone, message),
-    );
-
     try {
       const sessions = await this.prisma.whatsappSession.findMany({
         include: { store: { select: { isActive: true, name: true } } },

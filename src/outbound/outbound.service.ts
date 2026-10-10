@@ -117,6 +117,19 @@ export class OutboundService {
     return count;
   }
 
+  /** Como cancelGroup, para todos los grupos que empiezan por `prefix`. */
+  async cancelGroupsByPrefix(prefix: string, reason: string): Promise<number> {
+    const { count } = await this.prisma.waOutbound.updateMany({
+      where: { groupKey: { startsWith: prefix }, status: 'pending' },
+      data: { status: 'skipped', lastError: reason.slice(0, 500) },
+    });
+    if (count > 0)
+      this.logger.log(
+        `[outbound] ${count} pendiente(s) cancelada(s) grupos=${prefix}* motivo=${reason}`,
+      );
+    return count;
+  }
+
   private toRow(
     input: EnqueueInput,
     now: Date,

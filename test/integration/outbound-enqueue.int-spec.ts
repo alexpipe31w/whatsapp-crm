@@ -170,4 +170,27 @@ describe('OutboundService (BD real)', () => {
     ]);
     expect(rows[0].lastError).toBe('prueba');
   });
+  it('cancelGroupsByPrefix cancela las pendientes de todos los grupos con ese prefijo', async () => {
+    const { storeId } = await createStoreWithAdmin();
+    await outbound.enqueue(
+      input(storeId, { key: 'n1', groupKey: 'confirm-nudge:a' }),
+    );
+    await outbound.enqueue(
+      input(storeId, { key: 'n2', groupKey: 'confirm-nudge:b' }),
+    );
+    await outbound.enqueue(
+      input(storeId, { key: 'c1', groupKey: 'campaign:c' }),
+    );
+    expect(
+      await outbound.cancelGroupsByPrefix('confirm-nudge:', 'reinicio'),
+    ).toBe(2);
+    const rows = await testPrisma().waOutbound.findMany({
+      orderBy: { idempotencyKey: 'asc' },
+    });
+    expect(rows.map((r) => [r.idempotencyKey, r.status])).toEqual([
+      ['c1', 'pending'],
+      ['n1', 'skipped'],
+      ['n2', 'skipped'],
+    ]);
+  });
 });

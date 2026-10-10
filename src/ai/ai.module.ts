@@ -4,9 +4,10 @@ import { AiService } from './ai.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { IntegrationsModule } from '../integrations/integrations.module';
+import { OutboundModule } from '../outbound/outbound.module';
 
 @Module({
-  imports: [PrismaModule, NotificationsModule, IntegrationsModule],
+  imports: [PrismaModule, NotificationsModule, IntegrationsModule, OutboundModule],
   controllers: [AiController],
   providers: [AiService],
   exports: [AiService],
