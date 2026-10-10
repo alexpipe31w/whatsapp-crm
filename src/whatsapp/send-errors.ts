@@ -35,7 +35,7 @@ export function classifySendError(err: unknown): SendErrorClass {
     data?: { statusCode?: number };
   } | null;
   const status = e?.output?.statusCode ?? e?.data?.statusCode;
-  const message = String(e?.message ?? '');
+  const message = messageOf(err);
   if (
     (status !== undefined && DISCONNECTED_STATUS.has(status)) ||
     DISCONNECTED_RE.test(message)
@@ -51,7 +51,10 @@ export function classifySendError(err: unknown): SendErrorClass {
 
 /** `not-acceptable`: la sesión Signal se está renegociando; hay que esperar más. */
 export function isNotAcceptable(err: unknown): boolean {
-  return /not-acceptable/i.test(
-    String((err as { message?: unknown } | null)?.message ?? ''),
-  );
+  return /not-acceptable/i.test(messageOf(err));
+}
+
+function messageOf(err: unknown): string {
+  const message = (err as { message?: unknown } | null)?.message;
+  return typeof message === 'string' ? message : '';
 }
