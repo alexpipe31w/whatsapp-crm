@@ -1,17 +1,16 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { CreateCampaignDto } from './dto/create-campaign.dto';
-
-// Delay entre mensajes: aumenta cada 10 enviados para imitar comportamiento humano
-const BASE_DELAY_MS = 1500;
-const BATCH_EXTRA_MS = 2000; // extra cada 10 mensajes
+import { OutboundService } from '../outbound/outbound.service';
+import { outboundGroups, outboundKeys } from '../outbound/outbound-keys';
 
 @Injectable()
 export class CampaignsService {
   constructor(
     private prisma: PrismaService,
     private whatsappService: WhatsappService,
+    private outbound: OutboundService,
   ) {}
 
   async create(dto: CreateCampaignDto, storeId: string) {
@@ -43,60 +42,45 @@ export class CampaignsService {
     return campaign;
   }
 
+  /**
+   * Envío fuera de la petición HTTP: reclama la campaña (draft → sending, atómico: un
+   * doble clic da 409) y encola una fila por destinatario en la MISMA transacción. Sale
+   * el despachador, con el hueco entre mensajes; pasa a 'sent' al terminar
+   * (OutboundMaintenanceService). Antes el bucle iba dentro de la petición: doble clic o
+   * reinicio = reenvío total, y a clientes que nunca escribieron.
+   */
   async send(campaignId: string, storeId: string) {
-    // storeId del JWT — valida que la campaña pertenece a esta tienda
-    const campaign = await this.findOne(campaignId, storeId);
-
-    if (campaign.status === 'sent') {
-      throw new BadRequestException('Esta campaña ya fue enviada');
-    }
-
-    if (!this.whatsappService.isConnected(campaign.storeId)) {
+    await this.findOne(campaignId, storeId);
+    if (!this.whatsappService.isConnected(storeId)) {
       throw new BadRequestException('WhatsApp no está conectado para esta tienda');
     }
-
-    // Obtener clientes excluyendo los bloqueados
-    const [customers, blockedContacts] = await Promise.all([
-      this.prisma.customer.findMany({ where: { storeId: campaign.storeId } }),
-      this.prisma.blockedContact.findMany({
-        where: { storeId: campaign.storeId },
-        select: { phone: true },
-      }),
-    ]);
-
-    const blockedPhones = new Set(blockedContacts.map((b: any) => b.phone));
-    const eligible = customers.filter((c: any) => !blockedPhones.has(c.phone));
-
-    if (eligible.length === 0) {
-      throw new BadRequestException('No hay clientes elegibles para enviar la campaña');
-    }
-
-    let sentCount = 0;
-    let failCount = 0;
-
-    for (let i = 0; i < eligible.length; i++) {
-      const customer = eligible[i];
-      try {
-        await this.whatsappService.sendMessage(
-          campaign.storeId,
-          customer.phone,
-          campaign.message,
-        );
-        sentCount++;
-      } catch (err: any) {
-        failCount++;
-        console.error(`Error enviando a ${customer.phone}: ${err.message}`);
+    const campaign = await this.prisma.$transaction(async (tx) => {
+      const claimed = await tx.campaign.updateMany({ where: { campaignId, storeId, status: 'draft' }, data: { status: 'sending' } });
+      if (claimed.count === 0) throw new ConflictException('Esta campaña ya se está enviando o ya se envió');
+      const c = await tx.campaign.findUniqueOrThrow({ where: { campaignId } });
+      // Solo a quien ya nos escribió (spec: Baileys), acepta marketing y no está bloqueado
+      // (mismo criterio que BlockedService.isBlocked: últimos 10 dígitos).
+      const recipients = await tx.$queryRaw<{ customer_id: string; phone: string }[]>`
+        SELECT c.customer_id, c.phone FROM customers c
+        WHERE c.store_id = ${storeId} AND c.last_inbound_at IS NOT NULL AND c.accepts_marketing = true
+          AND NOT EXISTS (
+            SELECT 1 FROM blocked_contacts b
+            WHERE b.store_id = c.store_id
+              AND length(regexp_replace(c.phone, '[^0-9]', '', 'g')) > 0
+              AND b.phone LIKE '%' || right(regexp_replace(c.phone, '[^0-9]', '', 'g'), 10))`;
+      if (recipients.length === 0) {
+        throw new BadRequestException('No hay clientes que te hayan escrito y acepten mensajes');
       }
-
-      // Delay progresivo: base + extra cada 10 mensajes para no disparar antispam de WA
-      const extra = Math.floor(i / 10) * BATCH_EXTRA_MS;
-      const jitter = Math.floor(Math.random() * 500); // hasta 500ms aleatorio
-      await new Promise((resolve) => setTimeout(resolve, BASE_DELAY_MS + extra + jitter));
-    }
-
-    return this.prisma.campaign.update({
-      where: { campaignId },
-      data: { status: 'sent', sentCount },
-    });
+      await this.outbound.enqueueMany(
+        recipients.map((r) => ({
+          storeId, to: r.phone, text: c.message, kind: 'campaign' as const,
+          key: outboundKeys.campaign(campaignId, r.customer_id), groupKey: outboundGroups.campaign(campaignId),
+        })),
+        tx,
+      );
+      return c;
+    }, { timeout: 30_000 });
+    this.outbound.wake();
+    return campaign;
   }
 }
