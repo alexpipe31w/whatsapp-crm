@@ -19,4 +19,7 @@ process.env.CLOUDINARY_CLOUD_NAME = 'test';
 process.env.CLOUDINARY_API_KEY = 'test';
 process.env.CLOUDINARY_API_SECRET = 'test';
 
+// La cola de WhatsApp no se mueve sola en tests: se mueve con dispatcher.tick().
+process.env.WA_OUTBOUND_DISPATCHER = 'off';
+
 installNetworkGuard();

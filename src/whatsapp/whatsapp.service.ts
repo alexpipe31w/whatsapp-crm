@@ -15,6 +15,9 @@ import {
   isLidIdentity, lidIdentity, resolveJid, phoneFromJid, lidUserFromJid, jidFromPhone,
 } from '../utils/wa-identity.util';
 import { computeReconnectDelay, FORBIDDEN_STATUS } from './reconnect-delay';
+import { randomUUID } from 'node:crypto';
+import { WaNotConnectedError } from './send-errors';
+import { WaTransport } from './wa-transport';
 
 const WHISPER_TIMEOUT_MS    = 25_000;
 const WHISPER_MODEL         = 'whisper-large-v3-turbo';
@@ -327,7 +330,7 @@ async function withRetry<T>(
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Injectable()
-export class WhatsappService implements OnModuleInit {
+export class WhatsappService implements OnModuleInit, WaTransport {
   private readonly logger = new Logger(WhatsappService.name);
 
   private readonly sockets         = new Map<string, any>();
@@ -1445,6 +1448,20 @@ export class WhatsappService implements OnModuleInit {
       this.prisma.whatsappSession.deleteMany({ where: { storeId } }),
       this.prisma.store.update({ where: { storeId }, data: { waSessionId: null } }),
     ]);
+  }
+
+  /** Un trozo, un intento (contrato de WaTransport). El troceo y los reintentos son del despachador. */
+  async sendPart(storeId: string, jid: string, text: string): Promise<string> {
+    const sock = this.sockets.get(storeId);
+    if (!sock?.user) throw new WaNotConnectedError(storeId);
+    const res = await sock.sendMessage(jid, { text });
+    const id: string | undefined = res?.key?.id;
+    if (!id) {
+      // WhatsApp lo aceptó (no lanzó): reintentar lo duplicaría. Se registra y se sigue.
+      this.logger.warn(`[outbound] sendMessage sin id de WhatsApp (store ${storeId})`);
+      return `sin-id-${randomUUID()}`;
+    }
+    return id;
   }
 
   async sendMessage(storeId: string, phone: string, content: string): Promise<void> {
