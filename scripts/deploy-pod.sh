@@ -36,6 +36,12 @@ if [ "$before" = "$after" ] && [ "$pending" = 0 ] && [ "$lock_changed" = 0 ] && 
   exit 0
 fi
 
+# El cliente de Prisma (src/generated, fuera de git) solo se regenera con npm ci; si el
+# esquema cambió sin tocar el lock, tsc compilaría contra el cliente viejo y fallaría.
+# Generarlo no toca la BD ni dist.
+echo "[deploy] regenerando el cliente de Prisma"
+npx prisma generate
+
 # Comprobar que compila ANTES de tocar BD y dist (nest build borra dist al empezar)
 echo "[deploy] comprobando que compila"
 npx tsc --noEmit -p tsconfig.build.json
