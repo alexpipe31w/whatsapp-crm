@@ -1,4 +1,4 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { WhatsappService } from './whatsapp.service';
 import { WhatsappController } from './whatsapp.controller';
 import { PrismaModule } from '../prisma/prisma.module';
@@ -17,7 +17,7 @@ import { OutboundDispatcher } from './outbound-dispatcher';
     PrismaModule,
     AiModule,
     ConversationsModule,
-    forwardRef(() => MessagesModule),
+    MessagesModule,
     CustomersModule,
     BlockedModule,
     AdminAssistantModule,

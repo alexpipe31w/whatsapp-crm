@@ -1,5 +1,5 @@
 import {
-  Injectable, Logger, OnModuleInit, Inject, forwardRef,
+  Injectable, Logger, OnModuleInit,
 } from '@nestjs/common';
 import { Boom } from '@hapi/boom';
 import P from 'pino';
@@ -362,7 +362,6 @@ export class WhatsappService implements OnModuleInit, WaTransport {
     private readonly prisma: PrismaService,
     private readonly aiService: AiService,
     private readonly conversationsService: ConversationsService,
-    @Inject(forwardRef(() => MessagesService))
     private readonly messagesService: MessagesService,
     private readonly customersService: CustomersService,
     private readonly blockedService: BlockedService,

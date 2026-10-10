@@ -1,10 +1,10 @@
 import {
-  Injectable, NotFoundException, ForbiddenException, BadRequestException,
-  Inject, forwardRef, Logger,
+  Injectable, NotFoundException, ForbiddenException, BadRequestException, Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateMessageDto } from './dto/create-message.dto';
-import { WhatsappService } from '../whatsapp/whatsapp.service';
+import { OutboundService } from '../outbound/outbound.service';
+import { outboundKeys } from '../outbound/outbound-keys';
 
 @Injectable()
 export class MessagesService {
@@ -12,8 +12,7 @@ export class MessagesService {
 
   constructor(
     private prisma: PrismaService,
-    @Inject(forwardRef(() => WhatsappService))
-    private whatsapp: WhatsappService,
+    private outbound: OutboundService,
   ) {}
 
   /** Guarda un mensaje en el historial. NUNCA envía por WhatsApp (lo usa el flujo de entrada). */
@@ -52,60 +51,58 @@ export class MessagesService {
     return message;
   }
 
+  /**
+   * Entrada del panel. Si es del asesor (store, no IA), el mensaje, lastMessageAt y el
+   * encolado en wa_outbound van en UNA transacción: o queda todo o nada. Antes un fallo
+   * de WhatsApp devolvía 200 y el mensaje constaba como enviado sin haber salido.
+   */
   async create(dto: CreateMessageDto) {
+    const sender = dto.sender ?? (dto.isAiResponse ? 'store' : 'customer');
+    if (dto.isAiResponse || sender !== 'store') return this.record(dto);
+
     const conv = await this.prisma.conversation.findUnique({
       where:   { conversationId: dto.conversationId },
       include: { customer: true },
     });
     if (!conv) throw new NotFoundException('Conversación no encontrada');
-
     if (conv.storeId !== dto.storeId) {
       throw new ForbiddenException('El mensaje no pertenece a esta tienda');
     }
-
-    const sender = dto.sender ?? (dto.isAiResponse ? 'store' : 'customer');
-
-    // FIX: validar contenido — no guardar mensajes vacíos ni demasiado largos
     if (!dto.content?.trim()) {
-      throw new Error('El contenido del mensaje no puede estar vacío');
-    }
-    if (dto.content.length > 65_536) {
-      dto.content = dto.content.slice(0, 65_536);
+      throw new BadRequestException('El contenido del mensaje no puede estar vacío');
     }
 
-    const message = await this.prisma.message.create({
-      data: {
-        conversationId: dto.conversationId,
-        storeId:        dto.storeId,
-        content:        dto.content,
-        type:           dto.type        ?? 'text',
-        isAiResponse:   dto.isAiResponse ?? false,
-        sender,
-      },
-    });
-
-    // FIX: actualizar lastMessageAt con catch para no romper el flujo si falla
-    await this.prisma.conversation.update({
-      where: { conversationId: dto.conversationId },
-      data:  { lastMessageAt: new Date() },
-    }).catch(() => {});
-
-    // Enviar por WhatsApp solo si es mensaje manual del asesor humano (no IA, no entrante)
-    if (!dto.isAiResponse && sender === 'store') {
-      try {
-        await this.whatsapp.sendMessage(
-          dto.storeId,
-          conv.customer.phone,
-          dto.content,
-        );
-      } catch (err: any) {
-        // FIX: usar Logger de NestJS en lugar de console.error
-        this.logger.warn(
-          `Error enviando por WhatsApp a ${conv.customer.phone}: ${err.message}`,
-        );
+    const message = await this.prisma.$transaction(async (tx) => {
+      const m = await tx.message.create({
+        data: {
+          conversationId: dto.conversationId,
+          storeId:        conv.storeId,
+          content:        dto.content,
+          type:           dto.type ?? 'text',
+          isAiResponse:   false,
+          sender,
+        },
+      });
+      await tx.conversation.update({
+        where: { conversationId: dto.conversationId },
+        data:  { lastMessageAt: new Date() },
+      });
+      const result = await this.outbound.enqueue(
+        {
+          storeId: conv.storeId,
+          to:      conv.customer.phone,
+          text:    dto.content,
+          kind:    'reply',
+          key:     outboundKeys.agentMessage(m.messageId),
+        },
+        tx,
+      );
+      if (result === 'invalid') {
+        throw new BadRequestException('Este cliente no tiene un número de WhatsApp al que escribir');
       }
-    }
-
+      return m;
+    });
+    this.outbound.wake();
     return message;
   }
 
